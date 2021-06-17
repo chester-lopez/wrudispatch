@@ -784,16 +784,9 @@ var LIMIT = 200,
                             { roles: ["administrator","developer"], removeButtons: ["statusUpdate"], not: true }
                         ] 
                     },
-                    // additionalFields: {
-                    //     ticketNumber: true,
-                    //     driver: true,
-                    //     checker: true,
-                    //     scheduledDate: true,
-                    //     shiftSchedule: true
-                    // },
                     filterType: "postingDate-scheduledDate",
                     columns: {
-                        list: ["_id","ticketNumber","departureDate","_departureDate_","_departureTime_","region","cluster","origin","route","destination","etd","eta","targetTransitTime","targetCicoTime","vehicle","plateNumber","truckNumber","driver","checker","comments","processingDuration","cicoTime","cicoTimeCapped","transitDuration","status","scheduledDate","shiftSchedule","postedBy","postingDate","lateEntry","action"],
+                        list: ["_id","ticketNumber","departureDate","_departureDate_","_departureTime_","region","cluster","origin","route","destination","etd","eta","targetTransitTime","targetCicoTime","vehicle","plateNumber","truckNumber","driver","checker","helper","comments","processingDuration","cicoTime","cicoTimeCapped","transitDuration","status","scheduledDate","shiftSchedule","postedBy","postingDate","lateEntry","action"],
                         visible: ["_id","departureDate","origin","destination","vehicle","driver","checker","status","postedBy","lateEntry","action"],
                         hiddenInCustomVisibilityOptions: ["_departureDate_","_departureTime_","plateNumber","truckNumber"],
                         notExport: ["departureDate","vehicle","action"]
