@@ -336,6 +336,7 @@ class Dispatch {
             trailer = getValue(LIST["trailers"],"trailers",(obj.trailer||vehicle["Trailer"]),null,null,["_id","pal_cap"]),
             driver = getValue(LIST["vehicle_personnel"],"vehicle_personnel",(obj.driver_id),null,null,["name"]),
             checker = getValue(LIST["vehicle_personnel"],"vehicle_personnel",(obj.checker_id),null,null,["name"]),
+            helper = getValue(LIST["vehicle_personnel"],"vehicle_personnel",(obj.helper_id),null,null,["name"]),
             index = LIST["dispatch"].findIndex(x => x._id == obj._id),
             beforeCheckOutTime = getDateTime("entered_origin",obj) || getDateTime("queueingAtOrigin",obj) || getDateTime("processingAtOrigin",obj) || getDateTime("idlingAtOrigin",obj),
             cico_time_calcAtOrigin = (beforeCheckOutTime) ?  (getDateTime("in_transit",obj,"last") - beforeCheckOutTime) : 0,
@@ -391,6 +392,7 @@ class Dispatch {
         this.pal_cap = trailer.pal_cap || "-";
         this.driver = driver.name || "-";
         this.checker = checker.name || "-";
+        this.helper = helper.name || "-";
         this.comments = obj.comments || "-";
         
         this.entered_datetime = DATETIME.FORMAT(getDateTime(null,obj));
@@ -472,6 +474,7 @@ class Dispatch {
             'Pal Cap': this.pal_cap,
             'Driver': this.driver,
             'Checker': this.checker,
+            'Helper': this.helper,
             'Comments': this.comments,
             'Queueing Duration': this.queueingDuration,
             'Processing Duration':this.processingDuration,
@@ -513,6 +516,7 @@ class Dispatch {
                         <div><span style="display: table-cell;width: 120px;">Pal Cap</span><span style="display: table-cell;">${this.pal_cap}</span></div>
                         <div><span style="display: table-cell;width: 120px;">Driver</span><span style="display: table-cell;">${this.driver}</span></div>
                         <div><span style="display: table-cell;width: 120px;">Checker</span><span style="display: table-cell;">${this.checker}</span></div>
+                        <div><span style="display: table-cell;width: 120px;">Helper</span><span style="display: table-cell;">${this.helper}</span></div>
                         <div><span style="display: table-cell;width: 120px;">Comments</span><span style="display: table-cell;">${this.comments}</span></div>
                         <div><span style="display: table-cell;width: 120px;">Queueing Duration</span><span style="display: table-cell;"><div>${this.queueingDuration}</div></span></div>
                         <div><span style="display: table-cell;width: 120px;">Processing Duration</span><span style="display: table-cell;"><div>${this.processingDuration}</div></span></div>
@@ -598,6 +602,7 @@ class Dispatch {
                                             ${(CLIENT.id == "wilcon")?`
                                                 ${this.tbl().getTr("Driver",this.driver)}
                                                 ${this.tbl().getTr("Checker",this.checker)}
+                                                ${this.tbl().getTr("Helper",this.helper)} ${this.tbl().empty}
 
                                                 ${this.tbl().empty} ${this.tbl().empty}
                                             `:""}
@@ -665,6 +670,7 @@ class Dispatch {
                                                 ${(CLIENT.id == "wilcon")?`
                                                     ${this.tbl().getTr("Driver",this.driver)}
                                                     ${this.tbl().getTr("Checker",this.checker)}
+                                                    ${this.tbl().getTr("Helper",this.helper)} ${this.tbl().empty}
 
                                                     ${this.tbl().empty} ${this.tbl().empty}
                                                 `:""}
@@ -3275,6 +3281,7 @@ var DISPATCH = {
                                 trailer = TRAILER,
                                 driver_id = $(`#driver_id option:selected`).val(),
                                 checker_id = $(`#checker_id option:selected`).val(),
+                                helper_id = $(`#helper_id option:selected`).val(),
                                 isComplete = true;
 
 
@@ -3285,6 +3292,7 @@ var DISPATCH = {
                                 if(!ticket_number) isComplete = false;
                                 if(!driver_id) isComplete = false;
                                 if(!checker_id) isComplete = false;
+                                if(!helper_id) isComplete = false;
                             } else { 
                                 // trailer is not required for Wilcon
                                 if(!trailer) isComplete = false;
@@ -3721,8 +3729,9 @@ var DISPATCH = {
                                 shift_schedule = $(`#shift_schedule option:selected`).val(),
                                 vehicle_id = $(`#vehicle option:selected`).val(),
                                 driver_id = $(`#driver_id option:selected`).val(),
-                                checker_id = $(`#checker_id option:selected`).val();
-                            if(CLIENT.id == "wilcon" && vehicle_id && driver_id && checker_id && scheduled_date && shift_schedule){
+                                checker_id = $(`#checker_id option:selected`).val(),
+                                helper_id = $(`#helper_id option:selected`).val();
+                            if(CLIENT.id == "wilcon" && vehicle_id && driver_id && checker_id && helper_id && scheduled_date && shift_schedule){
                                 $(`#modal #alert`).html(`<i class="la la-spin la-spinner font-18 mb-3"></i>`);
                                 disabledSumitButton = true;
                                 $(`#submit`).attr("disabled",true);
@@ -3733,6 +3742,7 @@ var DISPATCH = {
                                                 { vehicle_id: Number(vehicle_id), },
                                                 { driver_id },
                                                 { checker_id },
+                                                { helper_id },
                                             ]
                                         },
                                         { scheduled_date: new Date(scheduled_date).toISOString(), },
@@ -3763,6 +3773,9 @@ var DISPATCH = {
                                                 }
                                                 if(val.checker_id.toString() == checker_id.toString()){
                                                     message.push(`• Checker is already assigned to shipment ${val._id}.`);
+                                                }
+                                                if(val.helper_id.toString() == helper_id.toString()){
+                                                    message.push(`• Helper is already assigned to shipment ${val._id}.`);
                                                 }
                                             }
                                         });
@@ -3830,7 +3843,7 @@ var DISPATCH = {
                     }
                     $(`#shift_schedule`).val("").select2().attr("disabled",false);
 
-                    setDriverChecker($(`#driver_id`).val(),$(`#checker_id`).val());
+                    setDriverChecker($(`#driver_id`).val(),$(`#checker_id`).val(),$(`#helper_id`).val());
                 });
                 
                 // .on('cancel.daterangepicker', function(ev, picker) {
@@ -4026,78 +4039,48 @@ var DISPATCH = {
             
 
                 /******** VEHICLE PERSONNEL ********/
-                $(`#driver_id,#checker_id`).html("").select2();
+                $(`#driver_id,#checker_id,#helper_id`).html("").select2();
 
-                function setDriverChecker(driver_id,checker_id){
+                function setDriverChecker(driver_id,checker_id,helper_id){
                     if(CLIENT.id == "wilcon"){
                         var __original = __originalObj || {};
                         /******** VEHICLE PERSONNEL ********/
-                        var driverList = `<option value="">&nbsp;</option>`;
-                        var tempDrivers = LIST["vehicle_personnel"].filter(x => x.occupation == "Driver");
-                        var defaultDriver = LIST["vehicle_personnel"].find(x => (x.vehicle_id||"").toString() == $(`#vehicle`).val() && $(`#vehicle`).val() && x.occupation == "Driver") || {};
-                        var originalDriver = LIST["vehicle_personnel"].find(x => x.name == driver_id || __original.driver_id) || {};
-                        var unavailableDrivers = [];
-                        
-                        tempDrivers.forEach(val => {
-                            var dates = val.dates || {};
-                            var scheduled_date = new Date($(`#scheduled_date`).val()).toISOString();
-                            var arr = [];
+                        function personnelList(occupation,idType,value){
+                            var listHTML = `<option value="">&nbsp;</option>`;
+                            var tempList = LIST["vehicle_personnel"].filter(x => x.occupation == occupation);
+                            var defaultPersonnel = LIST["vehicle_personnel"].find(x => (x.vehicle_id||"").toString() == $(`#vehicle`).val() && $(`#vehicle`).val() && x.occupation == occupation) || {};
+                            var originalPersonnel = LIST["vehicle_personnel"].find(x => x.name == value || __original[idType]) || {};
+                            var unavailablePersonnel = [];
+                            
+                            tempList.forEach(val => {
+                                var dates = val.dates || {};
+                                var scheduled_date = new Date($(`#scheduled_date`).val()).toISOString();
+                                var arr = [];
 
-                            Object.keys(dates).forEach(key => {
-                                var selectedDates = dates[key] || [];
-                                if(selectedDates.includes(scheduled_date)){
-                                    arr.push(vehiclePersonnelCalendarOptions[key].label);
+                                Object.keys(dates).forEach(key => {
+                                    var selectedDates = dates[key] || [];
+                                    if(selectedDates.includes(scheduled_date)){
+                                        arr.push(vehiclePersonnelCalendarOptions[key].label);
+                                    }
+                                });
+                                var text = (arr.length > 0) ? ` (${arr.join(", ")})` : "";
+                                var disabled = (arr.length > 0) ? "disabled" : "";
+                                listHTML += `<option value="${val._id}" ${disabled}>${val.name||"No Name"}${text}</option>`;
+                                if(arr.length > 0){
+                                    unavailablePersonnel.push(val._id);
                                 }
                             });
-                            var text = (arr.length > 0) ? ` (${arr.join(", ")})` : "";
-                            var disabled = (arr.length > 0) ? "disabled" : "";
-                            driverList += `<option value="${val._id}" ${disabled}>${val.name||"No Name"}${text}</option>`;
-                            if(arr.length > 0){
-                                unavailableDrivers.push(val._id);
-                            }
-                        });
-                        var finalDriver = "";
-                        (unavailableDrivers.includes(driver_id)) ? null : finalDriver = driver_id;
-                        (unavailableDrivers.includes(originalDriver._id)) ? null : finalDriver = originalDriver._id;
-                        (unavailableDrivers.includes(defaultDriver._id)) ? null : finalDriver = defaultDriver._id;
-                        $(`#driver_id`).empty().html(driverList).select2().val(finalDriver).on("select2:select", function() {
-                            // checkSelectedVehicleWithinGeofence(7);
-                            checkVehicleInfoAndScheduledDateTime();
-                        }).trigger("change");
-
-                        var checkerList = `<option value="">&nbsp;</option>`;
-                        var tempCheckers = LIST["vehicle_personnel"].filter(x => x.occupation == "Checker");
-                        var defaultChecker = LIST["vehicle_personnel"].find(x => (x.vehicle_id||"").toString() == $(`#vehicle`).val() && $(`#vehicle`).val() && x.occupation == "Checker") || {};
-                        var originalCheker = LIST["vehicle_personnel"].find(x => x.name == checker_id || __original.checker_id) || {};
-                        var unavailableChecker = [];
-                        
-                        tempCheckers.forEach(val => {
-                            var dates = val.dates || {};
-                            var scheduled_date = new Date($(`#scheduled_date`).val()).toISOString();
-                            var arr = [];
-
-                            Object.keys(dates).forEach(key => {
-                                var selectedDates = dates[key] || [];
-                                if(selectedDates.includes(scheduled_date)){
-                                    arr.push(vehiclePersonnelCalendarOptions[key].label);
-                                }
-                            });
-                            var text = (arr.length > 0) ? ` (${arr.join(", ")})` : "";
-                            var disabled = (arr.length > 0) ? "disabled" : "";
-                            checkerList += `<option value="${val._id}" ${disabled}>${val.name||"No Name"}${text}</option>`;
-                            if(arr.length > 0){
-                                unavailableChecker.push(val._id);
-                            }
-                        });
-
-                        var finalChecker = "";
-                        (unavailableChecker.includes(checker_id)) ? null : finalChecker = checker_id;
-                        (unavailableChecker.includes(originalCheker._id)) ? null : finalChecker = originalCheker._id;
-                        (unavailableChecker.includes(defaultChecker._id)) ? null : finalChecker = defaultChecker._id;
-                        $(`#checker_id`).empty().html(checkerList).select2().val(finalChecker).on("select2:select", function() {
-                            // checkSelectedVehicleWithinGeofence(7);
-                            checkVehicleInfoAndScheduledDateTime();
-                        }).trigger("change");
+                            var finalPersonnel = "";
+                            (unavailablePersonnel.includes(value)) ? null : finalPersonnel = value;
+                            (unavailablePersonnel.includes(originalPersonnel._id)) ? null : finalPersonnel = originalPersonnel._id;
+                            (unavailablePersonnel.includes(defaultPersonnel._id)) ? null : finalPersonnel = defaultPersonnel._id;
+                            $(`#${idType}`).empty().html(listHTML).select2().val(finalPersonnel).on("select2:select", function() {
+                                checkVehicleInfoAndScheduledDateTime();
+                            }).trigger("change");
+                        }
+                        personnelList("Driver","driver_id",driver_id);
+                        personnelList("Checker","checker_id",checker_id);
+                        personnelList("Helper","helper_id",helper_id);
                         /******** END VEHICLE PERSONNEL ********/
                     }
                 }
@@ -4322,6 +4305,7 @@ var DISPATCH = {
                         trailer = TRAILER,
                         driver_id = $(`#driver_id option:selected`).val(),
                         checker_id = $(`#checker_id option:selected`).val(),
+                        helper_id = $(`#helper_id option:selected`).val(),
                         comments = $(`#comments`).val()._trim(),
                         attachments = ATTACHMENTS.get(CLIENT.dsName),
                         incomplete = false,
@@ -4362,6 +4346,14 @@ var DISPATCH = {
                                 {
                                     key: "checker_id",
                                     customTitle: "Checker",
+                                    dataExtended: true,
+                                    data: LIST["vehicle_personnel"],
+                                    dataCompareKey: "_id",
+                                    dataValueKey: "name"
+                                },
+                                {
+                                    key: "helper_id",
+                                    customTitle: "Helper",
                                     dataExtended: true,
                                     data: LIST["vehicle_personnel"],
                                     dataCompareKey: "_id",
@@ -4418,6 +4410,7 @@ var DISPATCH = {
                             body.ticket_number = ticket_number;
                             body.driver_id = driver_id;
                             body.checker_id = checker_id;
+                            body.helper_id = helper_id;
                             
                             (scheduled_date) ? body.scheduled_date = new Date(scheduled_date).toISOString() : null;
                             (shift_schedule) ? body.shift_schedule = shift_schedule : null;
@@ -4518,6 +4511,7 @@ var DISPATCH = {
                             (ticket_number == null || (ticket_number != null && ticket_number.isEmpty())) ? invalid_arr.push("ticket_number") : $(`#ticket_number`).css(css_default);
                             (driver_id == null || (driver_id != null && driver_id.isEmpty())) ? invalid_arr.push("driver_id") : $(`#driver_id`).css(css_default);
                             (checker_id == null || (checker_id != null && checker_id.isEmpty())) ? invalid_arr.push("checker_id") : $(`#checker_id`).css(css_default);
+                            (helper_id == null || (helper_id != null && helper_id.isEmpty())) ? invalid_arr.push("helper_id") : $(`#helper_id`).css(css_default);
                             (scheduled_date == null || (scheduled_date != null && scheduled_date.isEmpty())) ? invalid_arr.push("scheduled_date") : $(`#scheduled_date`).css(css_default);
                             (shift_schedule == null || (shift_schedule != null && shift_schedule.isEmpty())) ? invalid_arr.push("shift_schedule") : $(`#shift_schedule`).css(css_default);
                         } else {
@@ -4598,6 +4592,7 @@ var DISPATCH = {
                                 body.ticket_number = ticket_number;
                                 body.driver_id = driver_id;
                                 body.checker_id = checker_id;
+                                body.helper_id = helper_id;
 
                                 (scheduled_date) ? body.scheduled_date = new Date(scheduled_date).toISOString() : null;
                                 (shift_schedule) ? body.shift_schedule = shift_schedule : null;
@@ -5031,6 +5026,7 @@ var DISPATCH = {
             });
 
 
+            var dayOffLabel = Object.keys(vehiclePersonnelCalendarOptions).map(i => vehiclePersonnelCalendarOptions[i].label).join("/");
             var requiredFields = {
                 coket1: [
                     { name: "Shipment Number", key: "_id", required: true, identifier: true },
@@ -5043,8 +5039,9 @@ var DISPATCH = {
                     { name: "Ticket Number", key: "ticket_number", required: true },
                     { name: "Route", required: true, error: ["Route does not exist in database."] },
                     { name: "Truck Name", required: true, error: ["Truck Name does not exist in database."] },
-                    { name: "Driver", required: true, error: ["Driver's Name does not exist in database."] },
-                    { name: "Checker", required: true, error: ["Checker's Name does not exist in database."] },
+                    { name: "Driver", required: true, error: ["Driver's Name does not exist in database.","Selected Driver is on "+dayOffLabel+"."] },
+                    { name: "Checker", required: true, error: ["Checker's Name does not exist in database.","Selected Checker is on "+dayOffLabel+"."] },
+                    { name: "Helper", required: true, error: ["Helper's Name does not exist in database.","Selected Helper is on "+dayOffLabel+"."] },
                     { name: "Scheduled Date", required: true, codependent: "Shift Schedule", error: ["Scheduled Date entered is not a valid date.","Scheduled Date is before current date/time."] },
                     { name: "Shift Schedule", required: true, codependent: "Scheduled Date", error: ["Shift Schedule is before current date/time.","Shift Schedule does not exist in database."] },
                     { name: "Comments", key: "comments", required: false },
@@ -5170,12 +5167,33 @@ var DISPATCH = {
                             destination = getGeofence(val["Destination"],"short_name"),
                             route = getRoute(val["Route"]),
                             vehicle = getVehicle(val["Truck Name"],"name"),
-                            driver = getVehiclePersonnel(val["Driver"],"name"),
-                            checker = getVehiclePersonnel(val["Checker"],"name"),
+                            driver = (LIST["vehicle_personnel"]||[]).find(x => x.name.toString() == val["Driver"].toString() && x.occupation == "Driver"),
+                            checker = (LIST["vehicle_personnel"]||[]).find(x => x.name.toString() == val["Checker"].toString() && x.occupation == "Checker"),
+                            helper = (LIST["vehicle_personnel"]||[]).find(x => x.name.toString() == val["Helper"].toString() && x.occupation == "Helper"),
                             scheduled_date = DATETIME.FORMAT(parseDateExcel(val["Scheduled Date"]),"MM/DD/YYYY"),
                             shift_schedule = getShiftSchedule(val["Shift Schedule"]),
                             errorShipment = false;
 
+                        function isDayOff(dates){
+                            var dayOff = false;
+                            var momentScheduledDate = moment(scheduled_date, 'MM/DD/YYYY', true);
+                            console.log(momentScheduledDate.isValid(),scheduled_date,dates);
+                            if(momentScheduledDate.isValid()){
+                                var scheduled_dateISO = new Date(scheduled_date).toISOString();
+        
+                                Object.keys(dates).forEach(key => {
+                                    var selectedDates = dates[key] || [];
+                                    if(selectedDates.includes(scheduled_dateISO)){
+                                        dayOff = true;
+                                    }
+                                });
+                            }
+                            return dayOff;
+                        }
+                        
+                        isDayOff((driver||{}).dates || {}) ? driver = null : null;
+                        isDayOff((checker||{}).dates || {}) ? checker = null : null;
+                        isDayOff((helper||{}).dates || {}) ? helper = null : null;
 
                         var checkIfDone = function(){
                                 if(count == import_data.length){
@@ -5193,6 +5211,7 @@ var DISPATCH = {
                                 late_entry: false,
                                 driver_id: "",
                                 checker_id: "",
+                                helper_id: "",
                                 events_captured: {}
                             },
                             addToNoteList = function(text,causes,key,type,isField){
@@ -5485,7 +5504,7 @@ var DISPATCH = {
                             checkVehicleInfoAndScheduledDateTime = function(){
                                 return new Promise((resolve,reject) => {
                                     console.log("scheduled_date",scheduled_date)
-                                    if(CLIENT.id == "wilcon" && vehicle && driver && checker && scheduled_date && shift_schedule && scheduled_date != "-"){
+                                    if(CLIENT.id == "wilcon" && vehicle && driver && checker && helper && scheduled_date && shift_schedule && scheduled_date != "-"){
                                         var filter = {
                                             $and: [
                                                 {
@@ -5493,6 +5512,7 @@ var DISPATCH = {
                                                         { vehicle_id: Number(vehicle._id), },
                                                         { driver_id: driver._id },
                                                         { checker_id: checker._id },
+                                                        { helper_id: helper._id },
                                                     ]
                                                 },
                                                 { scheduled_date: new Date(scheduled_date).toISOString(), },
@@ -5521,6 +5541,9 @@ var DISPATCH = {
                                                     }
                                                     if(val.checker_id.toString() == checker._id.toString()){
                                                         message.push(`Checker is already assigned to shipment # ${val._id}.`);
+                                                    }
+                                                    if(val.helper_id.toString() == helper._id.toString()){
+                                                        message.push(`Helper is already assigned to shipment # ${val._id}.`);
                                                     }
                                                 });
                                                 if(message.length > 0){
@@ -5578,6 +5601,9 @@ var DISPATCH = {
                                                 }
                                                 if(obj.checker_id && (_val.checker_id||"").toString() == (obj.checker_id||"").toString()){
                                                     message.push(`Checker is already assigned to ROW #: ${Number(_val.__rowNum__)+1}.`);
+                                                }
+                                                if(obj.helper_id && (_val.helper_id||"").toString() == (obj.helper_id||"").toString()){
+                                                    message.push(`Helper is already assigned to ROW #: ${Number(_val.__rowNum__)+1}.`);
                                                 }
                                             }
                                         }
@@ -5669,6 +5695,14 @@ var DISPATCH = {
                             if(columnKey == "Checker"){
                                 if(checker){
                                     obj.checker_id = checker._id;
+                                } else {
+                                    addToNoteList(`Invalid data in '${columnKey}'.  Possible causes:`,error,val[identifierKey],"warning",true);
+                                }
+                            }
+
+                            if(columnKey == "Helper"){
+                                if(helper){
+                                    obj.helper_id = helper._id;
                                 } else {
                                     addToNoteList(`Invalid data in '${columnKey}'.  Possible causes:`,error,val[identifierKey],"warning",true);
                                 }
@@ -7605,6 +7639,7 @@ var REPORTS = {
                                 <td style="${tblBodyStyle}"></td>
                                 <td style="${tblBodyStyle}">${(data.driver||"").toUpperCase()}</td>
                                 <td style="${tblBodyStyle}">${(data.checker||"").toUpperCase()}</td>
+                                <td style="${tblBodyStyle}">${(data.helper||"").toUpperCase()}</td>
                                 <td style="${tblBodyStyle}">${(comments||"").toUpperCase()}</td>
                             </tr>`;
                 });
@@ -7630,6 +7665,7 @@ var REPORTS = {
                                     <td style="${tblHeaderStyle}width:100px;"><b>TIME IN</b></td>
                                     <td style="${tblHeaderStyle}width:200px;"><b>DRIVER</b></td>
                                     <td style="${tblHeaderStyle}width:200px;"><b>CHECKER</b></td>
+                                    <td style="${tblHeaderStyle}width:200px;"><b>HELPER</b></td>
                                     <td style="${tblHeaderStyle}width:300px;"><b>REMARKS</b></td>
                                 </tr>
                                 ${rows}
@@ -7647,7 +7683,7 @@ var REPORTS = {
                 var daysInMonths = moment(date_from).daysInMonth();
 
                 var totalVehicles = LIST["vehicles"].length;
-                var totalManpower = LIST["vehicle_personnel"].filter(x => x.occupation == "Driver" || x.occupation == "Checker").length;
+                var totalManpower = LIST["vehicle_personnel"].filter(x => x.occupation == "Driver" || x.occupation == "Checker" || x.occupation == "Helper").length;
 
                 var dataTotalVehicles = [];
                 var dataTotalManpower = [];
@@ -7667,6 +7703,7 @@ var REPORTS = {
                     var manpower_ids = [];
                     var driver_list = [];
                     var checker_list = [];
+                    var helper_list = [];
                     filtered.forEach(val => {
                         if(!vehicle_ids.includes(val.vehicle_id)){
                             vehicle_ids.push(val.vehicle_id);
@@ -7677,7 +7714,7 @@ var REPORTS = {
                                                     <td style="${tblBodyStyle}text-align:left;">${vehicle.name || "-"}</td>
                                                 </tr>`);
                         }
-                        if(!manpower_ids.includes(val.driver_id)){
+                        if(val.driver_id && !manpower_ids.includes(val.driver_id)){
                             manpower_ids.push(val.driver_id);
 
                             var driver = getVehiclePersonnel(val.driver_id) || {};
@@ -7686,7 +7723,7 @@ var REPORTS = {
                                                     <td style="${tblBodyStyle}text-align:left;">${driver.name || "-"}</td>
                                                 </tr>`);
                         }
-                        if(!manpower_ids.includes(val.checker_id)){
+                        if(val.checker_id && !manpower_ids.includes(val.checker_id)){
                             manpower_ids.push(val.checker_id);
 
                             var checker = getVehiclePersonnel(val.checker_id) || {};
@@ -7695,10 +7732,20 @@ var REPORTS = {
                                                     <td style="${tblBodyStyle}text-align:left;">${checker.name || "-"}</td>
                                                 </tr>`);
                         }
+                        if(val.helper_id && !manpower_ids.includes(val.helper_id)){
+                            manpower_ids.push(val.helper_id);
+
+                            var helper = getVehiclePersonnel(val.helper_id) || {};
+                            helper_list.push(`<tr>
+                                                    <td style="${tblBodyStyle}text-align:left;">${helper_list.length+1}</td>
+                                                    <td style="${tblBodyStyle}text-align:left;">${helper.name || "-"}</td>
+                                                </tr>`);
+                        }
 
                         (dataTotalVehicles.includes(val.vehicle_id)) ? null : dataTotalVehicles.push(val.vehicle_id);
                         (dataTotalManpower.includes(val.driver_id)) ? null : dataTotalManpower.push(val.driver_id);
                         (dataTotalManpower.includes(val.checker_id)) ? null : dataTotalManpower.push(val.checker_id);
+                        (dataTotalManpower.includes(val.helper_id)) ? null : dataTotalManpower.push(val.helper_id);
                     });
 
                     var vehicleUtilization = GET.ROUND_OFF((vehicle_ids.length/totalVehicles)*100);
@@ -7724,6 +7771,9 @@ var REPORTS = {
                                             <tr> <td style="border:none;" colspan=2>&nbsp;</td> </tr>
                                             <tr> <td style="${tblHeaderStyle}" colspan=2>Manpower - Checker</b></td> </tr>
                                             ${checker_list.join("")}
+                                            <tr> <td style="border:none;" colspan=2>&nbsp;</td> </tr>
+                                            <tr> <td style="${tblHeaderStyle}" colspan=2>Manpower - Helper</b></td> </tr>
+                                            ${helper_list.join("")}
                                         </tbody>
                                     </table>`;
                 }
@@ -11106,7 +11156,7 @@ var VEHICLE_PERSONNEL = {
                     loadView:["edit"],
                     readonlyArr:["edit"],
                     deleteArr:[
-                        { button: "edit-rest-days", byPassCondition: (obj.occupation!="Driver" && obj.occupation!="Checker") },
+                        { button: "edit-rest-days", byPassCondition: (obj.occupation!="Driver" && obj.occupation!="Checker" && obj.occupation!="Helper") },
                     ]
                 });
                 $(`${_this.id} th:last-child`).css({"min-width":action.width,"width":action.width});
@@ -15117,13 +15167,17 @@ const modalViews = new function(){
                             ${trailerHTML}
                             ${previousCheckIns}
                             <div class="col-sm-12 p-0 mb-3">
-                                <div class="col-sm-6">
+                                <div class="col-sm-4">
                                     <small>Driver:</small>
                                     <select id="driver_id" class="select-multiple-basic" style="width:100%;"></select>
                                 </div>
-                                <div class="col-sm-6">
+                                <div class="col-sm-4">
                                     <small>Checker:</small>
                                     <select id="checker_id" class="select-multiple-basic" style="width:100%;"></select>
+                                </div>
+                                <div class="col-sm-4">
+                                    <small>Helper:</small>
+                                    <select id="helper_id" class="select-multiple-basic" style="width:100%;"></select>
                                 </div>
                             </div>
                             <div class="col-sm-12 p-0">

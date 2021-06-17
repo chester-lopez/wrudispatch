@@ -196,6 +196,7 @@ router.get('/:dbName/:username/mtur/:filter/:skip/:limit', (req,res,next)=>{
                     "vehicle_id": 1,
                     "driver_id": 1,
                     "checker_id": 1,
+                    "helper_id": 1,
                     "scheduled_date": 1
                 }
             },
@@ -222,6 +223,7 @@ router.get('/:dbName/:username/vehicle_info/:filter', (req,res,next)=>{
         try{
             (filter.$and[0].$or[1].driver_id) ? filter.$and[0].$or[1].driver_id = db.getPrimaryKey(filter.$and[0].$or[1].driver_id) : null;
             (filter.$and[0].$or[2].checker_id) ? filter.$and[0].$or[2].checker_id = db.getPrimaryKey(filter.$and[0].$or[2].checker_id) : null;
+            (filter.$and[0].$or[3].helper_id) ? filter.$and[0].$or[3].helper_id = db.getPrimaryKey(filter.$and[0].$or[3].helper_id) : null;
         } catch(error){
 
         }
@@ -325,6 +327,7 @@ router.post('/:dbName/:username/batch', (req,res,next)=>{
     function checkIfDone(){
         if(userInput.batchedData.length == finalInput.length){
             db.getCollection(dbName,collection).insertMany(finalInput,(err,result)=>{
+                // console.log(result);
                 if(err){
                     // console.log(JSON.parse(JSON.stringify(err.result)).writeErrors);
                     // console.log(JSON.parse(JSON.stringify(err.result)).insertedIds);
@@ -340,6 +343,7 @@ router.post('/:dbName/:username/batch', (req,res,next)=>{
         
         (val.driver_id) ? val.driver_id = db.getPrimaryKey(val.driver_id) : null;
         (val.checker_id) ? val.checker_id = db.getPrimaryKey(val.checker_id) : null;
+        (val.helper_id) ? val.helper_id = db.getPrimaryKey(val.helper_id) : null;
 
         (val.origin_id) ? val.origin_id = db.getPrimaryKey(val.origin_id) : null;
         (val.destination[0].location_id) ? val.destination[0].location_id = db.getPrimaryKey(val.destination[0].location_id) : null;
@@ -391,6 +395,7 @@ router.post('/:dbName/:username', (req,res,next)=>{
         
         (userInput.driver_id) ? userInput.driver_id = db.getPrimaryKey(userInput.driver_id) : null;
         (userInput.checker_id) ? userInput.checker_id = db.getPrimaryKey(userInput.checker_id) : null;
+        (userInput.helper_id) ? userInput.helper_id = db.getPrimaryKey(userInput.helper_id) : null;
 
         (userInput.origin_id) ? userInput.origin_id = db.getPrimaryKey(userInput.origin_id) : null;
         (userInput.destination && userInput.destination[0] && userInput.destination[0].location_id) ? userInput.destination[0].location_id = db.getPrimaryKey(userInput.destination[0].location_id) : null;
@@ -468,6 +473,7 @@ router.put('/:dbName/:username/:_id', (req,res,next)=>{
 
         (userInput.driver_id) ? userInput.driver_id = db.getPrimaryKey(userInput.driver_id) : null;
         (userInput.checker_id) ? userInput.checker_id = db.getPrimaryKey(userInput.checker_id) : null;
+        (userInput.helper_id) ? userInput.helper_id = db.getPrimaryKey(userInput.helper_id) : null;
 
         (userInput.origin_id) ? userInput.origin_id = db.getPrimaryKey(userInput.origin_id) : null;
         (userInput.destination && userInput.destination[0] && userInput.destination[0].location_id) ? userInput.destination[0].location_id = db.getPrimaryKey(userInput.destination[0].location_id) : null;

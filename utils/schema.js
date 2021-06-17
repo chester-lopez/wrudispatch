@@ -16,6 +16,7 @@ const dispatch = () => {
         trailer: Joi.string().allow('',null),
         driver_id: Joi.string().allow('',null),
         checker_id: Joi.string().allow('',null),
+        helper_id: Joi.string().allow('',null),
         attachments: Joi.array().allow('',null),
         comments: Joi.string().allow(''),
         status: Joi.string().required(),

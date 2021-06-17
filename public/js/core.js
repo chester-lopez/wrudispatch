@@ -158,6 +158,9 @@ const CUSTOM = {
                         case "checker":
                             arr.push(objectOptions(val,{ data: "Checker", title: "Checker", visible: true }));
                             break;
+                        case "helper":
+                            arr.push(objectOptions(val,{ data: "Helper", title: "Helper", visible: true }));
+                            break;
                         case "comments":
                             arr.push(objectOptions(val,{ data: "Comments", title: "Comments", visible: true }));
                             break;
@@ -259,6 +262,7 @@ const CUSTOM = {
             {data: "Truck Number", title: "Truck Number", visible: false, hiddenInCustomVisibilityOptions: true},
             {data: "Driver", title: "Driver", visible: false },
             {data: "Checker", title: "Checker", visible: false },
+            {data: "Helper", title: "Helper", visible: false },
             {data: "Comments", title: "Comments", visible: false },
             {data: "Queueing Duration", title: "Queueing Duration", visible: false },
             {data: "Processing Duration", title: "Processing Duration", visible: false },
@@ -482,6 +486,7 @@ const CUSTOM = {
                 {id:"#vehicle",key:"vehicle_id",inputType:"val",trigger:"change",required:true,dataType:"select",typeOf:"number"},
                 {id:"#driver_id",key:"driver_id",inputType:"val",remove:true,parent:".col-sm-12"},
                 {id:"#checker_id",key:"checker_id",inputType:"val",remove:true,parent:".col-sm-12"},
+                {id:"#helper_id",key:"helper_id",inputType:"val",remove:true,parent:".col-sm-12"},
                 {id:"#comments",key:"comments",inputType:"val"},
                 // {id:"#xxxxxxx",id:"xxxxxxx"},
             ];
@@ -498,6 +503,7 @@ const CUSTOM = {
                 {id:"#vehicle",key:"vehicle_id",inputType:"val",trigger:"change",required:true,dataType:"select",typeOf:"number"},
                 {id:"#driver_id",key:"driver_id",inputType:"val",trigger:"change",required:true,dataType:"select"},
                 {id:"#checker_id",key:"checker_id",inputType:"val",trigger:"change",required:true,dataType:"select"},
+                {id:"#helper_id",key:"helper_id",inputType:"val",trigger:"change",required:true,dataType:"select"},
                 {id:"#comments",key:"comments",inputType:"val"},
             ];
         },
@@ -533,21 +539,31 @@ const CUSTOM = {
             (LIST["vehicles"]||[]).forEach((val,i) => {
                 var driver = (LIST["vehicle_personnel"]||[]).find(x => Number(x.vehicle_id) == Number(val._id) && x.occupation == "Driver") || {};
                 var checker = (LIST["vehicle_personnel"]||[]).find(x => Number(x.vehicle_id) == Number(val._id) && x.occupation == "Checker") || {};
+                var helper = (LIST["vehicle_personnel"]||[]).find(x => Number(x.vehicle_id) == Number(val._id) && x.occupation == "Helper") || {};
                 var vehicle_driver = driver.name;
                 var vehicle_checker = checker.name;
-                if(vehicle_driver && vehicle_checker){} 
-                else if(vehicle_driver && !vehicle_checker){
-                    vehicle_checker = "";
-                } else if(vehicle_checker && !vehicle_driver){
-                    vehicle_driver = "";
+                var vehicle_helper = helper.name;
+
+                if(vehicle_driver && vehicle_checker && vehicle_helper){} 
+                else if(vehicle_driver){
+                    if(!vehicle_checker) vehicle_checker = "";
+                    if(!vehicle_helper) vehicle_helper = "";
+                } else if(vehicle_checker){
+                    if(!vehicle_driver) vehicle_driver = "";
+                    if(!vehicle_helper) vehicle_helper = "";
+                } else if(vehicle_helper){
+                    if(!vehicle_driver) vehicle_driver = "";
+                    if(!vehicle_checker) vehicle_checker = "";
                 } else {
                     vehicle_driver = "ZZZZZZZZ";
                     vehicle_checker = "ZZZZZZZZ";
+                    vehicle_helper = "ZZZZZZZZ";
                 }
                 tempVehicleList.push({
                     vehicle: val.name,
                     vehicle_driver,
                     vehicle_checker,
+                    vehicle_helper,
                 })
             });
             var sortedBehicleList = SORT.ARRAY_OBJECT(tempVehicleList,"vehicle_driver",{sortType: "asc"});
@@ -556,6 +572,7 @@ const CUSTOM = {
                 lists[i].vehicle = val.vehicle;
                 lists[i].vehicle_driver = (val.vehicle_driver == "ZZZZZZZZ") ? "" : val.vehicle_driver;
                 lists[i].vehicle_checker = (val.vehicle_checker == "ZZZZZZZZ") ? "" : val.vehicle_checker;
+                lists[i].vehicle_helper = (val.vehicle_helper == "ZZZZZZZZ") ? "" : val.vehicle_helper;
             });
             var tempDriverList = (LIST["vehicle_personnel"]||[]).filter(x => x.occupation == "Driver");
             var driverList = SORT.ARRAY_OBJECT(tempDriverList,"name",{sortType: "asc"});
@@ -569,6 +586,12 @@ const CUSTOM = {
                 lists[i] = lists[i] || {};
                 lists[i].checker = val.name;
             });
+            var tempHelperList = (LIST["vehicle_personnel"]||[]).filter(x => x.occupation == "Helper");
+            var helperList = SORT.ARRAY_OBJECT(tempHelperList,"name",{sortType: "asc"});
+            helperList.forEach((val,i) => {
+                lists[i] = lists[i] || {};
+                lists[i].helper = val.name;
+            });
             var routeList = SORT.ARRAY_OBJECT(LIST["routes"]||[],"_id",{sortType: "asc"});
             routeList.forEach((val,i) => {
                 lists[i] = lists[i] || {};
@@ -581,6 +604,7 @@ const CUSTOM = {
                             <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"WD NDI3452":""}</td>
                             <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"Jane Doe":""}</td>
                             <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"John Smith":""}</td>
+                            <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"James Clark":""}</td>
                             <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"04/02/2021":""}</td>
                             <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"4:00 AM - 5:00 AM":""}</td>
                             <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"Comment is optional.":""}</td>
@@ -590,8 +614,10 @@ const CUSTOM = {
                             <td style="font-size:14px;border-color:#D9D9D9;">${val.vehicle||""}</td>
                             <td style="font-size:14px;border-color:#D9D9D9;">${val.vehicle_driver||""}</td>
                             <td style="font-size:14px;border-color:#D9D9D9;">${val.vehicle_checker||""}</td>
+                            <td style="font-size:14px;border-color:#D9D9D9;">${val.vehicle_helper||""}</td>
                             <td style="font-size:14px;border-color:#D9D9D9;">${val.driver||""}</td>
                             <td style="font-size:14px;border-color:#D9D9D9;">${val.checker||""}</td>
+                            <td style="font-size:14px;border-color:#D9D9D9;">${val.helper||""}</td>
                             <td style="font-size:14px;border-color:#D9D9D9;">${val.route||""}</td>
                         </tr>`;
             });
@@ -602,6 +628,7 @@ const CUSTOM = {
                             <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck Name</th>
                             <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Driver</th>
                             <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Checker</th>
+                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Helper</th>
                             <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Scheduled Date</th>
                             <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Shift Schedule</th>
                             <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Comments</th>
@@ -611,8 +638,10 @@ const CUSTOM = {
                             <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck List</th>
                             <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck Driver</th>
                             <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck Checker</th>
+                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck Helper</th>
                             <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Driver List</th>
                             <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Checker List</th>
+                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Helper List</th>
                             <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Route List</th>
                         </tr>
                         ${body}

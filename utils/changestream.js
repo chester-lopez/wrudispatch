@@ -271,7 +271,7 @@ const connect = function(io){ //io
 
         socket.emit("*",JSON.stringify({
             type: "credentials",
-            version: "vv.-2.52.107",
+            version: "vv.-2.52.107.1",
             forceUpdate: ["wilcon"],
             // ["coket1","coket2","wilcon"]
             data: auth.getCredentials(dbName)
