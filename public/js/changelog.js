@@ -1,4 +1,8 @@
 const changelogList = {
+    "2.53.107": {
+        date: "June 21, 2021",
+        feature: ["[Adjustment][Wilcon] Create DE: Add Helper field"],
+    },
     "2.52.107": {
         date: "June 16, 2021",
         improved: ["[Adjustment][Wilcon] Importing: Entries with previous dates should be not accepted at all",

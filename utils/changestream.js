@@ -24,6 +24,24 @@ var streamList = {
             };
         },
     },
+    dispatch_status: {
+        watch: () => {
+           return {
+                key: 'dispatch_status',
+                collection: 'dispatch',
+                pipeline: [{
+                    $match: {
+                        $and: [
+                            { "updateDescription.updatedFields.status": { $exists: true } },
+                            { operationType: "update" }
+                        ]
+                    }
+                }],
+                options: { fullDocument : "updateLookup" }
+            };
+        },
+        ignoreInLoop: true
+    },
     users: {
         watch: () => {
             return {
@@ -36,16 +54,6 @@ var streamList = {
     },
     notifications: {
         watch: () => {
-            // var pipeline = [];
-            // if(ISMOBILE === true) {
-            //     pipeline = [{
-            //         $match: {
-            //             $or:[{
-            //                 "fullDocument.username" : userInfo.username
-            //             }]
-            //         }
-            //     }]
-            // }
             return {
                 key: 'notifications',
                 collection: 'notifications',
@@ -191,40 +199,114 @@ var changestreams = {};
 var resumeTokens = {};
 var wsClients = {};
 
-const connect = function(io){ //io
+const connect = function(io,_ping_){ //io
     function conn(dbName,socket){
         var PERMISSION = {};
         var userInfo = {};
 
         wsClients[dbName] = wsClients[dbName] || [];
-        wsClients[dbName].push(socket);
+        socket ? wsClients[dbName].push(socket) : null;
         
         function watch(x){
             x.options = x.options || {};
             if(db.getCollection(dbName,x.collection) && !changestreams[`${dbName}_${x.key}`]){
                 function watch_collection(){
                     x.options.resumeAfter = resumeTokens[`${dbName}_${x.key}`] || null;
-                    changestreams[`${dbName}_${x.key}`] = db.getCollection(dbName,x.collection).watch([],x.options);
+                    changestreams[`${dbName}_${x.key}`] = db.getCollection(dbName,x.collection).watch(x.pipeline || [],x.options);
 
                     changestreams[`${dbName}_${x.key}`].on('change', function(event){
                         resumeTokens[`${dbName}_${x.key}`] = event._id;
 
-                        var closedWsClientsIndex = [];
-                        for (var i=0; i<wsClients[dbName].length; i++) {
-                            var _ws = wsClients[dbName][i];
-                            if (_ws.connected) {
-                                _ws.emit("*",JSON.stringify({
-                                    type: x.key,
-                                    data: event
-                                }));
-                            } else {
-                                console.log(`_ws.connected = ${dbName}_${x.key}`,_ws.connected);
-                                _ws.disconnect(true);
-                                closedWsClientsIndex.push(i);
+                        if(x.key != "dispatch_status"){
+                            var closedWsClientsIndex = [];
+                            for (var i=0; i<wsClients[dbName].length; i++) {
+                                var _ws = wsClients[dbName][i];
+                                if (_ws.connected) {
+                                    _ws.emit("*",JSON.stringify({
+                                        type: x.key,
+                                        data: event
+                                    }));
+                                } else {
+                                    console.log(`_ws.connected = ${dbName}_${x.key}`,_ws.connected);
+                                    _ws.disconnect(true);
+                                    closedWsClientsIndex.push(i);
+                                }
                             }
-                        }
-                        for (var i = closedWsClientsIndex.length -1; i >= 0; i--){
-                            wsClients[dbName].splice(closedWsClientsIndex[i],1);
+                            for (var i = closedWsClientsIndex.length -1; i >= 0; i--){
+                                wsClients[dbName].splice(closedWsClientsIndex[i],1);
+                            }
+                        } else {
+                            var fullDocument = event.fullDocument;
+                            var origin_id = fullDocument.origin_id;
+                            var destination_id = fullDocument.destination[0].location_id;
+
+                            function getDateTime(status,obj,type="first"){
+                                var OBJECT = {
+                                    sortByKey: o => Object.keys(o).sort().reduce((r, k) => (r[k] = o[k], r), {}),
+                                    getKeyByValue: (o,v) => Object.keys(o).find(key => o[key] === v),
+                                };
+
+                                var events_captured = OBJECT.sortByKey(obj);
+                                var datetime = 0;
+                                Object.keys(events_captured).forEach(key => {
+                                    if(events_captured[key] == status){
+                                        if(type == "first" && !datetime){
+                                            datetime = Number(key);
+                                        }
+                                        if(type == "last"){
+                                            datetime = Number(key);
+                                        }
+                                    }
+                                    if(!status && !["plan","in_transit","complete","incomplete"].includes(events_captured[key])){
+                                        if(type == "first" && !datetime){
+                                            datetime = Number(key);
+                                        }
+                                        if(type == "last"){
+                                            datetime = Number(key);
+                                        }
+                                    }
+                                });
+                                return datetime;
+                            }
+
+                            db.getCollection(dbName,"geofences").find({_id:{$in:[db.getPrimaryKey(origin_id),db.getPrimaryKey(destination_id)]}}).toArray().then(gDocs => {
+                                db.getCollection(dbName,"vehicles").find({_id:Number(fullDocument.vehicle_id)}).toArray().then(vDocs => {
+                                    fullDocument.destination[0] = fullDocument.destination[0] || {};
+
+                                    var origin = gDocs.find(x => (x._id||"").toString() == (origin_id||"").toString()) || {};
+                                    var destination = gDocs.find(x => (x._id||"").toString() == (destination_id||"").toString()) || {};
+                                    var vehicle = vDocs.find(x => (x._id||"").toString() == (fullDocument.vehicle_id||"").toString()) || {};
+
+                                    var events_captured = fullDocument.events_captured || {};
+                                    var entered_origin =  getDateTime(null,events_captured) ? new Date(getDateTime(null,events_captured)).toISOString() : null;
+                                    var in_transit =  getDateTime("in_transit",events_captured,"last") ? new Date(getDateTime("in_transit",events_captured,"last")).toISOString() : null;
+                                    var complete =  getDateTime("complete",events_captured,"last") ? new Date(getDateTime("complete",events_captured,"last")).toISOString() : null;
+                                    
+                                    console.log("event",{
+                                        "_id": fullDocument._id,
+                                        "route": fullDocument.route || "",
+                                        "origin": origin.short_name || "", // origin
+                                        "destination": destination.short_name || "", // destination
+
+                                        "plate_number": vehicle.name || "", // vehicle
+                                        "pal_cap": vehicle["Pal Cap"] || "", // vehicle
+                                        "conduction": vehicle["Tractor Conduction"] || "", // vehicle
+                                        "trailer": fullDocument.trailer || "",
+
+                                        "late_entry": fullDocument.late_entry || false,
+                                        "comments": fullDocument.comments,
+                                        "status": fullDocument.status,
+
+                                        "checkin_datetime": entered_origin,
+                                        "checkout_datetime": in_transit,
+                                        // "eta": fullDocument.destination[0].eta || "",
+                                        "completion_datetime": complete,
+
+                                        "username": fullDocument.username,
+                                        "posting_datetime": fullDocument.posting_date,
+                                    });
+                                });
+                            });
                         }
                     }).on('error', err => {
                         console.log(`Error in ${x.key}: ${err}`);
@@ -238,7 +320,7 @@ const connect = function(io){ //io
             // LOOP STREAMLIST
             Object.keys(streamList).forEach(key => {
                 var obj = streamList[key];
-                if(!obj.type || (obj.type && obj.type == userInfo.type)){ // do not delete. Look at Maintenance
+                if(!obj.type || (obj.type && obj.type == userInfo.type) || !obj.ignoreInLoop){ // do not delete. Look at Maintenance
                     watch(obj.watch());
                 }
             });
@@ -248,54 +330,64 @@ const connect = function(io){ //io
                 status: 200
             }));
         };
-        socket.on('userInfo', function(data){
-            userInfo = data;
-            if(userInfo.dbName){
-                PERMISSION = auth.getPermission(dbName,userInfo.role);
 
-                if(PERMISSION){
-                    startWatch(userInfo);
+        if(socket){
+            socket.on('userInfo', function(data){
+                userInfo = data;
+                if(userInfo.dbName){
+                    PERMISSION = auth.getPermission(dbName,userInfo.role);
+    
+                    if(PERMISSION){
+                        startWatch(userInfo);
+                    } else {
+                        socket.emit("*",JSON.stringify({
+                            type: "error",
+                            message: "Unauthorized"
+                        }));
+                    }
                 } else {
                     socket.emit("*",JSON.stringify({
                         type: "error",
                         message: "Unauthorized"
                     }));
                 }
-            } else {
-                socket.emit("*",JSON.stringify({
-                    type: "error",
-                    message: "Unauthorized"
-                }));
-            }
-        });
+            });
+    
+            socket.emit("*",JSON.stringify({
+                type: "credentials",
+                version: "vv.-2.53.107",
+                forceUpdate: ["wilcon"],
+                // ["coket1","coket2","wilcon"]
+                data: auth.getCredentials(dbName)
+            }));
+        }
 
-        socket.emit("*",JSON.stringify({
-            type: "credentials",
-            version: "vv.-2.52.107.1",
-            forceUpdate: ["wilcon"],
-            // ["coket1","coket2","wilcon"]
-            data: auth.getCredentials(dbName)
-        }));
+        watch(streamList["dispatch_status"].watch());
+        console.log("HELLO PING");
     }
 
-    io.on('connection', function (socket) {
-        var headers = socket.request.headers;
-        var pathname = url.parse(headers.referer).pathname;
-        console.log('Connected '+pathname);
-
-        if (pathname.toLowerCase().indexOf('/coket1') > -1) {
-            console.log("Hello there, CokeT1!");
-            conn("coket1",socket);
-        } else if (pathname.toLowerCase().indexOf('/coket2') > -1) {
-            console.log("Hello there, CokeT2!");
-            conn("coket2",socket);
-        } else if (pathname.toLowerCase().indexOf('/wilcon') > -1) {
-            console.log("Hello there, Wilcon!");
-            conn("wilcon",socket);
-        } else {
-            // socket.destroy();
-        }
-    });
+    if(io){
+        io.on('connection', function (socket) {
+            var headers = socket.request.headers;
+            var pathname = url.parse(headers.referer).pathname;
+            console.log('Connected '+pathname);
+    
+            if (pathname.toLowerCase().indexOf('/coket1') > -1) {
+                console.log("Hello there, CokeT1!");
+                conn("coket1",socket);
+            } else if (pathname.toLowerCase().indexOf('/coket2') > -1) {
+                console.log("Hello there, CokeT2!");
+                conn("coket2",socket);
+            } else if (pathname.toLowerCase().indexOf('/wilcon') > -1) {
+                console.log("Hello there, Wilcon!");
+                conn("wilcon",socket);
+            } else {
+                // socket.destroy();
+            }
+        });
+    } else {
+        conn(_ping_);
+    }
 };
 
 module.exports = {connect};

@@ -2,15 +2,11 @@
 const express = require('express');
 const Joi = require('joi');
 const moment = require('moment-timezone');
-const mcpApp = require("mcp-app")({modulesOnly:true});
 
 const MongoClient = require('mongodb').MongoClient;
 const ObjectID = require('mongodb').ObjectID;
 
 const schema = require("../utils/schema");
-const db = mcpApp.db;
-const auth = mcpApp.auth;
-const _ERROR_ = mcpApp.error;
 
 const collection = "dispatch";
 
@@ -6045,4 +6041,27 @@ router.get('/test/update/entryupdates/:skip/:limit', (req,res,next)=>{
     /**************** END OTHER COLLECTIONS */
 });
 
+// update dispatch status
+router.get('/test/update/dispatchStatus/:_id/:status', (req,res,next)=>{
+    const _id = req.params._id;
+    const status = req.params.status;
+    // PRODUCTION
+    // const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    // DEVELOPMENT
+    const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+    var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
+    
+    var dbName = "wd-coket1";
+    
+    MongoClient.connect(url, mongoOptions, (err,client) => {
+        if(err){
+            console.log("ERROR1",err);
+        } else {
+            client.db(dbName).collection("dispatch").updateOne({_id},{$set:{status}}).then(docs => {
+                res.json({ok:1});
+            });
+        }
+    });
+    /**************** END OTHER COLLECTIONS */
+});
 module.exports = router;
