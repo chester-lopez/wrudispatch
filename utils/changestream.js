@@ -282,29 +282,29 @@ const connect = function(io,_ping_){ //io
                                     var in_transit =  getDateTime("in_transit",events_captured,"last") ? new Date(getDateTime("in_transit",events_captured,"last")).toISOString() : null;
                                     var complete =  getDateTime("complete",events_captured,"last") ? new Date(getDateTime("complete",events_captured,"last")).toISOString() : null;
                                     
-                                    console.log("event",{
-                                        "_id": fullDocument._id,
-                                        "route": fullDocument.route || "",
-                                        "origin": origin.short_name || "", // origin
-                                        "destination": destination.short_name || "", // destination
+                                    // console.log("event",{
+                                    //     "_id": fullDocument._id,
+                                    //     "route": fullDocument.route || "",
+                                    //     "origin": origin.short_name || "", // origin
+                                    //     "destination": destination.short_name || "", // destination
 
-                                        "plate_number": vehicle.name || "", // vehicle
-                                        "pal_cap": vehicle["Pal Cap"] || "", // vehicle
-                                        "conduction": vehicle["Tractor Conduction"] || "", // vehicle
-                                        "trailer": fullDocument.trailer || "",
+                                    //     "plate_number": vehicle.name || "", // vehicle
+                                    //     "pal_cap": vehicle["Pal Cap"] || "", // vehicle
+                                    //     "conduction": vehicle["Tractor Conduction"] || "", // vehicle
+                                    //     "trailer": fullDocument.trailer || "",
 
-                                        "late_entry": fullDocument.late_entry || false,
-                                        "comments": fullDocument.comments,
-                                        "status": fullDocument.status,
+                                    //     "late_entry": fullDocument.late_entry || false,
+                                    //     "comments": fullDocument.comments,
+                                    //     "status": fullDocument.status,
 
-                                        "checkin_datetime": entered_origin,
-                                        "checkout_datetime": in_transit,
-                                        // "eta": fullDocument.destination[0].eta || "",
-                                        "completion_datetime": complete,
+                                    //     "checkin_datetime": entered_origin,
+                                    //     "checkout_datetime": in_transit,
+                                    //     // "eta": fullDocument.destination[0].eta || "",
+                                    //     "completion_datetime": complete,
 
-                                        "username": fullDocument.username,
-                                        "posting_datetime": fullDocument.posting_date,
-                                    });
+                                    //     "username": fullDocument.username,
+                                    //     "posting_datetime": fullDocument.posting_date,
+                                    // });
                                 });
                             });
                         }
@@ -355,7 +355,7 @@ const connect = function(io,_ping_){ //io
     
             socket.emit("*",JSON.stringify({
                 type: "credentials",
-                version: "vv.-2.53.107",
+                version: "vv.-2.53.109",
                 forceUpdate: ["wilcon"],
                 // ["coket1","coket2","wilcon"]
                 data: auth.getCredentials(dbName)

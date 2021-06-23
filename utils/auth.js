@@ -769,7 +769,7 @@ var LIMIT = 200,
             loadInBackground: ["VEHICLES","REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","NOTIFICATIONS","SESSIONS"],
             custom: {
                 dashboard: {
-                    visibleStatus: ["in_transit","total_shipment","incomplete","scheduled","assigned","processingAtOrigin","onSite","returning","complete"], // "scheduled",
+                    visibleStatus: ["total_shipment","scheduled","assigned","processingAtOrigin","in_transit","onSite","returning","complete","incomplete"], // "scheduled",
                     filterType: "postingDate-scheduledDate"
                 },
                 dispatch: {

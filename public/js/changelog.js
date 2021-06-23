@@ -1,4 +1,12 @@
 const changelogList = {
+    "2.53.109": {
+        date: "June 23, 2021",
+        improved: ["[Adjustment][Wilcon] Added values to Time-In and Time-Out columns (Scheduled Entries Report)."],
+    },
+    "2.53.108": {
+        date: "June 21, 2021",
+        fix: ["[Adjustment][Wilcon] Helper field not required."],
+    },
     "2.53.107": {
         date: "June 21, 2021",
         feature: ["[Adjustment][Wilcon] Create DE: Add Helper field"],

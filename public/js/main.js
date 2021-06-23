@@ -3281,7 +3281,7 @@ var DISPATCH = {
                                 trailer = TRAILER,
                                 driver_id = $(`#driver_id option:selected`).val(),
                                 checker_id = $(`#checker_id option:selected`).val(),
-                                helper_id = $(`#helper_id option:selected`).val(),
+                                // helper_id = $(`#helper_id option:selected`).val(),
                                 isComplete = true;
 
 
@@ -3292,7 +3292,7 @@ var DISPATCH = {
                                 if(!ticket_number) isComplete = false;
                                 if(!driver_id) isComplete = false;
                                 if(!checker_id) isComplete = false;
-                                if(!helper_id) isComplete = false;
+                                // if(!helper_id) isComplete = false;
                             } else { 
                                 // trailer is not required for Wilcon
                                 if(!trailer) isComplete = false;
@@ -3731,20 +3731,21 @@ var DISPATCH = {
                                 driver_id = $(`#driver_id option:selected`).val(),
                                 checker_id = $(`#checker_id option:selected`).val(),
                                 helper_id = $(`#helper_id option:selected`).val();
-                            if(CLIENT.id == "wilcon" && vehicle_id && driver_id && checker_id && helper_id && scheduled_date && shift_schedule){
+                            if(CLIENT.id == "wilcon" && vehicle_id && driver_id && checker_id && scheduled_date && shift_schedule){
                                 $(`#modal #alert`).html(`<i class="la la-spin la-spinner font-18 mb-3"></i>`);
                                 disabledSumitButton = true;
                                 $(`#submit`).attr("disabled",true);
+                                var $or = [ // note: array index is important for dispatch router.
+                                    { vehicle_id: Number(vehicle_id), },
+                                    { driver_id },
+                                    { checker_id },
+                                ];
+                                if(helper_id){
+                                    $or.push({ helper_id });
+                                }
                                 var filter = {
                                     $and: [
-                                        {
-                                            $or: [
-                                                { vehicle_id: Number(vehicle_id), },
-                                                { driver_id },
-                                                { checker_id },
-                                                { helper_id },
-                                            ]
-                                        },
+                                        { $or },
                                         { scheduled_date: new Date(scheduled_date).toISOString(), },
                                         { shift_schedule, },
                                         { status: { $nin: ["plan","complete","incomplete"]}, }
@@ -3774,7 +3775,7 @@ var DISPATCH = {
                                                 if(val.checker_id.toString() == checker_id.toString()){
                                                     message.push(`• Checker is already assigned to shipment ${val._id}.`);
                                                 }
-                                                if(val.helper_id.toString() == helper_id.toString()){
+                                                if(helper_id && val.helper_id.toString() == helper_id.toString()){
                                                     message.push(`• Helper is already assigned to shipment ${val._id}.`);
                                                 }
                                             }
@@ -4511,7 +4512,7 @@ var DISPATCH = {
                             (ticket_number == null || (ticket_number != null && ticket_number.isEmpty())) ? invalid_arr.push("ticket_number") : $(`#ticket_number`).css(css_default);
                             (driver_id == null || (driver_id != null && driver_id.isEmpty())) ? invalid_arr.push("driver_id") : $(`#driver_id`).css(css_default);
                             (checker_id == null || (checker_id != null && checker_id.isEmpty())) ? invalid_arr.push("checker_id") : $(`#checker_id`).css(css_default);
-                            (helper_id == null || (helper_id != null && helper_id.isEmpty())) ? invalid_arr.push("helper_id") : $(`#helper_id`).css(css_default);
+                            // (helper_id == null || (helper_id != null && helper_id.isEmpty())) ? invalid_arr.push("helper_id") : $(`#helper_id`).css(css_default);
                             (scheduled_date == null || (scheduled_date != null && scheduled_date.isEmpty())) ? invalid_arr.push("scheduled_date") : $(`#scheduled_date`).css(css_default);
                             (shift_schedule == null || (shift_schedule != null && shift_schedule.isEmpty())) ? invalid_arr.push("shift_schedule") : $(`#shift_schedule`).css(css_default);
                         } else {
@@ -5041,7 +5042,7 @@ var DISPATCH = {
                     { name: "Truck Name", required: true, error: ["Truck Name does not exist in database."] },
                     { name: "Driver", required: true, error: ["Driver's Name does not exist in database.","Selected Driver is on "+dayOffLabel+"."] },
                     { name: "Checker", required: true, error: ["Checker's Name does not exist in database.","Selected Checker is on "+dayOffLabel+"."] },
-                    { name: "Helper", required: true, error: ["Helper's Name does not exist in database.","Selected Helper is on "+dayOffLabel+"."] },
+                    { name: "Helper", error: ["Helper's Name does not exist in database.","Selected Helper is on "+dayOffLabel+"."] },
                     { name: "Scheduled Date", required: true, codependent: "Shift Schedule", error: ["Scheduled Date entered is not a valid date.","Scheduled Date is before current date/time."] },
                     { name: "Shift Schedule", required: true, codependent: "Scheduled Date", error: ["Shift Schedule is before current date/time.","Shift Schedule does not exist in database."] },
                     { name: "Comments", key: "comments", required: false },
@@ -5504,17 +5505,18 @@ var DISPATCH = {
                             checkVehicleInfoAndScheduledDateTime = function(){
                                 return new Promise((resolve,reject) => {
                                     console.log("scheduled_date",scheduled_date)
-                                    if(CLIENT.id == "wilcon" && vehicle && driver && checker && helper && scheduled_date && shift_schedule && scheduled_date != "-"){
+                                    if(CLIENT.id == "wilcon" && vehicle && driver && checker && scheduled_date && shift_schedule && scheduled_date != "-"){
+                                        var $or = [ // note: array index is important for dispatch router.
+                                            { vehicle_id: Number(vehicle._id), },
+                                            { driver_id: driver._id },
+                                            { checker_id: checker._id },
+                                        ];
+                                        if(helper){
+                                            $or.push( { helper_id: helper._id } );
+                                        }
                                         var filter = {
                                             $and: [
-                                                {
-                                                    $or: [
-                                                        { vehicle_id: Number(vehicle._id), },
-                                                        { driver_id: driver._id },
-                                                        { checker_id: checker._id },
-                                                        { helper_id: helper._id },
-                                                    ]
-                                                },
+                                                { $or },
                                                 { scheduled_date: new Date(scheduled_date).toISOString(), },
                                                 { shift_schedule: shift_schedule._id, },
                                                 { status: { $nin: ["plan","complete","incomplete"]}, }
@@ -5542,7 +5544,7 @@ var DISPATCH = {
                                                     if(val.checker_id.toString() == checker._id.toString()){
                                                         message.push(`Checker is already assigned to shipment # ${val._id}.`);
                                                     }
-                                                    if(val.helper_id.toString() == helper._id.toString()){
+                                                    if(helper && val.helper_id.toString() == helper._id.toString()){
                                                         message.push(`Helper is already assigned to shipment # ${val._id}.`);
                                                     }
                                                 });
@@ -7635,8 +7637,8 @@ var REPORTS = {
                                 <td style="${tblBodyStyle}">${data.truck_number}</td>
                                 <td style="${tblBodyStyle}">${data.destination}</td>
                                 <td style="${tblBodyStyle}">${data.shift_schedule}</td>
-                                <td style="${tblBodyStyle}"></td>
-                                <td style="${tblBodyStyle}"></td>
+                                <td style="${tblBodyStyle}">${data.departure_date}</td>
+                                <td style="${tblBodyStyle}">${data.complete_datetime}</td>
                                 <td style="${tblBodyStyle}">${(data.driver||"").toUpperCase()}</td>
                                 <td style="${tblBodyStyle}">${(data.checker||"").toUpperCase()}</td>
                                 <td style="${tblBodyStyle}">${(data.helper||"").toUpperCase()}</td>
@@ -7648,12 +7650,12 @@ var REPORTS = {
                 var finalDate = (dateFrom == dateTo) ? dateFrom : `${dateFrom} - ${dateTo}`;
                 return `<table id="report-hidden" style="opacity:0;" data-SheetName="My custom sheet 0">
                             <tbody>
-                                <tr> <td style="font-family:Arial;font-size:16.5px;text-align:center;" colspan=8><b>STRAIGHT AHEAD DELIVERY CORPORATION</b></td> </tr>
-                                <tr> <td style="font-family:Arial;font-size:15px;text-align:center;" colspan=8><b>DELIVERY PERSONNEL TRUCK SCHEDULE</b></td> </tr>
-                                <tr> <td style="font-family:Arial;font-size:13px;text-align:center;" colspan=8><b>SKELETAL WORK FORCE</b></td> </tr>
-                                <tr> <td style="font-family:Arial;font-size:12px;text-align:center;" colspan=8><b>BASE TO BASE DELIVERY</b></td> </tr>
+                                <tr> <td style="font-family:Arial;font-size:16.5px;text-align:center;" colspan=9><b>STRAIGHT AHEAD DELIVERY CORPORATION</b></td> </tr>
+                                <tr> <td style="font-family:Arial;font-size:15px;text-align:center;" colspan=9><b>DELIVERY PERSONNEL TRUCK SCHEDULE</b></td> </tr>
+                                <tr> <td style="font-family:Arial;font-size:13px;text-align:center;" colspan=9><b>SKELETAL WORK FORCE</b></td> </tr>
+                                <tr> <td style="font-family:Arial;font-size:12px;text-align:center;" colspan=9><b>BASE TO BASE DELIVERY</b></td> </tr>
                                 <tr> 
-                                    <td style="font-family:Arial;font-size:12px;text-align:center;" colspan=6></td> 
+                                    <td style="font-family:Arial;font-size:12px;text-align:center;" colspan=7></td> 
                                     <td style="font-family:Arial;font-size:12px;text-align:right;"><b>DATE:</b></td> 
                                     <td style="font-family:Arial;font-size:12px;text-align:center;"><b>${finalDate}</b></td> 
                                 </tr>
@@ -15022,11 +15024,11 @@ const modalViews = new function(){
                 if(clientCustom.editableTrailer === true){
                     trailerHTML = `<div class="col-sm-12 p-0">
                                         <div class="col-sm-3">
-                                            <small>Truck:</small>
+                                            <small><span class="text-danger">*</span>Truck:</small>
                                             <select id="vehicle" class="select-multiple-basic" style="width:100%;"></select>
                                         </div>
                                         <div class="col-sm-3">
-                                            <small>Trailer:</small>
+                                            <small><span class="text-danger">*</span>Trailer:</small>
                                             <select id="trailer" class="select-multiple-basic" style="width:100%;"></select>
                                         </div>
                                         <div class="col-sm-6" style="word-break: break-word;">
@@ -15054,7 +15056,7 @@ const modalViews = new function(){
                 } else {
                     trailerHTML = `<div class="col-sm-12 p-0">
                                         <div class="col-sm-4">
-                                            <small>Truck:</small>
+                                            <small><span class="text-danger">*</span>Truck:</small>
                                             <select id="vehicle" class="select-multiple-basic" style="width:100%;"></select>
                                         </div>
                                         <div class="col-sm-8" style="word-break: break-word;">
@@ -15114,7 +15116,7 @@ const modalViews = new function(){
                                     <small class="text-muted" style="font-style: italic;">Once saved, shipment number cannot be edited.</small>
                                 </div>
                                 <div class="col-sm-4">
-                                    <small>Ticket Number:</small>
+                                    <small><span class="text-danger">*</span>Ticket Number:</small>
                                     <input id="ticket_number" class="form-control" type="text" placeholder="Ticket Number" autocomplete="off">
                                     <!--<div class="input-group">
                                         <input id="ticket_number" class="form-control" type="text" placeholder="Ticket Number" autocomplete="off">
@@ -15124,11 +15126,11 @@ const modalViews = new function(){
                                     </div>-->
                                 </div>
                                 <div class="col-sm-4">
-                                    <small>Scheduled Date:</small>
+                                    <small><span class="text-danger">*</span>Scheduled Date:</small>
                                     <input id="scheduled_date" class="form-control" type="text" onkeydown="event.preventDefault()">
                                 </div>
                                 <div class="col-sm-4">
-                                    <small>Shift Schedule:</small>
+                                    <small><span class="text-danger">*</span>Shift Schedule:</small>
                                     <select id="shift_schedule" class="select-multiple-basic" style="width:100%;"></select>
                                 </div>
                             </div>
@@ -15138,7 +15140,7 @@ const modalViews = new function(){
                                     <input id="origin" type="text" class="form-control" autocomplete="off" readonly>
                                 </div>
                                 <div class="col-sm-5">
-                                    <small>Route:</small>
+                                    <small><span class="text-danger">*</span>Route:</small>
                                     <select id="route" class="select-multiple-basic" style="width:100%;"></select>
                                     <small class="text-muted">Separate origin and destination by comma (,). e.g., Calasiao,BALANGA</small>
                                     <!--<input id="route" type="text" class="form-control ui-autocomplete-input" placeholder="Route" autocomplete="off" readonly>-->
@@ -15168,11 +15170,11 @@ const modalViews = new function(){
                             ${previousCheckIns}
                             <div class="col-sm-12 p-0 mb-3">
                                 <div class="col-sm-4">
-                                    <small>Driver:</small>
+                                    <small><span class="text-danger">*</span>Driver:</small>
                                     <select id="driver_id" class="select-multiple-basic" style="width:100%;"></select>
                                 </div>
                                 <div class="col-sm-4">
-                                    <small>Checker:</small>
+                                    <small><span class="text-danger">*</span>Checker:</small>
                                     <select id="checker_id" class="select-multiple-basic" style="width:100%;"></select>
                                 </div>
                                 <div class="col-sm-4">
