@@ -1,4 +1,10 @@
 const changelogList = {
+    "2.53.110": {
+        date: "June 28, 2021",
+        improved: ["[Adjustment][Wilcon] Checker as not required",
+                   "[Adjustment][Wilcon] Manpower/Truck Utilization report",
+                   "[Update][Wilcon] Clusters - added sequence for Wilcon"],
+    },
     "2.53.109": {
         date: "June 23, 2021",
         improved: ["[Adjustment][Wilcon] Added values to Time-In and Time-Out columns (Scheduled Entries Report)."],

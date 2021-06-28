@@ -28,7 +28,7 @@ app.set("view engine","ejs");
 
 /***** PAGE *****/
 // DON'T FORGET TO CHANGE DB URL
-const ENVIRONMENT = "development"; // development | production
+const ENVIRONMENT = "production"; // development | production
 const lTitle = "WRU Dispatch | Login";
 const mTitle = "WRU Dispatch";
 const setup = function(id,page,res,ENVIRONMENT,title){

@@ -238,7 +238,7 @@ const connect = function(io,_ping_,ENVIRONMENT){ //io
                                 wsClients[dbName].splice(closedWsClientsIndex[i],1);
                             }
                         } else {
-                            if(ENVIRONMENT == "production"){
+                            if(ENVIRONMENT == "production" && dbName == "coket1"){
                                 var fullDocument = event.fullDocument;
                                 var origin_id = fullDocument.origin_id;
                                 var destination_id = fullDocument.destination[0].location_id;
@@ -372,7 +372,7 @@ const connect = function(io,_ping_,ENVIRONMENT){ //io
     
             socket.emit("*",JSON.stringify({
                 type: "credentials",
-                version: "vv.-2.53.109.5",
+                version: "vv.-2.53.110",
                 forceUpdate: ["wilcon"],
                 // ["coket1","coket2","wilcon"]
                 data: auth.getCredentials(dbName)
