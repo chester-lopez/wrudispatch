@@ -193,6 +193,7 @@ router.get('/:dbName/:username/mtur/:filter/:skip/:limit', (req,res,next)=>{
             },
             {
                 $project: {
+                    "origin_id": 1,
                     "vehicle_id": 1,
                     "driver_id": 1,
                     "checker_id": 1,
@@ -222,7 +223,7 @@ router.get('/:dbName/:username/vehicle_info/:filter', (req,res,next)=>{
     if(filter){
         try { (filter.$and[0].$or[1].driver_id) ? filter.$and[0].$or[1].driver_id = db.getPrimaryKey(filter.$and[0].$or[1].driver_id) : null; } catch(error) {}
         try { (filter.$and[0].$or[2].checker_id) ? filter.$and[0].$or[2].checker_id = db.getPrimaryKey(filter.$and[0].$or[2].checker_id) : null; } catch(error) {}
-        try { console.log(filter.$and[0].$or[3].helper_id); (filter.$and[0].$or[3].helper_id) ? filter.$and[0].$or[3].helper_id = db.getPrimaryKey(filter.$and[0].$or[3].helper_id) : null; } catch(error) {}
+        try { (filter.$and[0].$or[3].helper_id) ? filter.$and[0].$or[3].helper_id = db.getPrimaryKey(filter.$and[0].$or[3].helper_id) : null; } catch(error) {}
 
         var query = db.getCollection(dbName,collection).find(filter);
         

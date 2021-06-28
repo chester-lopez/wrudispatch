@@ -28,7 +28,7 @@ app.set("view engine","ejs");
 
 /***** PAGE *****/
 // DON'T FORGET TO CHANGE DB URL
-const ENVIRONMENT = "production"; // development | production
+const ENVIRONMENT = "development"; // development | production
 const lTitle = "WRU Dispatch | Login";
 const mTitle = "WRU Dispatch";
 const setup = function(id,page,res,ENVIRONMENT,title){
@@ -38,7 +38,7 @@ const setup = function(id,page,res,ENVIRONMENT,title){
     console.log(" ");
     console.log("--- ",id);
 
-    changestream.connect(null,id);
+    changestream.connect(null,id,ENVIRONMENT);
 
     res.render(page, {ENVIRONMENT,title});
 };
@@ -284,7 +284,7 @@ db.connect((err) => {
             const host = server.address().address;
             const port = server.address().port;
 
-            changestream.connect(io);
+            changestream.connect(io,null,ENVIRONMENT);
             
             console.log(`App listening at http://${host}:${port}`)
         });

@@ -3291,7 +3291,7 @@ var DISPATCH = {
                             if(CLIENT.id == "wilcon"){
                                 if(!ticket_number) isComplete = false;
                                 if(!driver_id) isComplete = false;
-                                if(!checker_id) isComplete = false;
+                                // if(!checker_id) isComplete = false;
                                 // if(!helper_id) isComplete = false;
                             } else { 
                                 // trailer is not required for Wilcon
@@ -3731,15 +3731,17 @@ var DISPATCH = {
                                 driver_id = $(`#driver_id option:selected`).val(),
                                 checker_id = $(`#checker_id option:selected`).val(),
                                 helper_id = $(`#helper_id option:selected`).val();
-                            if(CLIENT.id == "wilcon" && vehicle_id && driver_id && checker_id && scheduled_date && shift_schedule){
+                            if(CLIENT.id == "wilcon" && vehicle_id && driver_id && scheduled_date && shift_schedule){
                                 $(`#modal #alert`).html(`<i class="la la-spin la-spinner font-18 mb-3"></i>`);
                                 disabledSumitButton = true;
                                 $(`#submit`).attr("disabled",true);
                                 var $or = [ // note: array index is important for dispatch router.
                                     { vehicle_id: Number(vehicle_id), },
                                     { driver_id },
-                                    { checker_id },
                                 ];
+                                if(checker_id){
+                                    $or.push({ checker_id });
+                                }
                                 if(helper_id){
                                     $or.push({ helper_id });
                                 }
@@ -3772,7 +3774,7 @@ var DISPATCH = {
                                                 if(val.driver_id.toString() == driver_id.toString()){
                                                     message.push(`• Driver is already assigned to shipment ${val._id}.`);
                                                 }
-                                                if(val.checker_id.toString() == checker_id.toString()){
+                                                if(checker_id && val.checker_id.toString() == checker_id.toString()){
                                                     message.push(`• Checker is already assigned to shipment ${val._id}.`);
                                                 }
                                                 if(helper_id && val.helper_id.toString() == helper_id.toString()){
@@ -4511,7 +4513,7 @@ var DISPATCH = {
                         if(CLIENT.id == "wilcon"){
                             (ticket_number == null || (ticket_number != null && ticket_number.isEmpty())) ? invalid_arr.push("ticket_number") : $(`#ticket_number`).css(css_default);
                             (driver_id == null || (driver_id != null && driver_id.isEmpty())) ? invalid_arr.push("driver_id") : $(`#driver_id`).css(css_default);
-                            (checker_id == null || (checker_id != null && checker_id.isEmpty())) ? invalid_arr.push("checker_id") : $(`#checker_id`).css(css_default);
+                            // (checker_id == null || (checker_id != null && checker_id.isEmpty())) ? invalid_arr.push("checker_id") : $(`#checker_id`).css(css_default);
                             // (helper_id == null || (helper_id != null && helper_id.isEmpty())) ? invalid_arr.push("helper_id") : $(`#helper_id`).css(css_default);
                             (scheduled_date == null || (scheduled_date != null && scheduled_date.isEmpty())) ? invalid_arr.push("scheduled_date") : $(`#scheduled_date`).css(css_default);
                             (shift_schedule == null || (shift_schedule != null && shift_schedule.isEmpty())) ? invalid_arr.push("shift_schedule") : $(`#shift_schedule`).css(css_default);
@@ -5037,14 +5039,14 @@ var DISPATCH = {
                     { name: "Comments", key: "comments", required: false },
                 ],
                 wilcon: [
+                    { name: "Scheduled Date", required: true, codependent: "Shift Schedule", error: ["Scheduled Date entered is not a valid date.","Scheduled Date is before current date/time."] },
+                    { name: "Shift Schedule", required: true, codependent: "Scheduled Date", error: ["Shift Schedule is before current date/time.","Shift Schedule does not exist in database."] },
                     { name: "Ticket Number", key: "ticket_number", required: true },
                     { name: "Route", required: true, error: ["Route does not exist in database."] },
                     { name: "Truck Name", required: true, error: ["Truck Name does not exist in database."] },
                     { name: "Driver", required: true, error: ["Driver's Name does not exist in database.","Selected Driver is on "+dayOffLabel+"."] },
-                    { name: "Checker", required: true, error: ["Checker's Name does not exist in database.","Selected Checker is on "+dayOffLabel+"."] },
+                    { name: "Checker", error: ["Checker's Name does not exist in database.","Selected Checker is on "+dayOffLabel+"."] },
                     { name: "Helper", error: ["Helper's Name does not exist in database.","Selected Helper is on "+dayOffLabel+"."] },
-                    { name: "Scheduled Date", required: true, codependent: "Shift Schedule", error: ["Scheduled Date entered is not a valid date.","Scheduled Date is before current date/time."] },
-                    { name: "Shift Schedule", required: true, codependent: "Scheduled Date", error: ["Shift Schedule is before current date/time.","Shift Schedule does not exist in database."] },
                     { name: "Comments", key: "comments", required: false },
                 ],
             },
@@ -5505,12 +5507,14 @@ var DISPATCH = {
                             checkVehicleInfoAndScheduledDateTime = function(){
                                 return new Promise((resolve,reject) => {
                                     console.log("scheduled_date",scheduled_date)
-                                    if(CLIENT.id == "wilcon" && vehicle && driver && checker && scheduled_date && shift_schedule && scheduled_date != "-"){
+                                    if(CLIENT.id == "wilcon" && vehicle && driver && scheduled_date && shift_schedule && scheduled_date != "-"){
                                         var $or = [ // note: array index is important for dispatch router.
                                             { vehicle_id: Number(vehicle._id), },
                                             { driver_id: driver._id },
-                                            { checker_id: checker._id },
                                         ];
+                                        if(checker){
+                                            $or.push( { checker_id: checker._id } );
+                                        }
                                         if(helper){
                                             $or.push( { helper_id: helper._id } );
                                         }
@@ -5541,7 +5545,7 @@ var DISPATCH = {
                                                     if(val.driver_id.toString() == driver._id.toString()){
                                                         message.push(`Driver is already assigned to shipment # ${val._id}.`);
                                                     }
-                                                    if(val.checker_id.toString() == checker._id.toString()){
+                                                    if(checker && val.checker_id.toString() == checker._id.toString()){
                                                         message.push(`Checker is already assigned to shipment # ${val._id}.`);
                                                     }
                                                     if(helper && val.helper_id.toString() == helper._id.toString()){
@@ -7675,10 +7679,12 @@ var REPORTS = {
                         </table>`;
             },
             mtur: function(title,docs,date_from,date_to){
-                var rows = "";
                 var excelHeaderStyle = "font-family:Arial;font-size:12px;font-weight:bold;vertical-align:middle;border:none;";
                 var tblHeaderStyle = "font-family:Arial;font-size:12px;font-weight:bold;text-align:center;height:22px;vertical-align:middle;border:thin solid black;";
                 var tblBodyStyle = "font-family:Arial;font-size:12px;mso-number-format:'\@';border:thin solid black;";
+
+                var finalClusters = [{cluster:"Total",sequence:0}];
+                finalClusters = finalClusters.concat(LIST["clusters"]||[]);
 
                 var month = moment(date_from).format("MMM");
                 var year = moment(date_from).format("YYYY");
@@ -7687,98 +7693,247 @@ var REPORTS = {
                 var totalVehicles = LIST["vehicles"].length;
                 var totalManpower = LIST["vehicle_personnel"].filter(x => x.occupation == "Driver" || x.occupation == "Checker" || x.occupation == "Helper").length;
 
+
                 var dataTotalVehicles = [];
                 var dataTotalManpower = [];
 
                 var tablesHTML = "";
 
+                var dailyVehicleRows = {};
+                var dailyDriverRows = {};
+                var dailyCheckerRows = {};
+                var dailyHelperRows = {};
+                var countClusterColumns = 0;
+
+
+                var dailyTableTitle = [];
+                var dailyVehicleTableHeader = {};
+                var dailyDriverTableHeader = [];
+                var dailyCheckerTableHeader = [];
+                var dailyHelperTableHeader = [];
+                var dailyTableSubHeader = [];
+
+                function generateRowData(cluster_id){
+                    countClusterColumns ++;
+                    var rowsArr = [];
+                    for(var i = 1; i < daysInMonths+1; i++){
+                        var dateMoment = moment(`${month} ${i}, ${year}`);
+                        var date = dateMoment.format("MM/DD/YYYY");
+    
+                        var startEndDate = moment(date, "MM/DD/YYYY");
+                        var filtered = docs.filter(x => moment(moment(x.scheduled_date).format("MM/DD/YYYY"), "MM/DD/YYYY").isBetween(startEndDate, startEndDate, 'days', '[]'));
+    
+                        var vehicle_ids = [];
+                        var manpower_driver_ids = [];
+                        var manpower_checker_ids = [];
+                        var manpower_helper_ids = [];
+
+                        var uniqueVehicleList = [];
+                        var uniqueDriverList = [];
+                        var uniqueCheckerList = [];
+                        var uniqueHelperList = [];
+    
+                        filtered.forEach(val => {
+                            var origin = getGeofence(val.origin_id) || {};
+                            if(!cluster_id || origin.cluster_id == cluster_id){
+                                (val.vehicle_id) ? vehicle_ids.push(val.vehicle_id) : null;
+                                (val.driver_id) ? manpower_driver_ids.push(val.driver_id) : null;
+                                (val.checker_id) ? manpower_checker_ids.push(val.checker_id) : null;
+                                (val.helper_id) ? manpower_helper_ids.push(val.helper_id) : null;
+                                
+                                (val.vehicle_id && !uniqueVehicleList.includes(val.vehicle_id)) ? uniqueVehicleList.push(val.vehicle_id) : null;
+                                (val.driver_id && !uniqueDriverList.includes(val.driver_id)) ? uniqueDriverList.push(val.driver_id) : null;
+                                (val.checker_id && !uniqueCheckerList.includes(val.checker_id)) ? uniqueCheckerList.push(val.checker_id) : null;
+                                (val.helper_id && !uniqueHelperList.includes(val.helper_id)) ? uniqueHelperList.push(val.helper_id) : null;
+        
+                                (dataTotalVehicles.includes(val.vehicle_id)) ? null : dataTotalVehicles.push(val.vehicle_id);
+                                (dataTotalManpower.includes(val.driver_id)) ? null : dataTotalManpower.push(val.driver_id);
+                                (dataTotalManpower.includes(val.checker_id)) ? null : dataTotalManpower.push(val.checker_id);
+                                (dataTotalManpower.includes(val.helper_id)) ? null : dataTotalManpower.push(val.helper_id);
+                            }
+                        });
+    
+                        var vehiclePercentage = GET.ROUND_OFF((uniqueVehicleList.length/totalVehicles)*100);
+                        var driverPercentage = GET.ROUND_OFF((uniqueDriverList.length/totalManpower)*100);
+                        var checkerPercentage = GET.ROUND_OFF((uniqueCheckerList.length/totalManpower)*100);
+                        var helperPercentage = GET.ROUND_OFF((uniqueHelperList.length/totalManpower)*100);
+
+                        rowsArr.push({
+                            date,
+                            totalVehicleCount: vehicle_ids.length,
+                            uniqueVehicleCount: uniqueVehicleList.length,
+                            totalVehiclePercentage: vehiclePercentage,
+
+                            totalDriverCount: manpower_driver_ids.length,
+                            uniqueDriverCount: uniqueDriverList.length,
+                            totalDriverPercentage: driverPercentage,
+
+                            totalCheckerCount: manpower_checker_ids.length,
+                            uniqueCheckerCount: uniqueCheckerList.length,
+                            totalCheckerPercentage: checkerPercentage,
+
+                            totalHelperCount: manpower_helper_ids.length,
+                            uniqueHelperCount: uniqueHelperList.length,
+                            totalHelperPercentage: helperPercentage,
+                        });
+                         
+                        function dailyRows(id_list,tempDailyRows,totalCount,getCallback){
+                            var tempList = {};
+                            id_list.forEach(val => {
+                                var tempData = getCallback(val);
+                                if(tempData){
+                                    tempList[tempData.name || tempData._id] = tempList[tempData.name || tempData._id] || 0;
+                                    tempList[tempData.name || tempData._id]++;
+                                }
+                            });
+                            tempDailyRows[i] = tempDailyRows[i] || {}; 
+    
+                            Object.keys(tempList).forEach((key,i1) => {
+                                var percentage = GET.ROUND_OFF((tempList[key]/totalCount)*100);
+                                tempDailyRows[i][i1] = tempDailyRows[i][i1] || []; 
+                                tempDailyRows[i][i1].push(`<td style="${tblBodyStyle}text-align:center;">${i1+1}</td>
+                                                            <td style="${tblBodyStyle}text-align:left;">${key}</td>
+                                                            <td style="${tblBodyStyle}text-align:center;">${tempList[key]}</td>`);
+                                // tempDailyRows[i][i1].push(`<td style="${tblBodyStyle}text-align:center;font-weight:bold;">${key}</td>
+                                //                     <td style="${tblBodyStyle}text-align:center;">${tempList[key]}</td>
+                                //                     <td style="${tblBodyStyle}text-align:center;">${percentage}%</td>`);
+                            });
+                            if(Object.keys(tempDailyRows[i]).length > 0){
+                                Object.keys(tempDailyRows[i]).forEach((key) => {
+                                    while(tempDailyRows[i][key].length < countClusterColumns){
+                                        tempDailyRows[i][key].push(`<td>&nbsp;</td> <td>&nbsp;</td> <td>&nbsp;</td>`);
+                                    }
+                                });
+                            } else {
+                                for(var r = 0; r < countClusterColumns; r++){
+                                    tempDailyRows[i][r] = tempDailyRows[i][r] || []; 
+                                    tempDailyRows[i][r].push(`<td>&nbsp;</td> <td>&nbsp;</td>  <td>&nbsp;</td>`);
+                                }
+                            }
+                            return tempDailyRows;
+                        }
+                        dailyVehicleRows = dailyRows(vehicle_ids,dailyVehicleRows,totalVehicles,(val) => { return getVehicle(val); });
+                        dailyDriverRows = dailyRows(manpower_driver_ids,dailyDriverRows,totalManpower,(val) => { return getVehiclePersonnel(val); });
+                        dailyCheckerRows = dailyRows(manpower_checker_ids,dailyCheckerRows,totalManpower,(val) => { return getVehiclePersonnel(val); });
+                        dailyHelperRows = dailyRows(manpower_helper_ids,dailyHelperRows,totalManpower,(val) => { return getVehiclePersonnel(val); });
+                    }
+                    return rowsArr;
+                }
+
+                var tableTitle = [];
+                var tableHeader = [];
+                var tableSubHeader = [];
+                var tableRows = [];
+
+                var rows = {};
+
+                finalClusters = SORT.ARRAY_OBJECT(finalClusters,"sequence",{sortType:"asc"});
+
+                finalClusters.forEach(val => {
+                    tableTitle.push(`<td style="${tblHeaderStyle}width:160px;text-align:left;" colspan=2><b>${val.cluster}</b></td>`);
+
+                    dailyTableTitle.push(`<td style="${tblHeaderStyle}text-align:left;" colspan=2><b>${val.cluster}</b></td>`);
+
+                    tableHeader.push(`<td style="${tblHeaderStyle}width:90px;" rowspan=2><b>Date</b></td>
+                                      <td style="${tblHeaderStyle}width:160px;" colspan=2><b>Truck Utilization</b></td>
+                                      <td style="${tblHeaderStyle}width:160px;" colspan=6><b>Manpower Utilization</b></td>`);
+
+                    dailyTableSubHeader.push(`<td style="${tblHeaderStyle}width:30px;"><b>#</b></td>
+                                              <td style="${tblHeaderStyle}width:180px;"><b>Truck</b></td>
+                                              <td style="${tblHeaderStyle}width:60px;"><b>Trips</b></td>`);
+                    // dailyTableSubHeader.push(`<td style="${tblHeaderStyle}width:80px;"><b>Truck</b></td>
+                    //                             <td style="${tblHeaderStyle}width:80px;"><b>Trips</b></td>
+                    //                             <td style="${tblHeaderStyle}width:80px;"><b>Percentage</b></td>`);
+
+                    tableSubHeader.push(`<td style="${tblHeaderStyle}width:80px;"><b># Used</b></td>
+                                         <td style="${tblHeaderStyle}width:80px;"><b>Percentage</b></td>
+                                         <td style="${tblHeaderStyle}width:130px;"><b># Used (Driver)</b></td>
+                                         <td style="${tblHeaderStyle}width:130px;"><b>Percentage (Driver)</b></td>
+                                         <td style="${tblHeaderStyle}width:130px;"><b># Used (Checker)</b></td>
+                                         <td style="${tblHeaderStyle}width:130px;"><b>Percentage (Checker)</b></td>
+                                         <td style="${tblHeaderStyle}width:130px;"><b># Used (Helper)</b></td>
+                                         <td style="${tblHeaderStyle}width:130px;"><b>Percentage (Helper)</b></td>`);
+                    // [[data],[data1]]
+                    
+                    generateRowData(val._id).forEach((arr,i) => {
+                        rows[arr.date] = rows[arr.date] || [];
+                        rows[arr.date].push(`<td style="${tblBodyStyle}text-align:center;font-weight:bold;">${arr.date}</td>
+                                            <td style="${tblBodyStyle}text-align:center;">${arr.uniqueVehicleCount}</td>
+                                            <td style="${tblBodyStyle}text-align:center;">${arr.totalVehiclePercentage}%</td>
+                                            <td style="${tblBodyStyle}text-align:center;">${arr.uniqueDriverCount}</td>
+                                            <td style="${tblBodyStyle}text-align:center;">${arr.totalDriverPercentage}%</td>
+                                            <td style="${tblBodyStyle}text-align:center;">${arr.uniqueCheckerCount}</td>
+                                            <td style="${tblBodyStyle}text-align:center;">${arr.totalCheckerPercentage}%</td>
+                                            <td style="${tblBodyStyle}text-align:center;">${arr.uniqueHelperCount}</td>
+                                            <td style="${tblBodyStyle}text-align:center;">${arr.totalHelperPercentage}%</td>`);
+                                            
+                        dailyVehicleTableHeader[i] = dailyVehicleTableHeader[i] || [];
+                        dailyVehicleTableHeader[i].push(`<td style="${tblHeaderStyle}" colspan=3><b>Truck Utilization (${arr.totalVehiclePercentage}%)</b></td>`);
+
+                        dailyDriverTableHeader[i] = dailyDriverTableHeader[i] || [];
+                        dailyDriverTableHeader[i].push(`<td style="${tblHeaderStyle}" colspan=3><b>Manpower Utilization - Driver (${arr.totalDriverPercentage}%)</b></td>`);
+
+                        dailyCheckerTableHeader[i] = dailyCheckerTableHeader[i] || [];
+                        dailyCheckerTableHeader[i].push(`<td style="${tblHeaderStyle}" colspan=3><b>Manpower Utilization - Checker (${arr.totalCheckerPercentage}%)</b></td>`);
+
+                        dailyHelperTableHeader[i] = dailyHelperTableHeader[i] || [];
+                        dailyHelperTableHeader[i].push(`<td style="${tblHeaderStyle}" colspan=3><b>Manpower Utilization - Helper (${arr.totalHelperPercentage}%)</b></td>`);
+                    });
+                });
+                
                 for(var i = 1; i < daysInMonths+1; i++){
                     var dateMoment = moment(`${month} ${i}, ${year}`);
-                    var date = dateMoment.format("MM/DD/YYYY");
 
-                    var startEndDate = moment(date, "MM/DD/YYYY");
-                    var filtered = docs.filter(x => moment(moment(x.scheduled_date).format("MM/DD/YYYY"), "MM/DD/YYYY").isBetween(startEndDate, startEndDate, 'days', '[]'));
-
-
-                    var vehicles_list = [];
-                    var vehicle_ids = [];
-                    var manpower_ids = [];
-                    var driver_list = [];
-                    var checker_list = [];
-                    var helper_list = [];
-                    filtered.forEach(val => {
-                        if(!vehicle_ids.includes(val.vehicle_id)){
-                            vehicle_ids.push(val.vehicle_id);
-
-                            var vehicle = getVehicle(val.vehicle_id) || {};
-                            vehicles_list.push(`<tr>
-                                                    <td style="${tblBodyStyle}text-align:left;">${vehicles_list.length+1}</td>
-                                                    <td style="${tblBodyStyle}text-align:left;">${vehicle.name || "-"}</td>
-                                                </tr>`);
-                        }
-                        if(val.driver_id && !manpower_ids.includes(val.driver_id)){
-                            manpower_ids.push(val.driver_id);
-
-                            var driver = getVehiclePersonnel(val.driver_id) || {};
-                            driver_list.push(`<tr>
-                                                    <td style="${tblBodyStyle}text-align:left;">${driver_list.length+1}</td>
-                                                    <td style="${tblBodyStyle}text-align:left;">${driver.name || "-"}</td>
-                                                </tr>`);
-                        }
-                        if(val.checker_id && !manpower_ids.includes(val.checker_id)){
-                            manpower_ids.push(val.checker_id);
-
-                            var checker = getVehiclePersonnel(val.checker_id) || {};
-                            checker_list.push(`<tr>
-                                                    <td style="${tblBodyStyle}text-align:left;">${checker_list.length+1}</td>
-                                                    <td style="${tblBodyStyle}text-align:left;">${checker.name || "-"}</td>
-                                                </tr>`);
-                        }
-                        if(val.helper_id && !manpower_ids.includes(val.helper_id)){
-                            manpower_ids.push(val.helper_id);
-
-                            var helper = getVehiclePersonnel(val.helper_id) || {};
-                            helper_list.push(`<tr>
-                                                    <td style="${tblBodyStyle}text-align:left;">${helper_list.length+1}</td>
-                                                    <td style="${tblBodyStyle}text-align:left;">${helper.name || "-"}</td>
-                                                </tr>`);
-                        }
-
-                        (dataTotalVehicles.includes(val.vehicle_id)) ? null : dataTotalVehicles.push(val.vehicle_id);
-                        (dataTotalManpower.includes(val.driver_id)) ? null : dataTotalManpower.push(val.driver_id);
-                        (dataTotalManpower.includes(val.checker_id)) ? null : dataTotalManpower.push(val.checker_id);
-                        (dataTotalManpower.includes(val.helper_id)) ? null : dataTotalManpower.push(val.helper_id);
-                    });
-
-                    var vehicleUtilization = GET.ROUND_OFF((vehicle_ids.length/totalVehicles)*100);
-                    var manpowerUtilization = GET.ROUND_OFF((manpower_ids.length/totalManpower)*100);
-                    rows += `<tr>
-                                <td style="${tblBodyStyle}text-align:center;font-weight:bold;">${date}</td>
-                                <td style="${tblBodyStyle}text-align:center;">${vehicle_ids.length}</td>
-                                <td style="${tblBodyStyle}text-align:center;">${vehicleUtilization}%</td>
-                                <td style="${tblBodyStyle}text-align:center;">${manpower_ids.length}</td>
-                                <td style="${tblBodyStyle}text-align:center;">${manpowerUtilization}%</td>
-                            </tr>`;
-
+                    function getRowsArr(rowArr){
+                        var tempArr = [];
+                        Object.keys(rowArr[i]).forEach(i1 => {
+                            tempArr.push(`<tr>${rowArr[i][i1].join(`<td style="border:none;" colspan=2>&nbsp;</td>`)}</tr>`);
+                        });
+                        return tempArr;
+                    }
+                    
                     tablesHTML += `<table id="report-hidden-${i}" data-SheetName="${dateMoment.format("MMM DD")}" border="1" style="border-collapse: collapse;opacity:0;">
                                         <tbody>
-                                            <tr> <td style="${excelHeaderStyle}text-align:left;" colspan=2><b>Date: ${dateMoment.format("MMM DD, YYYY (dddd)")}</b></td> </tr>
-                                            <tr> <td style="${excelHeaderStyle}text-align:left;" colspan=2><b>${title}</b></td> </tr>
+                                            <tr> <td style="${excelHeaderStyle}text-align:left;" colspan=5><b>Date: ${dateMoment.format("MMM DD, YYYY (dddd)")}</b></td> </tr>
+                                            <tr> <td style="${excelHeaderStyle}text-align:left;" colspan=5><b>${title}</b></td> </tr>
+
                                             <tr> <td style="border:none;" colspan=2>&nbsp;</td> </tr>
-                                            <tr> <td style="${tblHeaderStyle}" colspan=2>Trucks</b></td> </tr>
-                                            ${vehicles_list.join("")}
                                             <tr> <td style="border:none;" colspan=2>&nbsp;</td> </tr>
-                                            <tr> <td style="${tblHeaderStyle}" colspan=2>Manpower - Driver</b></td> </tr>
-                                            ${driver_list.join("")}
+                                            <tr> <td style="border:none;color:red;font-weight:bold;" colspan=3>TRUCK UTILIZATION</td> </tr>
+                                            <tr>${dailyTableTitle.join(`<td style="border:none;" colspan=3>&nbsp;</td>`)}</tr>
+                                            <tr>${dailyVehicleTableHeader[i-1].join(`<td style="border:none;" colspan=2>&nbsp;</td>`)}</tr>
+                                            <tr>${dailyTableSubHeader.join(`<td style="border:none;" colspan=2>&nbsp;</td>`)}</tr>
+                                            ${getRowsArr(dailyVehicleRows).join("")}
+
                                             <tr> <td style="border:none;" colspan=2>&nbsp;</td> </tr>
-                                            <tr> <td style="${tblHeaderStyle}" colspan=2>Manpower - Checker</b></td> </tr>
-                                            ${checker_list.join("")}
                                             <tr> <td style="border:none;" colspan=2>&nbsp;</td> </tr>
-                                            <tr> <td style="${tblHeaderStyle}" colspan=2>Manpower - Helper</b></td> </tr>
-                                            ${helper_list.join("")}
+                                            <tr> <td style="border:none;color:red;font-weight:bold;" colspan=3>MANPOWER UTILIZATION (DRIVER)</td> </tr>
+                                            <tr>${dailyTableTitle.join(`<td style="border:none;" colspan=3>&nbsp;</td>`)}</tr>
+                                            <tr>${dailyDriverTableHeader[i-1].join(`<td style="border:none;" colspan=2>&nbsp;</td>`)}</tr>
+                                            <tr>${dailyTableSubHeader.join(`<td style="border:none;" colspan=2>&nbsp;</td>`)}</tr>
+                                            ${getRowsArr(dailyDriverRows).join("")}
+
+                                            <tr> <td style="border:none;" colspan=2>&nbsp;</td> </tr>
+                                            <tr> <td style="border:none;" colspan=2>&nbsp;</td> </tr>
+                                            <tr> <td style="border:none;color:red;font-weight:bold;" colspan=3>MANPOWER UTILIZATION (CHECKER)</td> </tr>
+                                            <tr>${dailyTableTitle.join(`<td style="border:none;" colspan=3>&nbsp;</td>`)}</tr>
+                                            <tr>${dailyCheckerTableHeader[i-1].join(`<td style="border:none;" colspan=2>&nbsp;</td>`)}</tr>
+                                            <tr>${dailyTableSubHeader.join(`<td style="border:none;" colspan=2>&nbsp;</td>`)}</tr>
+                                            ${getRowsArr(dailyCheckerRows).join("")}
+
+                                            <tr> <td style="border:none;" colspan=2>&nbsp;</td> </tr>
+                                            <tr> <td style="border:none;" colspan=2>&nbsp;</td> </tr>
+                                            <tr> <td style="border:none;color:red;font-weight:bold;" colspan=3>MANPOWER UTILIZATION (HELPER)</td> </tr>
+                                            <tr>${dailyTableTitle.join(`<td style="border:none;" colspan=3>&nbsp;</td>`)}</tr>
+                                            <tr>${dailyHelperTableHeader[i-1].join(`<td style="border:none;" colspan=2>&nbsp;</td>`)}</tr>
+                                            <tr>${dailyTableSubHeader.join(`<td style="border:none;" colspan=2>&nbsp;</td>`)}</tr>
+                                            ${getRowsArr(dailyHelperRows).join("")}
                                         </tbody>
                                     </table>`;
                 }
+                Object.keys(rows).forEach((key,i) => {
+                    tableRows.push(`<tr>${rows[key].join(`<td style="border:none;" colspan=2>&nbsp;</td>`)}</tr>`);
+                });
 
                 var monthlyVehicleUtilization = GET.ROUND_OFF((dataTotalVehicles.length/totalVehicles)*100);
                 var monthlyManpowerUtilization = GET.ROUND_OFF((dataTotalManpower.length/totalVehicles)*100);
@@ -7793,18 +7948,11 @@ var REPORTS = {
                                 <tr> <td style="${excelHeaderStyle}" colspan=5>Monthly Truck Utilization: <b>${monthlyVehicleUtilization}%</b></td> </tr>
                                 <tr> <td style="${excelHeaderStyle}" colspan=5>Monthly Manpower Utilization: <b>${monthlyManpowerUtilization}%</b></td> </tr>
                                 <tr> <td style="border:none;" colspan=5>&nbsp;</td> </tr>
-                                <tr>
-                                    <td style="${tblHeaderStyle}width:90px;" rowspan=2><b>Date</b></td>
-                                    <td style="${tblHeaderStyle}width:160px;" colspan=2><b>Truck Utilization</b></td>
-                                    <td style="${tblHeaderStyle}width:160px;" colspan=2><b>Manpower Utilization</b></td>
-                                </tr>
-                                <tr>
-                                    <td style="${tblHeaderStyle}width:80px;"><b>Raw</b></td>
-                                    <td style="${tblHeaderStyle}width:80px;"><b>Percentage</b></td>
-                                    <td style="${tblHeaderStyle}width:80px;"><b>Raw</b></td>
-                                    <td style="${tblHeaderStyle}width:80px;"><b>Percentage</b></td>
-                                </tr>
-                                ${rows}
+
+                                <tr>${tableTitle.join(`<td style="border:none;" colspan=9>&nbsp;</td>`)}</tr>
+                                <tr>${tableHeader.join(`<td style="border:none;" colspan=2>&nbsp;</td>`)}</tr>
+                                <tr>${tableSubHeader.join(`<td style="border:none;" colspan=2>&nbsp;</td>`)}</tr>
+                                ${tableRows}
                             </tbody>
                         </table>
                         ${tablesHTML}`;
@@ -8458,7 +8606,7 @@ var REPORTS = {
 
             /******** TABLE CHECK ********/
             TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
-                isFinishedLoading(["GEOFENCES","ROUTES","VEHICLES"], _new_, function(){
+                isFinishedLoading(["GEOFENCES","ROUTES","VEHICLES","CLUSTERS"], _new_, function(){
                     _new_ = false;
                     LIST["geofences"].forEach(val => {
                         val.value = val.short_name;
@@ -9432,6 +9580,7 @@ var LOCATIONS = {
                         goto: "regions",
                         dataTableOptions: {
                             columns: TABLE.COL_ROW(CUSTOM.COLUMN.regions).column,
+                            order: [[ 1, "asc" ]],
                             // sDom: "t" + "<'row'<'col-sm-6'i><'col-sm-6'p>>", // remove all filter container
                             createdRow: function (row, data, dataIndex) {
                                 var _row = data._row;
@@ -9825,7 +9974,8 @@ var LOCATIONS = {
                         urlPath,
                         goto: "clusters",
                         dataTableOptions: {
-                            columns: TABLE.COL_ROW(CUSTOM.COLUMN.clusters).column,
+                            columns: TABLE.COL_ROW(CUSTOM.COLUMN.clusters()).column,
+                            order: [[ 3, "asc" ]],
                             // sDom: "t" + "<'row'<'col-sm-6'i><'col-sm-6'p>>", // remove all filter container
                             createdRow: function (row, data, dataIndex) {
                                 var _row = data._row;
@@ -9906,6 +10056,7 @@ var LOCATIONS = {
                         'Cluster': obj.cluster || "-",
                         'Region': region.value || "-",
                         'Geofences': totalGeofences,
+                        'Sequence': obj.sequence || "-",
                         'esq1_lq': getEscalationUsers("escalation1","lq"),
                         'esq1_oc': getEscalationUsers("escalation1","oc"),
                         'esq1_ot': getEscalationUsers("escalation1","ot"),
@@ -9925,14 +10076,14 @@ var LOCATIONS = {
                     });
                 };
                 table.filterListener = function(){
-                    $(`.page-box`).append(SLIDER.COLUMN_VISIBILITY(CUSTOM.COLUMN.clusters)); 
+                    $(`.page-box`).append(SLIDER.COLUMN_VISIBILITY(CUSTOM.COLUMN.clusters())); 
                     $('span.toggle-vis').on( 'click', function (e) {
                         var index = $(this).attr('data-column'),
                             column = table.dt.column(index);
 
                         column.visible( ! column.visible() );
-                        CUSTOM.COLUMN.clusters[index].visible = column.visible();
-                        CUSTOM.COLUMN.clusters[index].bVisible = column.visible();
+                        CUSTOM.COLUMN.clusters()[index].visible = column.visible();
+                        CUSTOM.COLUMN.clusters()[index].bVisible = column.visible();
                         $(table.id).attr("style","");
 
                         $(`${table.id} thead tr th`).each((i,el) => {
@@ -9948,13 +10099,26 @@ var LOCATIONS = {
                 var initializeModal = function(x){
                     new loadInBackground("regions","REGIONS").g_select_settings();
 
+                    var obj = x.obj || {};
                     var title = (x.method == "PUT") ? `Edit Cluster Data` : `Create New Cluster`,
-                        modalElements = function(obj){
-                            obj = obj || {};
-                            return [
-                                {title:"Cluster",id:"cluster",type:"text",required:true,value:obj.cluster},
-                                {title:"Region",id:"region_id",type:"select",required:true,value:obj.region_id,options:G_SELECT["regions"]},
-                            ];
+                        modalElements = function(){
+                            var arr = [];
+                            clientCustom.modalFields.clusters.forEach(val => {
+                                switch (val) {
+                                    case "cluster":
+                                        arr.push({title:"Cluster",id:"cluster",type:"text",required:true,value:obj.cluster});
+                                        break;
+                                    case "region_id":
+                                        arr.push({title:"Region",id:"region_id",type:"select",required:true,value:obj.region_id,options:G_SELECT["regions"]});
+                                        break;
+                                    case "sequence":
+                                        arr.push({title:"Sequence",id:"sequence",type:"number",value:obj.sequence,sub_title:"Please enter a number. This refers to the sequence/order of the clusters in the reports."});
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            });
+                            return arr;
                         };
                     var column2Content = `${ALERT.HTML.INFO("This will override the Person In-Charge set in cluster's region but will be overridden by the Person In-Charge set per Site, if any.","m-0 mb-3",true)}
                                         <div class="panel panel-tab">
@@ -10059,14 +10223,13 @@ var LOCATIONS = {
                     $(`body`).append(MODAL.CREATE.BASIC({
                         modalStyle: "width:900px;",
                         title,
-                        el: modalElements(x.obj),
+                        el: modalElements(),
                         columned:true,
                         column1Style: "col-sm-5",
                         column2Style: "col-sm-7",
                         column2Content,
                     }));
 
-                    var obj = x.obj || {};
                     var person_in_charge = obj.person_in_charge || {};
                     var options = "";
                     _userData.forEach(op => {
@@ -15174,7 +15337,7 @@ const modalViews = new function(){
                                     <select id="driver_id" class="select-multiple-basic" style="width:100%;"></select>
                                 </div>
                                 <div class="col-sm-4">
-                                    <small><span class="text-danger">*</span>Checker:</small>
+                                    <small>Checker:</small>
                                     <select id="checker_id" class="select-multiple-basic" style="width:100%;"></select>
                                 </div>
                                 <div class="col-sm-4">
