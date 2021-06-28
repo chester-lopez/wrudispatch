@@ -238,7 +238,7 @@ const connect = function(io,_ping_,ENVIRONMENT){ //io
                                 wsClients[dbName].splice(closedWsClientsIndex[i],1);
                             }
                         } else {
-                            if(ENVIRONMENT == "production"){
+                            if(ENVIRONMENT == "production" && dbName == "coket1"){
                                 var fullDocument = event.fullDocument;
                                 var origin_id = fullDocument.origin_id;
                                 var destination_id = fullDocument.destination[0].location_id;
