@@ -71,6 +71,7 @@ const clusters = () => {
     return Joi.object().keys({
         cluster: Joi.string().required(),
         region_id: Joi.string().required(),
+        sequence: Joi.number().allow('',null),
         person_in_charge: Joi.object().allow(null).default([]),
     });
 };

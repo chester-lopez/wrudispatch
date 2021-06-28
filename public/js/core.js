@@ -3,11 +3,11 @@ const ENVIRONMENT = $(`#ENVIRONMENT`).text() || "development";
 const CUSTOM = {
     COLUMN:{
         settings: [
-            {data: "Device Info", title: "Device Info", visible: true },
-            {data: "Last Accessed", title: "Last Accessed", visible: true },
-            {data: "Expiry", title: "Expiry", visible: true },
-            {data: "Location", title: "Location", visible: true },
-            {data: "Action", title: "Action", className: "notExport", width: "40px", orderable: false, searchable: false, visible: true },
+            { data: "Device Info", title: "Device Info", visible: true },
+            { data: "Last Accessed", title: "Last Accessed", visible: true },
+            { data: "Expiry", title: "Expiry", visible: true },
+            { data: "Location", title: "Location", visible: true },
+            { data: "Action", title: "Action", className: "notExport", width: "40px", orderable: false, searchable: false, visible: true },
         ],
         dashboard: function(){
             var totalShipmentTooltipTitle = (clientCustom.roundtrip) ? "The total count of shipments, In Transit, Incomplete, Scheduled, Assigned, On-Site, Returning & Complete of Plant/DC." : "The total count of shipments, In Transit, Incomplete, Assigned, Queueing, Processing & Complete of Plant/DC.",
@@ -28,41 +28,41 @@ const CUSTOM = {
                 return `<i class="la la-info" data-toggle="tooltip" title="${tooltipTitles[key]}" style="color:#5b5b5b;position: absolute;top: 0px;right: 0px;padding:1px 8px 5px 5px;"></i>`;
             }
             var columns = [
-                {data: "Region", visible: false},
-                {data: "Plant", title: `Plant/DC`},
+                { data: "Region", visible: false},
+                { data: "Plant", title: `Plant/DC`},
             ];
 
             (clientCustom.visibleStatus||[]).forEach(val => {
                 switch (val) {
                     case "in_transit":
-                        columns.push({data: "In Transit", title: `In Transit ${getTooltip("In Transit")}`, className: "clickable"});
+                        columns.push({ data: "In Transit", title: `In Transit ${getTooltip("In Transit")}`, className: "clickable"});
                         break;
                     case "total_shipment":
-                        columns.push({data: "Total Shipment", title: `Total Shipment ${getTooltip("Total Shipment")}`, className: "clickable"});
+                        columns.push({ data: "Total Shipment", title: `Total Shipment ${getTooltip("Total Shipment")}`, className: "clickable"});
                         break;
                     case "incomplete":
-                        columns.push({data: "Incomplete", title: `Incomplete ${getTooltip("Incomplete")}`, className: "clickable"});
+                        columns.push({ data: "Incomplete", title: `Incomplete ${getTooltip("Incomplete")}`, className: "clickable"});
                         break; 
                     case "scheduled":
-                        columns.push({data: "Scheduled", title: `Scheduled ${getTooltip("Scheduled")}`, className: "clickable"});
+                        columns.push({ data: "Scheduled", title: `Scheduled ${getTooltip("Scheduled")}`, className: "clickable"});
                         break;
                     case "assigned":
-                        columns.push({data: "Assigned", title: `Assigned ${getTooltip("Assigned")}`, className: "clickable"});
+                        columns.push({ data: "Assigned", title: `Assigned ${getTooltip("Assigned")}`, className: "clickable"});
                         break;
                     case "queueingAtOrigin":
-                        columns.push({data: "Queueing", title: `Queueing ${getTooltip("Queueing")}`, className: "clickable"});
+                        columns.push({ data: "Queueing", title: `Queueing ${getTooltip("Queueing")}`, className: "clickable"});
                         break;
                     case "processingAtOrigin":
-                        columns.push({data: "Processing", title: `Processing ${getTooltip("Processing")}`, className: "clickable"});
+                        columns.push({ data: "Processing", title: `Processing ${getTooltip("Processing")}`, className: "clickable"});
                         break;
                     case "onSite":
-                        columns.push({data: "On-Site", title: `On-Site ${getTooltip("On-Site")}`, className: "clickable"});
+                        columns.push({ data: "On-Site", title: `On-Site ${getTooltip("On-Site")}`, className: "clickable"});
                         break;
                     case "returning":
-                        columns.push({data: "Returning", title: `Returning ${getTooltip("Returning")}`, className: "clickable"});
+                        columns.push({ data: "Returning", title: `Returning ${getTooltip("Returning")}`, className: "clickable"});
                         break;
                     case "complete":
-                        columns.push({data: "Complete", title: `Complete ${getTooltip("Complete")}`, className: "clickable"});
+                        columns.push({ data: "Complete", title: `Complete ${getTooltip("Complete")}`, className: "clickable"});
                         break;
                     default:
                         break;
@@ -71,14 +71,14 @@ const CUSTOM = {
             return columns;
         },
         de_dashboard: [
-            {data: "Region ID", title: "Region ID", visible: false },
-            {data: "Delay Type", title: "Delay Type", visible: false },
-            {data: "SN", title: "SN", visible: false },
-            {data: "Plate No", title: "Plate No.", visible: true },
-            {data: "Destination", title: "Destination", visible: true },
-            {data: "Duration", title: "Duration", visible: true },
-            {data: "Escalation", title: "Escalation", visible: true },
-            {data: "Base Plant", title: "Base Plant", visible: true },
+            { data: "Region ID", title: "Region ID", visible: false },
+            { data: "Delay Type", title: "Delay Type", visible: false },
+            { data: "SN", title: "SN", visible: false },
+            { data: "Plate No", title: "Plate No.", visible: true },
+            { data: "Destination", title: "Destination", visible: true },
+            { data: "Duration", title: "Duration", visible: true },
+            { data: "Escalation", title: "Escalation", visible: true },
+            { data: "Base Plant", title: "Base Plant", visible: true },
         ],
         dispatch: function(){
             var arr = [];
@@ -212,131 +212,170 @@ const CUSTOM = {
             return arr;
         },
         dispatch_deleted: [
-            {data: "_id", title: "Shipment Number", visible: true },
-            {data: "Departure Date", title: "Departure Date", type:"date", visible: false },
-            {data: "Region", title: "Region", visible: false },
-            {data: "Cluster", title: "Cluster", visible: false },
-            {data: "Origin", title: "Origin", visible: true },
-            {data: "Route", title: "Route", visible: false },
-            {data: "Destination", title: "Destination", visible: true },
-            {data: "ETD", title: "ETD", visible: false, type:"date", visible: true },
-            {data: "ETA", title: "ETA", visible: false, type:"date", visible: true },
-            {data: "Target Transit Time", title: "Target Transit Time", visible: false },
-            {data: "Target CICO Time", title: "Target CICO Time", visible: false },
-            {data: "Vehicle", title: "Vehicle", visible: true },
-            {data: "Trailer", title: "Trailer", visible: false },
-            {data: "Conduction Number", title: "Conduction #", visible: false },
-            {data: "Pal Cap", title: "Pal Cap", visible: false },
-            {data: "Comments", title: "Comments", visible: false },
-            {data: "Queueing Duration", title: "Queueing Duration", visible: false },
-            {data: "Processing Duration", title: "Processing Duration", visible: false },
-            {data: "Idling Duration", title: "Idling Duration", visible: false },
-            {data: "CICO Time", title: "CICO Time", visible: false },
-            {data: "CICO Time (Capped)", title: "CICO Time (Capped)", visible: false },
-            {data: "Transit Duration", title: "Transit Duration", visible: false },
-            {data: "Status", title: "Status Before Deleted", visible: true },
-            {data: "Posted By", title: "Posted By", visible: true },
-            {data: "Posting Date", title: "Posting Date", type:"date", visible: true },
-            {data: "Late Entry", title: "Late Entry", visible: false },
-            {data: "Deleted By", title: "Deleted By", visible: true },
-            {data: "Deleted Date", title: "Deleted Date", type:"date", visible: true },
-            {data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
+            { data: "_id", title: "Shipment Number", visible: true },
+            { data: "Departure Date", title: "Departure Date", type:"date", visible: false },
+            { data: "Region", title: "Region", visible: false },
+            { data: "Cluster", title: "Cluster", visible: false },
+            { data: "Origin", title: "Origin", visible: true },
+            { data: "Route", title: "Route", visible: false },
+            { data: "Destination", title: "Destination", visible: true },
+            { data: "ETD", title: "ETD", visible: false, type:"date", visible: true },
+            { data: "ETA", title: "ETA", visible: false, type:"date", visible: true },
+            { data: "Target Transit Time", title: "Target Transit Time", visible: false },
+            { data: "Target CICO Time", title: "Target CICO Time", visible: false },
+            { data: "Vehicle", title: "Vehicle", visible: true },
+            { data: "Trailer", title: "Trailer", visible: false },
+            { data: "Conduction Number", title: "Conduction #", visible: false },
+            { data: "Pal Cap", title: "Pal Cap", visible: false },
+            { data: "Comments", title: "Comments", visible: false },
+            { data: "Queueing Duration", title: "Queueing Duration", visible: false },
+            { data: "Processing Duration", title: "Processing Duration", visible: false },
+            { data: "Idling Duration", title: "Idling Duration", visible: false },
+            { data: "CICO Time", title: "CICO Time", visible: false },
+            { data: "CICO Time (Capped)", title: "CICO Time (Capped)", visible: false },
+            { data: "Transit Duration", title: "Transit Duration", visible: false },
+            { data: "Status", title: "Status Before Deleted", visible: true },
+            { data: "Posted By", title: "Posted By", visible: true },
+            { data: "Posting Date", title: "Posting Date", type:"date", visible: true },
+            { data: "Late Entry", title: "Late Entry", visible: false },
+            { data: "Deleted By", title: "Deleted By", visible: true },
+            { data: "Deleted Date", title: "Deleted Date", type:"date", visible: true },
+            { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
         ],
         dispatch_mod2_deleted: [
-            {data: "_id", title: "Shipment Number", visible: true },
-            {data: "Ticket Number", title: "Ticket Number", type:"date", visible: true },
-            {data: "Departure Date", title: "Departure Date", className: "notExport", type:"date", visible: true },
-            {data: "Departure__Date", title: "Departure Date", visible: false, hiddenInCustomVisibilityOptions: true},
-            {data: "Departure__Time", title: "Departure Time", visible: false, hiddenInCustomVisibilityOptions: true},
-            {data: "Region", title: "Region", visible: false },
-            {data: "Cluster", title: "Cluster", visible: false },
-            {data: "Origin", title: "Origin", visible: true },
-            {data: "Route", title: "Route", visible: false },
-            {data: "Destination", title: "Destination", visible: true },
-            {data: "ETD", title: "ETD", visible: false, type:"date", visible: true },
-            {data: "ETA", title: "ETA", visible: false, type:"date", visible: true },
-            {data: "Target Transit Time", title: "Target Transit Time", visible: false },
-            {data: "Target CICO Time", title: "Target CICO Time", visible: false },
-            {data: "Vehicle", title: "Vehicle", className: "notExport", visible: true },
-            {data: "Plate Number", title: "Plate Number", visible: false, hiddenInCustomVisibilityOptions: true},
-            {data: "Truck Number", title: "Truck Number", visible: false, hiddenInCustomVisibilityOptions: true},
-            {data: "Driver", title: "Driver", visible: false },
-            {data: "Checker", title: "Checker", visible: false },
-            {data: "Helper", title: "Helper", visible: false },
-            {data: "Comments", title: "Comments", visible: false },
-            {data: "Queueing Duration", title: "Queueing Duration", visible: false },
-            {data: "Processing Duration", title: "Processing Duration", visible: false },
-            {data: "CICO Time", title: "CICO Time", visible: false },
-            {data: "CICO Time (Capped)", title: "CICO Time (Capped)", visible: false },
-            {data: "Transit Duration", title: "Transit Duration", visible: false },
-            {data: "Status", title: "Status Before Deleted", visible: true },
-            {data: "Scheduled Date", title: "Scheduled Date", type:"date", visible: false },
-            {data: "Shift Schedule", title: "Shift Schedule", visible: false },
-            {data: "Posted By", title: "Posted By", visible: true },
-            {data: "Posting Date", title: "Posting Date", type:"date", visible: true },
-            {data: "Late Entry", title: "Late Entry", visible: false },
-            {data: "Deleted By", title: "Deleted By", visible: true },
-            {data: "Deleted Date", title: "Deleted Date", type:"date", visible: true },
-            {data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
+            { data: "_id", title: "Shipment Number", visible: true },
+            { data: "Ticket Number", title: "Ticket Number", type:"date", visible: true },
+            { data: "Departure Date", title: "Departure Date", className: "notExport", type:"date", visible: true },
+            { data: "Departure__Date", title: "Departure Date", visible: false, hiddenInCustomVisibilityOptions: true},
+            { data: "Departure__Time", title: "Departure Time", visible: false, hiddenInCustomVisibilityOptions: true},
+            { data: "Region", title: "Region", visible: false },
+            { data: "Cluster", title: "Cluster", visible: false },
+            { data: "Origin", title: "Origin", visible: true },
+            { data: "Route", title: "Route", visible: false },
+            { data: "Destination", title: "Destination", visible: true },
+            { data: "ETD", title: "ETD", visible: false, type:"date", visible: true },
+            { data: "ETA", title: "ETA", visible: false, type:"date", visible: true },
+            { data: "Target Transit Time", title: "Target Transit Time", visible: false },
+            { data: "Target CICO Time", title: "Target CICO Time", visible: false },
+            { data: "Vehicle", title: "Vehicle", className: "notExport", visible: true },
+            { data: "Plate Number", title: "Plate Number", visible: false, hiddenInCustomVisibilityOptions: true},
+            { data: "Truck Number", title: "Truck Number", visible: false, hiddenInCustomVisibilityOptions: true},
+            { data: "Driver", title: "Driver", visible: false },
+            { data: "Checker", title: "Checker", visible: false },
+            { data: "Helper", title: "Helper", visible: false },
+            { data: "Comments", title: "Comments", visible: false },
+            { data: "Queueing Duration", title: "Queueing Duration", visible: false },
+            { data: "Processing Duration", title: "Processing Duration", visible: false },
+            { data: "CICO Time", title: "CICO Time", visible: false },
+            { data: "CICO Time (Capped)", title: "CICO Time (Capped)", visible: false },
+            { data: "Transit Duration", title: "Transit Duration", visible: false },
+            { data: "Status", title: "Status Before Deleted", visible: true },
+            { data: "Scheduled Date", title: "Scheduled Date", type:"date", visible: false },
+            { data: "Shift Schedule", title: "Shift Schedule", visible: false },
+            { data: "Posted By", title: "Posted By", visible: true },
+            { data: "Posting Date", title: "Posting Date", type:"date", visible: true },
+            { data: "Late Entry", title: "Late Entry", visible: false },
+            { data: "Deleted By", title: "Deleted By", visible: true },
+            { data: "Deleted Date", title: "Deleted Date", type:"date", visible: true },
+            { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
         ],
         shift_schedule: [
-            {data: "_id", title: "Schedule", visible: true },
-            {data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
+            { data: "_id", title: "Schedule", visible: true },
+            { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
         ],
         regions: [
-            {data: "Region", title: "Region", visible: true },
-            {data: "Sequence", title: "Sequence", width: "50px", visible: true },
-            {data: "esq1_lq", title: "Person In-Charge (E-1 Long Queueing)", visible: false },
-            {data: "esq1_oc", title: "Person In-Charge (E-1 Over CICO)", visible: false },
-            {data: "esq1_ot", title: "Person In-Charge (E-1 Over Transit)", visible: false },
-            {data: "esq2_lq", title: "Person In-Charge (E-2 Long Queueing)", visible: false },
-            {data: "esq2_oc", title: "Person In-Charge (E-2 Over CICO)", visible: false },
-            {data: "esq2_ot", title: "Person In-Charge (E-2 Over Transit)", visible: false },
-            {data: "esq3_lq", title: "Person In-Charge (E-3 Long Queueing)", visible: false },
-            {data: "esq3_oc", title: "Person In-Charge (E-3 Over CICO)", visible: false },
-            {data: "esq3_ot", title: "Person In-Charge (E-3 Over Transit)", visible: false },
-            {data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
+            { data: "Region", title: "Region", visible: true },
+            { data: "Sequence", title: "Sequence", width: "50px", visible: true },
+            { data: "esq1_lq", title: "Person In-Charge (E-1 Long Queueing)", visible: false },
+            { data: "esq1_oc", title: "Person In-Charge (E-1 Over CICO)", visible: false },
+            { data: "esq1_ot", title: "Person In-Charge (E-1 Over Transit)", visible: false },
+            { data: "esq2_lq", title: "Person In-Charge (E-2 Long Queueing)", visible: false },
+            { data: "esq2_oc", title: "Person In-Charge (E-2 Over CICO)", visible: false },
+            { data: "esq2_ot", title: "Person In-Charge (E-2 Over Transit)", visible: false },
+            { data: "esq3_lq", title: "Person In-Charge (E-3 Long Queueing)", visible: false },
+            { data: "esq3_oc", title: "Person In-Charge (E-3 Over CICO)", visible: false },
+            { data: "esq3_ot", title: "Person In-Charge (E-3 Over Transit)", visible: false },
+            { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
         ],
-        clusters: [
-            {data: "Cluster", title: "Cluster", visible: true },
-            {data: "Region", title: "Region", visible: true },
-            {data: "Geofences", title: "Geofences", visible: true },
-            {data: "esq1_lq", title: "Person In-Charge (E-1 Long Queueing)", visible: false },
-            {data: "esq1_oc", title: "Person In-Charge (E-1 Over CICO)", visible: false },
-            {data: "esq1_ot", title: "Person In-Charge (E-1 Over Transit)", visible: false },
-            {data: "esq2_lq", title: "Person In-Charge (E-2 Long Queueing)", visible: false },
-            {data: "esq2_oc", title: "Person In-Charge (E-2 Over CICO)", visible: false },
-            {data: "esq2_ot", title: "Person In-Charge (E-2 Over Transit)", visible: false },
-            {data: "esq3_lq", title: "Person In-Charge (E-3 Long Queueing)", visible: false },
-            {data: "esq3_oc", title: "Person In-Charge (E-3 Over CICO)", visible: false },
-            {data: "esq3_ot", title: "Person In-Charge (E-3 Over Transit)", visible: false },
-            {data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
-        ],
+        clusters: function(){
+            var arr = [];
+
+            clientCustom.columns.clusters.forEach(val => {
+                switch (val) {
+                    case "cluster":
+                        arr.push({ data: "Cluster", title: "Cluster", visible: true });
+                        break;
+                    case "region":
+                        arr.push({ data: "Region", title: "Region", visible: true });
+                        break;
+                    case "geofences":
+                        arr.push({ data: "Geofences", title: "Sites", visible: true });
+                        break;
+                    case "sequence":
+                        arr.push({ data: "Sequence", title: "Sequence", width: "50px", visible: true });
+                        break;
+                    case "esq1_lq":
+                        arr.push({ data: "esq1_lq", title: "Person In-Charge (E-1 Long Queueing)", visible: false });
+                        break;
+                    case "esq1_oc":
+                        arr.push({ data: "esq1_oc", title: "Person In-Charge (E-1 Over CICO)", visible: false });
+                        break;
+                    case "esq1_ot":
+                        arr.push({ data: "esq1_ot", title: "Person In-Charge (E-1 Over Transit)", visible: false });
+                        break;
+                    case "esq2_lq":
+                        arr.push({ data: "esq2_lq", title: "Person In-Charge (E-2 Long Queueing)", visible: false });
+                        break;
+                    case "esq2_oc":
+                        arr.push({ data: "esq2_oc", title: "Person In-Charge (E-2 Over CICO)", visible: false });
+                        break;
+                    case "esq2_ot":
+                        arr.push({ data: "esq2_ot", title: "Person In-Charge (E-2 Over Transit)", visible: false });
+                        break;
+                    case "esq3_lq":
+                        arr.push({ data: "esq3_lq", title: "Person In-Charge (E-3 Long Queueing)", visible: false });
+                        break;
+                    case "esq3_oc":
+                        arr.push({ data: "esq3_oc", title: "Person In-Charge (E-3 Over CICO)", visible: false });
+                        break;
+                    case "esq3_ot":
+                        arr.push({ data: "esq3_ot", title: "Person In-Charge (E-3 Over Transit)", visible: false });
+                        break;
+                    case "action":
+                        arr.push({ data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true });
+                        break;
+                    default:
+                        break;
+                }
+            });
+
+            return arr;
+        },
         geofences: [
-            {data: "Site Code", title: "Site Code", visible: true },
-            {data: "Site Name", title: "Site Name", visible: true },
-            {data: "Short Name", title: "Short Name", visible: true },
-            {data: "CICO", title: "CICO (HH:MM)", visible: true },
-            {data: "Cluster", title: "Cluster", visible: true },
-            {data: "Region", title: "Region", visible: true },
-            {data: "Dispatcher", title: "Dispatcher", visible: true },
-            {data: "esq1_lq", title: "Person In-Charge (E-1 Long Queueing)", visible: false },
-            {data: "esq1_oc", title: "Person In-Charge (E-1 Over CICO)", visible: false },
-            {data: "esq1_ot", title: "Person In-Charge (E-1 Over Transit)", visible: false },
-            {data: "esq2_lq", title: "Person In-Charge (E-2 Long Queueing)", visible: false },
-            {data: "esq2_oc", title: "Person In-Charge (E-2 Over CICO)", visible: false },
-            {data: "esq2_ot", title: "Person In-Charge (E-2 Over Transit)", visible: false },
-            {data: "esq3_lq", title: "Person In-Charge (E-3 Long Queueing)", visible: false },
-            {data: "esq3_oc", title: "Person In-Charge (E-3 Over CICO)", visible: false },
-            {data: "esq3_ot", title: "Person In-Charge (E-3 Over Transit)", visible: false },
-            {data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
+            { data: "Site Code", title: "Site Code", visible: true },
+            { data: "Site Name", title: "Site Name", visible: true },
+            { data: "Short Name", title: "Short Name", visible: true },
+            { data: "CICO", title: "CICO (HH:MM)", visible: true },
+            { data: "Cluster", title: "Cluster", visible: true },
+            { data: "Region", title: "Region", visible: true },
+            { data: "Dispatcher", title: "Dispatcher", visible: true },
+            { data: "esq1_lq", title: "Person In-Charge (E-1 Long Queueing)", visible: false },
+            { data: "esq1_oc", title: "Person In-Charge (E-1 Over CICO)", visible: false },
+            { data: "esq1_ot", title: "Person In-Charge (E-1 Over Transit)", visible: false },
+            { data: "esq2_lq", title: "Person In-Charge (E-2 Long Queueing)", visible: false },
+            { data: "esq2_oc", title: "Person In-Charge (E-2 Over CICO)", visible: false },
+            { data: "esq2_ot", title: "Person In-Charge (E-2 Over Transit)", visible: false },
+            { data: "esq3_lq", title: "Person In-Charge (E-3 Long Queueing)", visible: false },
+            { data: "esq3_oc", title: "Person In-Charge (E-3 Over CICO)", visible: false },
+            { data: "esq3_ot", title: "Person In-Charge (E-3 Over Transit)", visible: false },
+            { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
         ],
         routes: [
-            {data: "_id", title: "Route", visible: true },
-            {data: "Origin", title: "Origin", visible: true },
-            {data: "Destination", title: "Destination", visible: true },
-            {data: "Transit Time", title: "Transit Time", visible: true },
-            {data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
+            { data: "_id", title: "Route", visible: true },
+            { data: "Origin", title: "Origin", visible: true },
+            { data: "Destination", title: "Destination", visible: true },
+            { data: "Transit Time", title: "Transit Time", visible: true },
+            { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
         ],
         notifications: function(){
             var arr = [];
@@ -381,31 +420,31 @@ const CUSTOM = {
         },
         event_viewer: function(){
             return [
-                        {data: "Date", title: "Date", type:"date", visible: true },
-                        {data: "Shipment Numbers", title: "Shipment Numbers", visible: ((CLIENT.allowDownloadFromOtherDB)?false:true)},
-                        {data: "Rule Name", title: "Rule Name", visible: true },
-                        {data: "Vehicle Name", title: "Vehicle Name", visible: true },
-                        {data: "Geofence Name", title: "Geofence Name", visible: true },
-                        {data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
+                        { data: "Date", title: "Date", type:"date", visible: true },
+                        { data: "Shipment Numbers", title: "Shipment Numbers", visible: ((CLIENT.allowDownloadFromOtherDB)?false:true)},
+                        { data: "Rule Name", title: "Rule Name", visible: true },
+                        { data: "Vehicle Name", title: "Vehicle Name", visible: true },
+                        { data: "Geofence Name", title: "Geofence Name", visible: true },
+                        { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
                     ];
         },
         all_events: [
-            {data: "Date", title: "Date", type:"date", visible: true },
-            {data: "Rule Name", title: "Rule Name", visible: true },
-            {data: "Vehicle Name", title: "Vehicle Name", visible: true },
-            {data: "Geofence Name", title: "Geofence Name", visible: true },
-            {data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
+            { data: "Date", title: "Date", type:"date", visible: true },
+            { data: "Rule Name", title: "Rule Name", visible: true },
+            { data: "Vehicle Name", title: "Vehicle Name", visible: true },
+            { data: "Geofence Name", title: "Geofence Name", visible: true },
+            { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
         ],
         users: function(){
             return [
-                {data: "Name", title: "Name", visible: true },
-                {data: "_id", title: "Username", visible: true },
-                {data: "Title", title: "Title", visible: true },
-                {data: "Email", title: "Email", visible: true },
-                {data: "Phone Number", title: "Phone Number", visible: true },
-                {data: "Role", title: "Role", visible: true },
-                {data: "Exempted", title: "Exempted From Auto-Logout", width: "70px", visible: (CLIENT.tabCloseAutoLogout||false) },
-                {data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
+                { data: "Name", title: "Name", visible: true },
+                { data: "_id", title: "Username", visible: true },
+                { data: "Title", title: "Title", visible: true },
+                { data: "Email", title: "Email", visible: true },
+                { data: "Phone Number", title: "Phone Number", visible: true },
+                { data: "Role", title: "Role", visible: true },
+                { data: "Exempted", title: "Exempted From Auto-Logout", width: "70px", visible: (CLIENT.tabCloseAutoLogout||false) },
+                { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
             ];
         },
         vehicles: function(){
@@ -414,40 +453,40 @@ const CUSTOM = {
             clientCustom.columns.vehicles.forEach(val => {
                 switch (val) {
                     case "name":
-                        arr.push({data: "Name", title: "Name", visible: true });
+                        arr.push({ data: "Name", title: "Name", visible: true });
                         break;
                     case "trailer":
-                        arr.push({data: "Trailer", title: "Trailer", visible: true });;
+                        arr.push({ data: "Trailer", title: "Trailer", visible: true });
                         break;
                     case "equipmentNumber":
-                        arr.push({data: "Equipment Number", title: "Equipment Number", visible: true });;
+                        arr.push({ data: "Equipment Number", title: "Equipment Number", visible: true });
                         break;
                     case "conductionNumber":
-                        arr.push({data: "Conduction Number", title: "Conduction Number", visible: true });;
+                        arr.push({ data: "Conduction Number", title: "Conduction Number", visible: true });
                         break;
                     case "plateNumber":
-                        arr.push({data: "Plate Number", title: "Plate Number", visible: true });;
+                        arr.push({ data: "Plate Number", title: "Plate Number", visible: true });
                         break;
                     case "truckNumber":
-                        arr.push({data: "Truck Number", title: "Truck Number", visible: true });;
+                        arr.push({ data: "Truck Number", title: "Truck Number", visible: true });
                         break;
                     case "site":
-                        arr.push({data: "Site", title: "Site", visible: true });;
+                        arr.push({ data: "Site", title: "Site", visible: true });
                         break;
                     case "section_id":
-                        arr.push({data: "Section", title: "Section", visible: true });;
+                        arr.push({ data: "Section", title: "Section", visible: true });
                         break;
                     case "company_id":
-                        arr.push({data: "Company", title: "Company", visible: true });;
+                        arr.push({ data: "Company", title: "Company", visible: true });
                         break;
                     case "availability":
-                        arr.push({data: "Availability", title: "Availability", visible: true });;
+                        arr.push({ data: "Availability", title: "Availability", visible: true });
                         break;
                     case "last2Locations":
-                        arr.push({data: "Last 2 Locations", title: "Last 2 Locations", className: "notExport", visible: true });
+                        arr.push({ data: "Last 2 Locations", title: "Last 2 Locations", className: "notExport", visible: true });
                         break;
                     case "action":
-                        arr.push({data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true });
+                        arr.push({ data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true });
                         break;
                     default:
                         break;
@@ -457,20 +496,20 @@ const CUSTOM = {
             return arr;
         },
         vehicle_personnel: [
-            {data: "Name", title: "Name", visible: true },
-            {data: "Occupation", title: "Occupation", visible: true },
-            {data: "Vehicle", title: "Vehicle", visible: true },
-            {data: "Section", title: "Section", visible: true },
-            {data: "Company", title: "Company", visible: true },
-            {data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
+            { data: "Name", title: "Name", visible: true },
+            { data: "Occupation", title: "Occupation", visible: true },
+            { data: "Vehicle", title: "Vehicle", visible: true },
+            { data: "Section", title: "Section", visible: true },
+            { data: "Company", title: "Company", visible: true },
+            { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
         ],
         trailers: [
-            {data: "_id", title: "Trailer", visible: true },
-            {data: "Pal Cap", title: "Pal Cap", visible: true },
-            {data: "Region", title: "Region", visible: true },
-            {data: "Cluster", title: "Cluster", visible: true },
-            {data: "Site", title: "Site", visible: true },
-            {data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
+            { data: "_id", title: "Trailer", visible: true },
+            { data: "Pal Cap", title: "Pal Cap", visible: true },
+            { data: "Region", title: "Region", visible: true },
+            { data: "Cluster", title: "Cluster", visible: true },
+            { data: "Site", title: "Site", visible: true },
+            { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
         ]
     },
     FORM: {
@@ -740,6 +779,8 @@ const WEBSOCKET = {
                 clientCustom.columns.vehicles = setValue("custom.vehicles.columns", []);
                 clientCustom.columns.dispatch = setValue("custom.dispatch.columns", {});
                 clientCustom.columns.notifications = setValue("custom.notifications.columns", []);
+                clientCustom.columns.clusters = setValue("custom.clusters.columns", []);
+                
                 
                 // gSelect2
                 clientCustom.gSelect2.vehicles = setValue("custom.vehicles.gSelect2", {});
@@ -758,6 +799,7 @@ const WEBSOCKET = {
                 
                 // modalFields
                 clientCustom.modalFields.vehicles = setValue("custom.vehicles.modalFields", []);
+                clientCustom.modalFields.clusters = setValue("custom.clusters.modalFields", []);
 
                 // columnOrder
                 clientCustom.columnOrder.vehicles = setValue("custom.vehicles.columnOrder", [[ 0, "asc" ]]);
