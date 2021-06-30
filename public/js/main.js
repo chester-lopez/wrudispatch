@@ -1,8 +1,4 @@
 /************** GLOBAL VARIABLES **************/
-var autorizationLevel = {
-    dispatcher: () => { return ["dispatcher"].includes(USER.role); },
-    administrator: () => { return ["administrator","developer"].includes(USER.role); },
-};
 var vehiclePersonnelCalendarOptions = {
     rest_days: { optionTitle: "Rest Days", label: "Rest Day" },
     on_leave:  { optionTitle: "On Leave",  label: "On Leave" },
@@ -297,21 +293,21 @@ class Dispatch {
 
         var disabledArr = [];
         if(["complete"].includes(obj.status)){
-            if(autorizationLevel.administrator()){
+            if(authorizationLevel .administrator()){
                 disabledArr = ["statusUpdate","edit","edit-admin"];
             } else {
                 disabledArr = ["statusUpdate","edit","edit-admin","delete"];
             }
         }
         if(["in_transit","incomplete"].includes(obj.status)){ 
-            if(autorizationLevel.administrator()){
+            if(authorizationLevel .administrator()){
                 disabledArr = [];
             } else {
                 disabledArr = ["statusUpdate","edit","edit-admin"];
             }
         }
         if(["in_transit","complete","incomplete"].includes(obj.status)){ 
-            if(autorizationLevel.administrator()){} 
+            if(authorizationLevel .administrator()){} 
             else {
                 disabledArr.push("delete");
             }
@@ -880,7 +876,7 @@ class Table {
             pageButtons = PAGE_FUNCTIONALITIES[goto].buttons.table || [],
             dt_buttons = x.dt_buttons || [],
             loadView = x.loadView || [],
-            dispatcherCondition = (autorizationLevel.dispatcher()) ? ((!USER.dc)?false:true) : true,
+            dispatcherCondition = (authorizationLevel .dispatcher()) ? ((!USER.dc)?false:true) : true,
             actions = x.actions || {};
             
         var details = {
@@ -3251,7 +3247,7 @@ var DISPATCH = {
                             $(`#new-attachment,#new-destination`).remove();
                             $(`#modal table > tbody > tr > td input:disabled`).parents("tr").css("background-color","#eee");
                         } else if(["in_transit"].includes(status)){
-                            if(autorizationLevel.administrator()){} 
+                            if(authorizationLevel .administrator()){} 
                             else {
                                 $(`#modal input,#modal textarea,#modal select`).attr("disabled",true);
                                 $(`#new-destination`).remove();
@@ -3324,7 +3320,7 @@ var DISPATCH = {
                                             vehicleDoneLoading = true;
                                             resolve();
                                         } else {
-                                            if(vehicleUsername && geofenceId && (autorizationLevel.administrator() || !["in_transit","complete","incomplete","scheduled"].includes(__status))){
+                                            if(vehicleUsername && geofenceId && (authorizationLevel .administrator() || !["in_transit","complete","incomplete","scheduled"].includes(__status))){
                                                 // $(`#modal #alert`).html(`<i class="la la-spin la-spinner font-18 mb-3"></i>`);
                                                 $(`#submit`).html(`<i class="la la-spinner la-spin mr-2"></i>Detecting vehicle's location..`).attr("disabled",true);
                                                 
@@ -4172,7 +4168,7 @@ var DISPATCH = {
                         $(`.main-content .clearfix`).css({"pointer-events": ""});
 
                         if(["complete","incomplete"].includes(obj.status)){
-                            if(isStatusIncomplete() && autorizationLevel.administrator()) {
+                            if(isStatusIncomplete() && authorizationLevel .administrator()) {
                                 $(`#error`).html(`<div class="alert alert-danger alert-dismissible mb-1 role="alert">
                                                     <i class="la la-times-circle"></i> The status of this entry is <b>INCOMPLETE</b>. Any changes made will not affect the status.
                                                 </div>`).show();
@@ -4991,14 +4987,6 @@ var DISPATCH = {
                     return saveAs(blob, `${filename}.xlsx`);
                 }
                 
-                function s2ab(s) {
-                    var buf = new ArrayBuffer(s.length);
-                    var view = new Uint8Array(buf);
-                    for (var i=0; i<s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
-                    return buf;
-                }
-                
-
                 if(CLIENT.id == "wilcon"){
                     if(GGS.STATUS.SHIFT_SCHEDULE && GGS.STATUS.VEHICLES && GGS.STATUS.ROUTES) {
                         $(`body`).append(CUSTOM.IMPORT_TEMPLATE.wilcon());
@@ -6519,7 +6507,7 @@ var REPORTS = {
                         </div>
                     </div>`;
         },
-        REPORT_MODAL_07: function(title){ // month & year
+        REPORT_MODAL_07: function(title,customButtons){ // month & year
             var yearOptions = "";
             for(var i = 2020; i < Number(moment().format("YYYY"))+1; i++){
                 yearOptions += `<option>${i}</option>`;
@@ -6549,7 +6537,7 @@ var REPORTS = {
                                                 <option value="12">December</option>
                                             </select>
                                             <select id="_year" class="form-control" style="width: 49%;display: inline-block;">${yearOptions}</select>
-                                            <button id="generate-btn" type="button" class="btn btn-primary col-sm-12 mt-4">Generate report</button>
+                                            ${(customButtons)?customButtons:`<button id="generate-btn" type="button" class="btn btn-primary col-sm-12 mt-4">Generate report</button>`}
                                         </div>
                                     </div>
                                 </div>
@@ -7801,13 +7789,13 @@ var REPORTS = {
                             if(Object.keys(tempDailyRows[i]).length > 0){
                                 Object.keys(tempDailyRows[i]).forEach((key) => {
                                     while(tempDailyRows[i][key].length < countClusterColumns){
-                                        tempDailyRows[i][key].push(`<td>&nbsp;</td> <td>&nbsp;</td> <td>&nbsp;</td>`);
+                                        tempDailyRows[i][key].push(`<td></td><td></td><td></td>`);
                                     }
                                 });
                             } else {
                                 for(var r = 0; r < countClusterColumns; r++){
                                     tempDailyRows[i][r] = tempDailyRows[i][r] || []; 
-                                    tempDailyRows[i][r].push(`<td>&nbsp;</td> <td>&nbsp;</td>  <td>&nbsp;</td>`);
+                                    tempDailyRows[i][r].push(`<td></td><td></td><td></td>`);
                                 }
                             }
                             return tempDailyRows;
@@ -7887,7 +7875,7 @@ var REPORTS = {
                     function getRowsArr(rowArr){
                         var tempArr = [];
                         Object.keys(rowArr[i]).forEach(i1 => {
-                            tempArr.push(`<tr>${rowArr[i][i1].join(`<td style="border:none;" colspan=2>&nbsp;</td>`)}</tr>`);
+                            tempArr.push(`<tr>${rowArr[i][i1].join(`<td style="border:none;"></td><td style="border:none;"></td>`)}</tr>`);
                         });
                         return tempArr;
                     }
@@ -7897,42 +7885,42 @@ var REPORTS = {
                                             <tr> <td style="${excelHeaderStyle}text-align:left;" colspan=5><b>Date: ${dateMoment.format("MMM DD, YYYY (dddd)")}</b></td> </tr>
                                             <tr> <td style="${excelHeaderStyle}text-align:left;" colspan=5><b>${title}</b></td> </tr>
 
-                                            <tr> <td style="border:none;" colspan=2>&nbsp;</td> </tr>
-                                            <tr> <td style="border:none;" colspan=2>&nbsp;</td> </tr>
+                                            <tr> <td style="border:none;"></td><td style="border:none;"></td> </tr>
+                                            <tr> <td style="border:none;"></td><td style="border:none;"></td> </tr>
                                             <tr> <td style="border:none;color:red;font-weight:bold;" colspan=3>TRUCK UTILIZATION</td> </tr>
-                                            <tr>${dailyTableTitle.join(`<td style="border:none;" colspan=3>&nbsp;</td>`)}</tr>
-                                            <tr>${dailyVehicleTableHeader[i-1].join(`<td style="border:none;" colspan=2>&nbsp;</td>`)}</tr>
-                                            <tr>${dailyTableSubHeader.join(`<td style="border:none;" colspan=2>&nbsp;</td>`)}</tr>
+                                            <tr>${dailyTableTitle.join(`<td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
+                                            <tr>${dailyVehicleTableHeader[i-1].join(`<td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
+                                            <tr>${dailyTableSubHeader.join(`<td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
                                             ${getRowsArr(dailyVehicleRows).join("")}
 
-                                            <tr> <td style="border:none;" colspan=2>&nbsp;</td> </tr>
-                                            <tr> <td style="border:none;" colspan=2>&nbsp;</td> </tr>
+                                            <tr> <td style="border:none;"></td><td style="border:none;"></td> </tr>
+                                            <tr> <td style="border:none;"></td><td style="border:none;"></td> </tr>
                                             <tr> <td style="border:none;color:red;font-weight:bold;" colspan=3>MANPOWER UTILIZATION (DRIVER)</td> </tr>
-                                            <tr>${dailyTableTitle.join(`<td style="border:none;" colspan=3>&nbsp;</td>`)}</tr>
-                                            <tr>${dailyDriverTableHeader[i-1].join(`<td style="border:none;" colspan=2>&nbsp;</td>`)}</tr>
-                                            <tr>${dailyTableSubHeader.join(`<td style="border:none;" colspan=2>&nbsp;</td>`)}</tr>
+                                            <tr>${dailyTableTitle.join(`<td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
+                                            <tr>${dailyDriverTableHeader[i-1].join(`<td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
+                                            <tr>${dailyTableSubHeader.join(`<td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
                                             ${getRowsArr(dailyDriverRows).join("")}
 
-                                            <tr> <td style="border:none;" colspan=2>&nbsp;</td> </tr>
-                                            <tr> <td style="border:none;" colspan=2>&nbsp;</td> </tr>
+                                            <tr> <td style="border:none;"></td><td style="border:none;"></td> </tr>
+                                            <tr> <td style="border:none;"></td><td style="border:none;"></td> </tr>
                                             <tr> <td style="border:none;color:red;font-weight:bold;" colspan=3>MANPOWER UTILIZATION (CHECKER)</td> </tr>
-                                            <tr>${dailyTableTitle.join(`<td style="border:none;" colspan=3>&nbsp;</td>`)}</tr>
-                                            <tr>${dailyCheckerTableHeader[i-1].join(`<td style="border:none;" colspan=2>&nbsp;</td>`)}</tr>
-                                            <tr>${dailyTableSubHeader.join(`<td style="border:none;" colspan=2>&nbsp;</td>`)}</tr>
+                                            <tr>${dailyTableTitle.join(`<td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
+                                            <tr>${dailyCheckerTableHeader[i-1].join(`<td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
+                                            <tr>${dailyTableSubHeader.join(`<td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
                                             ${getRowsArr(dailyCheckerRows).join("")}
 
-                                            <tr> <td style="border:none;" colspan=2>&nbsp;</td> </tr>
-                                            <tr> <td style="border:none;" colspan=2>&nbsp;</td> </tr>
+                                            <tr> <td style="border:none;"></td><td style="border:none;"></td> </tr>
+                                            <tr> <td style="border:none;"></td><td style="border:none;"></td> </tr>
                                             <tr> <td style="border:none;color:red;font-weight:bold;" colspan=3>MANPOWER UTILIZATION (HELPER)</td> </tr>
-                                            <tr>${dailyTableTitle.join(`<td style="border:none;" colspan=3>&nbsp;</td>`)}</tr>
-                                            <tr>${dailyHelperTableHeader[i-1].join(`<td style="border:none;" colspan=2>&nbsp;</td>`)}</tr>
-                                            <tr>${dailyTableSubHeader.join(`<td style="border:none;" colspan=2>&nbsp;</td>`)}</tr>
+                                            <tr>${dailyTableTitle.join(`<td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
+                                            <tr>${dailyHelperTableHeader[i-1].join(`<td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
+                                            <tr>${dailyTableSubHeader.join(`<td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
                                             ${getRowsArr(dailyHelperRows).join("")}
                                         </tbody>
                                     </table>`;
                 }
                 Object.keys(rows).forEach((key,i) => {
-                    tableRows.push(`<tr>${rows[key].join(`<td style="border:none;" colspan=2>&nbsp;</td>`)}</tr>`);
+                    tableRows.push(`<tr>${rows[key].join(`<td style="border:none;"></td><td style="border:none;"></td>`)}</tr>`);
                 });
 
                 var monthlyVehicleUtilization = GET.ROUND_OFF((dataTotalVehicles.length/totalVehicles)*100);
@@ -7941,17 +7929,17 @@ var REPORTS = {
                             <tbody>
                                 <tr> <td style="${excelHeaderStyle}text-align:center;" colspan=5><b>${title}</b></td> </tr>
                                 <tr> <td style="${excelHeaderStyle}text-align:center;" colspan=5><b>${moment(date_from).format("MM-YYYY")}</b></td> </tr>
-                                <tr> <td style="border:none;" colspan=5>&nbsp;</td> </tr>
+                                <tr> <td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td> </tr>
                                 <tr> <td style="${excelHeaderStyle}" colspan=5>Total # of Trucks: <b>${totalVehicles}</b></td> </tr>
                                 <tr> <td style="${excelHeaderStyle}" colspan=5>Total # of Manpower: <b>${totalManpower}</b></td> </tr>
-                                <tr> <td style="border:none;" colspan=5>&nbsp;</td> </tr>
+                                <tr> <td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td> </tr>
                                 <tr> <td style="${excelHeaderStyle}" colspan=5>Monthly Truck Utilization: <b>${monthlyVehicleUtilization}%</b></td> </tr>
                                 <tr> <td style="${excelHeaderStyle}" colspan=5>Monthly Manpower Utilization: <b>${monthlyManpowerUtilization}%</b></td> </tr>
-                                <tr> <td style="border:none;" colspan=5>&nbsp;</td> </tr>
+                                <tr> <td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td> </tr>
 
-                                <tr>${tableTitle.join(`<td style="border:none;" colspan=9>&nbsp;</td>`)}</tr>
-                                <tr>${tableHeader.join(`<td style="border:none;" colspan=2>&nbsp;</td>`)}</tr>
-                                <tr>${tableSubHeader.join(`<td style="border:none;" colspan=2>&nbsp;</td>`)}</tr>
+                                <tr>${tableTitle.join(`<td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
+                                <tr>${tableHeader.join(`<td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
+                                <tr>${tableSubHeader.join(`<td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
                                 ${tableRows}
                             </tbody>
                         </table>
@@ -8147,12 +8135,12 @@ var REPORTS = {
                                 _siteId = $(this).find("option:selected").val();
                                 _siteText = $(this).find("option:selected").text();
                             });
-                            $(`#generate-btn`).click(function(){
-                                callback();
+                            $(`#generate-btn,#generate-1-btn`).click(function(){
+                                callback($(this).attr("id"));
                             });
                         },
                         pagination = function(x){
-                            $(`#generate-btn`).html(`<i class="la la-spinner la-spin mr-2"></i>Generating... 0%`).attr("disabled",true);
+                            $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-2"></i>Generating... 0%`).attr("disabled",true);
 
                             $.ajax({
                                 url: x.countURL,
@@ -8190,14 +8178,14 @@ var REPORTS = {
                                                     docs = docs.concat(_docs_);
                                                     var percent = pb.calculate();
                         
-                                                    $(`#generate-btn`).html(`<i class="la la-spinner la-spin mr-2"></i>Generating... ${percent}%`);
+                                                    $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-2"></i>Generating... ${percent}%`);
                                                     
                                                     retrieveData(length);
                                                 }
                                             }
                                         });
                                     } else {
-                                        $(`#generate-btn`).html(`<i class="la la-spinner la-spin mr-2"></i>Generating... 100%`);
+                                        $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-2"></i>Generating... 100%`);
                                         x.callback(docs);
                                         $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
                                     }
@@ -8291,7 +8279,7 @@ var REPORTS = {
                             if(date_from.isEmpty()){
                                 toastr.error("Please fill all the required fields.");
                             } else {
-                                $(`#generate-btn`).html(`<i class="la la-spinner la-spin mr-2"></i>Generate report`).attr("disabled",true);
+                                $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-2"></i>Generate report`).attr("disabled",true);
                                 if(destination != "All"){
                                     GET.AJAX({
                                         url: `api/geofences/${CLIENT.id}/${USER.username}/${destination_id}`,
@@ -8433,7 +8421,7 @@ var REPORTS = {
                                 {origin_id: _siteId},
                                 function(docs){
                                     $(`body`).append(REPORTS.UI.REPORTS.CICOR(title,docs,_siteText,date_from,date_to));
-                                    GENERATE.TABLE_TO_EXCEL("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY")}`);
+                                    GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY")}`);
                                 }
                             );
                         });
@@ -8450,7 +8438,7 @@ var REPORTS = {
                                 {origin_id: _siteId,status: {$in:["complete"]}},
                                 function(docs){
                                     $(`body`).append(REPORTS.UI.REPORTS.OTR(title,docs,_siteText,date_from,date_to));
-                                    GENERATE.TABLE_TO_EXCEL("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY")}`);
+                                    GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY")}`);
                                 } 
                             );
                         });
@@ -8467,7 +8455,7 @@ var REPORTS = {
                                 {origin_id: _siteId},
                                 function(docs){
                                     $(`body`).append(REPORTS.UI.REPORTS.PBPA(title,docs,_siteText,date_from,date_to));
-                                    GENERATE.TABLE_TO_EXCEL("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY")}`);
+                                    GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY")}`);
                                 }
                             );
                         });
@@ -8484,7 +8472,7 @@ var REPORTS = {
                                 {destination: { $elemMatch: { "location_id": _siteId } }},
                                 function(docs){
                                     $(`body`).append(REPORTS.UI.REPORTS.HWTR(title,docs,_siteText,date_from));
-                                    GENERATE.TABLE_TO_EXCEL("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY")}`);
+                                    GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY")}`);
                                 }
                             );
                         });
@@ -8500,7 +8488,7 @@ var REPORTS = {
                         df_dt_dest(title,"REPORT_MODAL_04",null,function(){
                             tr_report(function(location){
                                     $(`body`).append(REPORTS.UI.REPORTS.TR(title,location,date_from));
-                                    GENERATE.TABLE_TO_EXCEL("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY")}`);
+                                    GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY")}`);
                                     $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
                                 }
                             );
@@ -8517,7 +8505,7 @@ var REPORTS = {
                         df_dt_dest(title,"REPORT_MODAL_05",null,function(){
                             vcr_report(function(docs){
                                     $(`body`).append(REPORTS.UI.REPORTS.VCR(title,docs,date_from,date_to));
-                                    GENERATE.TABLE_TO_EXCEL("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`);
+                                    GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`);
                                     $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
                                 }
                             );
@@ -8534,7 +8522,7 @@ var REPORTS = {
                         df_dt_dest(title,"REPORT_MODAL_05",null,function(){
                             ular_report(function(docs){
                                     $(`body`).append(REPORTS.UI.REPORTS.ULAR(title,docs,date_from,date_to));
-                                    GENERATE.TABLE_TO_EXCEL("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`);
+                                    GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`);
                                     $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
                                 }
                             );
@@ -8551,7 +8539,7 @@ var REPORTS = {
                         df_dt_dest(title,"REPORT_MODAL_05",null,function(){
                             desr_report(function(docs){
                                 $(`body`).append(REPORTS.UI.REPORTS.DESR(title,docs,date_from,date_to));
-                                GENERATE.TABLE_TO_EXCEL("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`);
+                                GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`);
                                 $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
                             });
                         });
@@ -8567,7 +8555,7 @@ var REPORTS = {
                         df_dt_dest(title,"REPORT_MODAL_05",null,function(){
                             ser_report(function(docs){
                                 $(`body`).append(REPORTS.UI.REPORTS.SER(title,docs,date_from,date_to));
-                                GENERATE.TABLE_TO_EXCEL("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`);
+                                GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`);
                                 $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
                             });
                         });
@@ -8588,13 +8576,39 @@ var REPORTS = {
                     });
                     $(`[mtur]`).click(function(){
                         var title = "Manpower and Truck Utilization Report";
-                        df_dt_dest(title,"REPORT_MODAL_07",null,function(){
+                        var customButtons = `<button id="generate-btn" type="button" class="btn btn-primary col-sm-12 mt-4">Generate report (.xls)</button>
+                                            <button id="generate-1-btn" type="button" class="btn btn-primary col-sm-12 mt-2">Generate report (.ods)</button>`;
+                        df_dt_dest(title,"REPORT_MODAL_07",customButtons,function(btnId){
                             mtur_report(function(docs){
                                 $(`body`).append(REPORTS.UI.REPORTS.mtur(title,docs,date_from,date_to));
-                                var tableIds = [];
-                                $(`[data-SheetName]`).each((i,el) => { tableIds.push(`#${$(el).attr("id")}`); });
-                                tablesToExcel(tableIds.join(","), `${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}.xls`);
-                                $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
+                                var fileName = `${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`;
+
+                                if(btnId == "generate-1-btn"){
+                                    // for OpenOffice
+                                    function doExcel1 () {
+                                        var blob,
+                                            wb = {SheetNames:[], Sheets:{}};
+                                        $(`[data-SheetName]`).each((i,el) => { 
+                                            var sheetname = $(`#${$(el).attr("id")}`).attr("data-sheetname");
+                                            var ws1 = XLSX.utils.table_to_sheet(el, {raw:true});
+                                            wb.SheetNames.push(sheetname); 
+                                            wb.Sheets[sheetname] = ws1;
+                                        });
+                                        
+                                        blob = new Blob([s2ab(XLSX.write(wb, {bookType:'ods', type:'binary'}))], {
+                                            type: "application/octet-stream"
+                                        });
+                                        
+                                        saveAs(blob, `${fileName}.ods`);
+                                    }
+                                    doExcel1();
+                                    // end for OpenOffice
+                                } else {
+                                    var tableIds = [];
+                                    $(`[data-SheetName]`).each((i,el) => { tableIds.push(`#${$(el).attr("id")}`); });
+                                    GENERATE.TABLE_TO_EXCEL.MULTISHEET(tableIds.join(","), `${fileName}.xls`);
+                                    $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
+                                }
                             });
                         });
 
@@ -8606,7 +8620,7 @@ var REPORTS = {
 
             /******** TABLE CHECK ********/
             TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
-                isFinishedLoading(["GEOFENCES","ROUTES","VEHICLES","CLUSTERS"], _new_, function(){
+                isFinishedLoading(["GEOFENCES","ROUTES","VEHICLES","CLUSTERS","VEHICLE_PERSONNEL"], _new_, function(){
                     _new_ = false;
                     LIST["geofences"].forEach(val => {
                         val.value = val.short_name;
@@ -9239,7 +9253,7 @@ var EVENT_VIEWER = {
                         var _title = `${excelTitle} On ${todr.date} @ ${customType || type}`,
                             _filename = _title.replace(/\//g,"_").replace(/:/g,"_").replace(/ /g,"_").replace(/@/g,"");
                         $(`body`).append(REPORTS.UI.REPORTS.TODR.generate(_title,type,todr.obj));
-                        GENERATE.TABLE_TO_EXCEL("report-hidden",_filename);
+                        GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",_filename);
                         $(`#report-hidden,#temp-link,[data-SheetName]`).remove();
                     };
                 $(`[mreport="todr-05-12"]`).click(function(){
@@ -10015,21 +10029,12 @@ var LOCATIONS = {
                     var action = TABLE.ROW_BUTTONS(PAGE.GET(),{loadView:["edit"],readonlyArr:["edit"]});
                     $(`${_this.id} th:last-child`).css({"min-width":action.width,"width":action.width});
 
-                    var region;
-                    if(G_SELECT["regions"]){
-                        region = G_SELECT["regions"].find(x => x.id == obj.region_id) || {};
-                        obj._region = region.value;
-                    } else {
-                        region = {value:`<small class="font-italic text-muted">loading...</small>`};
-                    }
-                    var totalGeofences;
-                    if(GGS.STATUS.GEOFENCES){
-                        totalGeofences = LIST["geofences"].filter(x=> x.cluster_id == obj._id).length;
-                        obj.totalGeofences = totalGeofences;
-                    } else {
-                        totalGeofences = `<small class="font-italic text-muted">loading...</small>`;
-                    }
+                    var region = (LIST["regions"]) ? (getRegion(obj.region_id) || {}).region : `<small class="font-italic text-muted">loading...</small>`;
+                    var totalGeofences = (GGS.STATUS.GEOFENCES) ? (getGeofence(obj._id,"cluster_id","filter") || {}).length : `<small class="font-italic text-muted">loading...</small>`;
 
+                    (LIST["regions"]) ? obj._region = region : null;
+                    (GGS.STATUS.GEOFENCES) ? obj.totalGeofences = totalGeofences : null;
+                    
                     var getEscalationUsers = function(escalation,type){
                         var person_in_charge = obj.person_in_charge || {};
                         person_in_charge[escalation] = person_in_charge[escalation] || {};
@@ -10054,7 +10059,7 @@ var LOCATIONS = {
                         '_id': obj._id,
                         '_row':  obj._row,
                         'Cluster': obj.cluster || "-",
-                        'Region': region.value || "-",
+                        'Region': region || "-",
                         'Geofences': totalGeofences,
                         'Sequence': obj.sequence || "-",
                         'esq1_lq': getEscalationUsers("escalation1","lq"),
@@ -10868,6 +10873,7 @@ var LOCATIONS = {
                         }
                     });
                 table.setButtons({
+                    loadView: ["create"],
                     actions:{
                         create: function(){
                             initializeModal({
@@ -10886,22 +10892,17 @@ var LOCATIONS = {
                     var action = TABLE.ROW_BUTTONS(PAGE.GET(),{loadView:["edit"],readonlyArr:["edit"]});
                     $(`${_this.id} th:last-child`).css({"min-width":action.width,"width":action.width});
 
-                    var origin,destination;
-                    if(G_SELECT["geofences"]){
-                        origin = G_SELECT["geofences"].find(x => x.id == obj.origin_id) || {};
-                        destination = G_SELECT["geofences"].find(x => x.id == obj.destination_id) || {};
-                        obj._origin = origin.value;
-                        obj._destination = destination.value;
-                    } else {
-                        origin = {value:`<small class="font-italic text-muted">loading...</small>`};
-                        destination = {value:`<small class="font-italic text-muted">loading...</small>`};
-                    }
+                    var origin = (LIST["geofences"]) ? (getGeofence(obj.origin_id) || {}).short_name : `<small class="font-italic text-muted">loading...</small>`;
+                    var destination = (LIST["geofences"]) ? (getGeofence(obj.destination_id) || {}).short_name : `<small class="font-italic text-muted">loading...</small>`;
+                    
+                    (LIST["geofences"]) ? obj._origin = origin : null;
+                    (LIST["geofences"]) ? obj._destination = destination : null;
         
                     return TABLE.COL_ROW(null,{
                         '_id': obj._id,
                         '_row':  obj._row,
-                        'Origin': obj._origin || origin.value || "-",
-                        'Destination': obj._destination || destination.value || "-",
+                        'Origin': obj._origin || origin || "-",
+                        'Destination': obj._destination || destination || "-",
                         'Transit Time': DATETIME.HH_MM(null,obj.transit_time).hour_minute,
                         'Action': action.buttons,
                     }).row;
@@ -10918,9 +10919,10 @@ var LOCATIONS = {
                         modalElements = function(obj){
                             var disabled = (obj) ? true : false;
                             obj = obj || {};
+                            var finalOptions = G_SELECT["geofences"].filter(x => x.code);
                             return [
-                                {title:"Origin",id:"origin_id",type:"select2",multiple:false,required:true,value:obj.origin_id,options:G_SELECT["geofences"],disabled,sub_title:"Site Code is required for geofence to apper in the options"},
-                                {title:"Destination",id:"destination_id",type:"select2",multiple:false,required:true,value:obj.destination_id,options:G_SELECT["geofences"],disabled,sub_title:"Site Code is required for geofence to apper in the options"},
+                                {title:"Origin",id:"origin_id",type:"select2",multiple:false,required:true,value:obj.origin_id,options:finalOptions,disabled,sub_title:"Site Code is required for site to apper in the options"},
+                                {title:"Destination",id:"destination_id",type:"select2",multiple:false,required:true,value:obj.destination_id,options:finalOptions,disabled,sub_title:"Site Code is required for site to apper in the options"},
                                 {title:"Route",id:"_id",type:"text",required:true,value:obj._id,readonly:true},
                                 {title:"Transit Time (HH:MM)",id:"transit_time",type:"time",required:true,value:obj.transit_time},
                             ];
@@ -10931,7 +10933,7 @@ var LOCATIONS = {
                             destination_id = $(`#destination_id`).val(),
                             originGeofence = G_SELECT["geofences"].find(x => x.id == origin_id) || {},
                             destinationGeofence = G_SELECT["geofences"].find(x => x.id == destination_id) || {};
-                        $(`#_id`).val(`${originGeofence.code}${clientCustom.originDestinationSeparator}${destinationGeofence.code}`);
+                        $(`#_id`).val(`${originGeofence.code||""}${clientCustom.originDestinationSeparator}${destinationGeofence.code||""}`);
                     }).trigger("change");
                     $(`#transit_time-hh,#transit_time-mm`).change(function(){
                         var hh = $(`#transit_time-hh`).val() || 0,
@@ -11070,11 +11072,8 @@ var VEHICLES = {
                     }
                 }
                 
-                var section = `<small class="font-italic text-muted">loading...</small>`;
-                if(LIST["vehicles_section"]) section = (getVehiclesSection(obj.section_id) || {}).section || "-";
-                
-                var company = `<small class="font-italic text-muted">loading...</small>`;
-                if(LIST["vehicles_company"]) company = (getVehiclesCompany(obj.company_id) || {}).company || "-";
+                var section = (LIST["vehicles_section"]) ? (getVehiclesSection(obj.section_id) || {}).section : `<small class="font-italic text-muted">loading...</small>`;
+                var company = (LIST["vehicles_company"]) ? (getVehiclesCompany(obj.company_id) || {}).company : `<small class="font-italic text-muted">loading...</small>`;
     
                 return TABLE.COL_ROW(null,{
                     '_id': obj._id,
@@ -11086,8 +11085,8 @@ var VEHICLES = {
                     'Conduction Number': obj["Tractor Conduction"] || "-",
                     'Truck Number': obj["Truck Number"] || "-",
                     'Site': obj["Site"] || "-",
-                    'Section': section,
-                    'Company':company,
+                    'Section': section || "-",
+                    'Company':company || "-",
                     'Availability': obj.Availability||"Available",
                     'Last 2 Locations': lastLocHTML || "-",
                     'Action': action.buttons,
@@ -11326,23 +11325,18 @@ var VEHICLE_PERSONNEL = {
                 });
                 $(`${_this.id} th:last-child`).css({"min-width":action.width,"width":action.width});
 
-                var vehicle = `<small class="font-italic text-muted">loading...</small>`;
-                if(LIST["vehicles"]) vehicle = (getVehicle(obj.vehicle_id) || {}).name || "-";
-                
-                var section = `<small class="font-italic text-muted">loading...</small>`;
-                if(LIST["vehicle_personnel_section"]) section = (getVehiclePersonnelSection(obj.section_id) || {}).section || "-";
-                
-                var company = `<small class="font-italic text-muted">loading...</small>`;
-                if(LIST["vehicle_personnel_company"]) company = (getVehiclePersonnelCompany(obj.company_id) || {}).company || "-";
+                var vehicle = (LIST["vehicles"]) ? (getVehicle(obj.vehicle_id) || {}).name : `<small class="font-italic text-muted">loading...</small>`;
+                var section = (LIST["vehicle_personnel_section"]) ? (getVehiclePersonnelSection(obj.section_id) || {}).section : `<small class="font-italic text-muted">loading...</small>`;
+                var company = (LIST["vehicle_personnel_company"]) ? (getVehiclePersonnelCompany(obj.company_id) || {}).company : `<small class="font-italic text-muted">loading...</small>`;
 
                 return TABLE.COL_ROW(null,{
                     '_id': obj._id,
                     '_row':  obj._row,
                     'Name': obj.name || "-",
                     'Occupation': obj.occupation || "-",
-                    'Vehicle': vehicle,
-                    'Section': section,
-                    'Company': company,
+                    'Vehicle': vehicle || "-",
+                    'Section': section || "-",
+                    'Company': company || "-",
                     'Action': action.buttons,
                 }).row;
             };
@@ -11874,28 +11868,6 @@ var LOADING = {
 /************** FUNCTIONS **************/
 var PAGE = {
     EXISTING: [],
-    LOGOUT: function(){
-        if(SESSION_TOKEN && USER){
-            $(`body`).append(`<div id="overlay" class="swal2-container swal2-fade swal2-shown" style="overflow-y: auto;background-color: #ffffffc2;z-index: 999999;">
-                                <h3 style="text-align: center;margin-top: 40vh;font-weight: 100;">Logging out...</h3>
-                                </div>`);
-            GET.AJAX({
-                url: `/api/sessions/${CLIENT.id}/${USER.username}/${SESSION_TOKEN}`,
-                method: "DELETE",
-                headers: {
-                    "Authorization": SESSION_TOKEN
-                },
-            }, function(docs){
-                Cookies.remove("GKEY");
-                Cookies.remove("session_token");
-                location.href = `./${CLIENT.name}/login`;
-            });
-        } else {
-            Cookies.remove("GKEY");
-            Cookies.remove("session_token");
-            location.href = `./${CLIENT.name}/login`;
-        }
-    },
     MAIN: {
         UI: {
             PAGE: function(){
@@ -12285,7 +12257,7 @@ var PAGE = {
     DEFAULT: function(){
         var page = null;
         GRANTED_PAGES.forEach(x => {
-            if(x.name == "dispatch_entry" && autorizationLevel.dispatcher() && !USER.dc){
+            if(x.name == "dispatch_entry" && authorizationLevel .dispatcher() && !USER.dc){
 
             } else {
                 if(x.sub_menu && page == null && PAGE_FUNCTIONALITIES[x.name]) page = x.sub_menu[0];
@@ -13306,7 +13278,7 @@ var TABLE = {
             pageButtons = PAGE_FUNCTIONALITIES[goto].buttons.table || [],
             dt_buttons = x.dt_buttons || [],
             loadView = x.loadView || [],
-            dispatcherCondition = true,//(autorizationLevel.dispatcher()) ? ((!USER.dc)?false:true) : true,
+            dispatcherCondition = true,//(authorizationLevel .dispatcher()) ? ((!USER.dc)?false:true) : true,
             actions = x.actions || {};
         
         pageButtons.forEach(val => {
@@ -13632,7 +13604,7 @@ var TABLE = {
             adminArr = options.adminArr || [],
             loadView = options.loadView || [],
             customButtons = options.customButtons,
-            dispatcherCondition = (autorizationLevel.dispatcher()) ? ((!USER.dc)?false:true) : true,
+            dispatcherCondition = (authorizationLevel .dispatcher()) ? ((!USER.dc)?false:true) : true,
             username = options.username,
             deleteArr = options.deleteArr || [];
         var condClass =(dispatcherCondition == null || dispatcherCondition == true) ? "" : "dispatcherCondition";
@@ -14154,49 +14126,49 @@ var TABLE = {
 };
 /************** END FUNCTIONS **************/
 
-function getGeofence(value="",key="_id",type="find"){
-    return (LIST["geofences"]||[])[type](x => x[key].toString() == value.toString());
-}
-function getVehicle(value="",key="_id",type="find"){
-    return (LIST["vehicles"]||[])[type](x => x[key].toString() == value.toString());
-}
-function getVehicleHistory(value="",key="_id",type="find"){
-    return (LIST["vehicles_history"]||[])[type](x => x[key].toString() == value.toString());
-}
-function getVehiclesSection(value="",key="_id",type="find"){
-    return (LIST["vehicles_section"]||[])[type](x => x[key].toString() == value.toString());
-}
-function getVehiclesCompany(value="",key="_id",type="find"){
-    return (LIST["vehicles_company"]||[])[type](x => x[key].toString() == value.toString());
-}
-function getVehiclePersonnel(value="",key="_id",type="find"){
-    return (LIST["vehicle_personnel"]||[])[type](x => x[key].toString() == value.toString());
-}
-function getVehiclePersonnelSection(value="",key="_id",type="find"){
-    return (LIST["vehicle_personnel_section"]||[])[type](x => x[key].toString() == value.toString());
-}
-function getVehiclePersonnelCompany(value="",key="_id",type="find"){
-    return (LIST["vehicle_personnel_company"]||[])[type](x => x[key].toString() == value.toString());
-}
-function getTrailer(value="",key="_id",type="find"){
-    return (LIST["trailers"]||[])[type](x => x[key].toString() == value.toString());
-}
-function getRoute(value="",key="_id",type="find"){ // STILL HAVE
-    return (LIST["routes"]||[])[type](x => x[key].toString() == value.toString());
-}
-function getRegion(value="",key="_id",type="find"){
-    return (LIST["regions"]||[])[type](x => x[key].toString() == value.toString());
-}
-function getCluster(value="",key="_id",type="find"){
-    return (LIST["clusters"]||[])[type](x => x[key].toString() == value.toString());
-}
-function getUser(value="",key="_id",type="find"){
-    return (LIST["users"]||[])[type](x => x[key].toString() == value.toString());
-}
-function getShiftSchedule(value="",key="_id",type="find"){
-    return (LIST["shift_schedule"]||[])[type](x => x[key].toString() == value.toString());
-}
 
+function getGeofence(value="",key="_id",type="find",callback=function(){return true;}){
+    return (LIST["geofences"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
+}
+function getVehicle(value="",key="_id",type="find",callback=function(){return true;}){
+    return (LIST["vehicles"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
+}
+function getVehicleHistory(value="",key="_id",type="find",callback=function(){return true;}){
+    return (LIST["vehicles_history"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
+}
+function getVehiclesSection(value="",key="_id",type="find",callback=function(){return true;}){
+    return (LIST["vehicles_section"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
+}
+function getVehiclesCompany(value="",key="_id",type="find",callback=function(){return true;}){
+    return (LIST["vehicles_company"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
+}
+function getVehiclePersonnel(value="",key="_id",type="find",callback=function(){return true;}){
+    return (LIST["vehicle_personnel"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
+}
+function getVehiclePersonnelSection(value="",key="_id",type="find",callback=function(){return true;}){
+    return (LIST["vehicle_personnel_section"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
+}
+function getVehiclePersonnelCompany(value="",key="_id",type="find",callback=function(){return true;}){
+    return (LIST["vehicle_personnel_company"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
+}
+function getTrailer(value="",key="_id",type="find",callback=function(){return true;}){
+    return (LIST["trailers"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
+}
+function getRoute(value="",key="_id",type="find",callback=function(){return true;}){ // STILL HAVE
+    return (LIST["routes"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
+}
+function getRegion(value="",key="_id",type="find",callback=function(){return true;}){
+    return (LIST["regions"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
+}
+function getCluster(value="",key="_id",type="find",callback=function(){return true;}){
+    return (LIST["clusters"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
+}
+function getUser(value="",key="_id",type="find",callback=function(){return true;}){
+    return (LIST["users"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
+}
+function getShiftSchedule(value="",key="_id",type="find",callback=function(){return true;}){
+    return (LIST["shift_schedule"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
+}
 /************** VIEWS **************/
 const views = new function(){
     return {

@@ -80,7 +80,7 @@ WEBSOCKET.connect().then(() => {
                             timeout: 6000,
                             async: true
                         }).done(function (docs) {
-                            saveSession(response);
+                            saveSession(docs);
                         }).fail(function(error){
                             saveSession({});
                         });

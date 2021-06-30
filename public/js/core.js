@@ -1,4 +1,8 @@
 /************** GLOBAL VARIABLES **************/
+const authorizationLevel  = {
+    dispatcher: () => { return ["dispatcher"].includes(USER.role); },
+    administrator: () => { return ["administrator","developer"].includes(USER.role); },
+};
 const ENVIRONMENT = $(`#ENVIRONMENT`).text() || "development";
 const CUSTOM = {
     COLUMN:{
@@ -935,7 +939,7 @@ function SESSION_FROM_DB(existCallback,notExistCallback){
                     }
                 } catch(error){}
                 
-                if(session.dispatcherDetails && autorizationLevel.dispatcher()){
+                if(session.dispatcherDetails && authorizationLevel .dispatcher()){
                     USER.dc = session.dispatcherDetails._id;
                 }
                 
@@ -971,6 +975,7 @@ function LOGOUT(){
             },
             async: true
         }).done(function (docs) {
+            Cookies.remove("tabs");
             Cookies.remove("GKEY");
             Cookies.remove("session_token");
             location.href = `../${CLIENT.name}/login`;
@@ -978,6 +983,9 @@ function LOGOUT(){
             console.log("Error:",error);
         });
     } else {
+        Cookies.remove("tabs");
+        Cookies.remove("GKEY");
+        Cookies.remove("session_token");
         location.href = `../${CLIENT.name}/login`;
     }
 };
