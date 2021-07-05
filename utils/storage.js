@@ -1,11 +1,23 @@
 const fs = require('fs');
 const {Storage} = require('@google-cloud/storage');
+const location = 'ASIA'; // https://cloud.google.com/storage/docs/locations#location-mr
+const storageClass = "standard"; // https://googleapis.dev/java/google-cloud-storage/latest/com/google/cloud/storage/StorageClass.html#STANDARD
 
 var storage = null,
     bucket = null,
     bucketName = null,
     dir = "/tmp";
+    
+async function createBucketWithStorageClassAndLocation() {
+    // For default values see: https://cloud.google.com/storage/docs/locations and
+    // https://cloud.google.com/storage/docs/storage-classes
+    const [bucket] = await storage.createBucket(bucketName, {
+        location,
+        [storageClass]: true,
+    });
 
+    console.log(`${bucket.name} created with ${storageClass} class in ${location}`);
+}
 const initialize = () => {
     storage = new Storage({
         credentials: {
@@ -160,11 +172,23 @@ const _attachments_ = {
     },
     add: (attachments) => {
         return new Promise((resolve,reject) => {
-            _storage_.upload(attachments).then(() => {
-                resolve();
+            function uploadToBucket(){
+                _storage_.upload(attachments).then(() => {
+                    resolve();
+                }).catch(error => {
+                    console.log("Error Uploading1: ",JSON.stringify(error));
+                    reject();
+                });
+            }
+            createBucketWithStorageClassAndLocation().then(() => {
+                uploadToBucket();
             }).catch(error => {
-                console.log("Error Uploading1: ",JSON.stringify(error));
-                reject();
+                if(error.code == 409){
+                    uploadToBucket();
+                } else {
+                    console.log("Error Creating Bucket: ",JSON.stringify(error));
+                    reject();
+                }
             });
         });
     },

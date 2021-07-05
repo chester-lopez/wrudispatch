@@ -693,8 +693,57 @@ var LIMIT = 200,
                 update: "none",
                 delete: "none",
             },
-        }
+        },
         // end Coke T2
+        
+        // Coke Fleet
+        user_fleet: {
+            vehicles:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none",
+            },
+            fuel_refill: {
+                read: "all",
+                create: "all",
+                update: "none",
+                delete: "all"
+            },
+        },
+        developer_fleet: {
+            users:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all",
+            },
+            vehicles:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none",
+            },
+            fuel_refill: {
+                read: "all",
+                create: "all",
+                update: "none",
+                delete: "all"
+            },
+            all_events: {
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "all"
+            },
+            changelog:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none",
+            },
+        }
+        // end Coke Fleet
     },
     CLIENTS = {
         // Manually create Google Storage Bucket. It will not create automatically.
@@ -759,7 +808,7 @@ var LIMIT = 200,
                     otr: ["origin","destination","route","sn","plateNumber","trailer","palCap","haulerName","targetTransit","actualTimelapse","remarks1","remarks2","truckBasePlant"]
                 },
                 users: {
-                    ignoreRolesWithString: ["t2","wilcon"]
+                    ignoreRolesWithString: ["t2","wilcon","fleet"]
                 }
             },
         },
@@ -843,7 +892,7 @@ var LIMIT = 200,
                     otr: ["origin","destination","route","sn","plateNumber","targetTransit","actualTimelapse","remarks1","remarks2","truckBasePlant"]
                 },
                 users: {
-                    ignoreRolesWithString: ["t2"]
+                    ignoreRolesWithString: ["t2","fleet"]
                 }
             },
         },
@@ -865,7 +914,36 @@ var LIMIT = 200,
                     },
                 },
                 users: {
-                    ignoreRolesWithString: ["wilcon"]
+                    ignoreRolesWithString: ["wilcon","fleet"]
+                }
+            }
+        },
+        fleet: {
+            id: "fleet",
+            name: "Fleet",
+            dsName: "wd-fleet", // database & storage name = dsName
+            appId: 14, //process.env.APP_ID_COKET1
+            ggsURL: `coca-cola.server93.com`,
+            allowDownloadFromOtherDB: "CokeT1",
+            type: 2,
+            tabCloseAutoLogout: true,
+            loadInBackground: ["VEHICLES","USERS","SESSIONS"],
+            menuGroupOptions: [
+                {
+                    title: "Vehicles",
+                    class: "m-0",
+                    roles: ["user"]
+                }
+            ],
+            custom: {
+                vehicles: {
+                    columns: ["name","cn1","cn2","fuelCapacity","truckModel"],
+                    tableButtons: { 
+                        buttons: ["refresh","filter","export"]
+                    },
+                },
+                users: {
+                    ignoreRolesWithString: ["wilcon","coket2"]
                 }
             }
         },
@@ -878,6 +956,10 @@ var LIMIT = 200,
         {
             pathName: "wilcon",
             tempKey: "_wilcon"
+        },
+        {
+            pathName: "fleet",
+            tempKey: "_fleet"
         }
     ];
 

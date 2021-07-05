@@ -194,6 +194,16 @@ var streamList = {
             };
         }
     },
+    fuel_refill: {
+        watch: () => {
+            return {
+                key: 'fuel_refill',
+                collection: 'fuel_refill',
+                pipeline: [],
+                options: { fullDocument : "updateLookup" }
+            };
+        }
+    },
 };
 /******** END STREAMLIST ********/
 
@@ -372,8 +382,8 @@ const connect = function(io,_ping_,ENVIRONMENT){ //io
     
             socket.emit("*",JSON.stringify({
                 type: "credentials",
-                version: "vv.-2.53.110.1",
-                forceUpdate: ["wilcon"],
+                version: "vv.-2.53.110.2",
+                forceUpdate: [],
                 // ["coket1","coket2","wilcon"]
                 data: auth.getCredentials(dbName)
             }));
@@ -398,6 +408,9 @@ const connect = function(io,_ping_,ENVIRONMENT){ //io
             } else if (pathname.toLowerCase().indexOf('/wilcon') > -1) {
                 console.log("Hello there, Wilcon!");
                 conn("wilcon",socket);
+            } else if (pathname.toLowerCase().indexOf('/fleet') > -1) {
+                console.log("Hello there, Coke Fleet!");
+                conn("fleet",socket);
             } else {
                 // socket.destroy();
             }

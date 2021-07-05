@@ -1327,3 +1327,15 @@ function s2ab(s) {
     for (var i=0; i<s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
     return buf;
 }
+function exportTableToExcel(filename) {
+    // get table
+    var table = document.getElementById("report-hidden");
+    // convert table to excel sheet
+    var wb = XLSX.utils.table_to_book(table, {sheet:"Customer Report"});
+    // write sheet to blob
+    var blob = new Blob([s2ab(XLSX.write(wb, {bookType:'xlsx', type:'binary'}))], {
+        type: "application/octet-stream"
+    });
+    // return sheet file
+    return saveAs(blob, `${filename}.xlsx`);
+}

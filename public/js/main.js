@@ -746,18 +746,18 @@ class loadInBackground {
     }
 
     load(){
-        var _this = this;
+        var self = this;
 
-        if(LIST[_this.urlPath] && LIST[_this.urlPath].length > 0){
-            GGS.STATUS[_this.type] = true;
-            _this.g_select_settings();
+        if(LIST[self.urlPath] && LIST[self.urlPath].length > 0){
+            GGS.STATUS[self.type] = true;
+            self.g_select_settings();
             TABLE.FINISH_LOADING.START_CHECK();
         } else {
             var skip = 0,
                 getData = function(length){
                     if(length == null || length == LIMIT){
                         $.ajax({ 
-                            url: `/api/${_this.urlPath}/${CLIENT.id}/${USER.username}/all/${JSON.stringify({})}/${skip}/${LIMIT}`, 
+                            url: `/api/${self.urlPath}/${CLIENT.id}/${USER.username}/all/${JSON.stringify({})}/${skip}/${LIMIT}`, 
                             method: "GET", 
                             timeout: 90000, 
                             headers: {
@@ -765,44 +765,44 @@ class loadInBackground {
                             },
                             async: true
                         }).done(function (docs) {
-                            console.log(`${_this.urlPath.toUpperCase()}:`,docs);
+                            console.log(`${self.urlPath.toUpperCase()}:`,docs);
                             if(!docs.error){
                                 length = docs.length;
 
-                                LIST[_this.urlPath] = LIST[_this.urlPath] || [];
+                                LIST[self.urlPath] = LIST[self.urlPath] || [];
                                 docs.forEach(val => {
-                                    var index = LIST[_this.urlPath].findIndex(x => x._id.toString() == val._id.toString());
+                                    var index = LIST[self.urlPath].findIndex(x => x._id.toString() == val._id.toString());
                                     if(index > -1){
-                                        LIST[_this.urlPath][index] = val;
+                                        LIST[self.urlPath][index] = val;
                                     } else {
                                         val._row = GENERATE.RANDOM(36);
-                                        LIST[_this.urlPath].push(val);
+                                        LIST[self.urlPath].push(val);
                                     }
                                 });
         
                                 skip+= length;
                                 getData(length);
                             } else {
-                                if(_this.failed != 5){
+                                if(self.failed != 5){
                                     setTimeout(function(){
-                                        _this.failed++;
-                                        _this.load();
+                                        self.failed++;
+                                        self.load();
                                     },1000);
                                 }
                             }
                         }).fail(function(error){
-                            console.log(`Error in GGS - ${_this.urlPath}`,error);
-                            if(_this.failed != 5){
+                            console.log(`Error in GGS - ${self.urlPath}`,error);
+                            if(self.failed != 5){
                                 setTimeout(function(){
-                                    _this.failed++;
-                                    _this.load();
+                                    self.failed++;
+                                    self.load();
                                 },1000);
                             }
                         });
                     } else {
-                        TABLE.WATCH({urlPath:_this.urlPath});// BEFORE START_CHECK
-                        GGS.STATUS[_this.type] = true;
-                        _this.g_select_settings();
+                        TABLE.WATCH({urlPath:self.urlPath});// BEFORE START_CHECK
+                        GGS.STATUS[self.type] = true;
+                        self.g_select_settings();
                         TABLE.FINISH_LOADING.START_CHECK();
                     }
                 };
@@ -810,23 +810,23 @@ class loadInBackground {
         }
     }
     g_select_settings(){
-        const _this = this;
+        const self = this;
         function getSettings(val){
             var obj = {};
-            if(_this.urlPath == "regions"){
+            if(self.urlPath == "regions"){
                 obj = {
                     id: val._id,
                     value: val.region
                 };
             }
-            if(_this.urlPath == "clusters"){
+            if(self.urlPath == "clusters"){
                 obj = {
                     id: val._id,
                     value: val.cluster,
                     region_id: val.region_id
                 };
             }
-            if(_this.urlPath == "geofences"){
+            if(self.urlPath == "geofences"){
                 obj = {
                     id: val._id,
                     value: val.short_name,
@@ -835,11 +835,11 @@ class loadInBackground {
             }
             return obj;
         }
-        G_SELECT[_this.urlPath] = [];
-        (LIST[_this.urlPath]||[]).forEach(val => {
-            G_SELECT[_this.urlPath].push(getSettings(val));
+        G_SELECT[self.urlPath] = [];
+        (LIST[self.urlPath]||[]).forEach(val => {
+            G_SELECT[self.urlPath].push(getSettings(val));
         });
-        G_SELECT[_this.urlPath] = SORT.ARRAY_OBJECT( G_SELECT[_this.urlPath],"value",{sortType:"asc"}); 
+        G_SELECT[self.urlPath] = SORT.ARRAY_OBJECT( G_SELECT[self.urlPath],"value",{sortType:"asc"}); 
     }
 }
 class Table {
@@ -870,9 +870,9 @@ class Table {
     set progressBar(val){ this._progressBar = val; }
 
     setButtons(x){ 
-        const _this = this;
+        const self = this;
 
-        var goto = _this.goto,
+        var goto = self.goto,
             pageButtons = PAGE_FUNCTIONALITIES[goto].buttons.table || [],
             dt_buttons = x.dt_buttons || [],
             loadView = x.loadView || [],
@@ -951,15 +951,15 @@ class Table {
                 addToDtButtons(val);
             }
         });
-        _this.dataTableOptions.buttons = dt_buttons;
+        self.dataTableOptions.buttons = dt_buttons;
     }
     initialize(){
-        const _this = this;
+        const self = this;
 
         LIST[this.urlPath] = LIST[this.urlPath] || [];
 
         if ($.fn.DataTable.isDataTable(this.id) ) {
-            $(_this.id).DataTable().clear().destroy();
+            $(self.id).DataTable().clear().destroy();
         } else {
             PAGE.DISPLAY();
         }
@@ -976,14 +976,14 @@ class Table {
             $(`.table.dataTable`).css("text-align","unset");
         }
 
-        $(_this.id).on('page.dt length.dt draw.dt order.dt', function () {
+        $(self.id).on('page.dt length.dt draw.dt order.dt', function () {
             PAGE.TOOLTIP();
             TABLE.FINISH_LOADING.START_CHECK();
             // TABLE.FINISH_LOADING.UPDATE(); // will make button enabled even if not yet done loading
 
-            $(`${_this.id} thead tr th`).each((i,el) => {
+            $(`${self.id} thead tr th`).each((i,el) => {
                 if(!$(el).is(":visible")){
-                    $(`${_this.id} tr:not(.child)`).each((i1,el1) => {
+                    $(`${self.id} tr:not(.child)`).each((i1,el1) => {
                         $(el1).find("td").eq(i).hide();
                     });
                 }
@@ -997,13 +997,13 @@ class Table {
         });
         PAGE.TOOLTIP();
 
-        if(_this.perColumnSearch){
-            $(_this.id).find('thead').append('<tr class="row-filter"><th></th><th></th><th></th><th></th><th></th></tr>');
-            $(_this.id).find('thead .row-filter th:not(:last-child)').each(function() {
+        if(self.perColumnSearch){
+            $(self.id).find('thead').append('<tr class="row-filter"><th></th><th></th><th></th><th></th><th></th></tr>');
+            $(self.id).find('thead .row-filter th:not(:last-child)').each(function() {
                 $(this).html('<input type="text" class="form-control input-sm" placeholder="Search...">');
             });
-            $(_this.id).find('.row-filter input').on('keyup change', function() {
-                _this.dt.column($(this).parent().index() + ':visible')
+            $(self.id).find('.row-filter input').on('keyup change', function() {
+                self.dt.column($(this).parent().index() + ':visible')
                     .search(this.value)
                     .draw();
             });
@@ -1011,8 +1011,8 @@ class Table {
 
         $(`.row-filter`).hide();
         TABLE.WATCH({
-            urlPath:_this.urlPath,
-            rowData:_this.addRow,
+            urlPath:self.urlPath,
+            rowData:self.addRow,
             options:function(){TABLE.FINISH_LOADING.START_CHECK();}
         });
         if (typeof this.filterListener === 'function') { this.filterListener(); }
@@ -1026,15 +1026,15 @@ class Table {
         $("div.tbl-progress-bar").hide();
     }
     retrieveData(length){
-        var _this = this;
-        if(length == null && _this.progressBar){
-            _this.progressBar.reset();
+        var self = this;
+        if(length == null && self.progressBar){
+            self.progressBar.reset();
         }
         if(length == null || length == LIMIT){
-            var filterExtend = (_this.filter)?`/${JSON.stringify(_this.filter)}`:``;
+            var filterExtend = (self.filter)?`/${JSON.stringify(self.filter)}`:``;
 
             $.ajax({
-                url: `/api/${_this.url}${filterExtend}/${_this.skip}/${LIMIT}`,
+                url: `/api/${self.url}${filterExtend}/${self.skip}/${LIMIT}`,
                 method: "GET",
                 timeout: 90000, // 1 minute and 30 seconds
                 headers: {
@@ -1042,28 +1042,28 @@ class Table {
                 },
                 async: true
             }).done(function (docs) {
-                // console.log(`${_this.goto}:`,docs);
+                // console.log(`${self.goto}:`,docs);
                 if(!docs.error){
                     length = docs.length;
 
-                    _this.display();
+                    self.display();
 
                     if(docs.error){
                         toastr.error(docs.error.message);
                     } else {
-                        _this.skip += length;
+                        self.skip += length;
                         
-                        if([_this.goto].includes(PAGE.GET())){
-                            if (typeof _this.populateRows === 'function') { _this.populateRows(docs); }
-                            ($(_this.id).length > 0) ? _this.retrieveData(length) : null;
+                        if([self.goto].includes(PAGE.GET())){
+                            if (typeof self.populateRows === 'function') { self.populateRows(docs); }
+                            ($(self.id).length > 0) ? self.retrieveData(length) : null;
                         }
                     }
                     TABLE.FINISH_LOADING.START_CHECK();
                 }
             });
         } else {
-            _this.hideProgressBar();
-            _this.display();
+            self.hideProgressBar();
+            self.display();
         }
     }
     display(){
@@ -1077,27 +1077,29 @@ class Table {
 
         $(`#filter-container input,#filter-container select`).attr("disabled",false);
         $(`#filter-container button,#filter-container a`).removeClass("disabled");
+
+        $(".dataTables_empty").text("No data available in table");
     }
     watch(){
 
     }
     populateRows(data){
-        const _this = this;
+        const self = this;
         
-        if($(_this.id).length > 0 && data.length > 0){
+        if($(self.id).length > 0 && data.length > 0){
             // donePopulate = true; - dispatch only
             // $(`#search-btn`).css({"pointer-events":"","color":""});  - dispatch only
             
             var rows = [];
             $.each(data, function(i,val){
-                var index = LIST[_this.urlPath].findIndex(x => x._id.toString() == val._id.toString());
+                var index = LIST[self.urlPath].findIndex(x => x._id.toString() == val._id.toString());
                 
                 (val._row) ? null : val._row = GENERATE.RANDOM(36);
-                (index > -1) ? LIST[_this.urlPath][index] = val : LIST[_this.urlPath].push(val);
+                (index > -1) ? LIST[self.urlPath][index] = val : LIST[self.urlPath].push(val);
 
-                rows.push(_this.addRow(val));
+                rows.push(self.addRow(val));
             });
-            _this.dt.rows.add(rows).draw(false);
+            self.dt.rows.add(rows).draw(false);
 
             TABLE.FINISH_LOADING.START_CHECK();
             // TABLE.FINISH_LOADING.UPDATE(); // will make button enabled even if not yet done loading
@@ -1105,25 +1107,25 @@ class Table {
             
             $("div.tbl-progress-bar").show();
 
-            _this.progressBar ? _this.progressBar.calculate() : null;
+            self.progressBar ? self.progressBar.calculate() : null;
         }
         
         // initializeOtherSettings();
     }
     updateRows(data){
-        const _this = this;
+        const self = this;
         
-        if($(_this.id).length > 0 && data.length > 0){
+        if($(self.id).length > 0 && data.length > 0){
             $.each(data, function(i,val){
-                var rowNode = _this.dt.row(`[_row="${val._row}"]`).node();
-                (rowNode) ? _this.dt.row(rowNode).data(_this.addRow(val)) : null;
+                var rowNode = self.dt.row(`[_row="${val._row}"]`).node();
+                (rowNode) ? self.dt.row(rowNode).data(self.addRow(val)) : null;
             });
         }
     }
     countRows(){
-        const _this = this;
+        const self = this;
         $.ajax({
-            url: `/api/${_this.urlPath}/${CLIENT.id}/${USER.username}/all/${JSON.stringify(_this.filter)}/count`,
+            url: `/api/${self.urlPath}/${CLIENT.id}/${USER.username}/all/${JSON.stringify(self.filter)}/count`,
             method: "GET",
             timeout: 90000, // 1 minute and 30 seconds
             headers: {
@@ -1133,16 +1135,16 @@ class Table {
         }).done(function (count) {
             console.log("count",count);
 
-            _this.progressBar = new ProgressBar(count);
-            _this.skip = 0;
-            LIST[_this.urlPath] = [];
+            self.progressBar = new ProgressBar(count);
+            self.skip = 0;
+            LIST[self.urlPath] = [];
             
-            if(_this.dt) { //  && !disableClearTable - dispatch only
-                _this.dt.clear().draw();
+            if(self.dt) { //  && !disableClearTable - dispatch only
+                self.dt.clear().draw();
                 $(".dataTables_empty").text("Loading...");
             }
             
-            _this.retrieveData();
+            self.retrieveData();
         });
     }
     preLoadData(){
@@ -1398,10 +1400,10 @@ var SETTINGS = {
                 };
             };
             table.rowListeners = function(_row,_id){
-                const _this = this;
-                $(_this.id).on('click', `[_row="${_row}"] [logout],[_row="${_row}"] + tr.child [logout]`,function(e){
+                const self = this;
+                $(self.id).on('click', `[_row="${_row}"] [logout],[_row="${_row}"] + tr.child [logout]`,function(e){
                     e.stopImmediatePropagation();
-                    var obj = LIST[_this.urlPath].find(x => x._id.toString() == _id.toString());
+                    var obj = LIST[self.urlPath].find(x => x._id.toString() == _id.toString());
                     if(obj){
                         MODAL.CONFIRMATION({
                             confirmCloseCondition: true,
@@ -1417,7 +1419,7 @@ var SETTINGS = {
                                 }).done(function (docs) {
                                     if(docs.ok == 1){
                                         $(`#confirm-modal`).remove();
-                                        $(_this.id).DataTable().row(`[_row="${_row}"]`).remove().draw(false);
+                                        $(self.id).DataTable().row(`[_row="${_row}"]`).remove().draw(false);
                                     }
                                 });
                             }
@@ -4974,29 +4976,16 @@ var DISPATCH = {
         },
         import: function(){
             $(`#download-template-btn`).click(function(){
-                function exportTableToExcel(filename) {
-                    // get table
-                    var table = document.getElementById("report-hidden");
-                    // convert table to excel sheet
-                    var wb = XLSX.utils.table_to_book(table, {sheet:"Customer Report"});
-                    // write sheet to blob
-                    var blob = new Blob([s2ab(XLSX.write(wb, {bookType:'xlsx', type:'binary'}))], {
-                        type: "application/octet-stream"
-                    });
-                    // return sheet file
-                    return saveAs(blob, `${filename}.xlsx`);
-                }
-                
                 if(CLIENT.id == "wilcon"){
                     if(GGS.STATUS.SHIFT_SCHEDULE && GGS.STATUS.VEHICLES && GGS.STATUS.ROUTES) {
-                        $(`body`).append(CUSTOM.IMPORT_TEMPLATE.wilcon());
+                        $(`body`).append(CUSTOM.IMPORT_TEMPLATE.dispatch.wilcon());
                         exportTableToExcel("Wilcon Import Template");
                     } else {
                         toastr.info("Data is still loading. Please try again in few seconds.");
                     }
                 }
                 if(CLIENT.id == "coket1"){
-                    $(`body`).append(CUSTOM.IMPORT_TEMPLATE.coket1());
+                    $(`body`).append(CUSTOM.IMPORT_TEMPLATE.dispatch.coket1());
                     exportTableToExcel("CokeT1 Import Template");
                 }
                 $(`#report-hidden,#temp-link,[data-SheetName]`).remove();
@@ -9127,10 +9116,10 @@ var EVENT_VIEWER = {
                 }
             });
             table.addRow = function(obj){
-                const _this = this;
+                const self = this;
                 var _class = (obj.stage=="start") ? "text-success" : "text-danger",
                     action = TABLE.ROW_BUTTONS(PAGE.GET()); 
-                $(`${_this.id} th:last-child`).css({"min-width":action.width,"width":action.width});
+                $(`${self.id} th:last-child`).css({"min-width":action.width,"width":action.width});
 
                 obj.shipment_number = obj.shipment_number || [];
     
@@ -9146,10 +9135,10 @@ var EVENT_VIEWER = {
                 }).row;
             };
             table.rowListeners = function(_row,_id){
-                const _this = this;
-                $(_this.id).on('click', `[_row="${_row}"] [view],[_row="${_row}"] + tr.child [view]`,function(e){
+                const self = this;
+                $(self.id).on('click', `[_row="${_row}"] [view],[_row="${_row}"] + tr.child [view]`,function(e){
                     e.stopImmediatePropagation();
-                    var obj = LIST[_this.urlPath].find(x => x._id.toString() == _id.toString());
+                    var obj = LIST[self.urlPath].find(x => x._id.toString() == _id.toString());
                     if(obj){
                         var _show = ["stage", "GEOFENCE_NAME","GEOFENCE_ID","RULE_NAME","USER_NAME","USER_USERNAME","ASSIGNED_VEHICLE_ID","Region","Cluster","Site"],
                             tbody = "";
@@ -9310,10 +9299,10 @@ var ALL_EVENTS = {
                 }
             });
             table.addRow = function(obj){
-                const _this = this;
+                const self = this;
                 var _class = (obj.stage=="start") ? "text-success" : "text-danger",
                     action = TABLE.ROW_BUTTONS(PAGE.GET()); 
-                $(`${_this.id} th:last-child`).css({"min-width":action.width,"width":action.width});
+                $(`${self.id} th:last-child`).css({"min-width":action.width,"width":action.width});
 
                 obj.shipment_number = obj.shipment_number || [];
     
@@ -9328,10 +9317,10 @@ var ALL_EVENTS = {
                 }).row;
             };
             table.rowListeners = function(_row,_id){
-                const _this = this;
+                const self = this;
                 $(table.id).on('click', `[_row="${_row}"] [view],[_row="${_row}"] + tr.child [view]`,function(e){
                     e.stopImmediatePropagation();
-                    var obj = LIST[_this.urlPath].find(x => x._id.toString() == _id.toString());
+                    var obj = LIST[self.urlPath].find(x => x._id.toString() == _id.toString());
                     if(obj){
                         var _show = ["stage","GEOFENCE_NAME","GEOFENCE_ID","RULE_NAME","USER_NAME","USER_USERNAME","ASSIGNED_VEHICLE_ID","Region","Cluster","Site"],
                             tbody = "";
@@ -9425,10 +9414,10 @@ var USERS = {
                 }
             });
             table.addRow = function(obj){
-                const _this = this;
+                const self = this;
                 var action = TABLE.ROW_BUTTONS(PAGE.GET(),{username:obj._id});
                     (action.width != "0px") ? actionWidth = action.width : null;
-                    $(`${_this.id} th:last-child`).css({"min-width":actionWidth,"width":actionWidth});
+                    $(`${self.id} th:last-child`).css({"min-width":actionWidth,"width":actionWidth});
     
                 return TABLE.COL_ROW(null,{
                     '_row':  obj._row,
@@ -9443,8 +9432,8 @@ var USERS = {
                 }).row;
             };
             table.rowListeners = function(_row,_id){
-                const _this = this;
-                TABLE.ROW_LISTENER({table_id:_this.id,_row,urlPath,_id,initializeModal});
+                const self = this;
+                TABLE.ROW_LISTENER({table_id:self.id,_row,urlPath,_id,initializeModal});
             };
 
             var initializeModal = function(x){
@@ -9626,7 +9615,7 @@ var LOCATIONS = {
                     }
                 });
                 table.addRow = function(obj){
-                    const _this = this;
+                    const self = this;
                     var action = TABLE.ROW_BUTTONS(PAGE.GET(),{loadView:["edit"],readonlyArr:["edit"]});
                     $(`${table.id} th:last-child`).css({"min-width":action.width,"width":action.width});
 
@@ -9668,7 +9657,7 @@ var LOCATIONS = {
                     }).row;
                 };
                 table.rowListeners = function(_row,_id){
-                    const _this = this;
+                    const self = this;
                     
                     TABLE.ROW_LISTENER({table_id:table.id,_row,urlPath,_id,initializeModal,
                         deleteModalContent: `All of the clusters and geofences linked to this region will be deleted too. Are you sure you still want to delete this region?`,
@@ -10025,9 +10014,9 @@ var LOCATIONS = {
                 table.addRow = function(obj){
                     new loadInBackground("regions","REGIONS").g_select_settings();
 
-                    const _this = this;
+                    const self = this;
                     var action = TABLE.ROW_BUTTONS(PAGE.GET(),{loadView:["edit"],readonlyArr:["edit"]});
-                    $(`${_this.id} th:last-child`).css({"min-width":action.width,"width":action.width});
+                    $(`${self.id} th:last-child`).css({"min-width":action.width,"width":action.width});
 
                     var region = (LIST["regions"]) ? (getRegion(obj.region_id) || {}).region : `<small class="font-italic text-muted">loading...</small>`;
                     var totalGeofences = (GGS.STATUS.GEOFENCES) ? (getGeofence(obj._id,"cluster_id","filter") || {}).length : `<small class="font-italic text-muted">loading...</small>`;
@@ -10075,8 +10064,8 @@ var LOCATIONS = {
                     }).row;
                 };
                 table.rowListeners = function(_row,_id){
-                    const _this = this;
-                    TABLE.ROW_LISTENER({table_id:_this.id,_row,urlPath,_id,initializeModal,
+                    const self = this;
+                    TABLE.ROW_LISTENER({table_id:self.id,_row,urlPath,_id,initializeModal,
                         deleteModalContent: `All of the geofences linked to this cluster will be deleted too. Are you sure you still want to delete this cluster?`,
                     });
                 };
@@ -10438,7 +10427,7 @@ var LOCATIONS = {
                     }
                 });
                 table.addRow = function(obj){
-                    const _this = this;
+                    const self = this;
                     var action = TABLE.ROW_BUTTONS(PAGE.GET(),{loadView:["edit"],readonlyArr:["edit"]}),
                         getGGSRowValue = function(arr,_v_,_o_){
                             var str;
@@ -10517,8 +10506,8 @@ var LOCATIONS = {
                     }).row;
                 };
                 table.rowListeners = function(_row,_id){
-                    const _this = this;
-                    TABLE.ROW_LISTENER({table_id:_this.id,_row,urlPath,_id,initializeModal});
+                    const self = this;
+                    TABLE.ROW_LISTENER({table_id:self.id,_row,urlPath,_id,initializeModal});
                 };
                 table.filterListener = function(){
                     $(`.page-box`).append(SLIDER.COLUMN_VISIBILITY(CUSTOM.COLUMN.geofences)); 
@@ -10888,9 +10877,9 @@ var LOCATIONS = {
                 table.addRow = function(obj){
                     new loadInBackground("geofences","GEOFENCES").g_select_settings();
 
-                    const _this = this;
+                    const self = this;
                     var action = TABLE.ROW_BUTTONS(PAGE.GET(),{loadView:["edit"],readonlyArr:["edit"]});
-                    $(`${_this.id} th:last-child`).css({"min-width":action.width,"width":action.width});
+                    $(`${self.id} th:last-child`).css({"min-width":action.width,"width":action.width});
 
                     var origin = (LIST["geofences"]) ? (getGeofence(obj.origin_id) || {}).short_name : `<small class="font-italic text-muted">loading...</small>`;
                     var destination = (LIST["geofences"]) ? (getGeofence(obj.destination_id) || {}).short_name : `<small class="font-italic text-muted">loading...</small>`;
@@ -10908,8 +10897,8 @@ var LOCATIONS = {
                     }).row;
                 };
                 table.rowListeners = function(_row,_id){
-                    const _this = this;
-                    TABLE.ROW_LISTENER({table_id:_this.id,_row,urlPath,_id,initializeModal});
+                    const self = this;
+                    TABLE.ROW_LISTENER({table_id:self.id,_row,urlPath,_id,initializeModal});
                 };
 
                 var initializeModal = function(x){
@@ -11045,10 +11034,10 @@ var VEHICLES = {
                 }
             });
             table.addRow = function(obj){
-                const _this = this;
+                const self = this;
                 var action = TABLE.ROW_BUTTONS(PAGE.GET(),{loadView:["edit","view"],readonlyArr:["edit","view"]}),
                     status = VEHICLES.STATUS.find(x => x.id == (obj.Availability||"")) || {value:"Available"};
-                $(`${_this.id} th:last-child`).css({"min-width":action.width,"width":action.width});
+                $(`${self.id} th:last-child`).css({"min-width":action.width,"width":action.width});
 
                 var vehiclesHistory = getVehicleHistory(obj._id) || {};
                 var location = vehiclesHistory.location || [],
@@ -11085,6 +11074,10 @@ var VEHICLES = {
                     'Conduction Number': obj["Tractor Conduction"] || "-",
                     'Truck Number': obj["Truck Number"] || "-",
                     'Site': obj["Site"] || "-",
+                    'CN1': obj["CN1"] || "-",
+                    'CN2': obj["CN2"] || "-",
+                    'Fuel Capacity': obj["Fuel Capacity"] || "-",
+                    'Truck Model': obj["Truck Model"] || "-",
                     'Section': section || "-",
                     'Company':company || "-",
                     'Availability': obj.Availability||"Available",
@@ -11093,13 +11086,13 @@ var VEHICLES = {
                 }).row;
             };
             table.rowListeners = function(_row,_id){
-                const _this = this;
-                TABLE.ROW_LISTENER({table_id:_this.id,_row,urlPath,_id,
+                const self = this;
+                TABLE.ROW_LISTENER({table_id:self.id,_row,urlPath,_id,
                     editCallback: function(){
                         // LOAD SELECT 2 OPTIONS FOR: ORIGIN,DESTINATION,VEHICLES
                         getSelect2Options();
 
-                        var obj = LIST[_this.urlPath].find(x => x._id == _id);
+                        var obj = LIST[self.urlPath].find(x => x._id == _id);
                         var title = `Edit Vehicle Details`,
                             modalElements = function(){
                                 var arr = [];
@@ -11159,11 +11152,11 @@ var VEHICLES = {
 
                         MODAL.SUBMIT({
                             method:"PUT",
-                            url:`/api/${_this.urlPath}/${CLIENT.id}/${USER.username}/${_id}`,
+                            url:`/api/${self.urlPath}/${CLIENT.id}/${USER.username}/${_id}`,
                         },ggsUpdate);
                     },
                     additionalListeners: function(){
-                        $(_this.id).on('click', `[_row="${_row}"] [view],[_row="${_row}"] + tr.child [view]`,function(e){
+                        $(self.id).on('click', `[_row="${_row}"] [view],[_row="${_row}"] + tr.child [view]`,function(e){
                             e.stopImmediatePropagation();
                             var vehicleName = (getVehicle(_id) || {}).name;
                             var obj = getVehicleHistory(_id) || {};
@@ -11185,7 +11178,7 @@ var VEHICLES = {
                 });
             };
             table.filterListener = function(){
-                const _this = this;
+                const self = this;
                 var filter = USER.filters.vehicles || {};
                 try {
                     filter = JSON.parse(USER.filters.vehicles);
@@ -11194,7 +11187,7 @@ var VEHICLES = {
                 
                     
                 $(`.page-box`).append(SLIDER.EXPORT()); 
-                TABLE.TOOLBAR(_this.dt);
+                TABLE.TOOLBAR(self.dt);
                 $(`.buttons-copy span`).html("Copy Table");
                 $(`.buttons-csv span`).html("Export Table As CSV File");
                 $(`.buttons-excel span`).html("Export Table As Excel File");
@@ -11221,13 +11214,13 @@ var VEHICLES = {
                             data: JSON.stringify(data)
                         }, function(docs){
                             console.log("docs1",docs);
-                            _this.dt.column(4).search(_filter_.site).draw(false);
+                            self.dt.column(4).search(_filter_.site).draw(false);
                             USER.filters.vehicles = _filter_;
                             filter.site = _filter_.site;
                             $(`#filter-btn`).html("Apply").removeClass("disabled");
                         });
                     } else {
-                        _this.dt.column(4).search(_filter_.site).draw(false);
+                        self.dt.column(4).search(_filter_.site).draw(false);
                         $(`#filter-btn`).html("Apply").removeClass("disabled");
                     }
                 }
@@ -11263,6 +11256,360 @@ var VEHICLES = {
             }
             TABLE.FINISH_LOADING.START_CHECK();
             /******** END TABLE CHECK ********/
+        }
+    }
+};
+var FUEL_REFILL = {
+    FUNCTION: {
+        init: function(){
+            var urlPath = "fuel_refill",
+                _new_ = true,
+                table = new Table({
+                    id: "#tbl-fuel_refill",
+                    urlPath,
+                    goto: "fuel_refill",
+                    dataTableOptions: {
+                        columns: TABLE.COL_ROW(CUSTOM.COLUMN.fuel_refill).column,
+                        order: [[ 2, "desc" ]],
+                        createdRow: function (row, data, dataIndex) {
+                            var _row = data._row;
+                            $(row).attr(`_row`, data._row);
+
+                            table.rowListeners(_row,data._id);
+                        },
+                        dom: 'lBfrti<"tbl-progress-bar">p',
+                    },
+                    initializeCallback: function(){
+                        TABLE.WATCH({urlPath,rowData:table.addRow,options:function(){TABLE.FINISH_LOADING.START_CHECK();}});
+                    }
+                });
+            table.setButtons({
+                loadView: ["import"],
+                actions:{
+                    refresh: function(){ table.countRows(); },
+                    import: function(){
+                        $(`body`).append(MODAL.CREATE.EMPTY(`Import Batch File`,modalViews.fuel_refill.import()));
+                        FUEL_REFILL.FUNCTION.import({});
+                    },
+                }
+            });
+            table.addRow = function(obj){
+                const self = this;
+                var action = TABLE.ROW_BUTTONS(PAGE.GET());
+                $(`${self.id} th:last-child`).css({"min-width":action.width,"width":action.width});
+
+                var created_by = (LIST["users"]) ? (getUser(obj.created_by) || {}).name : `<small class="font-italic text-muted">loading...</small>`;
+    
+                return TABLE.COL_ROW(null,{
+                    '_id': obj._id,
+                    '_row':  obj._row,
+                    'Converted File': `<a href="${obj.attachments[0].url}">${obj.attachments[0].filename}</a>`,
+                    'Error File': `<a href="${obj.attachments[1].url}">${obj.attachments[1].filename}</a>`,
+                    'Upload Date':  DATETIME.FORMAT(obj.created_on),
+                    'Uploaded By': created_by || "-",
+                    'Action': action.buttons,
+                }).row;
+            };
+            table.rowListeners = function(_row,_id){
+                const self = this;
+                TABLE.ROW_LISTENER({table_id:self.id,_row,urlPath,_id});
+            };
+            table.initialize();
+            table.countRows();
+            
+
+            /******** TABLE CHECK ********/
+            TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
+                isFinishedLoading(["USERS"], _new_, function(){
+                    if((LIST[urlPath]||[]).length > 0 && table.dt && _new_){
+                        _new_ = false;
+                        table.updateRows(LIST[urlPath]);
+                    }
+                });
+                isFinishedLoading(["VEHICLES"], true, function(){
+                    TABLE.FINISH_LOADING.UPDATE();
+                });
+            }
+            TABLE.FINISH_LOADING.START_CHECK();
+            /******** END TABLE CHECK ********/
+        },
+        import: function(){
+            $(`#download-template-btn`).click(function(){
+                $(`body`).append(CUSTOM.IMPORT_TEMPLATE.fuel_refill.fleet());
+                exportTableToExcel("Fuel Refill Import Template");
+                
+                $(`#report-hidden,#temp-link,[data-SheetName]`).remove();
+            });
+
+            var fileExtension = ["xls","xlsx","ods"];
+            $('.dropify').dropify();
+            $(`.dropify`).change(function(){
+                $(`#import-btn`).attr("disabled",false);
+            });
+            $(`#import-btn`).click(function(){
+                $(this).html(`<i class="la la-spinner la-spin mr-2"></i>Import`).attr("disabled",true);
+                $(`.dropify-wrapper`).css("pointer-events","none");
+                read(`.dropify`);
+            }).attr("disabled",true);
+
+            var requiredFields = {
+                fleet: [
+                    { name: "Delivery Date", required: true, error: ["Date is not valid."]  },
+                    { name: "Time", required: true, error: ["Time is not valid."] },
+                    { name: "Quantity", key: "Volume", required: true },
+                    { name: "Vehicle License Number", required: true },
+                ],
+            };
+            
+            function read(el){
+                var ext = $(el).val().split('.').pop().toLowerCase();
+                
+                console.log(fileExtension,ext);
+                if(fileExtension.includes(ext) == true){
+                    var reader = new FileReader();
+                    reader.onload = function () {
+                        var result = reader.result;
+                        // console.log(result);
+                        var workbook = XLSX.read(result, { type: 'binary' }),
+                            XL_row_object = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[workbook.SheetNames[0]],{defval: ""}),
+                            finalRowObject = [];
+
+                        $.each(XL_row_object, function(key,value){
+                            // XL_row_object[key].key = GENERATE.RANDOM(36);
+                            var hasValue = false;
+                            requiredFields[CLIENT.id].forEach(_val_ => {
+                                if(XL_row_object[key][_val_.name]){
+                                    hasValue = true;
+                                }
+                            });
+                            if(hasValue === true){
+                                finalRowObject.push(XL_row_object[key]);
+                            }
+                        });
+                        console.log("finalRowObject",finalRowObject)
+                        convert(finalRowObject,$(el)[0].files[0].name);
+                    };
+                    // start reading the file. When it is done, calls the onload event defined above.
+                    ($(el)[0].files.length > 0) ? reader.readAsBinaryString($(el)[0].files[0]) : console.log("No file selected.");
+                } else {
+                    toastr.error(`Only ${fileExtension.join(", ")} files are allowed.`);
+                    
+                    $(`#import-btn`).html(`Import`).attr("disabled",false);
+                    $(`.dropify-wrapper`).css("pointer-events","");
+                    $(`.dropify-clear`).click();
+                }
+            }
+            function convert(import_data,filename){
+                filename = filename.split('.').slice(0, -1).join('.');
+                var errorList = {},
+                    warningList = {},
+                    importData = [],
+                    errorData = [],
+                    parseDateExcel = (excelTimestamp) => {
+                        const secondsInDay = 24 * 60 * 60;
+                        const excelEpoch = new Date(1899, 11, 31);
+                        const excelEpochAsUnixTimestamp = excelEpoch.getTime();
+                        const missingLeapYearDay = secondsInDay * 1000;
+                        const delta = excelEpochAsUnixTimestamp - missingLeapYearDay;
+                        const excelTimestampAsUnixTimestamp = excelTimestamp * secondsInDay * 1000;
+                        const parsed = excelTimestampAsUnixTimestamp + delta;
+                        return isNaN(parsed) ? null : parsed;
+                    };
+                
+                if(import_data.length > 0){
+                    import_data.forEach((val,i) => {
+                        var license_number = val["Vehicle License Number"],
+                            username = (LIST["vehicles"].find(x => x.CN1 == license_number || x.CN2 == license_number || x.name == license_number)||{}).username,
+                            delivery_date = DATETIME.FORMAT(parseDateExcel(val["Delivery Date"]),"MM/DD/YYYY"),
+                            delivery_time = moment(new Date(parseDateExcel(val["Time"]))).format("H:mm:ss"),
+                            errorShipment = false,
+                            identifierKey = val.__rowNum__;
+
+                        var obj = {
+                                "VehicleID": "",
+                                "TimeStamp": "",
+                                "Volume": ""
+                            },
+                            addToNoteList = function(text,causes,key,type,isField){
+                                key = key || (Number(val.__rowNum__) + 1);
+                                if(type == "error"){
+                                    var causesHTML = (causes) ? `<ul level=2><li>${causes.join("</li><li>")}</li></ul>` : "";
+                                    (errorList[key]) ? errorList[key].push(text+causesHTML) : errorList[key] = [(text+causesHTML)];
+                                    errorShipment = true;
+                                } 
+                                if(type == "warning"){
+                                    var causesHTML = (causes) ? `<ul level=2><li>${causes.join("</li><li>")}</li></ul>` : "";
+                                    text = (isField === true) ? `<small class="text-muted">[FIELD NOT SAVED]</small> ${text}` : text;
+                                    (warningList[key]) ? warningList[key].push(text+causesHTML) : warningList[key] = [(text+causesHTML)];
+                                }
+                            };
+                            
+                        if((val.__rowNum__).toString()._trim()){
+                            requiredFields[CLIENT.id].forEach(_val_ => {
+                                if(val[_val_.name].toString()._trim()){
+                                    // okay
+                                    if(_val_.key){
+                                        obj[_val_.key] = val[_val_.name].toString()._trim();
+                                    } else {
+                                        checkkkkk(_val_.name,_val_.error);
+                                    }
+                                } else {
+                                    if(_val_.required === true){
+                                        // error
+                                        addToNoteList(`Missing data in '${_val_.name}'. `,null,val[identifierKey],"error");
+                                    } else {
+                                        if(_val_.codependent){
+                                            if(val[_val_.codependent]){
+                                                // error
+                                                addToNoteList(`Missing data in '${_val_.name}'. `,null,val[identifierKey],"warning");
+                                            } else {
+                                                // okay. no error
+                                                obj[_val_.key] = "";
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        } else {
+                            addToNoteList(`Missing data in '${identifierKey}'.`,null,val[identifierKey],"error");
+                        }
+                        
+                        function checkkkkk(columnKey,error){
+                            if(columnKey == "Vehicle License Number"){
+                                if(username){
+                                    obj["VehicleID"] = username;
+                                } else {
+                                    addToNoteList(`Missing data in '${columnKey}'. `,null,val[identifierKey],"error");
+                                }
+                            }
+
+                            if(columnKey == "Delivery Date"){
+                                var momentDeliveryDate = moment(delivery_date, 'MM/DD/YYYY', true);
+                                var formattedDeliveryDate = momentDeliveryDate.format("MM/DD/YYYY");
+                                if(momentDeliveryDate.isValid()){
+                                    if(moment(delivery_time, 'H:mm:ss', true).isValid()){
+                                        obj["TimeStamp"] = moment(`${formattedDeliveryDate}, ${delivery_time}`).format("YYYY-MM-DDTHH:mm:ss");
+                                    }
+                                } else {
+                                    addToNoteList(`Invalid data in '${columnKey}'.  Possible causes:`,error,val[identifierKey],"error",true);
+                                }
+                            }
+
+                            if(columnKey == "Time"){
+                                if(moment(delivery_time, 'H:mm:ss', true).isValid()){
+                                    var momentDeliveryDate = moment(delivery_date, 'MM/DD/YYYY', true);
+                                    var formattedDeliveryDate = momentDeliveryDate.format("MM/DD/YYYY");
+                                    if(momentDeliveryDate.isValid()){
+                                        obj["TimeStamp"] = moment(`${formattedDeliveryDate}, ${delivery_time}`).format("YYYY-MM-DDTHH:mm:ss");
+                                    }
+                                } else {
+                                    addToNoteList(`Invalid data in '${columnKey}'.  Possible causes:`,error,val[identifierKey],"error",true);
+                                }
+                            }
+                        }
+
+                        importData.push(obj);
+                        if(errorShipment === false){
+                            // importData.push(obj); // merged
+                        } else {
+                            delete val.__rowNum__;
+                            val["Delivery Date"] = delivery_date;
+                            val["Time"] = delivery_time;
+                            errorData.push(val);
+                        }
+
+                    });
+                    console.log("errorList",errorList);
+                    console.log("LENGTH: "+importData.length);
+                    console.log("final",importData);
+
+                    function json_to_sheet_to_base64(arr,filename){
+                        /* make the worksheet */
+                        var ws = XLSX.utils.json_to_sheet(arr);
+
+                        /* add to workbook */
+                        var wb = XLSX.utils.book_new();
+                        XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+
+                        /* generate an XLSX file */
+                        // XLSX.writeFile(wb, "sheetjs.xlsx");
+                        
+                        /* generate XLSX as array buffer */
+                        var bufferArray = XLSX.write(wb, {bookType: 'xlsx', type: 'array'});
+                        return {
+                            // add comma(",") before base64, refer to storage.js (_storage.upload === var base64 = (val.base64||"").split(',')[1];)
+                            base64: ","+btoa([].reduce.call(new Uint8Array(bufferArray),function(p,c){return p+String.fromCharCode(c)},'')),
+                            filename,
+                            wb
+                        }
+                    }
+
+                    var merged = json_to_sheet_to_base64(importData,`[Converted] ${filename}.xlsx`);
+                    var error = json_to_sheet_to_base64(errorData,`[Error] ${filename}.xlsx`);
+                    var attachments = [
+                        { 
+                            base64: merged.base64, 
+                            filename: merged.filename, 
+                            storageFilename: `attachments/<INSERT_ID_HERE>/${merged.filename}`,
+                            url: `https://storage.googleapis.com/${CLIENT.dsName}/`
+                        },
+                        { 
+                            base64: error.base64, 
+                            filename: error.filename, 
+                            storageFilename: `attachments/<INSERT_ID_HERE>/${error.filename}`,
+                            url: `https://storage.googleapis.com/${CLIENT.dsName}/`
+                        }
+                    ];
+
+                    $.ajax({ 
+                        url: `/api/fuel_refill/${CLIENT.id}/${USER.username}`, 
+                        method: "post", 
+                        timeout: 90000 ,
+                        headers: {
+                            "Content-Type": "application/json; charset=utf-8",
+                            "Authorization": SESSION_TOKEN
+                        },
+                        data: JSON.stringify({
+                            _id: GENERATE.RANDOM(36),
+                            attachments
+                        }),
+                        async: true
+                    }).done(function (docs) {
+                        $("#reportCompleteList").html(`<a href="javascript:void(0);">${merged.filename}</a>`);
+                        $("#reportCompleteList a").click(function(){
+                            XLSX.writeFile(merged.wb, merged.filename);
+                        });
+
+                        $("#reportErrorList").html(`<a href="javascript:void(0);">${error.filename}</a>`);
+                        $("#reportErrorList a").click(function(){
+                            XLSX.writeFile(error.wb, error.filename);
+                        });
+                        
+                        if(docs.ok == 1){
+                            toastr.success("Download links are now available.");
+                            $('.dropify-clear').click();
+                            $('.dropify-wrapper').css("pointer-events","");
+                            $(`#import-btn`).html("Import").attr("disabled",true);
+                        } else {
+                            TOASTR.ERROR(docs);
+                            $('.dropify-clear').click();
+                            $('.dropify-wrapper').css("pointer-events","");
+                            $(`#import-btn`).html("Import").attr("disabled",true);
+                        }
+                    }).fail(function(error){
+                        TOASTR.ERROR(error);
+                        $('.dropify-clear').click();
+                        $('.dropify-wrapper').css("pointer-events","");
+                        $(`#import-btn`).html("Import").attr("disabled",true);
+                    });
+
+                } else {
+                    toastr.error("Invalid file. Please download or follow the excel template provided.");
+                    $('.dropify-clear').click();
+                    $('.dropify-wrapper').css("pointer-events","");
+                    $(`#import-btn`).html("Import").attr("disabled",true);
+                }
+            }
         }
     }
 };
@@ -11315,7 +11662,7 @@ var VEHICLE_PERSONNEL = {
                 }
             });
             table.addRow = function(obj){
-                const _this = this;
+                const self = this;
                 var action = TABLE.ROW_BUTTONS(PAGE.GET(),{
                     loadView:["edit"],
                     readonlyArr:["edit"],
@@ -11323,7 +11670,7 @@ var VEHICLE_PERSONNEL = {
                         { button: "edit-rest-days", byPassCondition: (obj.occupation!="Driver" && obj.occupation!="Checker" && obj.occupation!="Helper") },
                     ]
                 });
-                $(`${_this.id} th:last-child`).css({"min-width":action.width,"width":action.width});
+                $(`${self.id} th:last-child`).css({"min-width":action.width,"width":action.width});
 
                 var vehicle = (LIST["vehicles"]) ? (getVehicle(obj.vehicle_id) || {}).name : `<small class="font-italic text-muted">loading...</small>`;
                 var section = (LIST["vehicle_personnel_section"]) ? (getVehiclePersonnelSection(obj.section_id) || {}).section : `<small class="font-italic text-muted">loading...</small>`;
@@ -11341,7 +11688,7 @@ var VEHICLE_PERSONNEL = {
                 }).row;
             };
             table.rowListeners = function(_row,_id){
-                const _this = this;
+                const self = this;
                 TABLE.ROW_LISTENER({table_id:table.id,_row,urlPath,_id,initializeModal,
                     additionalListeners: function(){
                         $(table.id).on('click', `[_row="${_row}"] [edit-rest-days],[_row="${_row}"] + tr.child [edit-rest-days]`,function(e){
@@ -11496,7 +11843,7 @@ var VEHICLE_PERSONNEL = {
                 });
             };
             table.filterListener = function(){
-                const _this = this;
+                const self = this;
                 var filter = USER.filters.vehicles || {};
                 try {
                     filter = JSON.parse(USER.filters.vehicles);
@@ -11524,13 +11871,13 @@ var VEHICLE_PERSONNEL = {
                             data: JSON.stringify(data)
                         }, function(docs){
                             console.log("docs1",docs);
-                            _this.dt.column(4).search(_filter_.site).draw(false);
+                            self.dt.column(4).search(_filter_.site).draw(false);
                             USER.filters.vehicles = _filter_;
                             filter.site = _filter_.site;
                             $(`#filter-btn`).html("Apply").removeClass("disabled");
                         });
                     } else {
-                        _this.dt.column(4).search(_filter_.site).draw(false);
+                        self.dt.column(4).search(_filter_.site).draw(false);
                         $(`#filter-btn`).html("Apply").removeClass("disabled");
                     }
                 }
@@ -11650,9 +11997,9 @@ var TRAILERS = {
                 }
             });
             table.addRow = function(obj){
-                const _this = this;
+                const self = this;
                 var action = TABLE.ROW_BUTTONS(PAGE.GET());
-                $(`${_this.id} th:last-child`).css({"min-width":action.width,"width":action.width});
+                $(`${self.id} th:last-child`).css({"min-width":action.width,"width":action.width});
     
                 if(obj.site){
                     if($(`#_site`).find(`option[value='${obj.site}']`).length == 0){
@@ -11671,11 +12018,11 @@ var TRAILERS = {
                 }).row;
             };
             table.rowListeners = function(_row,_id){
-                const _this = this;
-                TABLE.ROW_LISTENER({table_id:_this.id,_row,urlPath,_id,initializeModal});
+                const self = this;
+                TABLE.ROW_LISTENER({table_id:self.id,_row,urlPath,_id,initializeModal});
             };
             table.filterListener = function(){
-                const _this = this;
+                const self = this;
                 var filter = USER.filters.trailers || {};
                 try {
                     filter = JSON.parse(USER.filters.trailers);
@@ -11703,13 +12050,13 @@ var TRAILERS = {
                             data: JSON.stringify(data)
                         }, function(docs){
                             console.log("docs1",docs);
-                            _this.dt.column(4).search(_filter_.site).draw(false);
+                            self.dt.column(4).search(_filter_.site).draw(false);
                             USER.filters.trailers = _filter_;
                             filter.site = _filter_.site;
                             $(`#filter-btn`).html("Apply").removeClass("disabled");
                         });
                     } else {
-                        _this.dt.column(4).search(_filter_.site).draw(false);
+                        self.dt.column(4).search(_filter_.site).draw(false);
                         $(`#filter-btn`).html("Apply").removeClass("disabled");
                     }
                 }
@@ -12193,6 +12540,13 @@ var PAGE = {
 
                 // PAGE.IDLE();
 
+                $(`.menu-group`).each((i,el) => {
+                    var option = (CLIENT.menuGroupOptions||[]).find(x => x.title == $(el).text());
+                    if(option && (option.roles||[]).includes(USER.role)){
+                        $(el).addClass(option.class);
+                    }
+                });
+
                 (USER) ? _SESSION_.lastActive(CLIENT.id,USER.username,SESSION_TOKEN) : null;
             },
         }
@@ -12285,8 +12639,8 @@ var PAGE = {
             dispatchTblBtn = (ENVIRONMENT == "development") ? ["create","import","refresh","column","export","filter","clone"] : ["create","import","refresh","column","export","filter"];
         
         function getClientTableButtons(key){
-            var buttons = clientCustom.tableButtons[key].buttons || [];
-            (clientCustom.tableButtons[key].condition||[]).forEach(val => {
+            var buttons = (clientCustom.tableButtons[key]||{}).buttons || [];
+            ((clientCustom.tableButtons[key]||{}).condition||[]).forEach(val => {
                 if((val.roles||[]).includes(USER.role)){
                     buttons = buttons.concat(val.additionalButton||[]);
                 }
@@ -12294,8 +12648,8 @@ var PAGE = {
             return buttons;
         }
         function getRowButtons(key){
-            var buttons = clientCustom.rowButtons[key].buttons || [];
-            (clientCustom.rowButtons[key].condition||[]).forEach(val => {
+            var buttons = (clientCustom.rowButtons[key]||{}).buttons || [];
+            ((clientCustom.rowButtons[key]||{}).condition||[]).forEach(val => {
                 if(val.not){
                     if(!(val.roles||[]).includes(USER.role)){
                         (val.removeButtons||[]).forEach(val1 => {
@@ -12427,6 +12781,17 @@ var PAGE = {
                 buttons: {
                     table: getClientTableButtons("vehicles"),
                     row: vehicleBtn
+                }
+            },
+            fuel_refill: {
+                title: "Fuel Refills",
+                name: "fuel_refill",
+                icon: "la la-truck",
+                display: function() { return views.fuel_refill(); },
+                function: function() { FUEL_REFILL.FUNCTION.init() },
+                buttons: {
+                    table: ["import","refresh"],
+                    row: ["delete"]
                 }
             },
             vehicle_personnel: {
@@ -14872,6 +15237,18 @@ const views = new function(){
                         </div>
                     </div>`;
         },
+        fuel_refill: function(){
+            return `<div class="page-box row">
+                        <div class="col-sm-12 mt-2">
+                            <div class="table-wrapper">
+                                <table id="tbl-fuel_refill" class="table table-hover table-bordered">
+                                    <thead></thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>`;
+        },
         vehicle_personnel: function(){
             return `<div class="page-box row">
                         <div class="col-sm-12 mt-2">
@@ -15433,6 +15810,36 @@ const modalViews = new function(){
                     }
                 }
             }
+        },
+        fuel_refill: {
+            import: function(){
+                return `<div class="page-box row">
+                            <div class="col-md-12">
+                                <span class="text-muted">Click <a id="download-template-btn" href="javascript:void(0);"class="font-normal">here</a> to download the excel template.</span>
+                                <small class="text-info d-block font-italic">Excel Template Updated On: <u>05/07/2021</u></small>
+                            </div>
+                            <div class="col-md-12"><hr></div>
+                            <div class="col-md-6">
+                                <input type="file" class="dropify">
+                                <button id="import-btn" class="btn btn-primary mt-3">Import</button>
+                            </div>
+                            <div class="col-md-6">
+                                <div>
+                                    <h5>Download Links:</h5>
+                                    <div class="mb-2">Complete list (Converted File)
+                                        <div id="reportCompleteList">
+                                            <div class="text-muted font-italic">No link available.</div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">Error list (Original File)
+                                        <div id="reportErrorList">
+                                            <div class="text-muted font-italic">No link available.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`;
+            },
         },
         user: {
             create: function(title,obj,user,subtitle){

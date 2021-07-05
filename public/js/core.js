@@ -483,6 +483,18 @@ const CUSTOM = {
                     case "company_id":
                         arr.push({ data: "Company", title: "Company", visible: true });
                         break;
+                    case "cn1":
+                        arr.push({ data: "CN1", title: "CN1", visible: true });
+                        break;
+                    case "cn2":
+                        arr.push({ data: "CN2", title: "CN2", visible: true });
+                        break;
+                    case "fuelCapacity":
+                        arr.push({ data: "Fuel Capacity", title: "Fuel Capacity", visible: true });
+                        break;
+                    case "truckModel":
+                        arr.push({ data: "Truck Model", title: "Truck Model", visible: true });
+                        break;
                     case "availability":
                         arr.push({ data: "Availability", title: "Availability", visible: true });
                         break;
@@ -499,6 +511,13 @@ const CUSTOM = {
 
             return arr;
         },
+        fuel_refill: [
+            { data: "Converted File", title: "Converted File", visible: true },
+            { data: "Error File", title: "Error File", visible: true },
+            { data: "Upload Date", title: "Upload Date", type:"date", visible: true },
+            { data: "Uploaded By", title: "Uploaded By", visible: true },
+            { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
+        ],
         vehicle_personnel: [
             { data: "Name", title: "Name", visible: true },
             { data: "Occupation", title: "Occupation", visible: true },
@@ -552,144 +571,164 @@ const CUSTOM = {
         },
     },
     IMPORT_TEMPLATE: {
-        coket1: function(){
-            return `<table id="report-hidden" style="opacity:0;">
-                        <tr>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Shipment Number</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Origin</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Destination</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck Name</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Comments</th>
-                        </tr>
-                        <tr>
-                            <td style="font-size:14px;border-color:#D9D9D9;">10000001</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">BBC EXT</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">CEW PL</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">DAE8439</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">Comment is optional.</td>
-                        </tr>
-                    </table>`;
+        dispatch: {
+            coket1: function(){
+                return `<table id="report-hidden" style="opacity:0;">
+                            <tr>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Shipment Number</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Origin</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Destination</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck Name</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Comments</th>
+                            </tr>
+                            <tr>
+                                <td style="font-size:14px;border-color:#D9D9D9;">10000001</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">BBC EXT</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">CEW PL</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">DAE8439</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">Comment is optional.</td>
+                            </tr>
+                        </table>`;
+            },
+            wilcon: function(){
+                var body = "";
+                var lists = [];
+    
+                (LIST["shift_schedule"]||[]).forEach((val,i) => {
+                    lists[i] = lists[i] || {};
+                    lists[i].shift_schedule = val._id;
+                });
+                var tempVehicleList = [];
+                (LIST["vehicles"]||[]).forEach((val,i) => {
+                    var driver = (LIST["vehicle_personnel"]||[]).find(x => Number(x.vehicle_id) == Number(val._id) && x.occupation == "Driver") || {};
+                    var checker = (LIST["vehicle_personnel"]||[]).find(x => Number(x.vehicle_id) == Number(val._id) && x.occupation == "Checker") || {};
+                    var helper = (LIST["vehicle_personnel"]||[]).find(x => Number(x.vehicle_id) == Number(val._id) && x.occupation == "Helper") || {};
+                    var vehicle_driver = driver.name;
+                    var vehicle_checker = checker.name;
+                    var vehicle_helper = helper.name;
+    
+                    if(vehicle_driver && vehicle_checker && vehicle_helper){} 
+                    else if(vehicle_driver){
+                        if(!vehicle_checker) vehicle_checker = "";
+                        if(!vehicle_helper) vehicle_helper = "";
+                    } else if(vehicle_checker){
+                        if(!vehicle_driver) vehicle_driver = "";
+                        if(!vehicle_helper) vehicle_helper = "";
+                    } else if(vehicle_helper){
+                        if(!vehicle_driver) vehicle_driver = "";
+                        if(!vehicle_checker) vehicle_checker = "";
+                    } else {
+                        vehicle_driver = "ZZZZZZZZ";
+                        vehicle_checker = "ZZZZZZZZ";
+                        vehicle_helper = "ZZZZZZZZ";
+                    }
+                    tempVehicleList.push({
+                        vehicle: val.name,
+                        vehicle_driver,
+                        vehicle_checker,
+                        vehicle_helper,
+                    })
+                });
+                var sortedBehicleList = SORT.ARRAY_OBJECT(tempVehicleList,"vehicle_driver",{sortType: "asc"});
+                sortedBehicleList.forEach((val,i) => {
+                    lists[i] = lists[i] || {};
+                    lists[i].vehicle = val.vehicle;
+                    lists[i].vehicle_driver = (val.vehicle_driver == "ZZZZZZZZ") ? "" : val.vehicle_driver;
+                    lists[i].vehicle_checker = (val.vehicle_checker == "ZZZZZZZZ") ? "" : val.vehicle_checker;
+                    lists[i].vehicle_helper = (val.vehicle_helper == "ZZZZZZZZ") ? "" : val.vehicle_helper;
+                });
+                var tempDriverList = (LIST["vehicle_personnel"]||[]).filter(x => x.occupation == "Driver");
+                var driverList = SORT.ARRAY_OBJECT(tempDriverList,"name",{sortType: "asc"});
+                driverList.forEach((val,i) => {
+                    lists[i] = lists[i] || {};
+                    lists[i].driver = val.name;
+                });
+                var tempCheckerList = (LIST["vehicle_personnel"]||[]).filter(x => x.occupation == "Checker");
+                var checkerList = SORT.ARRAY_OBJECT(tempCheckerList,"name",{sortType: "asc"});
+                checkerList.forEach((val,i) => {
+                    lists[i] = lists[i] || {};
+                    lists[i].checker = val.name;
+                });
+                var tempHelperList = (LIST["vehicle_personnel"]||[]).filter(x => x.occupation == "Helper");
+                var helperList = SORT.ARRAY_OBJECT(tempHelperList,"name",{sortType: "asc"});
+                helperList.forEach((val,i) => {
+                    lists[i] = lists[i] || {};
+                    lists[i].helper = val.name;
+                });
+                var routeList = SORT.ARRAY_OBJECT(LIST["routes"]||[],"_id",{sortType: "asc"});
+                routeList.forEach((val,i) => {
+                    lists[i] = lists[i] || {};
+                    lists[i].route = val._id;
+                });
+                lists.forEach((val,i) => {
+                    body += `<tr>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"ABC 123":""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"MDC01-D03":""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"WD NDI3452":""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"Jane Doe":""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"John Smith":""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"James Clark":""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"04/02/2021":""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"4:00 AM - 5:00 AM":""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"Comment is optional.":""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;"></td>
+                                <td style="font-size:14px;border-color:#D9D9D9;"></td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${val.shift_schedule||""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${val.vehicle||""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${val.vehicle_driver||""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${val.vehicle_checker||""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${val.vehicle_helper||""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${val.driver||""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${val.checker||""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${val.helper||""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${val.route||""}</td>
+                            </tr>`;
+                });
+                return `<table id="report-hidden" style="opacity:0;">
+                            <tr>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Ticket Number</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Route</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck Name</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Driver</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Checker</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Helper</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Scheduled Date</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Shift Schedule</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Comments</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;"></th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;"></th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Shift List</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck List</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck Driver</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck Checker</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck Helper</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Driver List</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Checker List</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Helper List</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Route List</th>
+                            </tr>
+                            ${body}
+                        </table>`;
+            },
         },
-        wilcon: function(){
-            var body = "";
-            var lists = [];
-
-            (LIST["shift_schedule"]||[]).forEach((val,i) => {
-                lists[i] = lists[i] || {};
-                lists[i].shift_schedule = val._id;
-            });
-            var tempVehicleList = [];
-            (LIST["vehicles"]||[]).forEach((val,i) => {
-                var driver = (LIST["vehicle_personnel"]||[]).find(x => Number(x.vehicle_id) == Number(val._id) && x.occupation == "Driver") || {};
-                var checker = (LIST["vehicle_personnel"]||[]).find(x => Number(x.vehicle_id) == Number(val._id) && x.occupation == "Checker") || {};
-                var helper = (LIST["vehicle_personnel"]||[]).find(x => Number(x.vehicle_id) == Number(val._id) && x.occupation == "Helper") || {};
-                var vehicle_driver = driver.name;
-                var vehicle_checker = checker.name;
-                var vehicle_helper = helper.name;
-
-                if(vehicle_driver && vehicle_checker && vehicle_helper){} 
-                else if(vehicle_driver){
-                    if(!vehicle_checker) vehicle_checker = "";
-                    if(!vehicle_helper) vehicle_helper = "";
-                } else if(vehicle_checker){
-                    if(!vehicle_driver) vehicle_driver = "";
-                    if(!vehicle_helper) vehicle_helper = "";
-                } else if(vehicle_helper){
-                    if(!vehicle_driver) vehicle_driver = "";
-                    if(!vehicle_checker) vehicle_checker = "";
-                } else {
-                    vehicle_driver = "ZZZZZZZZ";
-                    vehicle_checker = "ZZZZZZZZ";
-                    vehicle_helper = "ZZZZZZZZ";
-                }
-                tempVehicleList.push({
-                    vehicle: val.name,
-                    vehicle_driver,
-                    vehicle_checker,
-                    vehicle_helper,
-                })
-            });
-            var sortedBehicleList = SORT.ARRAY_OBJECT(tempVehicleList,"vehicle_driver",{sortType: "asc"});
-            sortedBehicleList.forEach((val,i) => {
-                lists[i] = lists[i] || {};
-                lists[i].vehicle = val.vehicle;
-                lists[i].vehicle_driver = (val.vehicle_driver == "ZZZZZZZZ") ? "" : val.vehicle_driver;
-                lists[i].vehicle_checker = (val.vehicle_checker == "ZZZZZZZZ") ? "" : val.vehicle_checker;
-                lists[i].vehicle_helper = (val.vehicle_helper == "ZZZZZZZZ") ? "" : val.vehicle_helper;
-            });
-            var tempDriverList = (LIST["vehicle_personnel"]||[]).filter(x => x.occupation == "Driver");
-            var driverList = SORT.ARRAY_OBJECT(tempDriverList,"name",{sortType: "asc"});
-            driverList.forEach((val,i) => {
-                lists[i] = lists[i] || {};
-                lists[i].driver = val.name;
-            });
-            var tempCheckerList = (LIST["vehicle_personnel"]||[]).filter(x => x.occupation == "Checker");
-            var checkerList = SORT.ARRAY_OBJECT(tempCheckerList,"name",{sortType: "asc"});
-            checkerList.forEach((val,i) => {
-                lists[i] = lists[i] || {};
-                lists[i].checker = val.name;
-            });
-            var tempHelperList = (LIST["vehicle_personnel"]||[]).filter(x => x.occupation == "Helper");
-            var helperList = SORT.ARRAY_OBJECT(tempHelperList,"name",{sortType: "asc"});
-            helperList.forEach((val,i) => {
-                lists[i] = lists[i] || {};
-                lists[i].helper = val.name;
-            });
-            var routeList = SORT.ARRAY_OBJECT(LIST["routes"]||[],"_id",{sortType: "asc"});
-            routeList.forEach((val,i) => {
-                lists[i] = lists[i] || {};
-                lists[i].route = val._id;
-            });
-            lists.forEach((val,i) => {
-                body += `<tr>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"ABC 123":""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"MDC01-D03":""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"WD NDI3452":""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"Jane Doe":""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"John Smith":""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"James Clark":""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"04/02/2021":""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"4:00 AM - 5:00 AM":""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"Comment is optional.":""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;"></td>
-                            <td style="font-size:14px;border-color:#D9D9D9;"></td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${val.shift_schedule||""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${val.vehicle||""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${val.vehicle_driver||""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${val.vehicle_checker||""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${val.vehicle_helper||""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${val.driver||""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${val.checker||""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${val.helper||""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${val.route||""}</td>
-                        </tr>`;
-            });
-            return `<table id="report-hidden" style="opacity:0;">
-                        <tr>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Ticket Number</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Route</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck Name</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Driver</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Checker</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Helper</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Scheduled Date</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Shift Schedule</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Comments</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;"></th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;"></th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Shift List</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck List</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck Driver</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck Checker</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck Helper</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Driver List</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Checker List</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Helper List</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Route List</th>
-                        </tr>
-                        ${body}
-                    </table>`;
-        },
+        fuel_refill: {
+            fleet: function(){
+                return `<table id="report-hidden" style="opacity:0;">
+                            <tr>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Delivery Date</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Time</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Quantity</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Vehicle License Number</th>
+                            </tr>
+                            <tr>
+                                <td style="font-size:14px;border-color:#D9D9D9;">19/06/2021</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">0:08:26</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">100</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">JM0522</td>
+                            </tr>
+                        </table>`;
+            }
+        }
     }
 };
 
