@@ -46,8 +46,8 @@ router.post('/:dbName/:username', (req,res,next)=>{
     const username = req.params.username;
     const userInput = req.body;
 
-    userInput.username = username;
-    userInput.timestamp = new Date().toISOString();
+    userInput.created_by = username;
+    userInput.created_on = new Date().toISOString();
     db.getCollection(dbName,collection).insertOne(userInput,(err,result)=>{
         if(err) {
             var error = (err.name=="MongoError" && err.code==11000) ? _ERROR_.DUPLICATE("Shift Schedule") : _ERROR_.INTERNAL_SERVER(err);

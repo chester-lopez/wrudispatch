@@ -1,31 +1,24 @@
 const express = require('express');
 const router = express.Router();
-const Joi = require('joi');
 
-const schema = require("../utils/schema");
 const db = require("../utils/db");
-const auth = require("../utils/auth");
 const _ERROR_ = require("../utils/error");
 
-const collection = "vehicle_personnel";
+const collection = "chassis_type";
 
 // get all
 router.get('/:dbName/:username/all/:filter/:skip/:limit', (req,res,next)=>{
     const dbName = req.params.dbName;
-    const filter = JSON.parse(req.params.filter);
+    const username = req.params.username;
     const skip = Number(req.params.skip);
     const limit = Number(req.params.limit);
-    const query = db.getCollection(dbName,collection).find(filter).skip(skip).limit(limit);
-
+    const filter = JSON.parse(req.params.filter) || {};
+    
+    const query = (limit != 0) ? db.getCollection(dbName,collection).find(filter).skip(skip).limit(limit) : 
+                                 db.getCollection(dbName,collection).find(filter);
     query.toArray((err,docs)=>{
         if(err) next(_ERROR_.INTERNAL_SERVER(err));
-        else {
-            if(docs.length < auth.LIMIT){
-                console.log(`CLOSE {${collection}} @`,docs.length);
-                query.close();
-            }
-            res.json(docs);
-        }
+        else res.json(docs);
     });
 });
 
@@ -42,39 +35,58 @@ router.get('/:dbName/:username/all/:filter/count', (req,res,next)=>{
     });
 });
 
+// get
+router.get('/:dbName/:username/:_id', (req,res,next)=>{
+    const dbName = req.params.dbName;
+    const username = req.params.username;
+    const _id = req.params._id;
+    const filter = {_id}; // NEVER LEAVE EMPTY! Will affect all
+   
+    db.getCollection(dbName,collection).find(filter).toArray((err,docs)=>{
+        if(err) next(_ERROR_.INTERNAL_SERVER(err));
+        else res.json(docs);
+    });
+});
+
 // post
 router.post('/:dbName/:username', (req,res,next)=>{
     const dbName = req.params.dbName;
-    const username = req.params.username;
     const userInput = req.body;
+    const username = req.params.username;
 
     userInput.created_by = username;
     userInput.created_on = new Date().toISOString();
+    
     db.getCollection(dbName,collection).insertOne(userInput,(err,result)=>{
-        if(err) next(_ERROR_.INTERNAL_SERVER(err));
-        else res.json({ok:1});
+        if(err){
+            var error = (err.name=="MongoError" && err.code==11000) ? _ERROR_.DUPLICATE("Section") : _ERROR_.INTERNAL_SERVER(err);
+            next(error);
+        } else {
+            res.json({ok:1,_id:result.insertedId});
+        }
     });
 });
 
 // put
 router.put('/:dbName/:username/:_id', (req,res,next)=>{
     const dbName = req.params.dbName;
-    const _id = req.params._id;
     const username = req.params.username;
+    const _id = req.params._id;
     const userInput = req.body;
+    const filter = {_id:db.getPrimaryKey(_id)}; // NEVER LEAVE EMPTY! Will affect all
 
-    db.getCollection(dbName,collection).findOneAndUpdate({_id: db.getPrimaryKey(_id)},{$set: userInput},{returnOriginal: false,upsert: true},(err,docs)=>{
+    db.getCollection(dbName,collection).findOneAndUpdate(filter,{$set: userInput},{returnOriginal: false},(err,docs)=>{
         if(err) next(_ERROR_.INTERNAL_SERVER(err));
-        else res.json({ok:1});
+        else res.json(docs);
     });
 });
 
 // delete
 router.delete('/:dbName/:username/:_id', (req,res,next)=>{
     const dbName = req.params.dbName;
+    const username = req.params.username;
     const _id = req.params._id;
-    const username = req.params.username; // not included yet in filter
-    const filter = {_id: db.getPrimaryKey(_id)}; // NEVER LEAVE EMPTY! Will affect all
+    const filter = {_id:db.getPrimaryKey(_id)}; // NEVER LEAVE EMPTY! Will affect all
 
     db.getCollection(dbName,collection).findOneAndDelete(filter,(err,docs)=>{
         if(err) next(_ERROR_.INTERNAL_SERVER(err));
@@ -87,7 +99,7 @@ router.delete('/:dbName/:username/:_id', (req,res,next)=>{
                 collection,
                 username
             }).then(() => {
-                res.json({ok:1});
+                res.json(docs);
             }).catch(err => { next(_ERROR_.INTERNAL_SERVER(err)); });
         }
     });

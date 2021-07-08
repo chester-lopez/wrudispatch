@@ -90,6 +90,9 @@ function getSelect2Options(){
                             var trailerValue = (trailer) ? "Straight Truck" : (val["Trailer"]||"-");
                             _array_.push(`Trailer: ${trailerValue}`);
                             break;
+                        case "plate_number":
+                            _array_.push(`Plate Number: ${val["Plate Number"] || "-"}`);
+                            break;
                         case "truck_number":
                             _array_.push(`Truck Number: ${val["Truck Number"] || "-"}`);
                             break;
@@ -150,6 +153,39 @@ function getSelect2Options(){
         (!val.delete) ? G_SELECT2["form-vehicle_personnel_company"] += `<option value="${val._id}">${val.company}</option>` : null;
     });
     /******** END VEHICLE PERSONNEL COMPANY ********/
+    
+    /******** CHASSIS ********/
+    G_SELECT2["form-chassis"] = `<option value="">&nbsp;</option>`;
+    (LIST["chassis"]||[]).forEach(val => {
+        var type = (getChassisType(val.type_id)||{}).type;
+        var section = (getChassisSection(val.section_id)||{}).section;
+        var company = (getChassisCompany(val.company_id)||{}).company;
+
+        var subtext = `Chassis Type: ${type||"-"}<br>Section: ${section||"-"}<br>Company: ${company||"-"}`;
+        G_SELECT2["form-chassis"] += `<option value="${val._id}" data-subtext="${subtext}">${val._id}</option>`;
+    });
+    /******** END CHASSIS ********/
+
+    /******** CHASSIS SECTION ********/
+    G_SELECT2["form-chassis_section"] = `<option value="">&nbsp;</option>`;
+    (LIST["chassis_section"]||[]).forEach(val => {
+        (!val.delete) ? G_SELECT2["form-chassis_section"] += `<option value="${val._id}">${val.section}</option>` : null;
+    });
+    /******** END CHASSIS SECTION ********/
+
+    /******** CHASSIS COMPANY ********/
+    G_SELECT2["form-chassis_company"] = `<option value="">&nbsp;</option>`;
+    (LIST["chassis_company"]||[]).forEach(val => {
+        (!val.delete) ? G_SELECT2["form-chassis_company"] += `<option value="${val._id}">${val.company}</option>` : null;
+    });
+    /******** END CHASSIS COMPANY ********/
+
+    /******** CHASSIS TYPE ********/
+    G_SELECT2["form-chassis_type"] = `<option value="">&nbsp;</option>`;
+    (LIST["chassis_type"]||[]).forEach(val => {
+        (!val.delete) ? G_SELECT2["form-chassis_type"] += `<option value="${val._id}">${val.type}</option>` : null;
+    });
+    /******** END CHASSIS TYPE ********/
     
     /******** SHIFT SCHEDULE ********/
     G_SELECT2["form-shift_schedule"] = ``;
@@ -330,6 +366,7 @@ class Dispatch {
             vehicle = getValue(LIST["vehicles"],"vehicles",obj.vehicle_id,null,"_vehicle",["name","Trailer"]),
             route = getValue(LIST["routes"],"routes",obj.route,null,"_route",["transit_time"]),
             trailer = getValue(LIST["trailers"],"trailers",(obj.trailer||vehicle["Trailer"]),null,null,["_id","pal_cap"]),
+            chassis = getValue(LIST["chassis"],"chassis",(obj.chassis),null,null,["_id"]),
             driver = getValue(LIST["vehicle_personnel"],"vehicle_personnel",(obj.driver_id),null,null,["name"]),
             checker = getValue(LIST["vehicle_personnel"],"vehicle_personnel",(obj.checker_id),null,null,["name"]),
             helper = getValue(LIST["vehicle_personnel"],"vehicle_personnel",(obj.helper_id),null,null,["name"]),
@@ -380,12 +417,17 @@ class Dispatch {
         this.eta = DATETIME.FORMAT(obj.destination[0].eta);
         this.target_transit_time = DATETIME.HH_MM(null,route.transit_time).hour_minute;
         this.target_cico_time = DATETIME.HH_MM(null,origin.cico).hour_minute;
+
         this.vehicle = vehicle.name || "-";
+
         this.plate_number = vehicle["Plate Number"] || "-";
         this.truck_number = vehicle["Truck Number"] || "-";
+        this.chassis = chassis._id || "-";
+
         this.conduction_number = vehicle["Tractor Conduction"] || "-";
         this.trailer = trailer._id || "-";
         this.pal_cap = trailer.pal_cap || "-";
+
         this.driver = driver.name || "-";
         this.checker = checker.name || "-";
         this.helper = helper.name || "-";
@@ -466,6 +508,7 @@ class Dispatch {
             'Plate Number': this.plate_number,
             'Truck Number': this.truck_number,
             'Trailer': this.trailer,
+            'Chassis': this.chassis,
             'Conduction Number': this.conduction_number,
             'Pal Cap': this.pal_cap,
             'Driver': this.driver,
@@ -508,6 +551,7 @@ class Dispatch {
                         <div><span style="display: table-cell;width: 120px;">Target CICO Time</span><span style="display: table-cell;">${this.target_cico_time}</span></div>
                         <div><span style="display: table-cell;width: 120px;">Vehicle</span><span style="display: table-cell;">${this.vehicle}</span></div>
                         <div><span style="display: table-cell;width: 120px;">Trailer</span><span style="display: table-cell;">${this.trailer}</span></div>
+                        <div><span style="display: table-cell;width: 120px;">Chassis</span><span style="display: table-cell;">${this.chassis}</span></div>
                         <div><span style="display: table-cell;width: 120px;">Conduction #</span><span style="display: table-cell;">${this.conduction_number}</span></div>
                         <div><span style="display: table-cell;width: 120px;">Pal Cap</span><span style="display: table-cell;">${this.pal_cap}</span></div>
                         <div><span style="display: table-cell;width: 120px;">Driver</span><span style="display: table-cell;">${this.driver}</span></div>
@@ -554,6 +598,12 @@ class Dispatch {
         if(de["Delay Type"].indexOf("Queueing") > -1) runningDurationType = "Queueing";
         if(de["Delay Type"].indexOf("CICO") > -1) runningDurationType = "CICO";
 
+        var trailerChassis = "";
+        if(clientCustom.columns.dispatch.list.includes("trailer"))
+            trailerChassis += `<div><b style="width:60px;display: inline-block;">Trailer</b>: ${this.trailer}</div>`;
+        if(clientCustom.columns.dispatch.list.includes("chassis"))
+            trailerChassis += `<div><b style="width:60px;display: inline-block;">Chassis</b>: ${this.chassis}</div>`;
+
         return `<div id="overlay" attr_row="${de._row}" class="swal2-container swal2-fade swal2-shown" style="overflow-y: auto;">
                     <div id="modal" class="modal" role="dialog" aria-labelledby="myLargeModalLabel">
                         <div role="document" class="modal-dialog modal-lg" style="margin:20px auto;">
@@ -564,7 +614,7 @@ class Dispatch {
                                         <h4 class="modal-title" id="myModalLabel2">${this._id.bold()} | Escalation ${de["Escalation"]}</h4>
                                         <div>
                                             <div><b style="width:60px;display: inline-block;">Vehicle</b>: ${this.vehicle}</div>
-                                            <div><b style="width:60px;display: inline-block;">Trailer</b>: ${this.trailer}</div>
+                                            ${trailerChassis}
                                         </div>
                                     </div>
                                 </div>
@@ -657,11 +707,20 @@ class Dispatch {
                                                 ${this.tbl().empty} ${this.tbl().empty}
 
                                                 ${this.tbl().getTr("Vehicle",this.vehicle)}
-                                                ${this.tbl().getTr("Trailer",this.trailer)}
-                                                ${this.tbl().getTr("Pal Cap",this.pal_cap)}
-                                                ${this.tbl().getTr("Conduction #",this.conduction_number)}
+                                                ${(CLIENT.id == "wilcon")?`
+                                                    ${this.tbl().getTr("Chassis",this.chassis)}
+                                                    ${this.tbl().getTr("Driver",this.driver)}
+                                                    ${this.tbl().getTr("Checker",this.checker)}
+                                                    ${this.tbl().getTr("Helper",this.helper)} ${this.tbl().empty}
 
-                                                ${this.tbl().empty} ${this.tbl().empty}
+                                                    ${this.tbl().empty} ${this.tbl().empty}
+                                                `:`
+                                                    ${this.tbl().getTr("Trailer",this.trailer)}
+                                                    ${this.tbl().getTr("Pal Cap",this.pal_cap)}
+                                                    ${this.tbl().getTr("Conduction #",this.conduction_number)}
+
+                                                    ${this.tbl().empty} ${this.tbl().empty}
+                                                `}
 
                                                 ${(CLIENT.id == "wilcon")?`
                                                     ${this.tbl().getTr("Driver",this.driver)}
@@ -1554,7 +1613,10 @@ var DASHBOARD = {
                 urlPath1 = "dashboard",
                 urlPath = "dispatch",
                 done = false,
-                _new_ = {},
+                _new_ = {
+                    GEOFENCES: true,
+                    REGIONS: true
+                },
                 newlyLoaded = true,
                 filter = USER.filters.dashboard.region || "ALL",
                 _siteFilter = USER.filters.dashboard.baseplant || "",
@@ -1757,7 +1819,7 @@ var DASHBOARD = {
                                             skip+=length;
                                             getData(length);
                                             
-                                            _new_.GEOFENCES = false;
+                                            _new_.GEOFENCES = true;
                                             TABLE.FINISH_LOADING.START_CHECK();
                                         } else {
                                             if(errorTries < 5){
@@ -1797,7 +1859,7 @@ var DASHBOARD = {
                                 // countdown(5);
                                 done = true;
                                 
-                                if(done && _new_.REGIONS  && _new_.GEOFENCES){
+                                if(done && !_new_.REGIONS  && !_new_.GEOFENCES){
                                     loadFilter();
                                 }
                             }
@@ -2146,7 +2208,7 @@ var DASHBOARD = {
                 }
 
                 if(fetched === false){
-                    _new_.GEOFENCES = false;
+                    _new_.GEOFENCES = true;
                     TABLE.FINISH_LOADING.START_CHECK();
                 }
                 return data;
@@ -2180,16 +2242,16 @@ var DASHBOARD = {
             /******** TABLE CHECK ********/
             var loadFilterGeofence = false;
             TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
-                if(GGS.STATUS.GEOFENCES && _new_.GEOFENCES === false){ // must include "false"
-                    _new_.GEOFENCES = true;
+                isFinishedLoading(["GEOFENCES"], _new_.GEOFENCES, function(){
+                    _new_.GEOFENCES = false;
                     populateWithGeofence();
-                    if(done && _new_.REGIONS  && _new_.GEOFENCES && !loadFilterGeofence){
+                    if(done && !_new_.REGIONS && !_new_.GEOFENCES && !loadFilterGeofence){
                         loadFilterGeofence = true;
                         loadFilter();
                     }
-                }
-                if(GGS.STATUS.REGIONS && !_new_.REGIONS){
-                    _new_.REGIONS = true;
+                });
+                isFinishedLoading(["REGIONS"], _new_.REGIONS, function(){
+                    _new_.REGIONS = false;
                     var _regionData = SORT.ARRAY_OBJECT(LIST["regions"],"sequence",{sortType:"asc"});
                     $(`#_regions`).append(`<li class="active"><a id="ALL" class="summary-tab" href="javascript:void(0)" role="tab" data-toggle="tab">ALL</a></li>`);
                     _regionData.forEach(val => {
@@ -2226,10 +2288,10 @@ var DASHBOARD = {
                         resetSummaryData();
                         Object.keys(LIST[urlPath1]).forEach(key => { updateTableAndSummary(key); });
                     });
-                    if(done && _new_.REGIONS  && _new_.GEOFENCES){
+                    if(done && !_new_.REGIONS  && !_new_.GEOFENCES){
                         loadFilter();
                     }
-                }
+                });
             }
             /******** END TABLE CHECK ********/
 
@@ -2279,7 +2341,8 @@ var DE_DASHBOARD = {
 
             var table_id = "#tbl-ot,#tbl-lq,#tbl-oc",
                 urlPath = "notifications",
-                _new_ = {},
+                _new1_ = true,
+                _new2_ = true,
                 filter = "ALL",
                 basePlants = [],
                 _siteFilter = [],
@@ -2467,9 +2530,8 @@ var DE_DASHBOARD = {
 
             /******** TABLE CHECK ********/
             TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
-                if(GGS.STATUS.GEOFENCES && !_new_.GEOFENCES && GGS.STATUS.VEHICLES && !_new_.VEHICLES){
-                    _new_.GEOFENCES = true;
-                    _new_.VEHICLES = true;
+                isFinishedLoading(["GEOFENCES","VEHICLES"], _new1_, function(){
+                    _new1_ = false;
 
                     var _siteOptions = ``;
                     LIST["geofences"].forEach(val => {
@@ -2479,9 +2541,9 @@ var DE_DASHBOARD = {
                     
                     LIST[urlPath] = [];
                     populatePage();
-                }
-                if(GGS.STATUS.REGIONS && !_new_.REGIONS){
-                    _new_.REGIONS = true;
+                });
+                isFinishedLoading(["REGIONS"], _new2_, function(){
+                    _new2_ = false;
 
                     var _regionData = SORT.ARRAY_OBJECT(LIST["regions"],"sequence",{sortType:"asc"});
                     $(`#_regions`).append(`<li class="active"><a id="ALL" class="summary-tab" href="javascript:void(0)" role="tab" data-toggle="tab">ALL</a></li>`);
@@ -2533,7 +2595,7 @@ var DE_DASHBOARD = {
                         DE_DASHBOARD.FUNCTION.setSummary(null,{region_id:_filter,site:_siteFilter,base:_baseplantFilter});
                     });
                     $(`#_baseplant`).parent().find(".select2-selection").css({height:"32px"});
-                }
+                });
             };
             TABLE.FINISH_LOADING.CHECK();
             /******** END TABLE CHECK ********/
@@ -3168,7 +3230,7 @@ var DISPATCH = {
 
             /******** TABLE CHECK ********/
             TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
-                isFinishedLoading(["REGIONS","CLUSTERS","GEOFENCES","VEHICLES","TRAILERS","VEHICLES_HISTORY","ROUTES","USERS","VEHICLE_PERSONNEL"], _new_, function(){
+                isFinishedLoading(["REGIONS","CLUSTERS","GEOFENCES","VEHICLES","TRAILERS","CHASSIS","VEHICLES_HISTORY","ROUTES","USERS","VEHICLE_PERSONNEL","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"], _new_, function(){
                     _new_ = false;
                     
                     $.each(LIST[urlPath], function(i,val){
@@ -3178,7 +3240,7 @@ var DISPATCH = {
                     
                     TABLE.FINISH_LOADING.UPDATE();
                 });
-                isFinishedLoading(["GEOFENCES","VEHICLES","TRAILERS","VEHICLES_HISTORY","ROUTES","VEHICLE_PERSONNEL"], true, function(){
+                isFinishedLoading(["GEOFENCES","VEHICLES","TRAILERS","CHASSIS","VEHICLES_HISTORY","ROUTES","VEHICLE_PERSONNEL","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"], true, function(){
                     TABLE.FINISH_LOADING.UPDATE();
                 });
                 isFinishedLoading(["REGIONS","CLUSTERS"], _new2_, function(){
@@ -3218,7 +3280,7 @@ var DISPATCH = {
                 __history = {},
                 __vehicleData = null,
                 __originalObj = null,
-                vehiclesOptions = (clientCustom.editableTrailer) ? G_SELECT2["form-vehicles-admin"] : G_SELECT2["form-vehicles"],
+                vehiclesOptions = (clientCustom.editableTrailer || clientCustom.editableChassis) ? G_SELECT2["form-vehicles-admin"] : G_SELECT2["form-vehicles"],
                 trailersOptions = G_SELECT2["form-trailers"],
                 routesOptions = G_SELECT2["form-routes"],// LIST["routes"],
                 shiftScheduleOptions = G_SELECT2["form-shift_schedule"],
@@ -3276,6 +3338,7 @@ var DISPATCH = {
                                 ticket_number = ($(`#ticket_number`).val()||"")._trim(),
                                 route = $(`#route`).val()._trim(),
                                 vehicle_id = $(`#vehicle option:selected`).val(),
+                                chassis = $(`#chassis option:selected`).val(),
                                 trailer = TRAILER,
                                 driver_id = $(`#driver_id option:selected`).val(),
                                 checker_id = $(`#checker_id option:selected`).val(),
@@ -3289,6 +3352,7 @@ var DISPATCH = {
                             if(CLIENT.id == "wilcon"){
                                 if(!ticket_number) isComplete = false;
                                 if(!driver_id) isComplete = false;
+                                if(!chassis) isComplete = false;
                                 // if(!checker_id) isComplete = false;
                                 // if(!helper_id) isComplete = false;
                             } else { 
@@ -3846,16 +3910,6 @@ var DISPATCH = {
 
                     setDriverChecker($(`#driver_id`).val(),$(`#checker_id`).val(),$(`#helper_id`).val());
                 });
-                
-                // .on('cancel.daterangepicker', function(ev, picker) {
-                //     //do something, like clearing an input
-                //     $(this).val('');
-                //     var date = DATETIME.FORMAT(moment().startOf('day').toISOString(),"MM/DD/YYYY");
-                //     $(this).data('daterangepicker').setStartDate(date);
-                //     $(this).data('daterangepicker').setEndDate(date);
-
-                //     $(`#shift_schedule`).val("").select2().attr("disabled",true);
-                // });
                 /******** END SCHEDULED DATE ********/
 
                 /******** TICKET NUMBER ********/
@@ -3888,6 +3942,25 @@ var DISPATCH = {
                 }).prop("disabled",true);
                 /******** END TRAILERS ********/
 
+                /******** CHASSIS ********/
+                $(`#chassis`).html(G_SELECT2["form-chassis"]).select2({
+                    matcher: matcher,
+                    templateResult: formatCustom
+                }).val("").on("select2:select", function() {
+                    // checkSelectedVehicleWithinGeofence(7);
+                }).change(function(){
+                    if($(this).val() != null){
+                        var chassis = getChassis( $(this).val() || "" ) || {};
+                        var type = (getChassisType(chassis.type_id)||{}).type;
+                        var section = (getChassisSection(chassis.section_id)||{}).section;
+                        var company = (getChassisCompany(chassis.company_id)||{}).company;
+                        $(`td[chassis_type]`).html(type || "-");
+                        $(`td[section]`).html(section || "-");
+                        $(`td[company]`).html(company || "-");
+                    }
+                }).prop("disabled",true);
+                /******** END CHASSIS ********/
+
                 /******** VEHICLES ********/
                 var originalVehicle;
                 $(`#vehicle`).html(vehiclesOptions).select2({
@@ -3897,9 +3970,9 @@ var DISPATCH = {
                     // checkSelectedVehicleWithinGeofence(7);
                 }).change(function(){
                     if($(this).val()){
-                        $(`#trailer`).prop("disabled",false);
+                        $(`#trailer,#chassis`).prop("disabled",false);
                     } else {
-                        $(`#trailer`).prop("disabled",true);
+                        $(`#trailer,#chassis`).prop("disabled",true);
                     }
 
                     var vehicle = getVehicle($(this).val()) || {};
@@ -3919,7 +3992,7 @@ var DISPATCH = {
                             };
                         }
 
-                        $(`#trailer`).prop("disabled",true);
+                        $(`#trailer,#chassis`).prop("disabled",true);
                         if(clientCustom.editableTrailer) $(`#trailer`).val("Straight Truck").change();
                         $(`td[trailer]`).html("Straight Truck");
                     } else {
@@ -3932,13 +4005,9 @@ var DISPATCH = {
                         } else {
                             trailer = {};
                         }
-                        console.log(2,TRAILER);
                     }
                     originalVehicle = null;
-                    
-                    // TRAILER = vehicle["Trailer"] || "";
-                    // var trailer = getTrailer(TRAILER) || {};
-
+                
                     $(`td[conduction_number]`).html(vehicle["Tractor Conduction"] || "-");
                     $(`td[cluster]`).html(trailer.cluster || "-");
                     $(`td[base]`).html(trailer.site || "-");
@@ -4307,6 +4376,7 @@ var DISPATCH = {
                         driver_id = $(`#driver_id option:selected`).val(),
                         checker_id = $(`#checker_id option:selected`).val(),
                         helper_id = $(`#helper_id option:selected`).val(),
+                        chassis = $(`#chassis option:selected`).val(),
                         comments = $(`#comments`).val()._trim(),
                         attachments = ATTACHMENTS.get(CLIENT.dsName),
                         incomplete = false,
@@ -4391,7 +4461,6 @@ var DISPATCH = {
                             ]
                         };
                         
-                    console.log("TRAILER",TRAILER)
                     _id = shipment_number;
 
                     if(isStatusIncomplete()){
@@ -4412,6 +4481,7 @@ var DISPATCH = {
                             body.driver_id = driver_id;
                             body.checker_id = checker_id;
                             body.helper_id = helper_id;
+                            body.chassis = chassis;
                             
                             (scheduled_date) ? body.scheduled_date = new Date(scheduled_date).toISOString() : null;
                             (shift_schedule) ? body.shift_schedule = shift_schedule : null;
@@ -4511,6 +4581,7 @@ var DISPATCH = {
                         if(CLIENT.id == "wilcon"){
                             (ticket_number == null || (ticket_number != null && ticket_number.isEmpty())) ? invalid_arr.push("ticket_number") : $(`#ticket_number`).css(css_default);
                             (driver_id == null || (driver_id != null && driver_id.isEmpty())) ? invalid_arr.push("driver_id") : $(`#driver_id`).css(css_default);
+                            (chassis == null || (chassis != null && chassis.isEmpty())) ? invalid_arr.push("chassis") : $(`#chassis`).css(css_default);
                             // (checker_id == null || (checker_id != null && checker_id.isEmpty())) ? invalid_arr.push("checker_id") : $(`#checker_id`).css(css_default);
                             // (helper_id == null || (helper_id != null && helper_id.isEmpty())) ? invalid_arr.push("helper_id") : $(`#helper_id`).css(css_default);
                             (scheduled_date == null || (scheduled_date != null && scheduled_date.isEmpty())) ? invalid_arr.push("scheduled_date") : $(`#scheduled_date`).css(css_default);
@@ -4594,6 +4665,7 @@ var DISPATCH = {
                                 body.driver_id = driver_id;
                                 body.checker_id = checker_id;
                                 body.helper_id = helper_id;
+                                body.chassis = chassis;
 
                                 (scheduled_date) ? body.scheduled_date = new Date(scheduled_date).toISOString() : null;
                                 (shift_schedule) ? body.shift_schedule = shift_schedule : null;
@@ -5926,7 +5998,7 @@ var DISPATCH = {
                 uniTitle = "Dispatch Entry (Deleted)",
                 filter = USER.filters.dispatch_deleted || {},
                 dt = null,
-                _new_ = false,
+                _new_ = true,
                 donePopulate = false,
                 rowData = function(obj){
                     var de = new Dispatch(obj,table_id);
@@ -6206,16 +6278,18 @@ var DISPATCH = {
             /******** TABLE CHECK ********/
             TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
                 // do not remove ROUTES. For Create/edit
-                if(GGS.STATUS.REGIONS && GGS.STATUS.CLUSTERS && GGS.STATUS.GEOFENCES && GGS.STATUS.VEHICLES && GGS.STATUS.TRAILERS && GGS.STATUS.ROUTES && !_new_ && dt && (CLIENT.id != "wilcon" || (CLIENT.id == "wilcon" && GGS.STATUS.VEHICLE_PERSONNEL))){
-                    _new_ = true;
-
-                    $.each(LIST["dispatch"], function(i,val){
-                        var rowNode = dt.row(`[_row="${val._row}"]`).node();
-                        (rowNode) ? dt.row(rowNode).data(rowData(val)) : null;
-                    });
-
-                    TABLE.FINISH_LOADING.UPDATE();
-                }
+                isFinishedLoading(["REGIONS","CLUSTERS","GEOFENCES","VEHICLES","TRAILERS","ROUTES","VEHICLE_PERSONNEL"], _new_, function(){
+                    if(dt){
+                        _new_ = false;
+                       
+                        $.each(LIST["dispatch"], function(i,val){
+                            var rowNode = dt.row(`[_row="${val._row}"]`).node();
+                            (rowNode) ? dt.row(rowNode).data(rowData(val)) : null;
+                        });
+    
+                        TABLE.FINISH_LOADING.UPDATE();
+                    }
+                });
             }
             TABLE.FINISH_LOADING.START_CHECK();
             /******** END TABLE CHECK ********/
@@ -6226,7 +6300,7 @@ var SHIFT_SCHEDULE = {
     FUNCTION: {
         init: function(){
             var urlPath = "shift_schedule",
-                _new_ = false,  
+                _new_ = true,  
                 table = new Table({
                     id: "#tbl-shift_schedule",
                     urlPath,
@@ -6328,15 +6402,13 @@ var SHIFT_SCHEDULE = {
             /******** TABLE CHECK ********/
             LIST[urlPath] = LIST[urlPath] || [];
             TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
-                if(GGS.STATUS.SHIFT_SCHEDULE) {
-                    if(!_new_) {
-                        _new_ = true;
-                        
-                        table.initialize();
-                        table.populateRows(LIST[urlPath]);
-                        table.hideProgressBar();
-                    }
-                }
+                isFinishedLoading(["SHIFT_SCHEDULE"], _new_, function(){
+                    _new_ = false;
+
+                    table.initialize();
+                    table.populateRows(LIST[urlPath]);
+                    table.hideProgressBar();
+                });
             }
             /******** END TABLE CHECK ********/
 
@@ -7668,15 +7740,18 @@ var REPORTS = {
                 var daysInMonths = moment(date_from).daysInMonth();
 
                 var totalVehicles = LIST["vehicles"].length;
+                var totalChassis = LIST["chassis"].length;
                 var totalManpower = LIST["vehicle_personnel"].filter(x => x.occupation == "Driver" || x.occupation == "Checker" || x.occupation == "Helper").length;
 
 
                 var dataTotalVehicles = [];
+                var dataTotalChassis = [];
                 var dataTotalManpower = [];
 
                 var tablesHTML = "";
 
                 var dailyVehicleRows = {};
+                var dailyChassisRows = {};
                 var dailyDriverRows = {};
                 var dailyCheckerRows = {};
                 var dailyHelperRows = {};
@@ -7685,6 +7760,7 @@ var REPORTS = {
 
                 var dailyTableTitle = [];
                 var dailyVehicleTableHeader = {};
+                var dailyChassisTableHeader = {};
                 var dailyDriverTableHeader = [];
                 var dailyCheckerTableHeader = [];
                 var dailyHelperTableHeader = [];
@@ -7701,11 +7777,13 @@ var REPORTS = {
                         var filtered = docs.filter(x => moment(moment(x.scheduled_date).format("MM/DD/YYYY"), "MM/DD/YYYY").isBetween(startEndDate, startEndDate, 'days', '[]'));
     
                         var vehicle_ids = [];
+                        var chassis_ids = [];
                         var manpower_driver_ids = [];
                         var manpower_checker_ids = [];
                         var manpower_helper_ids = [];
 
                         var uniqueVehicleList = [];
+                        var uniqueChassisList = [];
                         var uniqueDriverList = [];
                         var uniqueCheckerList = [];
                         var uniqueHelperList = [];
@@ -7713,17 +7791,21 @@ var REPORTS = {
                         filtered.forEach(val => {
                             var origin = getGeofence(val.origin_id) || {};
                             if(!cluster_id || origin.cluster_id == cluster_id){
+                                console.log("val.chassis",val);
                                 (val.vehicle_id) ? vehicle_ids.push(val.vehicle_id) : null;
+                                (val.chassis) ? chassis_ids.push(val.chassis) : null;
                                 (val.driver_id) ? manpower_driver_ids.push(val.driver_id) : null;
                                 (val.checker_id) ? manpower_checker_ids.push(val.checker_id) : null;
                                 (val.helper_id) ? manpower_helper_ids.push(val.helper_id) : null;
                                 
                                 (val.vehicle_id && !uniqueVehicleList.includes(val.vehicle_id)) ? uniqueVehicleList.push(val.vehicle_id) : null;
+                                (val.chassis && !uniqueChassisList.includes(val.chassis)) ? uniqueChassisList.push(val.chassis) : null;
                                 (val.driver_id && !uniqueDriverList.includes(val.driver_id)) ? uniqueDriverList.push(val.driver_id) : null;
                                 (val.checker_id && !uniqueCheckerList.includes(val.checker_id)) ? uniqueCheckerList.push(val.checker_id) : null;
                                 (val.helper_id && !uniqueHelperList.includes(val.helper_id)) ? uniqueHelperList.push(val.helper_id) : null;
         
                                 (dataTotalVehicles.includes(val.vehicle_id)) ? null : dataTotalVehicles.push(val.vehicle_id);
+                                (dataTotalChassis.includes(val.chassis)) ? null : dataTotalChassis.push(val.chassis);
                                 (dataTotalManpower.includes(val.driver_id)) ? null : dataTotalManpower.push(val.driver_id);
                                 (dataTotalManpower.includes(val.checker_id)) ? null : dataTotalManpower.push(val.checker_id);
                                 (dataTotalManpower.includes(val.helper_id)) ? null : dataTotalManpower.push(val.helper_id);
@@ -7731,15 +7813,21 @@ var REPORTS = {
                         });
     
                         var vehiclePercentage = GET.ROUND_OFF((uniqueVehicleList.length/totalVehicles)*100);
+                        var chassisPercentage = GET.ROUND_OFF((uniqueChassisList.length/totalChassis)*100);
                         var driverPercentage = GET.ROUND_OFF((uniqueDriverList.length/totalManpower)*100);
                         var checkerPercentage = GET.ROUND_OFF((uniqueCheckerList.length/totalManpower)*100);
                         var helperPercentage = GET.ROUND_OFF((uniqueHelperList.length/totalManpower)*100);
 
                         rowsArr.push({
                             date,
+
                             totalVehicleCount: vehicle_ids.length,
                             uniqueVehicleCount: uniqueVehicleList.length,
                             totalVehiclePercentage: vehiclePercentage,
+                            
+                            totalChassisCount: chassis_ids.length,
+                            uniqueChassisCount: uniqueChassisList.length,
+                            totalChassisPercentage: chassisPercentage,
 
                             totalDriverCount: manpower_driver_ids.length,
                             uniqueDriverCount: uniqueDriverList.length,
@@ -7790,6 +7878,7 @@ var REPORTS = {
                             return tempDailyRows;
                         }
                         dailyVehicleRows = dailyRows(vehicle_ids,dailyVehicleRows,totalVehicles,(val) => { return getVehicle(val); });
+                        dailyChassisRows = dailyRows(chassis_ids,dailyChassisRows,totalChassis,(val) => { return getChassis(val); });
                         dailyDriverRows = dailyRows(manpower_driver_ids,dailyDriverRows,totalManpower,(val) => { return getVehiclePersonnel(val); });
                         dailyCheckerRows = dailyRows(manpower_checker_ids,dailyCheckerRows,totalManpower,(val) => { return getVehiclePersonnel(val); });
                         dailyHelperRows = dailyRows(manpower_helper_ids,dailyHelperRows,totalManpower,(val) => { return getVehiclePersonnel(val); });
@@ -7813,6 +7902,7 @@ var REPORTS = {
 
                     tableHeader.push(`<td style="${tblHeaderStyle}width:90px;" rowspan=2><b>Date</b></td>
                                       <td style="${tblHeaderStyle}width:160px;" colspan=2><b>Truck Utilization</b></td>
+                                      <td style="${tblHeaderStyle}width:160px;" colspan=2><b>Chassis Utilization</b></td>
                                       <td style="${tblHeaderStyle}width:160px;" colspan=6><b>Manpower Utilization</b></td>`);
 
                     dailyTableSubHeader.push(`<td style="${tblHeaderStyle}width:30px;"><b>#</b></td>
@@ -7823,6 +7913,8 @@ var REPORTS = {
                     //                             <td style="${tblHeaderStyle}width:80px;"><b>Percentage</b></td>`);
 
                     tableSubHeader.push(`<td style="${tblHeaderStyle}width:80px;"><b># Used</b></td>
+                                         <td style="${tblHeaderStyle}width:80px;"><b>Percentage</b></td>
+                                         <td style="${tblHeaderStyle}width:80px;"><b># Used</b></td>
                                          <td style="${tblHeaderStyle}width:80px;"><b>Percentage</b></td>
                                          <td style="${tblHeaderStyle}width:130px;"><b># Used (Driver)</b></td>
                                          <td style="${tblHeaderStyle}width:130px;"><b>Percentage (Driver)</b></td>
@@ -7837,6 +7929,8 @@ var REPORTS = {
                         rows[arr.date].push(`<td style="${tblBodyStyle}text-align:center;font-weight:bold;">${arr.date}</td>
                                             <td style="${tblBodyStyle}text-align:center;">${arr.uniqueVehicleCount}</td>
                                             <td style="${tblBodyStyle}text-align:center;">${arr.totalVehiclePercentage}%</td>
+                                            <td style="${tblBodyStyle}text-align:center;">${arr.uniqueChassisCount}</td>
+                                            <td style="${tblBodyStyle}text-align:center;">${arr.totalChassisPercentage}%</td>
                                             <td style="${tblBodyStyle}text-align:center;">${arr.uniqueDriverCount}</td>
                                             <td style="${tblBodyStyle}text-align:center;">${arr.totalDriverPercentage}%</td>
                                             <td style="${tblBodyStyle}text-align:center;">${arr.uniqueCheckerCount}</td>
@@ -7846,6 +7940,9 @@ var REPORTS = {
                                             
                         dailyVehicleTableHeader[i] = dailyVehicleTableHeader[i] || [];
                         dailyVehicleTableHeader[i].push(`<td style="${tblHeaderStyle}" colspan=3><b>Truck Utilization (${arr.totalVehiclePercentage}%)</b></td>`);
+                                            
+                        dailyChassisTableHeader[i] = dailyChassisTableHeader[i] || [];
+                        dailyChassisTableHeader[i].push(`<td style="${tblHeaderStyle}" colspan=3><b>Chassis Utilization (${arr.totalChassisPercentage}%)</b></td>`);
 
                         dailyDriverTableHeader[i] = dailyDriverTableHeader[i] || [];
                         dailyDriverTableHeader[i].push(`<td style="${tblHeaderStyle}" colspan=3><b>Manpower Utilization - Driver (${arr.totalDriverPercentage}%)</b></td>`);
@@ -7884,6 +7981,14 @@ var REPORTS = {
 
                                             <tr> <td style="border:none;"></td><td style="border:none;"></td> </tr>
                                             <tr> <td style="border:none;"></td><td style="border:none;"></td> </tr>
+                                            <tr> <td style="border:none;color:red;font-weight:bold;" colspan=3>CHASSIS UTILIZATION</td> </tr>
+                                            <tr>${dailyTableTitle.join(`<td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
+                                            <tr>${dailyChassisTableHeader[i-1].join(`<td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
+                                            <tr>${dailyTableSubHeader.join(`<td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
+                                            ${getRowsArr(dailyChassisRows).join("")}
+
+                                            <tr> <td style="border:none;"></td><td style="border:none;"></td> </tr>
+                                            <tr> <td style="border:none;"></td><td style="border:none;"></td> </tr>
                                             <tr> <td style="border:none;color:red;font-weight:bold;" colspan=3>MANPOWER UTILIZATION (DRIVER)</td> </tr>
                                             <tr>${dailyTableTitle.join(`<td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
                                             <tr>${dailyDriverTableHeader[i-1].join(`<td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
@@ -7913,6 +8018,7 @@ var REPORTS = {
                 });
 
                 var monthlyVehicleUtilization = GET.ROUND_OFF((dataTotalVehicles.length/totalVehicles)*100);
+                var monthlyChassisUtilization = GET.ROUND_OFF((dataTotalChassis.length/totalChassis)*100);
                 var monthlyManpowerUtilization = GET.ROUND_OFF((dataTotalManpower.length/totalVehicles)*100);
                 return `<table id="report-hidden" data-SheetName="Overview" border="1" style="border-collapse: collapse;opacity:0;">
                             <tbody>
@@ -7920,13 +8026,15 @@ var REPORTS = {
                                 <tr> <td style="${excelHeaderStyle}text-align:center;" colspan=5><b>${moment(date_from).format("MM-YYYY")}</b></td> </tr>
                                 <tr> <td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td> </tr>
                                 <tr> <td style="${excelHeaderStyle}" colspan=5>Total # of Trucks: <b>${totalVehicles}</b></td> </tr>
+                                <tr> <td style="${excelHeaderStyle}" colspan=5>Total # of Chassis: <b>${totalChassis}</b></td> </tr>
                                 <tr> <td style="${excelHeaderStyle}" colspan=5>Total # of Manpower: <b>${totalManpower}</b></td> </tr>
                                 <tr> <td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td> </tr>
                                 <tr> <td style="${excelHeaderStyle}" colspan=5>Monthly Truck Utilization: <b>${monthlyVehicleUtilization}%</b></td> </tr>
+                                <tr> <td style="${excelHeaderStyle}" colspan=5>Monthly Chassis Utilization: <b>${monthlyChassisUtilization}%</b></td> </tr>
                                 <tr> <td style="${excelHeaderStyle}" colspan=5>Monthly Manpower Utilization: <b>${monthlyManpowerUtilization}%</b></td> </tr>
                                 <tr> <td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td> </tr>
 
-                                <tr>${tableTitle.join(`<td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
+                                <tr>${tableTitle.join(`<td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td>><td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
                                 <tr>${tableHeader.join(`<td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
                                 <tr>${tableSubHeader.join(`<td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
                                 ${tableRows}
@@ -8609,7 +8717,7 @@ var REPORTS = {
 
             /******** TABLE CHECK ********/
             TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
-                isFinishedLoading(["GEOFENCES","ROUTES","VEHICLES","CLUSTERS","VEHICLE_PERSONNEL"], _new_, function(){
+                isFinishedLoading(["GEOFENCES","ROUTES","VEHICLES","CLUSTERS","VEHICLE_PERSONNEL","CHASSIS"], _new_, function(){
                     _new_ = false;
                     LIST["geofences"].forEach(val => {
                         val.value = val.short_name;
@@ -9969,7 +10077,9 @@ var LOCATIONS = {
             stream: null,
             init: function(){
                 var urlPath = "clusters",
-                    _new_ = false,
+                    _new1_ = true,
+                    _new2_ = true,
+                    _new3_ = true,
                     _userData = null,
                     _USERS_,
                     table = new Table({
@@ -10312,28 +10422,32 @@ var LOCATIONS = {
                             table.updateRows(LIST[urlPath]);
                         }
                     }
-                    if(GGS.STATUS.GEOFENCES){
+                    isFinishedLoading(["GEOFENCES"], _new1_, function(){
+                        _new1_ = false;
+    
                         if(LIST[urlPath].length > 0 && LIST[urlPath][0].totalGeofences == null && table.dt){
                             table.updateRows(LIST[urlPath]);
                         }
-                    }
-                    if(GGS.STATUS.REGIONS) {
+                    });
+                    isFinishedLoading(["REGIONS"], _new2_, function(){
+                        _new2_ = false;
+    
                         if(LIST[urlPath].length > 0 && !LIST[urlPath][0]._region){
                             table.updateRows(LIST[urlPath]);
                         }
-                    }
-                    if(GGS.STATUS.CLUSTERS) { 
-                        if(!_new_) {
-                            _new_ = true;
-                            
-                            table.initialize();
-                            table.populateRows(LIST[urlPath]);
-                            table.hideProgressBar();
+                    });
+                    isFinishedLoading(["CLUSTERS"], _new3_, function(){
+                        _new3_ = false;
+    
+                        table.initialize();
+                        table.populateRows(LIST[urlPath]);
+                        table.hideProgressBar();
+                    });
+                    isFinishedLoading(["REGIONS"], true, function(){
+                        if(_userData){
+                            TABLE.FINISH_LOADING.UPDATE();
                         }
-                    }
-                    if(_userData && GGS.STATUS.REGIONS){
-                        TABLE.FINISH_LOADING.UPDATE();
-                    }
+                    });
                 }
                 /******** END TABLE CHECK ********/
                 
@@ -10389,8 +10503,10 @@ var LOCATIONS = {
         geofences: {
             stream: null,
             init: function(){
-                var urlPath = "geofences",
-                    _new_ = false,  
+                var urlPath = "geofences", 
+                    _new1_ = true,  
+                    _new2_ = true,  
+                    _new3_ = true,   
                     _userData = null,
                     _USERS_,
                     table = new Table({
@@ -10756,28 +10872,32 @@ var LOCATIONS = {
                             table.updateRows(LIST[urlPath]);
                         }
                     }
-                    if(GGS.STATUS.REGIONS) {
+                    isFinishedLoading(["REGIONS"], _new1_, function(){
+                        _new1_ = false;
+    
                         if(LIST[urlPath] && LIST[urlPath].length > 0 && !LIST[urlPath][0]._region && table.dt){
                             table.updateRows(LIST[urlPath]);
                         }
-                    }
-                    if(GGS.STATUS.CLUSTERS) {
+                    });
+                    isFinishedLoading(["CLUSTERS"], _new2_, function(){
+                        _new2_ = false;
+    
                         if(LIST[urlPath] && LIST[urlPath].length > 0 && !LIST[urlPath][0]._cluster && table.dt){
                             table.updateRows(LIST[urlPath]);
                         }
-                    }
-                    if(GGS.STATUS.GEOFENCES) { 
-                        if(!_new_) {
-                            _new_ = true;
-                            
-                            table.initialize();
-                            table.populateRows(LIST[urlPath]);
-                            table.hideProgressBar();
+                    });
+                    isFinishedLoading(["GEOFENCES"], _new3_, function(){
+                        _new3_ = false;
+    
+                        table.initialize();
+                        table.populateRows(LIST[urlPath]);
+                        table.hideProgressBar();
+                    });
+                    isFinishedLoading(["REGIONS","CLUSTERS"], true, function(){
+                        if(_userData) { 
+                            TABLE.FINISH_LOADING.UPDATE();
                         }
-                    }
-                    if(_userData && GGS.STATUS.REGIONS && GGS.STATUS.CLUSTERS) { 
-                        TABLE.FINISH_LOADING.UPDATE();
-                    }
+                    });
                 }
                 /******** END TABLE CHECK ********/
                 
@@ -11259,360 +11379,6 @@ var VEHICLES = {
         }
     }
 };
-var FUEL_REFILL = {
-    FUNCTION: {
-        init: function(){
-            var urlPath = "fuel_refill",
-                _new_ = true,
-                table = new Table({
-                    id: "#tbl-fuel_refill",
-                    urlPath,
-                    goto: "fuel_refill",
-                    dataTableOptions: {
-                        columns: TABLE.COL_ROW(CUSTOM.COLUMN.fuel_refill).column,
-                        order: [[ 2, "desc" ]],
-                        createdRow: function (row, data, dataIndex) {
-                            var _row = data._row;
-                            $(row).attr(`_row`, data._row);
-
-                            table.rowListeners(_row,data._id);
-                        },
-                        dom: 'lBfrti<"tbl-progress-bar">p',
-                    },
-                    initializeCallback: function(){
-                        TABLE.WATCH({urlPath,rowData:table.addRow,options:function(){TABLE.FINISH_LOADING.START_CHECK();}});
-                    }
-                });
-            table.setButtons({
-                loadView: ["import"],
-                actions:{
-                    refresh: function(){ table.countRows(); },
-                    import: function(){
-                        $(`body`).append(MODAL.CREATE.EMPTY(`Import Batch File`,modalViews.fuel_refill.import()));
-                        FUEL_REFILL.FUNCTION.import({});
-                    },
-                }
-            });
-            table.addRow = function(obj){
-                const self = this;
-                var action = TABLE.ROW_BUTTONS(PAGE.GET());
-                $(`${self.id} th:last-child`).css({"min-width":action.width,"width":action.width});
-
-                var created_by = (LIST["users"]) ? (getUser(obj.created_by) || {}).name : `<small class="font-italic text-muted">loading...</small>`;
-    
-                return TABLE.COL_ROW(null,{
-                    '_id': obj._id,
-                    '_row':  obj._row,
-                    'Converted File': `<a href="${obj.attachments[0].url}">${obj.attachments[0].filename}</a>`,
-                    'Error File': `<a href="${obj.attachments[1].url}">${obj.attachments[1].filename}</a>`,
-                    'Upload Date':  DATETIME.FORMAT(obj.created_on),
-                    'Uploaded By': created_by || "-",
-                    'Action': action.buttons,
-                }).row;
-            };
-            table.rowListeners = function(_row,_id){
-                const self = this;
-                TABLE.ROW_LISTENER({table_id:self.id,_row,urlPath,_id});
-            };
-            table.initialize();
-            table.countRows();
-            
-
-            /******** TABLE CHECK ********/
-            TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
-                isFinishedLoading(["USERS"], _new_, function(){
-                    if((LIST[urlPath]||[]).length > 0 && table.dt && _new_){
-                        _new_ = false;
-                        table.updateRows(LIST[urlPath]);
-                    }
-                });
-                isFinishedLoading(["VEHICLES"], true, function(){
-                    TABLE.FINISH_LOADING.UPDATE();
-                });
-            }
-            TABLE.FINISH_LOADING.START_CHECK();
-            /******** END TABLE CHECK ********/
-        },
-        import: function(){
-            $(`#download-template-btn`).click(function(){
-                $(`body`).append(CUSTOM.IMPORT_TEMPLATE.fuel_refill.fleet());
-                exportTableToExcel("Fuel Refill Import Template");
-                
-                $(`#report-hidden,#temp-link,[data-SheetName]`).remove();
-            });
-
-            var fileExtension = ["xls","xlsx","ods"];
-            $('.dropify').dropify();
-            $(`.dropify`).change(function(){
-                $(`#import-btn`).attr("disabled",false);
-            });
-            $(`#import-btn`).click(function(){
-                $(this).html(`<i class="la la-spinner la-spin mr-2"></i>Import`).attr("disabled",true);
-                $(`.dropify-wrapper`).css("pointer-events","none");
-                read(`.dropify`);
-            }).attr("disabled",true);
-
-            var requiredFields = {
-                fleet: [
-                    { name: "Delivery Date", required: true, error: ["Date is not valid."]  },
-                    { name: "Time", required: true, error: ["Time is not valid."] },
-                    { name: "Quantity", key: "Volume", required: true },
-                    { name: "Vehicle License Number", required: true },
-                ],
-            };
-            
-            function read(el){
-                var ext = $(el).val().split('.').pop().toLowerCase();
-                
-                console.log(fileExtension,ext);
-                if(fileExtension.includes(ext) == true){
-                    var reader = new FileReader();
-                    reader.onload = function () {
-                        var result = reader.result;
-                        // console.log(result);
-                        var workbook = XLSX.read(result, { type: 'binary' }),
-                            XL_row_object = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[workbook.SheetNames[0]],{defval: ""}),
-                            finalRowObject = [];
-
-                        $.each(XL_row_object, function(key,value){
-                            // XL_row_object[key].key = GENERATE.RANDOM(36);
-                            var hasValue = false;
-                            requiredFields[CLIENT.id].forEach(_val_ => {
-                                if(XL_row_object[key][_val_.name]){
-                                    hasValue = true;
-                                }
-                            });
-                            if(hasValue === true){
-                                finalRowObject.push(XL_row_object[key]);
-                            }
-                        });
-                        console.log("finalRowObject",finalRowObject)
-                        convert(finalRowObject,$(el)[0].files[0].name);
-                    };
-                    // start reading the file. When it is done, calls the onload event defined above.
-                    ($(el)[0].files.length > 0) ? reader.readAsBinaryString($(el)[0].files[0]) : console.log("No file selected.");
-                } else {
-                    toastr.error(`Only ${fileExtension.join(", ")} files are allowed.`);
-                    
-                    $(`#import-btn`).html(`Import`).attr("disabled",false);
-                    $(`.dropify-wrapper`).css("pointer-events","");
-                    $(`.dropify-clear`).click();
-                }
-            }
-            function convert(import_data,filename){
-                filename = filename.split('.').slice(0, -1).join('.');
-                var errorList = {},
-                    warningList = {},
-                    importData = [],
-                    errorData = [],
-                    parseDateExcel = (excelTimestamp) => {
-                        const secondsInDay = 24 * 60 * 60;
-                        const excelEpoch = new Date(1899, 11, 31);
-                        const excelEpochAsUnixTimestamp = excelEpoch.getTime();
-                        const missingLeapYearDay = secondsInDay * 1000;
-                        const delta = excelEpochAsUnixTimestamp - missingLeapYearDay;
-                        const excelTimestampAsUnixTimestamp = excelTimestamp * secondsInDay * 1000;
-                        const parsed = excelTimestampAsUnixTimestamp + delta;
-                        return isNaN(parsed) ? null : parsed;
-                    };
-                
-                if(import_data.length > 0){
-                    import_data.forEach((val,i) => {
-                        var license_number = val["Vehicle License Number"],
-                            username = (LIST["vehicles"].find(x => x.CN1 == license_number || x.CN2 == license_number || x.name == license_number)||{}).username,
-                            delivery_date = DATETIME.FORMAT(parseDateExcel(val["Delivery Date"]),"MM/DD/YYYY"),
-                            delivery_time = moment(new Date(parseDateExcel(val["Time"]))).format("H:mm:ss"),
-                            errorShipment = false,
-                            identifierKey = val.__rowNum__;
-
-                        var obj = {
-                                "VehicleID": "",
-                                "TimeStamp": "",
-                                "Volume": ""
-                            },
-                            addToNoteList = function(text,causes,key,type,isField){
-                                key = key || (Number(val.__rowNum__) + 1);
-                                if(type == "error"){
-                                    var causesHTML = (causes) ? `<ul level=2><li>${causes.join("</li><li>")}</li></ul>` : "";
-                                    (errorList[key]) ? errorList[key].push(text+causesHTML) : errorList[key] = [(text+causesHTML)];
-                                    errorShipment = true;
-                                } 
-                                if(type == "warning"){
-                                    var causesHTML = (causes) ? `<ul level=2><li>${causes.join("</li><li>")}</li></ul>` : "";
-                                    text = (isField === true) ? `<small class="text-muted">[FIELD NOT SAVED]</small> ${text}` : text;
-                                    (warningList[key]) ? warningList[key].push(text+causesHTML) : warningList[key] = [(text+causesHTML)];
-                                }
-                            };
-                            
-                        if((val.__rowNum__).toString()._trim()){
-                            requiredFields[CLIENT.id].forEach(_val_ => {
-                                if(val[_val_.name].toString()._trim()){
-                                    // okay
-                                    if(_val_.key){
-                                        obj[_val_.key] = val[_val_.name].toString()._trim();
-                                    } else {
-                                        checkkkkk(_val_.name,_val_.error);
-                                    }
-                                } else {
-                                    if(_val_.required === true){
-                                        // error
-                                        addToNoteList(`Missing data in '${_val_.name}'. `,null,val[identifierKey],"error");
-                                    } else {
-                                        if(_val_.codependent){
-                                            if(val[_val_.codependent]){
-                                                // error
-                                                addToNoteList(`Missing data in '${_val_.name}'. `,null,val[identifierKey],"warning");
-                                            } else {
-                                                // okay. no error
-                                                obj[_val_.key] = "";
-                                            }
-                                        }
-                                    }
-                                }
-                            });
-                        } else {
-                            addToNoteList(`Missing data in '${identifierKey}'.`,null,val[identifierKey],"error");
-                        }
-                        
-                        function checkkkkk(columnKey,error){
-                            if(columnKey == "Vehicle License Number"){
-                                if(username){
-                                    obj["VehicleID"] = username;
-                                } else {
-                                    addToNoteList(`Missing data in '${columnKey}'. `,null,val[identifierKey],"error");
-                                }
-                            }
-
-                            if(columnKey == "Delivery Date"){
-                                var momentDeliveryDate = moment(delivery_date, 'MM/DD/YYYY', true);
-                                var formattedDeliveryDate = momentDeliveryDate.format("MM/DD/YYYY");
-                                if(momentDeliveryDate.isValid()){
-                                    if(moment(delivery_time, 'H:mm:ss', true).isValid()){
-                                        obj["TimeStamp"] = moment(`${formattedDeliveryDate}, ${delivery_time}`).format("YYYY-MM-DDTHH:mm:ss");
-                                    }
-                                } else {
-                                    addToNoteList(`Invalid data in '${columnKey}'.  Possible causes:`,error,val[identifierKey],"error",true);
-                                }
-                            }
-
-                            if(columnKey == "Time"){
-                                if(moment(delivery_time, 'H:mm:ss', true).isValid()){
-                                    var momentDeliveryDate = moment(delivery_date, 'MM/DD/YYYY', true);
-                                    var formattedDeliveryDate = momentDeliveryDate.format("MM/DD/YYYY");
-                                    if(momentDeliveryDate.isValid()){
-                                        obj["TimeStamp"] = moment(`${formattedDeliveryDate}, ${delivery_time}`).format("YYYY-MM-DDTHH:mm:ss");
-                                    }
-                                } else {
-                                    addToNoteList(`Invalid data in '${columnKey}'.  Possible causes:`,error,val[identifierKey],"error",true);
-                                }
-                            }
-                        }
-
-                        importData.push(obj);
-                        if(errorShipment === false){
-                            // importData.push(obj); // merged
-                        } else {
-                            delete val.__rowNum__;
-                            val["Delivery Date"] = delivery_date;
-                            val["Time"] = delivery_time;
-                            errorData.push(val);
-                        }
-
-                    });
-                    console.log("errorList",errorList);
-                    console.log("LENGTH: "+importData.length);
-                    console.log("final",importData);
-
-                    function json_to_sheet_to_base64(arr,filename){
-                        /* make the worksheet */
-                        var ws = XLSX.utils.json_to_sheet(arr);
-
-                        /* add to workbook */
-                        var wb = XLSX.utils.book_new();
-                        XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
-
-                        /* generate an XLSX file */
-                        // XLSX.writeFile(wb, "sheetjs.xlsx");
-                        
-                        /* generate XLSX as array buffer */
-                        var bufferArray = XLSX.write(wb, {bookType: 'xlsx', type: 'array'});
-                        return {
-                            // add comma(",") before base64, refer to storage.js (_storage.upload === var base64 = (val.base64||"").split(',')[1];)
-                            base64: ","+btoa([].reduce.call(new Uint8Array(bufferArray),function(p,c){return p+String.fromCharCode(c)},'')),
-                            filename,
-                            wb
-                        }
-                    }
-
-                    var merged = json_to_sheet_to_base64(importData,`[Converted] ${filename}.xlsx`);
-                    var error = json_to_sheet_to_base64(errorData,`[Error] ${filename}.xlsx`);
-                    var attachments = [
-                        { 
-                            base64: merged.base64, 
-                            filename: merged.filename, 
-                            storageFilename: `attachments/<INSERT_ID_HERE>/${merged.filename}`,
-                            url: `https://storage.googleapis.com/${CLIENT.dsName}/`
-                        },
-                        { 
-                            base64: error.base64, 
-                            filename: error.filename, 
-                            storageFilename: `attachments/<INSERT_ID_HERE>/${error.filename}`,
-                            url: `https://storage.googleapis.com/${CLIENT.dsName}/`
-                        }
-                    ];
-
-                    $.ajax({ 
-                        url: `/api/fuel_refill/${CLIENT.id}/${USER.username}`, 
-                        method: "post", 
-                        timeout: 90000 ,
-                        headers: {
-                            "Content-Type": "application/json; charset=utf-8",
-                            "Authorization": SESSION_TOKEN
-                        },
-                        data: JSON.stringify({
-                            _id: GENERATE.RANDOM(36),
-                            attachments
-                        }),
-                        async: true
-                    }).done(function (docs) {
-                        $("#reportCompleteList").html(`<a href="javascript:void(0);">${merged.filename}</a>`);
-                        $("#reportCompleteList a").click(function(){
-                            XLSX.writeFile(merged.wb, merged.filename);
-                        });
-
-                        $("#reportErrorList").html(`<a href="javascript:void(0);">${error.filename}</a>`);
-                        $("#reportErrorList a").click(function(){
-                            XLSX.writeFile(error.wb, error.filename);
-                        });
-                        
-                        if(docs.ok == 1){
-                            toastr.success("Download links are now available.");
-                            $('.dropify-clear').click();
-                            $('.dropify-wrapper').css("pointer-events","");
-                            $(`#import-btn`).html("Import").attr("disabled",true);
-                        } else {
-                            TOASTR.ERROR(docs);
-                            $('.dropify-clear').click();
-                            $('.dropify-wrapper').css("pointer-events","");
-                            $(`#import-btn`).html("Import").attr("disabled",true);
-                        }
-                    }).fail(function(error){
-                        TOASTR.ERROR(error);
-                        $('.dropify-clear').click();
-                        $('.dropify-wrapper').css("pointer-events","");
-                        $(`#import-btn`).html("Import").attr("disabled",true);
-                    });
-
-                } else {
-                    toastr.error("Invalid file. Please download or follow the excel template provided.");
-                    $('.dropify-clear').click();
-                    $('.dropify-wrapper').css("pointer-events","");
-                    $(`#import-btn`).html("Import").attr("disabled",true);
-                }
-            }
-        }
-    }
-};
 var VEHICLE_PERSONNEL = {
     FUNCTION: {
         init: function(){
@@ -11957,6 +11723,609 @@ var VEHICLE_PERSONNEL = {
         }
     }
 };
+var FUEL_REFILL = {
+    xlsxHTML: `<span style="background-color: #00a548;border-radius: 2px;padding: 1px 2px;color: white;font-size: 9px;font-weight: bold;margin-right: 3px;letter-spacing: 1px;">XLSX</span>`,
+    xmlHTML: `<span style="background-color: gray;border-radius: 2px;padding: 1px 2px;color: white;font-size: 9px;font-weight: bold;margin-right: 3px;letter-spacing: 1px;">XML</span>`,
+    aStyle: `overflow: hidden;text-overflow: ellipsis;display: block;white-space: nowrap;margin-bottom:4px;`,
+    FUNCTION: {
+        init: function(){
+            var urlPath = "fuel_refill",
+                _new_ = true,
+                table = new Table({
+                    id: "#tbl-fuel_refill",
+                    urlPath,
+                    goto: "fuel_refill",
+                    dataTableOptions: {
+                        columns: TABLE.COL_ROW(CUSTOM.COLUMN.fuel_refill).column,
+                        order: [[ 4, "desc" ]],
+                        createdRow: function (row, data, dataIndex) {
+                            var _row = data._row;
+                            $(row).attr(`_row`, data._row);
+                            $(row).children(':nth-child(2)').attr("style",`white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:1px;`);
+                            $(row).children(':nth-child(3)').attr("style",`white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:1px;`);
+                            $(row).children(':nth-child(4)').attr("style",`white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:1px;`);
+
+                            table.rowListeners(_row,data._id);
+                        },
+                        dom: 'lBfrti<"tbl-progress-bar">p',
+                    },
+                    initializeCallback: function(){
+                        TABLE.WATCH({urlPath,rowData:table.addRow,options:function(){TABLE.FINISH_LOADING.START_CHECK();}});
+                    }
+                });
+            table.setButtons({
+                loadView: ["import"],
+                actions:{
+                    refresh: function(){ table.countRows(); },
+                    import: function(){
+                        $(`body`).append(MODAL.CREATE.EMPTY(`Import Batch File`,modalViews.fuel_refill.import()));
+                        FUEL_REFILL.FUNCTION.import({});
+                        PAGE.TOOLTIP();
+                    },
+                    column: function(){
+                        $(`#cv-container`).toggle("slide", {direction:'right'},100);
+                    }
+                }
+            });
+            table.addRow = function(obj){
+                const self = this;
+                var action = TABLE.ROW_BUTTONS(PAGE.GET());
+                $(`${self.id} th:last-child`).css({"min-width":action.width,"width":action.width});
+
+                var created_by = (LIST["users"]) ? (getUser(obj.created_by) || {}).name : `<small class="font-italic text-muted">loading...</small>`;
+    
+                var style = `style="width: 100%;${FUEL_REFILL.aStyle}"`;
+                
+                var successfulxlsx = null;
+                var successfulxml = null;
+                var failedImportxlsx = null;
+                var failedImportxml = null;
+                var errorxlsx = null;
+
+                (obj.attachments||[]).forEach(val => {
+                    if((val.options||{}).type == "successful-xlsx") successfulxlsx = val;
+                    if((val.options||{}).type == "successful-xml") successfulxml = val;
+                    if((val.options||{}).type == "failedImport-xlsx") failedImportxlsx = val;
+                    if((val.options||{}).type == "failedImport-xml") failedImportxml = val;
+                    if((val.options||{}).type == "error-xlsx") errorxlsx = val;
+                });
+
+                return TABLE.COL_ROW(null,{
+                    '_id': obj._id,
+                    '_row':  obj._row,
+                    'Summary':  `<div>Successful: <b style="text-decoration: underline;">${obj.success_count||"0"}</b></div><div>Failed to Import: <b style="text-decoration: underline;">${obj.fail_import_count||"0"}</b></div><div>Error/No Match: <b style="text-decoration: underline;">${obj.error_count||"0"}</b></div>`,
+                    'Converted': (successfulxlsx) ? 
+                                `<a href="${successfulxlsx.url}" normaldownload ${style}>${FUEL_REFILL.xlsxHTML}${successfulxlsx.filename}</a>
+                                 <a href="javascript:void(0);" src="${successfulxml.url}" filename="${successfulxml.filename}" downloadxml ${style}>${FUEL_REFILL.xmlHTML}${successfulxml.filename}</a>`: ``,
+                    'Failed to Import': (failedImportxlsx) ? 
+                                        `<a href="${failedImportxlsx.url}" normaldownload ${style}>${FUEL_REFILL.xlsxHTML}${failedImportxlsx.filename}</a>
+                                         <a href="javascript:void(0);" src="${failedImportxml.url}" filename="${failedImportxml.filename}" downloadxml ${style}>${FUEL_REFILL.xmlHTML}${failedImportxml.filename}</a>` : ``,
+                    'Error': (errorxlsx) ? `<a href="${errorxlsx.url}" normaldownload ${style}>${FUEL_REFILL.xlsxHTML}${errorxlsx.filename}</a>` : ``,
+                    'Upload Date':  DATETIME.FORMAT(obj.created_on),
+                    'Uploaded By': created_by || "-",
+                    'Action': action.buttons,
+                }).row;
+            };
+            table.rowListeners = function(_row,_id){
+                const self = this;
+
+                TABLE.ROW_LISTENER({table_id:self.id,_row,urlPath,_id});
+                function xmlToString(xmlData) { 
+
+                    var xmlString;
+                    //IE
+                    if (window.ActiveXObject){
+                        xmlString = xmlData.xml;
+                    }
+                    // code for Mozilla, Firefox, Opera, etc.
+                    else{
+                        xmlString = (new XMLSerializer()).serializeToString(xmlData);
+                    }
+                    return xmlString;
+                }   
+                $(table.id).on('click', `[_row="${_row}"] [normaldownload]`,function(e){
+                    e.stopImmediatePropagation();
+                    toastr.success("Download success!");
+                });
+
+                $(table.id).on('click', `[_row="${_row}"] [downloadxml]`,function(e){
+                    e.stopImmediatePropagation();
+                    var src = $(this).attr("src");
+                    var filename = $(this).attr("filename");
+                    var mytoast = toastr.info("Downloading..");
+                    
+                    $.ajax({
+                        type: "get",
+                        url: src,
+                        dataType: "xml",
+                        crossDomain: true,
+                        success: function(data) {
+                            $(mytoast).removeClass("toast-info").addClass("toast-success");
+                            $(mytoast).children('.toast-message').html("Download success!");
+
+                            const xmlString = xmlToString(data);
+                            var blob = new Blob([xmlString], {type: "text/xml"});
+                            saveAs(blob, filename);
+                        },
+                        error: function(xhr, status) {
+                            console.log(status,xhr);
+                            $(mytoast).removeClass("toast-info").addClass("toast-error");
+                            $(mytoast).children('.toast-message').html("Download failed.");
+                        }
+                    });
+                });
+            };
+            table.filterListener = function(){
+                $(`.page-box`).append(SLIDER.COLUMN_VISIBILITY(CUSTOM.COLUMN.fuel_refill));
+                $('span.toggle-vis').on( 'click', function (e) {
+                    var index = $(this).attr('data-column'),
+                        column = table.dt.column(index);
+
+                    column.visible( ! column.visible() );
+                    CUSTOM.COLUMN.fuel_refill[index].visible = column.visible();
+                    CUSTOM.COLUMN.fuel_refill[index].bVisible = column.visible();
+                    $(table.id).attr("style","");
+
+                    $(`${table.id} thead tr th`).each((i,el) => {
+                        if(!$(el).is(":visible")){
+                            $(`${table.id} tr:not(.child)`).each((i1,el1) => {
+                                $(el1).find("td").eq(i).hide();
+                            });
+                        }
+                    });
+                });
+            }
+            table.initialize();
+            table.countRows();
+            
+
+            /******** TABLE CHECK ********/
+            TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
+                isFinishedLoading(["USERS"], _new_, function(){
+                    if((LIST[urlPath]||[]).length > 0 && table.dt && _new_){
+                        _new_ = false;
+                        table.updateRows(LIST[urlPath]);
+                    }
+                });
+                isFinishedLoading(["VEHICLES"], true, function(){
+                    TABLE.FINISH_LOADING.UPDATE();
+                });
+            }
+            TABLE.FINISH_LOADING.START_CHECK();
+            /******** END TABLE CHECK ********/
+        },
+        import: function(){
+            $(`#download-template-btn`).click(function(){
+                $(`body`).append(CUSTOM.IMPORT_TEMPLATE.fuel_refill.fleet());
+                exportTableToExcel("Fuel Refill Import Template");
+                
+                $(`#report-hidden,#temp-link,[data-SheetName]`).remove();
+            });
+
+            var fileExtension = ["xls","xlsx","ods"];
+            $('.dropify').dropify();
+            $(`.dropify`).change(function(){
+                $(`#import-btn`).attr("disabled",false);
+                $(`#reportSuccessfulList,#reportErrorList,#reportImportFailureList`).html(`<div class="text-muted font-italic">No link available.</div>`);
+            });
+            $(`#import-btn`).click(function(){
+                $(this).html(`<i class="la la-spinner la-spin mr-2"></i>Import`).attr("disabled",true);
+                $(`.dropify-wrapper`).css("pointer-events","none");
+                read(`.dropify`);
+            }).attr("disabled",true);
+
+            var requiredFields = {
+                fleet: [
+                    { name: "Delivery Date", required: true, error: ["Date is not valid."]  },
+                    { name: "Time", required: true, error: ["Time is not valid."] },
+                    { name: "Quantity", key: "Volume", required: true },
+                    { name: "Vehicle License Number", required: true },
+                ],
+            };
+
+            var listChildEl = `#reportImportFailureList .text-muted.font-italic,#reportSuccessfulList .text-muted.font-italic,#reportErrorList .text-muted.font-italic`;
+            
+            function read(el){
+                $(listChildEl).html("Reading file...");
+                var ext = $(el).val().split('.').pop().toLowerCase();
+                
+                console.log(fileExtension,ext);
+                if(fileExtension.includes(ext) == true){
+                    var reader = new FileReader();
+                    reader.onload = function () {
+                        var result = reader.result;
+                        // console.log(result);
+                        var workbook = XLSX.read(result, { type: 'binary' }),
+                            XL_row_object = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[workbook.SheetNames[0]],{defval: ""}),
+                            finalRowObject = [];
+
+                        $.each(XL_row_object, function(key,value){
+                            // XL_row_object[key].key = GENERATE.RANDOM(36);
+                            var hasValue = false;
+                            requiredFields[CLIENT.id].forEach(_val_ => {
+                                if(XL_row_object[key][_val_.name]){
+                                    hasValue = true;
+                                }
+                            });
+                            if(hasValue === true){
+                                finalRowObject.push(XL_row_object[key]);
+                            }
+                        });
+                        console.log("finalRowObject",finalRowObject)
+                        convert(finalRowObject,$(el)[0].files[0].name);
+                    };
+                    // start reading the file. When it is done, calls the onload event defined above.
+                    ($(el)[0].files.length > 0) ? reader.readAsBinaryString($(el)[0].files[0]) : console.log("No file selected.");
+                } else {
+                    toastr.error(`Only ${fileExtension.join(", ")} files are allowed.`);
+                    
+                    $(`#import-btn`).html(`Import`).attr("disabled",false);
+                    $(`.dropify-wrapper`).css("pointer-events","");
+                    $(`.dropify-clear`).click();
+                }
+            }
+            function convert(import_data,filename){
+                $(listChildEl).html("Converting file...");
+                filename = filename.split('.').slice(0, -1).join('.');
+                var errorList = {},
+                    warningList = {},
+                    importData = [],
+                    errorData = [],
+                    parseDateExcel = (excelTimestamp) => {
+                        const secondsInDay = 24 * 60 * 60;
+                        const excelEpoch = new Date(1899, 11, 31);
+                        const excelEpochAsUnixTimestamp = excelEpoch.getTime();
+                        const missingLeapYearDay = secondsInDay * 1000;
+                        const delta = excelEpochAsUnixTimestamp - missingLeapYearDay;
+                        const excelTimestampAsUnixTimestamp = excelTimestamp * secondsInDay * 1000;
+                        const parsed = excelTimestampAsUnixTimestamp + delta;
+                        return isNaN(parsed) ? null : parsed;
+                    };
+                
+                if(import_data.length > 0){
+                    import_data.forEach((val,i) => {
+                        var license_number = val["Vehicle License Number"],
+                            username = (LIST["vehicles"].find(x => x.CN1 == license_number || x.CN2 == license_number || x.name == license_number)||{}).username,
+                            delivery_date = DATETIME.FORMAT(parseDateExcel(val["Delivery Date"]),"MM/DD/YYYY"),
+                            delivery_time = moment(new Date(parseDateExcel(val["Time"]))).format("H:mm:ss"),
+                            errorShipment = false,
+                            identifierKey = val.__rowNum__;
+
+                        var obj = {
+                                "VehicleID": "",
+                                "TimeStamp": "",
+                                "Volume": ""
+                            },
+                            addToNoteList = function(text,causes,key,type,isField){
+                                key = key || (Number(val.__rowNum__) + 1);
+                                if(type == "error"){
+                                    var causesHTML = (causes) ? `<ul level=2><li>${causes.join("</li><li>")}</li></ul>` : "";
+                                    (errorList[key]) ? errorList[key].push(text+causesHTML) : errorList[key] = [(text+causesHTML)];
+                                    errorShipment = true;
+                                } 
+                                if(type == "warning"){
+                                    var causesHTML = (causes) ? `<ul level=2><li>${causes.join("</li><li>")}</li></ul>` : "";
+                                    text = (isField === true) ? `<small class="text-muted">[FIELD NOT SAVED]</small> ${text}` : text;
+                                    (warningList[key]) ? warningList[key].push(text+causesHTML) : warningList[key] = [(text+causesHTML)];
+                                }
+                            };
+                            
+                        if((val.__rowNum__).toString()._trim()){
+                            requiredFields[CLIENT.id].forEach(_val_ => {
+                                if(val[_val_.name].toString()._trim()){
+                                    // okay
+                                    if(_val_.key){
+                                        obj[_val_.key] = val[_val_.name].toString()._trim();
+                                    } else {
+                                        deepChecking(_val_.name,_val_.error);
+                                    }
+                                } else {
+                                    if(_val_.required === true){
+                                        // error
+                                        addToNoteList(`Missing data in '${_val_.name}'. `,null,val[identifierKey],"error");
+                                    } else {
+                                        if(_val_.codependent){
+                                            if(val[_val_.codependent]){
+                                                // error
+                                                addToNoteList(`Missing data in '${_val_.name}'. `,null,val[identifierKey],"warning");
+                                            } else {
+                                                // okay. no error
+                                                obj[_val_.key] = "";
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        } else {
+                            addToNoteList(`Missing data in '${identifierKey}'.`,null,val[identifierKey],"error");
+                        }
+                        
+                        function deepChecking(columnKey,error){
+                            if(columnKey == "Vehicle License Number"){
+                                if(username){
+                                    obj["VehicleID"] = username;
+                                } else {
+                                    addToNoteList(`Missing data in '${columnKey}'. `,null,val[identifierKey],"error");
+                                }
+                            }
+
+                            if(columnKey == "Delivery Date"){
+                                var momentDeliveryDate = moment(delivery_date, 'MM/DD/YYYY', true);
+                                var formattedDeliveryDate = momentDeliveryDate.format("MM/DD/YYYY");
+                                if(momentDeliveryDate.isValid()){
+                                    if(moment(delivery_time, 'H:mm:ss', true).isValid()){
+                                        // Remove the milliseconds and 'Z'
+                                        // Original: 2021-06-18T16:08:26.000Z
+                                        // Output: 2021-06-18T16:08:26
+                                        obj["TimeStamp"] = new Date(`${formattedDeliveryDate}, ${delivery_time}`).toISOString().split('.')[0];
+                                    }
+                                } else {
+                                    addToNoteList(`Invalid data in '${columnKey}'.  Possible causes:`,error,val[identifierKey],"error",true);
+                                }
+                            }
+
+                            if(columnKey == "Time"){
+                                if(moment(delivery_time, 'H:mm:ss', true).isValid()){
+                                    var momentDeliveryDate = moment(delivery_date, 'MM/DD/YYYY', true);
+                                    var formattedDeliveryDate = momentDeliveryDate.format("MM/DD/YYYY");
+                                    if(momentDeliveryDate.isValid()){
+                                        // Remove the milliseconds and 'Z'
+                                        // Original: 2021-06-18T16:08:26.000Z
+                                        // Output: 2021-06-18T16:08:26
+                                        obj["TimeStamp"] = new Date(`${formattedDeliveryDate}, ${delivery_time}`).toISOString().split('.')[0];
+                                    }
+                                } else {
+                                    addToNoteList(`Invalid data in '${columnKey}'.  Possible causes:`,error,val[identifierKey],"error",true);
+                                }
+                            }
+                        }
+
+                        // importData.push(obj);
+                        if(errorShipment === false){
+                            importData.push(obj); // merged
+                        } else {
+                            delete val.__rowNum__;
+                            val["Delivery Date"] = delivery_date;
+                            val["Time"] = delivery_time;
+                            errorData.push(val);
+                        }
+
+                    });
+                    console.log("errorList",errorList);
+                    console.log("LENGTH: "+importData.length);
+                    console.log("final",importData);
+
+                    exportFiles(importData,errorData,filename);
+                } else {
+                    toastr.error("Invalid file. Please download or follow the excel template provided.");
+                    $('.dropify-clear').click();
+                    $('.dropify-wrapper').css("pointer-events","");
+                    $(`#import-btn`).html("Import").attr("disabled",true);
+                }
+            }
+            function exportFiles(importData,errorData,filename){
+                function json_to_sheet_to_base64(arr,filename){
+                    /* make the worksheet */
+                    var ws = XLSX.utils.json_to_sheet(arr);
+
+                    /* add to workbook */
+                    var wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+
+                    /* generate an XLSX file */
+                    // XLSX.writeFile(wb, "sheetjs.xlsx");
+                    
+                    /* generate XLSX as array buffer */
+                    var bufferArray = XLSX.write(wb, {bookType: 'xlsx', type: 'array'});
+                    return {
+                        // add comma(",") before base64, refer to storage.js (_storage.upload === var base64 = (val.base64||"").split(',')[1];)
+                        base64: ","+btoa([].reduce.call(new Uint8Array(bufferArray),function(p,c){return p+String.fromCharCode(c)},'')),
+                        filename,
+                        wb
+                    }
+                }
+                function json_to_xml_to_base64(arr,rawFilename,filename){
+                    var refills = [];
+                    arr.forEach(val => {
+                        refills.push(`          <Refill>\n` +
+                                     `               <VehicleID>${val["VehicleID"]}</VehicleID>\n`+
+                                     `               <TimeStamp>${val["TimeStamp"]}</TimeStamp>\n`+
+                                     `               <Volume>${val["Volume"]}</Volume>\n`+
+                                     `          </Refill>\n`);
+                    });
+                    // note!! do not change spacing.
+                    var xml =   `<?xml version="1.0" encoding="utf-8"?>\n` +
+                                `<Fuel fileid="${rawFilename}">\n` +
+                                `     <Refills>\n` +
+                                        refills.join("") +
+                                `     </Refills>\n` + 
+                                `</Fuel>`;
+
+                    var base64 = "";
+                    if (!("TextEncoder" in window)) alert("Sorry, this browser does not support TextEncoder...");
+                    else {
+                        var enc = new TextEncoder(); // always utf-8
+                        base64 = ","+btoa([].reduce.call(enc.encode(xml),function(p,c){return p+String.fromCharCode(c)},''));
+                    }
+
+                    return {
+                        base64,
+                        save: function(){
+                            var blob = new Blob([xml], {type: "text/xml"});
+                            saveAs(blob, filename);
+                        },
+                        filename,
+
+                    }
+                }
+
+                var tempImportData = JSON.parse(JSON.stringify(importData));
+
+                var successfulData = [];
+                var errorValidTemplate = [];
+                var countAjax = 0;
+                var tries = 0;
+
+                $(listChildEl).html("Importing data to WRU Main...");
+                function callAjax(obj) {
+                    var userId = (LIST["vehicles"].find(x => x.username == obj["VehicleID"])||{})._id;
+                    if(userId){
+                        // import to main
+                        $.ajax({
+                            url: `https://coca-cola.server93.com/comGpsGate/api/v.1/applications/${CLIENT.appId}/users/${userId}/fuelconsumption`,
+                            method: "post", 
+                            timeout: 90000 ,
+                            headers: {
+                                "Content-Type": "application/json; charset=utf-8",
+                                "Authorization": USER.apiKey
+                            },
+                            data: JSON.stringify({
+                                "id": 0, // automatically set by WRU Main
+                                "userId": Number(userId),
+                                "refilledOn": obj["TimeStamp"],
+                                "volume": obj["Volume"]
+                            }),
+                            async: true
+                        }).done(()=>{
+                            successfulData.push(obj);
+                            doneAjax();
+                        }).fail(()=>{
+                            errorValidTemplate.push(obj);
+                            doneAjax();
+                        });
+                    } else {
+                        console.log("obj",obj)
+                    }
+                }
+                tempImportData.forEach(val => { callAjax(val); });
+
+                function doneAjax(){
+                    countAjax++;
+                    if(tempImportData.length == countAjax){
+                        if(errorValidTemplate.length > 0){
+                            tries++;
+                            // retry to import the errors for 5 times.
+                            if(tries < 5){
+                                countAjax = 0;
+                                tempImportData = JSON.parse(JSON.stringify(errorValidTemplate));
+                                errorValidTemplate = [];
+                                tempImportData.forEach(val => {
+                                    callAjax(val);
+                                });
+                            } else {
+                                console.log("DONE TRYING AFTER " + tries + " TRIES.");
+                                uploadToDatabase();
+                            }
+                        } else {
+                            // no errors in importing
+                            uploadToDatabase();
+                        }
+                    }
+                }
+
+                function uploadToDatabase(){
+                    var attachments = [];
+
+                    function addLink(listId,arr,filename,finalFilename,optionType,hasXML,attachOnly){
+                        var xlsx = json_to_sheet_to_base64(arr,`${finalFilename}.xlsx`);
+                        var xml = json_to_xml_to_base64(arr,filename,`${finalFilename}.xml`);
+
+                        if(!attachOnly && arr.length > 0){
+                            var xmlHTML = (hasXML) ? `<div style="display: table-row;">
+                                                        <div style="display: table-cell;"></div>
+                                                        <a href="javascript:void(0);" style="display: table-cell;${FUEL_REFILL.aStyle}width:330px;" xml>${FUEL_REFILL.xmlHTML}${xml.filename}</a>
+                                                    </div>` : "";
+                            $(listId).html(`
+                            <div style="display: table;">
+                                <div style="display: table-row;">
+                                    <b style="display: table-cell;" class="pr-2">(${arr.length} rows)</b>
+                                    <a href="javascript:void(0);" style="display: table-cell;padding-bottom: 3px;${FUEL_REFILL.aStyle}width:330px;" xlsx>${FUEL_REFILL.xlsxHTML}${xlsx.filename}</a>
+                                </div>
+                                ${xmlHTML}
+                            </div>
+                            `);
+                            $(`${listId} a[xlsx]`).click(function(){
+                            XLSX.writeFile(xlsx.wb, xlsx.filename);
+                            });
+                            $(`${listId} a[xml]`).click(function(){
+                            xml.save();
+                            });
+                        } else {
+                            $(`${listId} .text-muted.font-italic`).html("No link available.")
+                        }
+                        
+
+                        if(arr.length > 0){
+                            attachments.push({ 
+                                base64: xlsx.base64, 
+                                filename: xlsx.filename, 
+                                storageFilename: `attachments/<INSERT_ID_HERE>/${xlsx.filename}`,
+                                url: `https://storage.googleapis.com/${CLIENT.dsName}/`,
+                                options: {
+                                    type: optionType.xlsx
+                                }
+                            });
+                            if(hasXML){
+                                attachments.push({ 
+                                    base64: xml.base64, 
+                                    filename: xml.filename, 
+                                    storageFilename: `attachments/<INSERT_ID_HERE>/${xml.filename}`,
+                                    url: `https://storage.googleapis.com/${CLIENT.dsName}/`,
+                                    options: {
+                                        type: optionType.xml
+                                    }
+                                });
+                            }
+                        }
+                    }
+                    addLink("#reportImportFailureList",errorValidTemplate,filename,`[Converted_Error] ${filename}`,{ xlsx: "failedImport-xlsx", xml: "failedImport-xml" },true); 
+                    addLink(undefined,successfulData,filename,`[Converted] ${filename}`,{ xlsx: "successful-xlsx", xml: "successful-xml" },true,true);  
+                    addLink(undefined,errorData,filename,`[Error] ${filename}`,{ xlsx: "error-xlsx" },false,true);  
+
+                    $(`#reportSuccessfulList .text-muted.font-italic,#reportErrorList .text-muted.font-italic`).html("Uploading files to database...");
+
+                    $.ajax({ 
+                        url: `/api/fuel_refill/${CLIENT.id}/${USER.username}`, 
+                        method: "post", 
+                        timeout: 90000 ,
+                        headers: {
+                            "Content-Type": "application/json; charset=utf-8",
+                            "Authorization": SESSION_TOKEN
+                        },
+                        data: JSON.stringify({
+                            _id: GENERATE.RANDOM(36),
+                            attachments,
+                            success_count: successfulData.length,
+                            fail_import_count: errorValidTemplate.length,
+                            error_count: errorData.length
+                        }),
+                        async: true
+                    }).done(function (docs) {
+                        addLink("#reportSuccessfulList",successfulData,filename,`[Converted] ${filename}`,{ xlsx: "successful-xlsx", xml: "successful-xml" },true);  
+                        addLink("#reportErrorList",errorData,filename,`[Error] ${filename}`,{ xlsx: "error-xlsx" },false);  
+
+                        if(docs.ok == 1){
+                            toastr.success("Download links are now available.");
+                            $('.dropify-clear').click();
+                            $('.dropify-wrapper').css("pointer-events","");
+                            $(`#import-btn`).html("Import").attr("disabled",true);
+                        } else {
+                            TOASTR.ERROR(docs);
+                            $('.dropify-clear').click();
+                            $('.dropify-wrapper').css("pointer-events","");
+                            $(`#import-btn`).html("Import").attr("disabled",true);
+                        }
+                    }).fail(function(error){
+                        TOASTR.ERROR(error);
+                        $('.dropify-clear').click();
+                        $('.dropify-wrapper').css("pointer-events","");
+                        $(`#import-btn`).html("Import").attr("disabled",true);
+                    });
+                }
+            }
+        }
+    }
+};
 var TRAILERS = {
     FUNCTION: {
         init: function(){
@@ -12097,6 +12466,208 @@ var TRAILERS = {
                     table.populateRows(LIST[urlPath]);
                     table.hideProgressBar();
                     TABLE.FINISH_LOADING.UPDATE(); 
+                });
+            }
+            TABLE.FINISH_LOADING.START_CHECK();
+            /******** END TABLE CHECK ********/
+        }
+    }
+};
+var CHASSIS = {
+    FUNCTION: {
+        init: function(){
+            var urlPath = "chassis",
+                _new_ = true,  
+                _new1_ = true,  
+                table = new Table({
+                    id: "#tbl-chassis",
+                    urlPath,
+                    goto: "chassis",
+                    dataTableOptions: {
+                        columns: TABLE.COL_ROW(CUSTOM.COLUMN.chassis).column,
+                        order: [[ 3, "asc" ]],
+                        createdRow: function (row, data, dataIndex) {
+                            var _row = data._row;
+                            $(row).attr(`_row`, data._row);
+
+                            table.rowListeners(_row,data._id);
+                        },
+                        dom: 'lBfrti<"tbl-progress-bar">p',
+                    },
+                    initializeCallback: function(){
+                        TABLE.WATCH({urlPath,rowData:table.addRow,options:function(){TABLE.FINISH_LOADING.START_CHECK();}});
+                    }
+                });
+            table.setButtons({
+                loadView: ["create"],
+                actions:{
+                    create: function(){
+                        initializeModal({
+                            url: `/api/${urlPath}/${CLIENT.id}/${USER.username}`,
+                            method: "POST"
+                        });
+                    },
+                    refresh: function(){ table.countRows(); },
+                    data_maintenance: function(){
+                        var ID = CLIENT.id;
+                        var USERNAME = USER.username;
+                        var ROLE = USER.role;
+                        var modalHTML = modalViews.chassis.data_maintenance();
+                        var initializeArray = [
+                            { urlPath: "chassis_section", key: "section", objectData: (_id) => { return getChassisSection(_id); } },
+                            { urlPath: "chassis_company", key: "company", objectData: (_id) => { return getChassisCompany(_id); } },
+                            { urlPath: "chassis_type", key: "type", objectData: (_id) => { return getChassisType(_id); } },
+                        ];
+                        HISTORY.defaults.data_maintenance(ID,USERNAME,ROLE,SESSION_TOKEN,modalHTML,initializeArray);
+                    }
+                }
+            });
+            table.addRow = function(obj){
+                const self = this;
+                var action = TABLE.ROW_BUTTONS(PAGE.GET(),{
+                    loadView:["edit"],
+                    readonlyArr:["edit"],
+                });
+                $(`${self.id} th:last-child`).css({"min-width":action.width,"width":action.width});
+
+                var vehicle = (LIST["vehicles"]) ? (getVehicle(obj.vehicle_id) || {})["Plate Number"] : `<small class="font-italic text-muted">loading...</small>`;
+                var section = (LIST["chassis_section"]) ? (getChassisSection(obj.section_id) || {}).section : `<small class="font-italic text-muted">loading...</small>`;
+                var company = (LIST["chassis_company"]) ? (getChassisCompany(obj.company_id) || {}).company : `<small class="font-italic text-muted">loading...</small>`;
+                var type = (LIST["chassis_type"]) ? (getChassisType(obj.type_id) || {}).type : `<small class="font-italic text-muted">loading...</small>`;
+
+                return TABLE.COL_ROW(null,{
+                    '_id': obj._id,
+                    '_row':  obj._row,
+                    'Name': obj.name || "-",
+                    'Chassis Type': type || "-",
+                    'Plate Number': vehicle || "-",
+                    'Section': section || "-",
+                    'Company': company || "-",
+                    'Action': action.buttons,
+                }).row;
+            };
+            table.rowListeners = function(_row,_id){
+                const self = this;
+                TABLE.ROW_LISTENER({table_id:table.id,_row,urlPath,_id,initializeModal});
+            };
+            table.filterListener = function(){
+                const self = this;
+                var filter = USER.filters.vehicles || {};
+                try {
+                    filter = JSON.parse(USER.filters.vehicles);
+                } catch(error){ }
+
+                if(filter.site && filter.site != "All"){
+                    $(`#filter-container`).toggle("slide", {direction:'right'},100);
+                    setTimeout(function(){
+                        $(`#_site`).val(filter.site);
+                        $(`#filter-btn`).trigger("click");
+                    },100);
+                }
+                
+                function saveFilter(_filter_){
+                    if(filter.site != _filter_.site){
+                        var data = {};
+                        data[`filter.vehicles`] = JSON.stringify(_filter_);
+                        GET.AJAX({
+                            url: `/api/users/${CLIENT.id}/${USER.username}/${USER.username}`,
+                            method: "PUT",
+                            headers: {
+                                "Content-Type": "application/json; charset=utf-8",
+                                "Authorization": SESSION_TOKEN
+                            },
+                            data: JSON.stringify(data)
+                        }, function(docs){
+                            console.log("docs1",docs);
+                            self.dt.column(4).search(_filter_.site).draw(false);
+                            USER.filters.vehicles = _filter_;
+                            filter.site = _filter_.site;
+                            $(`#filter-btn`).html("Apply").removeClass("disabled");
+                        });
+                    } else {
+                        self.dt.column(4).search(_filter_.site).draw(false);
+                        $(`#filter-btn`).html("Apply").removeClass("disabled");
+                    }
+                }
+                $(`#filter-btn`).click(function(){
+                    $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
+                    var _site = ($(`#_site`).val() == "All") ? "" : $(`#_site`).val();
+
+                    saveFilter({site: _site});
+                });
+                $(`#reset-btn`).click(function(){
+                    $(`#_site`).val("All");
+                    $(`#filter-btn`).trigger("click");
+                });
+            };
+
+            var initializeModal = function(x={}){
+                // LOAD SELECT 2 OPTIONS FOR: VEHICLES
+                getSelect2Options();
+                x.obj = x.obj || {};
+                
+                var title = (x.method == "PUT") ? `Edit Chassis` : `Create New Chassis`,
+                    modalElements = function(obj){
+                        var readonly = x.method == "PUT";
+                        return [
+                            {title:"Name",id:"_id",type:"text",required:true,value:obj._id,readonly,sub_title:"Once saved, name cannot be edited."},
+                            {title:"Chassis Type",id:"type_id",type:"select2",required:true,attr:"blankStringIfEmpty"},
+                            {title:"Vehicle",id:"vehicle_id",type:"select2",attr:"blankStringIfEmpty"},
+                            {title:"Section",id:"section_id",type:"select2",attr:"blankStringIfEmpty"},
+                            {title:"Company",id:"company_id",type:"select2",attr:"blankStringIfEmpty"},
+                        ];
+                    };
+                $(`body`).append(MODAL.CREATE.BASIC({title, el: modalElements(x.obj)}));
+                
+                
+                $(`#vehicle_id`).html(G_SELECT2["form-vehicles"]).select2({
+                    matcher: matcher,
+                    templateResult: formatCustom
+                }).val(x.obj.vehicle_id || "").trigger("change");
+
+                $(`#type_id`).html(G_SELECT2["form-chassis_type"]).select2().val(x.obj.type_id || "").trigger("change");
+                $(`#section_id`).html(G_SELECT2["form-chassis_section"]).select2().val(x.obj.section_id || "").trigger("change");
+                $(`#company_id`).html(G_SELECT2["form-chassis_company"]).select2().val(x.obj.company_id || "").trigger("change");
+
+                /**
+                 Section
+                 60e54a78eeaae10734c5be1a - Importation
+                 60e54a7beeaae10734c5be1b - local shiping
+                 60e54a80eeaae10734c5be1c - base to base
+                 60e54a83eeaae10734c5be1d - he movilasdas...
+
+                 Company
+                 60e54a90eeaae10734c5be22 - SADC
+                 60e54a94eeaae10734c5be23 - MOVEEASY
+
+                 Type
+                 60e549062cad040e0c2cf2fe - flatbed
+                 60e5490a2cad040e0c2cf2ff - lowbed
+                 60e5490e2cad040e0c2cf300 - alum..
+                 60e549142cad040e0c2cf301 - trailer van
+                 60e549192cad040e0c2cf302 - ske 1x20
+                 60e5491e2cad040e0c2cf303 - ske 1x40
+                 */
+
+                MODAL.SUBMIT(x);
+            };
+
+            /******** TABLE CHECK ********/
+            TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
+                isFinishedLoading(["CHASSIS"], _new_, function(){
+                    _new_ = false;
+                    table.initialize();
+                    table.populateRows(LIST[urlPath]);
+                    table.hideProgressBar();
+                });
+                isFinishedLoading(["VEHICLES","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"], _new1_, function(){
+                    if((LIST[urlPath]||[]).length > 0 && table.dt){
+                        _new1_ = false;
+                        table.updateRows(LIST[urlPath]);
+                    }
+                });
+                isFinishedLoading(["CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"], true, function(){
+                    TABLE.FINISH_LOADING.UPDATE();
                 });
             }
             TABLE.FINISH_LOADING.START_CHECK();
@@ -12518,16 +13089,17 @@ var PAGE = {
                         }
                     };
 
-                if(PAGE.GET() == "regions") loadDataInBackground("REGIONS",["CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY"]);
-                else if(PAGE.GET() == "clusters")loadDataInBackground("CLUSTERS",["REGIONS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY"]);
-                else if(PAGE.GET() == "geofences") loadDataInBackground("GEOFENCES",["REGIONS","CLUSTERS","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY"]);
-                else if(PAGE.GET() == "routes" || PAGE.GET() == "dashboard") loadDataInBackground("ROUTES",["GEOFENCES","REGIONS","CLUSTERS","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLES_HISTORY"]);
-                else if(PAGE.GET() == "trailers") loadDataInBackground("TRAILERS",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY"]);
-                else if(PAGE.GET() == "vehicles") loadDataInBackground("VEHICLES",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY"]);
-                else if(PAGE.GET() == "vehicle_personnel") loadDataInBackground("VEHICLE_PERSONNEL",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY"]);
-                else if(PAGE.GET() == "shift_schedule") loadDataInBackground("SHIFT_SCHEDULE",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY"]);
-                else if(PAGE.GET() == "users") loadDataInBackground("USERS",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY"]);
-                else loadDataInBackground("VEHICLES",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY"]);
+                if(PAGE.GET() == "regions") loadDataInBackground("REGIONS",["CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
+                else if(PAGE.GET() == "clusters")loadDataInBackground("CLUSTERS",["REGIONS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
+                else if(PAGE.GET() == "geofences") loadDataInBackground("GEOFENCES",["REGIONS","CLUSTERS","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
+                else if(PAGE.GET() == "routes" || PAGE.GET() == "dashboard") loadDataInBackground("ROUTES",["GEOFENCES","REGIONS","CLUSTERS","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
+                else if(PAGE.GET() == "trailers") loadDataInBackground("TRAILERS",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
+                else if(PAGE.GET() == "vehicles") loadDataInBackground("VEHICLES",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
+                else if(PAGE.GET() == "vehicle_personnel") loadDataInBackground("VEHICLE_PERSONNEL",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE","SHIFT_SCHEDULE"]);
+                else if(PAGE.GET() == "chassis") loadDataInBackground("CHASSIS",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","VEHICLE_PERSONNEL","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE","SHIFT_SCHEDULE"]);
+                else if(PAGE.GET() == "shift_schedule") loadDataInBackground("SHIFT_SCHEDULE",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
+                else if(PAGE.GET() == "users") loadDataInBackground("USERS",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
+                else loadDataInBackground("VEHICLES",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
 
                 tableWatch("notifications");
                 tableWatch("users");
@@ -12784,13 +13356,13 @@ var PAGE = {
                 }
             },
             fuel_refill: {
-                title: "Fuel Refills",
+                title: "Fuel Refill",
                 name: "fuel_refill",
                 icon: "la la-truck",
                 display: function() { return views.fuel_refill(); },
                 function: function() { FUEL_REFILL.FUNCTION.init() },
                 buttons: {
-                    table: ["import","refresh"],
+                    table: ["import","refresh","column"],
                     row: ["delete"]
                 }
             },
@@ -12813,6 +13385,17 @@ var PAGE = {
                 function: function() { TRAILERS.FUNCTION.init() },
                 buttons: {
                     table:["create","refresh","filter"],
+                    row: ["edit","delete"]
+                }
+            },
+            chassis: {
+                title: "Chassis",
+                name: "chassis",
+                icon: "la la-truck-loading",
+                display: function() { return views.chassis(); },
+                function: function() { CHASSIS.FUNCTION.init() },
+                buttons: {
+                    table: getClientTableButtons("chassis"),
                     row: ["edit","delete"]
                 }
             },
@@ -14519,6 +15102,18 @@ function getVehiclePersonnelCompany(value="",key="_id",type="find",callback=func
 function getTrailer(value="",key="_id",type="find",callback=function(){return true;}){
     return (LIST["trailers"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
 }
+function getChassis(value="",key="_id",type="find",callback=function(){return true;}){
+    return (LIST["chassis"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
+}
+function getChassisSection(value="",key="_id",type="find",callback=function(){return true;}){
+    return (LIST["chassis_section"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
+}
+function getChassisCompany(value="",key="_id",type="find",callback=function(){return true;}){
+    return (LIST["chassis_company"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
+}
+function getChassisType(value="",key="_id",type="find",callback=function(){return true;}){
+    return (LIST["chassis_type"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
+}
 function getRoute(value="",key="_id",type="find",callback=function(){return true;}){ // STILL HAVE
     return (LIST["routes"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
 }
@@ -15279,6 +15874,24 @@ const views = new function(){
                         </div>
                     </div>`;
         },
+        chassis: function(){
+            return `<div class="page-box row">
+                        ${SLIDER.FILTER(`<div class="mt-2">
+                                            <div style="font-size: 10px;">Site:</div>
+                                            <select id="_site" class="form-control">
+                                                <option value="All">All</option>
+                                            </select>
+                                        </div>`)}
+                        <div class="col-sm-12 mt-2">
+                            <div class="table-wrapper">
+                                <table id="tbl-chassis" class="table table-hover table-bordered">
+                                    <thead></thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>`;
+        },
         changelogs: function(){
             return `<div class="page-box row">
                         <div>
@@ -15484,6 +16097,67 @@ const modalViews = new function(){
                         </div>`;
             }
         },
+        chassis: {
+            data_maintenance: function(){
+                return `<div id="overlay" class="swal2-container swal2-fade swal2-shown" style="overflow-y: auto;">
+                            <div id="modal" class="modal" role="dialog" aria-labelledby="myLargeModalLabel">
+                                <div role="document" class="modal-dialog modal-md">
+                                    <div class="modal-content">
+                                        <div class="modal-header pb-2">
+                                            <button type="button" class="close" id="close" aria-hidden="true">×</button>
+                                            <h4 class="modal-title" id="myModalLabel2">Data Maintenance</h4>
+                                        </div>
+                                        <div class="modal-body row pt-2">
+                                            <div id="modal-error"></div>
+                                            <div class="col-sm-12">
+                                                <ul class="nav nav-tabs" role="tablist">
+                                                    <li class="active"><a href="#chassis_section" role="tab" data-toggle="tab">Section</a></li>
+                                                    <li class=""><a href="#chassis_company" role="tab" data-toggle="tab">Company</a></li>
+                                                    <li class=""><a href="#chassis_type" role="tab" data-toggle="tab">Chassis Type</a></li>
+                                                </ul>
+                                                <div class="tab-content">
+                                                    <div class="tab-pane fade in active" id="chassis_section">
+                                                        <div class="pb-2" style="border-bottom: 1px solid #eee;">
+                                                            <input id="section" class="form-control" type="text" placeholder="Enter item" style="width: 80%;display: inline-block;">
+                                                            <div style="width: 19%;" class="d-inline-block pl-2">
+                                                                <button id="section-btn" class="form-control">Submit</button>
+                                                            </div>
+                                                        </div>
+                                                        <div id="section-list" style="max-height: 300px;overflow-y: auto;">
+                                                            <i class="la la-spin la-spinner" style="font-size: 18px;margin-top: 10px;color: #cecece;"></i>
+                                                        </div>
+                                                    </div>
+                                                    <div class="tab-pane fade" id="chassis_company">
+                                                        <div class="pb-2" style="border-bottom: 1px solid #eee;">
+                                                            <input id="company" class="form-control" type="text" placeholder="Enter item" style="width: 80%;display: inline-block;">
+                                                            <div style="width: 19%;" class="d-inline-block pl-2">
+                                                                <button id="company-btn" class="form-control">Submit</button>
+                                                            </div>
+                                                        </div>
+                                                        <div id="company-list" style="max-height: 300px;overflow-y: auto;">
+                                                            <i class="la la-spin la-spinner" style="font-size: 18px;margin-top: 10px;color: #cecece;"></i>
+                                                        </div>
+                                                    </div>
+                                                    <div class="tab-pane fade" id="chassis_type">
+                                                        <div class="pb-2" style="border-bottom: 1px solid #eee;">
+                                                            <input id="type" class="form-control" type="text" placeholder="Enter item" style="width: 80%;display: inline-block;">
+                                                            <div style="width: 19%;" class="d-inline-block pl-2">
+                                                                <button id="type-btn" class="form-control">Submit</button>
+                                                            </div>
+                                                        </div>
+                                                        <div id="type-list" style="max-height: 300px;overflow-y: auto;">
+                                                            <i class="la la-spin la-spinner" style="font-size: 18px;margin-top: 10px;color: #cecece;"></i>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`;
+            }
+        },
         events: {
             details: function(id,shipment_number=[]){
                 var li = "",
@@ -15559,6 +16233,34 @@ const modalViews = new function(){
                                                     <td class="text-muted" base>-</td>
                                                     <td class="text-muted" region>-</td>
                                                     <td class="text-muted" pallet_type>-</td>
+                                                </tr>
+                                                </tbody>
+                                            </table>      
+                                        </div>
+                                    </div>`;
+                    
+                } else if(clientCustom.editableChassis === true){
+                    trailerHTML = `<div class="col-sm-12 p-0">
+                                        <div class="col-sm-3">
+                                            <small><span class="text-danger">*</span>Truck:</small>
+                                            <select id="vehicle" class="select-multiple-basic" style="width:100%;"></select>
+                                        </div>
+                                        <div class="col-sm-3">
+                                            <small><span class="text-danger">*</span>Chassis:</small>
+                                            <select id="chassis" class="select-multiple-basic" style="width:100%;"></select>
+                                        </div>
+                                        <div class="col-sm-6" style="word-break: break-word;">
+                                            <table class="table mb-0">
+                                                <tbody>
+                                                    <tr>
+                                                        <td class="pt-0" style="border-color: #fff !important;"><small>Chassis Type</small></td>
+                                                        <td class="pt-0" style="border-color: #fff !important;"><small>Section</small></td>
+                                                        <td class="pt-0" style="border-color: #fff !important;"><small>Company</small></td>
+                                                    </tr>
+                                                <tr>
+                                                    <td class="text-muted" chassis_type>-</td>
+                                                    <td class="text-muted" section>-</td>
+                                                    <td class="text-muted" company>-</td>
                                                 </tr>
                                                 </tbody>
                                             </table>      
@@ -15825,13 +16527,21 @@ const modalViews = new function(){
                             </div>
                             <div class="col-md-6">
                                 <div>
-                                    <h5>Download Links:</h5>
-                                    <div class="mb-2">Complete list (Converted File)
-                                        <div id="reportCompleteList">
+                                    <h5 class="mt-0">Download Links:</h5>
+                                    <div class="mb-2">Successfully Converted and Imported
+                                        <img src="https://icon-library.com/images/more-info-icon/more-info-icon-27.jpg" style="margin-top: -3px;" class="ml-1" width="12" data-toggle="tooltip" title="Data that were successfully converted and imported to WRU Main.">
+                                        <div id="reportSuccessfulList">
                                             <div class="text-muted font-italic">No link available.</div>
                                         </div>
                                     </div>
-                                    <div class="mb-2">Error list (Original File)
+                                    <div class="mb-2">Failed to Import
+                                        <img src="https://icon-library.com/images/more-info-icon/more-info-icon-27.jpg" style="margin-top: -3px;" class="ml-1" width="12" data-toggle="tooltip" title="Data that were successfully converted but failed to import to WRU Main due to some reasons such as connection failure.">
+                                        <div id="reportImportFailureList">
+                                            <div class="text-muted font-italic">No link available.</div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">Error (Original Format)
+                                        <img src="https://icon-library.com/images/more-info-icon/more-info-icon-27.jpg" style="margin-top: -3px;" class="ml-1" width="12" data-toggle="tooltip" title="Data that were unsuccessfully converted because of incomplete data or unable to find match for the specified Vehicle License Number.">
                                         <div id="reportErrorList">
                                             <div class="text-muted font-italic">No link available.</div>
                                         </div>

@@ -174,6 +174,46 @@ var streamList = {
             };
         }
     },
+    chassis: {
+        watch: () => {
+            return {
+                key: 'chassis',
+                collection: 'chassis',
+                pipeline: [],
+                options: { fullDocument : "updateLookup" }
+            };
+        }
+    },
+    chassis_section: {
+        watch: () => {
+            return {
+                key: 'chassis_section',
+                collection: 'chassis_section',
+                pipeline: [],
+                options: { fullDocument : "updateLookup" }
+            };
+        }
+    },
+    chassis_company: {
+        watch: () => {
+            return {
+                key: 'chassis_company',
+                collection: 'chassis_company',
+                pipeline: [],
+                options: { fullDocument : "updateLookup" }
+            };
+        }
+    },
+    chassis_type: {
+        watch: () => {
+            return {
+                key: 'chassis_type',
+                collection: 'chassis_type',
+                pipeline: [],
+                options: { fullDocument : "updateLookup" }
+            };
+        }
+    },
     trailers: {
         watch: () => {
             return {
@@ -382,7 +422,7 @@ const connect = function(io,_ping_,ENVIRONMENT){ //io
     
             socket.emit("*",JSON.stringify({
                 type: "credentials",
-                version: "vv.-2.53.110.2",
+                version: "vv.-2.53.110.7",
                 forceUpdate: [],
                 // ["coket1","coket2","wilcon"]
                 data: auth.getCredentials(dbName)

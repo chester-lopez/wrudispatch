@@ -55,8 +55,8 @@ router.post('/:dbName/:username', (req,res,next)=>{
         if(err){
             next(_ERROR_.UNPROCESSABLE_ENTITY(err));
         } else {
-            userInput.username = username;
-            userInput.timestamp = new Date().toISOString();
+            userInput.created_by = username;
+            userInput.created_on = new Date().toISOString();
             userInput.origin_id = db.getPrimaryKey(userInput.origin_id);
             userInput.destination_id = db.getPrimaryKey(userInput.destination_id);
             db.getCollection(dbName,collection).insertOne(userInput,(err,result)=>{

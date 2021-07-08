@@ -250,6 +250,10 @@ app.use(`/api/vehicle_personnel_section`, verifyToken, require("./router/vehicle
 app.use(`/api/vehicle_personnel_company`, verifyToken, require("./router/vehicle_personnel_company"));
 app.use(`/api/fuel_refill`, verifyToken, require("./router/fuel_refill"));
 app.use(`/api/trailers`, verifyToken, require("./router/trailers"));
+app.use(`/api/chassis`, verifyToken, require("./router/chassis"));
+app.use(`/api/chassis_section`, verifyToken, require("./router/chassis_section"));
+app.use(`/api/chassis_company`, verifyToken, require("./router/chassis_company"));
+app.use(`/api/chassis_type`, verifyToken, require("./router/chassis_type"));
 app.use(`/api/events`, verifyToken, require("./router/events"));
 app.use(`/api/notifications`, verifyToken, require("./router/notifications"));
 app.use(`/api/user_login_activity`, verifyToken, require("./router/user_login_activity"));

@@ -9,6 +9,7 @@ const ObjectID = require('mongodb').ObjectID;
 const schema = require("../utils/schema");
 
 const collection = "dispatch";
+const db = require("../utils/db");
 
 const router = express.Router();
 
@@ -6059,6 +6060,852 @@ router.get('/test/update/dispatchStatus/:_id/:status', (req,res,next)=>{
         } else {
             client.db(dbName).collection("dispatch").updateOne({_id},{$set:{status}}).then(docs => {
                 res.json({ok:1});
+            });
+        }
+    });
+    /**************** END OTHER COLLECTIONS */
+});
+
+var chassis = [
+    {
+        "_id": "FFFB - 01",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 03",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 04",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 05",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 06",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 07",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 08",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 09",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 10",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 11",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 12",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 14",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 16",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 18",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 20",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 21",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 22",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 23",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 24",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 25",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 26",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 27",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 28",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 29",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 30",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 32",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 34",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 35",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 36",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 37",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 38",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 39",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 40",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 41",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 43",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 02",
+        "company": "SADC",
+        "section": "Local Shipping",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 15",
+        "company": "SADC",
+        "section": "Local Shipping",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 17",
+        "company": "SADC",
+        "section": "Local Shipping",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 19",
+        "company": "SADC",
+        "section": "Local Shipping",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 31",
+        "company": "SADC",
+        "section": "Local Shipping",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 33",
+        "company": "SADC",
+        "section": "Local Shipping",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "FFFB - 42",
+        "company": "SADC",
+        "section": "Local Shipping",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "MEFB 01",
+        "company": "MOVEASY",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "MEFB 02",
+        "company": "MOVEASY",
+        "section": "Importation",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "MEFB 03",
+        "company": "MOVEASY",
+        "section": "Base to Base",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "MEFB 04",
+        "company": "MOVEASY",
+        "section": "Base to Base",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "MEFB 05",
+        "company": "MOVEASY",
+        "section": "Base to Base",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "MEFB 06",
+        "company": "MOVEASY",
+        "section": "Base to Base",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "MEFB 07",
+        "company": "MOVEASY",
+        "section": "Base to Base",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "MEFB 08",
+        "company": "MOVEASY",
+        "section": "Base to Base",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "MEFB 09",
+        "company": "MOVEASY",
+        "section": "Base to Base",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "MEFB 10",
+        "company": "MOVEASY",
+        "section": "Base to Base",
+        "type": "FLATBED"
+    },
+    {
+        "_id": "LOWBED",
+        "company": "SADC",
+        "section": "HE MOBILIZATION",
+        "type": "LOWBED"
+    },
+    {
+        "_id": "MELB-01",
+        "company": "MOVEASY",
+        "section": "HE MOBILIZATION",
+        "type": "LOWBED"
+    },
+    {
+        "_id": "MEAS 01",
+        "company": "MOVEASY",
+        "section": "Base to Base",
+        "type": "ALUM H. SIDE"
+    },
+    {
+        "_id": "TRAILER VAN 1",
+        "company": "SADC",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "TRAILER VAN 2",
+        "company": "SADC",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "TRAILER VAN 3",
+        "company": "SADC",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "TRAILER VAN 4",
+        "company": "SADC",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "TRAILER VAN 5",
+        "company": "SADC",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "TRAILER VAN 6",
+        "company": "SADC",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "TRAILER VAN 7",
+        "company": "SADC",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "TRAILER VAN 8",
+        "company": "SADC",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "TRAILER VAN 9",
+        "company": "SADC",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "TRAILER VAN 10",
+        "company": "SADC",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "TRAILER VAN 11",
+        "company": "SADC",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "TRAILER VAN 12",
+        "company": "SADC",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "TRAILER VAN 14",
+        "company": "SADC",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "TRAILER VAN 15",
+        "company": "SADC",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "TRAILER VAN 16",
+        "company": "SADC",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "TRAILER VAN 17",
+        "company": "SADC",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "TRAILER VAN 18",
+        "company": "SADC",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "TRAILER VAN 19",
+        "company": "SADC",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "TRAILER VAN 20",
+        "company": "SADC",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "TRAILER VAN 21",
+        "company": "SADC",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "TRAILER VAN 22",
+        "company": "SADC",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "TRAILER VAN 23",
+        "company": "SADC",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "TRAILER VAN 24",
+        "company": "SADC",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "TRAILER VAN 25",
+        "company": "SADC",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "TRAILER VAN 26",
+        "company": "SADC",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "METV-01",
+        "company": "MOVEASY",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "METV-03",
+        "company": "MOVEASY",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "METV-06",
+        "company": "MOVEASY",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "METV-07",
+        "company": "MOVEASY",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "METV-14",
+        "company": "MOVEASY",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "METV-02",
+        "company": "MOVEASY",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "METV-04",
+        "company": "MOVEASY",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "METV-05",
+        "company": "MOVEASY",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "METV-08",
+        "company": "MOVEASY",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "METV-09",
+        "company": "MOVEASY",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "METV-10",
+        "company": "MOVEASY",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "METV-11",
+        "company": "MOVEASY",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "METV-12",
+        "company": "MOVEASY",
+        "section": "Base to Base",
+        "type": "TRAILER VAN"
+    },
+    {
+        "_id": "TS - 01",
+        "company": "SADC",
+        "section": "Local Shipping",
+        "type": "Skeleton 1x20"
+    },
+    {
+        "_id": "TS - 02",
+        "company": "SADC",
+        "section": "Local Shipping",
+        "type": "Skeleton 1x20"
+    },
+    {
+        "_id": "TS - 03",
+        "company": "SADC",
+        "section": "Local Shipping",
+        "type": "Skeleton 1x20"
+    },
+    {
+        "_id": "TS - 04",
+        "company": "SADC",
+        "section": "Local Shipping",
+        "type": "Skeleton 1x20"
+    },
+    {
+        "_id": "TS - 05",
+        "company": "SADC",
+        "section": "Local Shipping",
+        "type": "Skeleton 1x20"
+    },
+    {
+        "_id": "TS - 06",
+        "company": "SADC",
+        "section": "Local Shipping",
+        "type": "Skeleton 1x20"
+    },
+    {
+        "_id": "TS - 07",
+        "company": "SADC",
+        "section": "Local Shipping",
+        "type": "Skeleton 1x20"
+    },
+    {
+        "_id": "TS - 08",
+        "company": "SADC",
+        "section": "Local Shipping",
+        "type": "Skeleton 1x20"
+    },
+    {
+        "_id": "TS - 09",
+        "company": "SADC",
+        "section": "Local Shipping",
+        "type": "Skeleton 1x20"
+    },
+    {
+        "_id": "TS - 10",
+        "company": "SADC",
+        "section": "Local Shipping",
+        "type": "Skeleton 1x20"
+    },
+    {
+        "_id": "TS - 11",
+        "company": "SADC",
+        "section": "Local Shipping",
+        "type": "Skeleton 1x20"
+    },
+    {
+        "_id": "TS - 12",
+        "company": "SADC",
+        "section": "Local Shipping",
+        "type": "Skeleton 1x20"
+    },
+    {
+        "_id": "TS - 14",
+        "company": "SADC",
+        "section": "Local Shipping",
+        "type": "Skeleton 1x20"
+    },
+    {
+        "_id": "TS - 15",
+        "company": "SADC",
+        "section": "Local Shipping",
+        "type": "Skeleton 1x20"
+    },
+    {
+        "_id": "TS - 16",
+        "company": "SADC",
+        "section": "Local Shipping",
+        "type": "Skeleton 1x20"
+    },
+    {
+        "_id": "TS - 17",
+        "company": "SADC",
+        "section": "Local Shipping",
+        "type": "Skeleton 1x20"
+    },
+    {
+        "_id": "FFSC - 01",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "Skeleton 1x40"
+    },
+    {
+        "_id": "FFSC - 02",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "Skeleton 1x40"
+    },
+    {
+        "_id": "FFSC - 03",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "Skeleton 1x40"
+    },
+    {
+        "_id": "FFSC - 04",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "Skeleton 1x40"
+    },
+    {
+        "_id": "FFSC - 05",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "Skeleton 1x40"
+    },
+    {
+        "_id": "FFSC - 06",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "Skeleton 1x40"
+    },
+    {
+        "_id": "FFSC - 07",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "Skeleton 1x40"
+    },
+    {
+        "_id": "FFSC - 08",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "Skeleton 1x40"
+    },
+    {
+        "_id": "FFSC - 09",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "Skeleton 1x40"
+    },
+    {
+        "_id": "FFSC - 10",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "Skeleton 1x40"
+    },
+    {
+        "_id": "FFSC - 11",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "Skeleton 1x40"
+    },
+    {
+        "_id": "FFSC - 12",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "Skeleton 1x40"
+    },
+    {
+        "_id": "FFSC - 14",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "Skeleton 1x40"
+    },
+    {
+        "_id": "FFSC - 15",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "Skeleton 1x40"
+    },
+    {
+        "_id": "FFSC - 16",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "Skeleton 1x40"
+    },
+    {
+        "_id": "FFSC - 17",
+        "company": "SADC",
+        "section": "Importation",
+        "type": "Skeleton 1x40"
+    }
+];
+// DELETE AFTER
+router.get('/test/update/chassis', (req,res,next)=>{
+    // PRODUCTION
+    // const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    // DEVELOPMENT
+    const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+    var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
+    
+    var dbName = "wd-wilcon";
+    
+    MongoClient.connect(url, mongoOptions, (err,client) => {
+        if(err){
+            console.log("ERROR1",err);
+        } else {
+            var childPromise = [];
+            client.db(dbName).collection("chassis").find({}).toArray().then(docs => {
+                // docs.forEach(val => {
+                //     var newObj = {
+                //         _id: val.name,
+                //         created_by: val.username || val.created_by,
+                //         created_on: val.timestamp || val.created_on
+                //     };
+                //     (val.type_id) ? newObj.type_id = db.getPrimaryKey(val.type_id) : null;
+                //     (val.section_id) ? newObj.section_id = db.getPrimaryKey(val.section_id) : null;
+                //     (val.company_id) ? newObj.company_id = db.getPrimaryKey(val.company_id) : null;
+                //     (val.vehicle_id) ? newObj.vehicle_id = Number(val.vehicle_id) : null;
+
+                //     childPromise.push(client.db(dbName).collection("chassis").insertOne(newObj));
+                //     childPromise.push(client.db(dbName).collection("chassis").deleteOne({ _id: db.getPrimaryKey(val._id) }));
+                // });
+                docs.forEach(val => {
+                    if(val._id.indexOf("–") > -1){
+                        var finalId = val._id.replace(/–/g,"-");
+                        var newObj = {
+                            _id: finalId,
+                            created_by: val.username || val.created_by,
+                            created_on: val.timestamp || val.created_on
+                        };
+                        (val.type_id) ? newObj.type_id = db.getPrimaryKey(val.type_id) : null;
+                        (val.section_id) ? newObj.section_id = db.getPrimaryKey(val.section_id) : null;
+                        (val.company_id) ? newObj.company_id = db.getPrimaryKey(val.company_id) : null;
+                        (val.vehicle_id) ? newObj.vehicle_id = Number(val.vehicle_id) : null;
+    
+                        childPromise.push(client.db(dbName).collection("chassis").insertOne(newObj));
+                        childPromise.push(client.db(dbName).collection("chassis").deleteOne({ _id: val._id }));
+                    }
+                });
+                Promise.all(childPromise).then(result => { res.json({ok:1}); }).catch(error => { console.log("Error",error); res.json(error); });
+            });
+        }
+    });
+    /**************** END OTHER COLLECTIONS */
+});
+// import chassis
+router.get('/test/import/chassis', (req,res,next)=>{
+    // PRODUCTION
+    // const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    // DEVELOPMENT
+    const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+    var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
+    
+    var dbName = "wd-wilcon";
+    
+    MongoClient.connect(url, mongoOptions, (err,client) => {
+        if(err){
+            console.log("ERROR1",err);
+        } else {
+            var finalChassisList = [];
+
+            client.db(dbName).collection("chassis_section").find({}).toArray().then(sDocs => {
+                client.db(dbName).collection("chassis_company").find({}).toArray().then(cDocs => {
+                    client.db(dbName).collection("chassis_type").find({}).toArray().then(tDocs => {
+                        chassis.forEach(val => {
+                            var newObj = {
+                                _id: val._id,
+                            };
+
+                            var type = tDocs.find(x => x.type == val.type);
+                            (type) ? newObj.type_id = db.getPrimaryKey(type._id) : null;
+
+                            var section = sDocs.find(x => x.section == val.section);
+                            (section) ? newObj.section_id = db.getPrimaryKey(section._id) : null;
+
+                            var company = cDocs.find(x => x.company == val.company);
+                            (company) ? newObj.company_id = db.getPrimaryKey(company._id) : null;
+
+                            finalChassisList.push(newObj);
+                        });
+                        client.db(dbName).collection("chassis").insertMany(finalChassisList).then(result => {
+                            res.json({ok:1});
+                        });
+                    });
+                });
             });
         }
     });

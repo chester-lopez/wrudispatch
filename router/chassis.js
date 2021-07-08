@@ -1,13 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const Joi = require('joi');
 
-const schema = require("../utils/schema");
 const db = require("../utils/db");
 const auth = require("../utils/auth");
 const _ERROR_ = require("../utils/error");
 
-const collection = "vehicle_personnel";
+const collection = "chassis";
 
 // get all
 router.get('/:dbName/:username/all/:filter/:skip/:limit', (req,res,next)=>{
@@ -50,9 +48,17 @@ router.post('/:dbName/:username', (req,res,next)=>{
 
     userInput.created_by = username;
     userInput.created_on = new Date().toISOString();
+
+    (userInput.type_id) ? userInput.type_id = db.getPrimaryKey(userInput.type_id) : null;
+    (userInput.section_id) ? userInput.section_id = db.getPrimaryKey(userInput.section_id) : null;
+    (userInput.company_id) ? userInput.company_id = db.getPrimaryKey(userInput.company_id) : null;
+    (userInput.vehicle_id) ? userInput.vehicle_id = Number(userInput.vehicle_id) : null;
+
     db.getCollection(dbName,collection).insertOne(userInput,(err,result)=>{
-        if(err) next(_ERROR_.INTERNAL_SERVER(err));
-        else res.json({ok:1});
+        if(err){
+            var error = (err.name=="MongoError" && err.code==11000) ? _ERROR_.DUPLICATE("Chassis") : _ERROR_.INTERNAL_SERVER(err);
+            next(error);
+        } else res.json({ok:1});
     });
 });
 
@@ -63,7 +69,12 @@ router.put('/:dbName/:username/:_id', (req,res,next)=>{
     const username = req.params.username;
     const userInput = req.body;
 
-    db.getCollection(dbName,collection).findOneAndUpdate({_id: db.getPrimaryKey(_id)},{$set: userInput},{returnOriginal: false,upsert: true},(err,docs)=>{
+    (userInput.type_id) ? userInput.type_id = db.getPrimaryKey(userInput.type_id) : null;
+    (userInput.section_id) ? userInput.section_id = db.getPrimaryKey(userInput.section_id) : null;
+    (userInput.company_id) ? userInput.company_id = db.getPrimaryKey(userInput.company_id) : null;
+    (userInput.vehicle_id) ? userInput.vehicle_id = Number(userInput.vehicle_id) : null;
+
+    db.getCollection(dbName,collection).findOneAndUpdate({_id},{$set: userInput},{returnOriginal: false},(err,docs)=>{
         if(err) next(_ERROR_.INTERNAL_SERVER(err));
         else res.json({ok:1});
     });
@@ -74,7 +85,7 @@ router.delete('/:dbName/:username/:_id', (req,res,next)=>{
     const dbName = req.params.dbName;
     const _id = req.params._id;
     const username = req.params.username; // not included yet in filter
-    const filter = {_id: db.getPrimaryKey(_id)}; // NEVER LEAVE EMPTY! Will affect all
+    const filter = {_id}; // NEVER LEAVE EMPTY! Will affect all
 
     db.getCollection(dbName,collection).findOneAndDelete(filter,(err,docs)=>{
         if(err) next(_ERROR_.INTERNAL_SERVER(err));
