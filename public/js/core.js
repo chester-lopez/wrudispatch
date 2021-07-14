@@ -1,4 +1,8 @@
 /************** GLOBAL VARIABLES **************/
+const authorizationLevel  = {
+    dispatcher: () => { return ["dispatcher"].includes(USER.role); },
+    administrator: () => { return ["administrator","developer"].includes(USER.role); },
+};
 const ENVIRONMENT = $(`#ENVIRONMENT`).text() || "development";
 const CUSTOM = {
     COLUMN:{
@@ -136,6 +140,9 @@ const CUSTOM = {
                             break;
                         case "vehicle":
                             arr.push(objectOptions(val,{ data: "Vehicle", title: "Vehicle", visible: true }));
+                            break;
+                        case "chassis":
+                            arr.push(objectOptions(val,{ data: "Chassis", title: "Chassis", visible: false }));
                             break;
                         case "trailer":
                             arr.push(objectOptions(val,{ data: "Trailer", title: "Trailer", visible: true }));
@@ -479,6 +486,18 @@ const CUSTOM = {
                     case "company_id":
                         arr.push({ data: "Company", title: "Company", visible: true });
                         break;
+                    case "cn1":
+                        arr.push({ data: "CN1", title: "CN1", visible: true });
+                        break;
+                    case "cn2":
+                        arr.push({ data: "CN2", title: "CN2", visible: true });
+                        break;
+                    case "fuelCapacity":
+                        arr.push({ data: "Fuel Capacity", title: "Fuel Capacity", visible: true });
+                        break;
+                    case "truckModel":
+                        arr.push({ data: "Truck Model", title: "Truck Model", visible: true });
+                        break;
                     case "availability":
                         arr.push({ data: "Availability", title: "Availability", visible: true });
                         break;
@@ -495,6 +514,15 @@ const CUSTOM = {
 
             return arr;
         },
+        fuel_refill: [
+            { data: "Summary", title: "Summary", visible: true },
+            { data: "Converted", title: "Converted", width: "22%", visible: true },
+            { data: "Failed to Import", title: "Failed to Import", width: "22%", visible: true },
+            { data: "Error", title: "Error", width: "22%", visible: true },
+            { data: "Upload Date", title: "Upload Date", type:"date", visible: true },
+            { data: "Uploaded By", title: "Uploaded By", visible: false },
+            { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
+        ],
         vehicle_personnel: [
             { data: "Name", title: "Name", visible: true },
             { data: "Occupation", title: "Occupation", visible: true },
@@ -510,7 +538,15 @@ const CUSTOM = {
             { data: "Cluster", title: "Cluster", visible: true },
             { data: "Site", title: "Site", visible: true },
             { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
-        ]
+        ],
+        chassis: [
+            { data: "_id", title: "Name", visible: true },
+            { data: "Chassis Type", title: "Chassis Type", visible: true },
+            { data: "Plate Number", title: "Plate Number", visible: true },
+            { data: "Section", title: "Section", visible: true },
+            { data: "Company", title: "Company", visible: true },
+            { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
+        ],
     },
     FORM: {
         dispatch: function(){
@@ -523,6 +559,7 @@ const CUSTOM = {
                 {id:"#route",key:"route",inputType:"val",readonly:true,required:true,trigger:"change",dataType:"select"},
                 {id:"#trailer",key:"trailer",inputType:"val",trigger:"change",required:true,dataType:"select"}, // should be before vehilce
                 {id:"#vehicle",key:"vehicle_id",inputType:"val",trigger:"change",required:true,dataType:"select",typeOf:"number"},
+                {id:"#chassis",key:"chassis",inputType:"val",remove:true,parent:".col-sm-3"},
                 {id:"#driver_id",key:"driver_id",inputType:"val",remove:true,parent:".col-sm-12"},
                 {id:"#checker_id",key:"checker_id",inputType:"val",remove:true,parent:".col-sm-12"},
                 {id:"#helper_id",key:"helper_id",inputType:"val",remove:true,parent:".col-sm-12"},
@@ -540,6 +577,7 @@ const CUSTOM = {
                 {id:"#route",key:"route",inputType:"val",readonly:true,required:true,trigger:"change",dataType:"select"},
                 {id:"#trailer",key:"trailer",inputType:"val",trigger:"change",required:true,dataType:"select"}, // shohul be  before cehicle
                 {id:"#vehicle",key:"vehicle_id",inputType:"val",trigger:"change",required:true,dataType:"select",typeOf:"number"},
+                {id:"#chassis",key:"chassis",inputType:"val",trigger:"change",required:true,dataType:"select"},
                 {id:"#driver_id",key:"driver_id",inputType:"val",trigger:"change",required:true,dataType:"select"},
                 {id:"#checker_id",key:"checker_id",inputType:"val",trigger:"change",required:true,dataType:"select"},
                 {id:"#helper_id",key:"helper_id",inputType:"val",trigger:"change",required:true,dataType:"select"},
@@ -548,144 +586,164 @@ const CUSTOM = {
         },
     },
     IMPORT_TEMPLATE: {
-        coket1: function(){
-            return `<table id="report-hidden" style="opacity:0;">
-                        <tr>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Shipment Number</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Origin</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Destination</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck Name</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Comments</th>
-                        </tr>
-                        <tr>
-                            <td style="font-size:14px;border-color:#D9D9D9;">10000001</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">BBC EXT</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">CEW PL</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">DAE8439</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">Comment is optional.</td>
-                        </tr>
-                    </table>`;
+        dispatch: {
+            coket1: function(){
+                return `<table id="report-hidden" style="opacity:0;">
+                            <tr>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Shipment Number</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Origin</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Destination</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck Name</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Comments</th>
+                            </tr>
+                            <tr>
+                                <td style="font-size:14px;border-color:#D9D9D9;">10000001</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">BBC EXT</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">CEW PL</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">DAE8439</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">Comment is optional.</td>
+                            </tr>
+                        </table>`;
+            },
+            wilcon: function(){
+                var body = "";
+                var lists = [];
+    
+                (LIST["shift_schedule"]||[]).forEach((val,i) => {
+                    lists[i] = lists[i] || {};
+                    lists[i].shift_schedule = val._id;
+                });
+                var tempVehicleList = [];
+                (LIST["vehicles"]||[]).forEach((val,i) => {
+                    var driver = (LIST["vehicle_personnel"]||[]).find(x => Number(x.vehicle_id) == Number(val._id) && x.occupation == "Driver") || {};
+                    var checker = (LIST["vehicle_personnel"]||[]).find(x => Number(x.vehicle_id) == Number(val._id) && x.occupation == "Checker") || {};
+                    var helper = (LIST["vehicle_personnel"]||[]).find(x => Number(x.vehicle_id) == Number(val._id) && x.occupation == "Helper") || {};
+                    var vehicle_driver = driver.name;
+                    var vehicle_checker = checker.name;
+                    var vehicle_helper = helper.name;
+    
+                    if(vehicle_driver && vehicle_checker && vehicle_helper){} 
+                    else if(vehicle_driver){
+                        if(!vehicle_checker) vehicle_checker = "";
+                        if(!vehicle_helper) vehicle_helper = "";
+                    } else if(vehicle_checker){
+                        if(!vehicle_driver) vehicle_driver = "";
+                        if(!vehicle_helper) vehicle_helper = "";
+                    } else if(vehicle_helper){
+                        if(!vehicle_driver) vehicle_driver = "";
+                        if(!vehicle_checker) vehicle_checker = "";
+                    } else {
+                        vehicle_driver = "ZZZZZZZZ";
+                        vehicle_checker = "ZZZZZZZZ";
+                        vehicle_helper = "ZZZZZZZZ";
+                    }
+                    tempVehicleList.push({
+                        vehicle: val.name,
+                        vehicle_driver,
+                        vehicle_checker,
+                        vehicle_helper,
+                    })
+                });
+                var sortedBehicleList = SORT.ARRAY_OBJECT(tempVehicleList,"vehicle_driver",{sortType: "asc"});
+                sortedBehicleList.forEach((val,i) => {
+                    lists[i] = lists[i] || {};
+                    lists[i].vehicle = val.vehicle;
+                    lists[i].vehicle_driver = (val.vehicle_driver == "ZZZZZZZZ") ? "" : val.vehicle_driver;
+                    lists[i].vehicle_checker = (val.vehicle_checker == "ZZZZZZZZ") ? "" : val.vehicle_checker;
+                    lists[i].vehicle_helper = (val.vehicle_helper == "ZZZZZZZZ") ? "" : val.vehicle_helper;
+                });
+                var tempDriverList = (LIST["vehicle_personnel"]||[]).filter(x => x.occupation == "Driver");
+                var driverList = SORT.ARRAY_OBJECT(tempDriverList,"name",{sortType: "asc"});
+                driverList.forEach((val,i) => {
+                    lists[i] = lists[i] || {};
+                    lists[i].driver = val.name;
+                });
+                var tempCheckerList = (LIST["vehicle_personnel"]||[]).filter(x => x.occupation == "Checker");
+                var checkerList = SORT.ARRAY_OBJECT(tempCheckerList,"name",{sortType: "asc"});
+                checkerList.forEach((val,i) => {
+                    lists[i] = lists[i] || {};
+                    lists[i].checker = val.name;
+                });
+                var tempHelperList = (LIST["vehicle_personnel"]||[]).filter(x => x.occupation == "Helper");
+                var helperList = SORT.ARRAY_OBJECT(tempHelperList,"name",{sortType: "asc"});
+                helperList.forEach((val,i) => {
+                    lists[i] = lists[i] || {};
+                    lists[i].helper = val.name;
+                });
+                var routeList = SORT.ARRAY_OBJECT(LIST["routes"]||[],"_id",{sortType: "asc"});
+                routeList.forEach((val,i) => {
+                    lists[i] = lists[i] || {};
+                    lists[i].route = val._id;
+                });
+                lists.forEach((val,i) => {
+                    body += `<tr>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"ABC 123":""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"MDC01-D03":""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"WD NDI3452":""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"Jane Doe":""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"John Smith":""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"James Clark":""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"04/02/2021":""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"4:00 AM - 5:00 AM":""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"Comment is optional.":""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;"></td>
+                                <td style="font-size:14px;border-color:#D9D9D9;"></td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${val.shift_schedule||""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${val.vehicle||""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${val.vehicle_driver||""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${val.vehicle_checker||""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${val.vehicle_helper||""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${val.driver||""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${val.checker||""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${val.helper||""}</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">${val.route||""}</td>
+                            </tr>`;
+                });
+                return `<table id="report-hidden" style="opacity:0;">
+                            <tr>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Ticket Number</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Route</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck Name</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Driver</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Checker</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Helper</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Scheduled Date</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Shift Schedule</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Comments</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;"></th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;"></th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Shift List</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck List</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck Driver</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck Checker</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck Helper</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Driver List</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Checker List</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Helper List</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Route List</th>
+                            </tr>
+                            ${body}
+                        </table>`;
+            },
         },
-        wilcon: function(){
-            var body = "";
-            var lists = [];
-
-            (LIST["shift_schedule"]||[]).forEach((val,i) => {
-                lists[i] = lists[i] || {};
-                lists[i].shift_schedule = val._id;
-            });
-            var tempVehicleList = [];
-            (LIST["vehicles"]||[]).forEach((val,i) => {
-                var driver = (LIST["vehicle_personnel"]||[]).find(x => Number(x.vehicle_id) == Number(val._id) && x.occupation == "Driver") || {};
-                var checker = (LIST["vehicle_personnel"]||[]).find(x => Number(x.vehicle_id) == Number(val._id) && x.occupation == "Checker") || {};
-                var helper = (LIST["vehicle_personnel"]||[]).find(x => Number(x.vehicle_id) == Number(val._id) && x.occupation == "Helper") || {};
-                var vehicle_driver = driver.name;
-                var vehicle_checker = checker.name;
-                var vehicle_helper = helper.name;
-
-                if(vehicle_driver && vehicle_checker && vehicle_helper){} 
-                else if(vehicle_driver){
-                    if(!vehicle_checker) vehicle_checker = "";
-                    if(!vehicle_helper) vehicle_helper = "";
-                } else if(vehicle_checker){
-                    if(!vehicle_driver) vehicle_driver = "";
-                    if(!vehicle_helper) vehicle_helper = "";
-                } else if(vehicle_helper){
-                    if(!vehicle_driver) vehicle_driver = "";
-                    if(!vehicle_checker) vehicle_checker = "";
-                } else {
-                    vehicle_driver = "ZZZZZZZZ";
-                    vehicle_checker = "ZZZZZZZZ";
-                    vehicle_helper = "ZZZZZZZZ";
-                }
-                tempVehicleList.push({
-                    vehicle: val.name,
-                    vehicle_driver,
-                    vehicle_checker,
-                    vehicle_helper,
-                })
-            });
-            var sortedBehicleList = SORT.ARRAY_OBJECT(tempVehicleList,"vehicle_driver",{sortType: "asc"});
-            sortedBehicleList.forEach((val,i) => {
-                lists[i] = lists[i] || {};
-                lists[i].vehicle = val.vehicle;
-                lists[i].vehicle_driver = (val.vehicle_driver == "ZZZZZZZZ") ? "" : val.vehicle_driver;
-                lists[i].vehicle_checker = (val.vehicle_checker == "ZZZZZZZZ") ? "" : val.vehicle_checker;
-                lists[i].vehicle_helper = (val.vehicle_helper == "ZZZZZZZZ") ? "" : val.vehicle_helper;
-            });
-            var tempDriverList = (LIST["vehicle_personnel"]||[]).filter(x => x.occupation == "Driver");
-            var driverList = SORT.ARRAY_OBJECT(tempDriverList,"name",{sortType: "asc"});
-            driverList.forEach((val,i) => {
-                lists[i] = lists[i] || {};
-                lists[i].driver = val.name;
-            });
-            var tempCheckerList = (LIST["vehicle_personnel"]||[]).filter(x => x.occupation == "Checker");
-            var checkerList = SORT.ARRAY_OBJECT(tempCheckerList,"name",{sortType: "asc"});
-            checkerList.forEach((val,i) => {
-                lists[i] = lists[i] || {};
-                lists[i].checker = val.name;
-            });
-            var tempHelperList = (LIST["vehicle_personnel"]||[]).filter(x => x.occupation == "Helper");
-            var helperList = SORT.ARRAY_OBJECT(tempHelperList,"name",{sortType: "asc"});
-            helperList.forEach((val,i) => {
-                lists[i] = lists[i] || {};
-                lists[i].helper = val.name;
-            });
-            var routeList = SORT.ARRAY_OBJECT(LIST["routes"]||[],"_id",{sortType: "asc"});
-            routeList.forEach((val,i) => {
-                lists[i] = lists[i] || {};
-                lists[i].route = val._id;
-            });
-            lists.forEach((val,i) => {
-                body += `<tr>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"ABC 123":""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"MDC01-D03":""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"WD NDI3452":""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"Jane Doe":""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"John Smith":""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"James Clark":""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"04/02/2021":""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"4:00 AM - 5:00 AM":""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${i==0?"Comment is optional.":""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;"></td>
-                            <td style="font-size:14px;border-color:#D9D9D9;"></td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${val.shift_schedule||""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${val.vehicle||""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${val.vehicle_driver||""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${val.vehicle_checker||""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${val.vehicle_helper||""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${val.driver||""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${val.checker||""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${val.helper||""}</td>
-                            <td style="font-size:14px;border-color:#D9D9D9;">${val.route||""}</td>
-                        </tr>`;
-            });
-            return `<table id="report-hidden" style="opacity:0;">
-                        <tr>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Ticket Number</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Route</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck Name</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Driver</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Checker</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Helper</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Scheduled Date</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Shift Schedule</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Comments</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;"></th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;"></th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Shift List</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck List</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck Driver</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck Checker</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Truck Helper</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Driver List</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Checker List</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Helper List</th>
-                            <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Route List</th>
-                        </tr>
-                        ${body}
-                    </table>`;
-        },
+        fuel_refill: {
+            fleet: function(){
+                return `<table id="report-hidden" style="opacity:0;">
+                            <tr>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Delivery Date</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Time</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Quantity</th>
+                                <th style="font-size:14px;border-color:#D9D9D9;text-align:left;">Vehicle License Number</th>
+                            </tr>
+                            <tr>
+                                <td style="font-size:14px;border-color:#D9D9D9;">19/06/2021</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">0:08:26</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">100</td>
+                                <td style="font-size:14px;border-color:#D9D9D9;">JM0522</td>
+                            </tr>
+                        </table>`;
+            }
+        }
     }
 };
 
@@ -757,6 +815,7 @@ const WEBSOCKET = {
                     return value || defaultValue;
                 };
 
+                clientCustom.calendarView = {};
                 clientCustom.filterType = {};
                 clientCustom.columns = {};
                 clientCustom.gSelect2 = {};
@@ -781,6 +840,8 @@ const WEBSOCKET = {
                 clientCustom.columns.notifications = setValue("custom.notifications.columns", []);
                 clientCustom.columns.clusters = setValue("custom.clusters.columns", []);
                 
+                // calendarView
+                clientCustom.calendarView.dashboard = setValue("custom.dashboard.calendarView", ["day"]);
                 
                 // gSelect2
                 clientCustom.gSelect2.vehicles = setValue("custom.vehicles.gSelect2", {});
@@ -790,6 +851,7 @@ const WEBSOCKET = {
                 
                 // dispatch
                 clientCustom.editableTrailer = setValue("custom.dispatch.editableTrailer", false);
+                clientCustom.editableChassis = setValue("custom.dispatch.editableChassis", false);
                 clientCustom.previousCheckIns = setValue("custom.dispatch.previousCheckIns", { status: [], roles: [] });
                 clientCustom.autoGeneratedId = setValue("custom.dispatch.autoGeneratedId", false);
                 clientCustom.roundtrip = setValue("custom.dispatch.autoGeneratedId", false);
@@ -807,9 +869,11 @@ const WEBSOCKET = {
                 // tableButtons
                 clientCustom.tableButtons.vehicles = setValue("custom.vehicles.tableButtons", { buttons: [] });
                 clientCustom.tableButtons.vehicle_personnel = setValue("custom.vehicle_personnel.tableButtons", { buttons: [] });
+                clientCustom.tableButtons.chassis = setValue("custom.chassis.tableButtons", { buttons: [] });
 
                 // rowButtons
                 clientCustom.rowButtons.dispatch = setValue("custom.dispatch.rowButtons", { buttons: [] });
+                clientCustom.rowButtons.clusters = setValue("custom.clusters.rowButtons", { buttons: [] });
             }
 
             SOCKET = io();
@@ -935,7 +999,7 @@ function SESSION_FROM_DB(existCallback,notExistCallback){
                     }
                 } catch(error){}
                 
-                if(session.dispatcherDetails && autorizationLevel.dispatcher()){
+                if(session.dispatcherDetails && authorizationLevel .dispatcher()){
                     USER.dc = session.dispatcherDetails._id;
                 }
                 
@@ -971,6 +1035,7 @@ function LOGOUT(){
             },
             async: true
         }).done(function (docs) {
+            Cookies.remove("tabs");
             Cookies.remove("GKEY");
             Cookies.remove("session_token");
             location.href = `../${CLIENT.name}/login`;
@@ -978,6 +1043,9 @@ function LOGOUT(){
             console.log("Error:",error);
         });
     } else {
+        Cookies.remove("tabs");
+        Cookies.remove("GKEY");
+        Cookies.remove("session_token");
         location.href = `../${CLIENT.name}/login`;
     }
 };

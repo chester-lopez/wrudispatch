@@ -229,7 +229,7 @@ router.post('/:dbName/:username', (req,res,next)=>{
 router.delete('/:dbName/:username/temporary/:_id', (req,res,next)=>{
     const dbName = req.params.dbName;
     const _id = req.params._id;
-
+    
     db.getCollection(dbName,"temp_sessions").findOneAndUpdate({ _id },{ $set: { last_active_timestamp: new Date().getTime() } },{upsert: true},(err,docs)=>{
         if(err) next(_ERROR_.INTERNAL_SERVER(err));
         else res.json({ok:1});

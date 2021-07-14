@@ -37,7 +37,6 @@ Array.prototype.insert = function ( index, item ) {
 Array.prototype.isEmpty = function ( index, item ) {
     return this.length == 0;
 };
-
 var OBJECT = {
     sortByKey: o => Object.keys(o).sort().reduce((r, k) => (r[k] = o[k], r), {}),
     getKeyByValue: (o,v) => Object.keys(o).find(key => o[key] === v),
@@ -254,23 +253,115 @@ var GENERATE = {
             }
         });
     },
-    TABLE_TO_EXCEL: (function(){
-        var uri = 'data:application/vnd.ms-excel;base64,',
-         template = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>{worksheet}</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--><style>br {mso-data-placement:same-cell;}</style></head><body><table cellspacing="0" rules="rows" border="1" style="color:Black;background-color:White;border-color:#CCCCCC;border-width:1px;border-style:None;width:100%;border-collapse:collapse;font-size:9pt;text-align:center;">{table}</table></body></html>', 
-         base64 = function (s) { return window.btoa(unescape(encodeURIComponent(s))) }, 
-         format = function (s, c) { return s.replace(/{(\w+)}/g, function (m, p) { return c[p]; }) }
-        return function (table, name) {
-            if (!table.nodeType) table = document.getElementById(table)
-            var ctx = { worksheet: 'Worksheet', table: table.innerHTML }
-            if (navigator.msSaveBlob) {
-                var blob = new Blob([format(template, ctx)], { type: 'application/vnd.ms-excel', endings: 'native' });
-                navigator.msSaveBlob(blob, `${name}.xls`);
-            } else {
-                $(`body`).append(`<a id="temp-link" href="${(uri + base64(format(template, ctx)))}" download="${name}.xls"></a>`);
-                $(`#temp-link`)[0].click();
+    TABLE_TO_EXCEL: {
+        SINGLE: (function(){
+            var uri = 'data:application/vnd.ms-excel;base64,',
+             template = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>{worksheet}</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--><style>br {mso-data-placement:same-cell;}</style></head><body><table cellspacing="0" rules="rows" border="1" style="color:Black;background-color:White;border-color:#CCCCCC;border-width:1px;border-style:None;width:100%;border-collapse:collapse;font-size:9pt;text-align:center;">{table}</table></body></html>', 
+             base64 = function (s) { return window.btoa(unescape(encodeURIComponent(s))) }, 
+             format = function (s, c) { return s.replace(/{(\w+)}/g, function (m, p) { return c[p]; }) }
+            return function (table, name) {
+                if (!table.nodeType) table = document.getElementById(table)
+                var ctx = { worksheet: 'Worksheet', table: table.innerHTML }
+                if (navigator.msSaveBlob) {
+                    var blob = new Blob([format(template, ctx)], { type: 'application/vnd.ms-excel', endings: 'native' });
+                    navigator.msSaveBlob(blob, `${name}.xls`);
+                } else {
+                    $(`body`).append(`<a id="temp-link" href="${(uri + base64(format(template, ctx)))}" download="${name}.xls"></a>`);
+                    $(`#temp-link`)[0].click();
+                }
             }
-        }
-    })(),
+        })(),
+        MULTISHEET: (function ($) {
+            // https://jsfiddle.net/xvkt0yw9/
+            // https://stackoverflow.com/questions/29698796/how-to-convert-html-table-to-excel-with-multiple-sheet
+            var uri = 'data:application/vnd.ms-excel;base64,'
+            , html_start = `<html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">`
+            , template_ExcelWorksheet = `<x:ExcelWorksheet><x:Name>{SheetName}</x:Name><x:WorksheetSource HRef="sheet{SheetIndex}.htm"/></x:ExcelWorksheet>`
+            , template_ListWorksheet = `<o:File HRef="sheet{SheetIndex}.htm"/>`
+            , template_HTMLWorksheet = '\n------=_NextPart_dummy\n' +
+                                        'Content-Location: sheet{SheetIndex}.htm\n' +
+                                        'Content-Type: text/html; charset=windows-1252\n\n' +
+                                        html_start +
+                                            '<head>' +
+                                                '<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">' +
+                                                '<link id="Main-File" rel="Main-File" href="../WorkBook.htm">' +
+                                                '<link rel="File-List" href="filelist.xml">' +
+                                            '</head>' +
+                                            '<body><table>{SheetContent}</table></body>' +
+                                        '</html>'
+                                        
+            , template_WorkBook = 'MIME-Version: 1.0\n' +
+                                    'X-Document-Type: Workbook\n' +
+                                    'Content-Type: multipart/related; boundary="----=_NextPart_dummy"\n\n' +
+                                    '------=_NextPart_dummy\n' +
+                                    'Content-Location: WorkBook.htm\n' +
+                                    'Content-Type: text/html; charset=windows-1252\n\n' +
+                                    html_start +
+                                        '<head>' +
+                                            '<meta name="Excel Workbook Frameset">' +
+                                            '<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">' +
+                                            '<link rel="File-List" href="filelist.xml">' +
+                                            '<!--[if gte mso 9]><xml>' +
+                                                '<x:ExcelWorkbook>' +
+                                                    '<x:ExcelWorksheets>{ExcelWorksheets}</x:ExcelWorksheets>' +
+                                                    '<x:ActiveSheet>0</x:ActiveSheet>' +
+                                                '</x:ExcelWorkbook>' +
+                                            '</xml><![endif]-->' +
+                                        '</head>' +
+                                        '<frameset>' +
+                                            '<frame src="sheet0.htm" name="frSheet">' +
+                                            '<noframes><body><p>This page uses frames, but your browser does not support them.</p></body></noframes>' +
+                                        '</frameset>' +
+                                    '</html>' +
+                                    '{HTMLWorksheets}\n' +
+                                        'Content-Location: filelist.xml\n' +
+                                        'Content-Type: text/xml; charset="utf-8"\n' +
+                                        '<xml xmlns:o="urn:schemas-microsoft-com:office:office">\n' +
+                                        '<o:MainFile HRef="../WorkBook.htm"/>\n' +
+                                        '{ListWorksheets}\n' +
+                                        '<o:File HRef="filelist.xml"/>\n' +
+                                        '</xml>\n' +
+                                        '------=_NextPart_dummy--\n'
+            , base64 = function (s) { return window.btoa(unescape(encodeURIComponent(s))) }
+            , format = function (s, c) { return s.replace(/{(\w+)}/g, function (m, p) { return c[p]; }) }
+            return function (tables, filename) {
+                console.log("OH YEAHHH");
+                var context_WorkBook = {
+                    ExcelWorksheets:''
+                ,   HTMLWorksheets: ''
+                ,   ListWorksheets: ''
+                };
+                var tables = jQuery(tables);
+                $.each(tables,function(SheetIndex){
+                    var $table = $(this);
+                    var SheetName = $table.attr('data-SheetName');
+                    if($.trim(SheetName) === ''){
+                        SheetName = 'Sheet' + SheetIndex;
+                    }
+                    context_WorkBook.ExcelWorksheets += format(template_ExcelWorksheet, {
+                        SheetIndex: SheetIndex
+                    ,   SheetName: SheetName
+                    });
+                    context_WorkBook.HTMLWorksheets += format(template_HTMLWorksheet, {
+                        SheetIndex: SheetIndex
+                    ,   SheetContent: $table.html()
+                    });
+                    context_WorkBook.ListWorksheets += format(template_ListWorksheet, {
+                        SheetIndex: SheetIndex
+                    });
+                });
+        
+                var link = document.createElement("A");
+                link.href = uri + base64(format(template_WorkBook, context_WorkBook));
+                link.download = filename || 'Workbook.xls';
+                link.target = '_blank';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        })(jQuery),
+        //https://jsfiddle.net/97ajn9wm/1/
+    },
     CSV:{
         toArray:function(strData, strDelimiter){
             // Check to see if the delimiter is defined. If not,
@@ -435,7 +526,7 @@ var TOASTR = {
         else if(status == 401) {
             window.stop();
             toastr.error(`Unauthorized.</br></br>Please refresh this page. If the problem persists, contact our administrators.`, null,{ timeOut: 0, extendedTimeOut: 0 });
-            setTimeout(function(){PAGE.LOGOUT();},10000);
+            setTimeout(function(){LOGOUT();},10000);
         }
         else if(status == 403) toastr.error(`Forbidden.`,null,options);
         else if(status == 404) toastr.error(`Not Found.`,null,options);
@@ -445,17 +536,25 @@ var TOASTR = {
         else toastr.error(message,null,options);
     }
 };
-var ARRAY = {
-    REMOVE_DUPS: function(arr,key){
-        return arr.reduce((unique, o) => {
-            if(!unique.some(obj => obj[key] === o[key])) {
-              unique.push(o);
-            }
-            return unique;
-        },[]);
-    },
-    MERGE: function(arr=[],prop){
-        return arr.map(function(item) { return item; }).filter(function (item, index, self){ return self.findIndex(x=> x[prop] == item[prop]) === index; });
+const ARRAY = {
+    OBJECT: {
+        getDistinctValues: (a=[],k) => [...new Set(a.map(x => x[k]))],
+        sort: function(obj,key,options={}){
+            obj.sort(function(a, b) {
+                a[key] = a[key] || "";
+                b[key] = b[key] || "";
+    
+                if(typeof a[key] == "number"){
+                    var _a = a[key], _b = b[key], sort;
+                    sort = (options.sortType == "asc") ? (_a-_b) : (_b-_a);
+                    return sort;
+                } else { // will work on dates
+                    var sort = (options.sortType == "asc") ? a[key].toLowerCase().localeCompare(b[key].toLowerCase()) : b[key].toLowerCase().localeCompare(a[key].toLowerCase());
+                    return sort;
+                }
+            });
+            return obj;
+        }
     }
 };
 var PING = {
@@ -477,31 +576,18 @@ var PING = {
 var _SESSION_ = {
     window_tab_close: function(ID,USERNAME,SESSION_TOKEN) {
         if(ID && SESSION_TOKEN){
-            // Broadcast that you're opening a page
-            var counted = false;
-            localStorage.openpages = Date.now();
-            var onLocalStorageEvent = function(e){
-                if(e.key == "openpages"){
-                    // Listen if anybody else is opening the same page!
-                    localStorage.page_available = Date.now();
-                }
-                if(e.key == "page_available" && !counted){
-                    counted = true;
-                    localStorage.countPages = Number(localStorage.countPages) || 1;
-                    localStorage.countPages ++;
-                }
-            };
-            window.addEventListener('storage', onLocalStorageEvent, false);
+            (+Cookies.get('tabs') > 0) ? null : Cookies.set('tabs', 0);
 
-            window.onbeforeunload = function(evt) {
-                if(localStorage.countPages > 0){
-                    localStorage.countPages --;
+            Cookies.set('tabs', +Cookies.get('tabs') + 1);
+
+            window.onbeforeunload = function () {
+                if(+Cookies.get('tabs') > 0){
+                    Cookies.set('tabs', +Cookies.get('tabs') - 1);
                 }
-                if(!localStorage.countPages || localStorage.countPages <= 0){
+                if(!+Cookies.get('tabs') || +Cookies.get('tabs') <= 0){
                     sessionStorage.setItem("prev_session_token", SESSION_TOKEN);
-                    // sessionStorage.setItem("prev_GKEY", Cookies.get("GKEY"));
-                    // Cookies.remove("GKEY");
                     Cookies.remove("session_token");
+                    Cookies.remove("tabs");
                     $.ajax({
                         url: `/api/sessions/${ID}/${USERNAME}/temporary/${SESSION_TOKEN}`, 	
                         method: "DELETE", 
@@ -511,7 +597,43 @@ var _SESSION_ = {
                         async:false,
                     });
                 }
-            }
+            };
+
+            // Broadcast that you're opening a page
+            // var counted = false;
+            // localStorage.openpages = Date.now();
+            // var onLocalStorageEvent = function(e){
+            //     if(e.key == "openpages"){
+            //         // Listen if anybody else is opening the same page!
+            //         localStorage.page_available = Date.now();
+            //     }
+            //     if(e.key == "page_available" && !counted){
+            //         counted = true;
+            //         localStorage.countPages = Number(localStorage.countPages) || 1;
+            //         localStorage.countPages ++;
+            //     }
+            // };
+            // window.addEventListener('storage', onLocalStorageEvent, false);
+
+            // window.onbeforeunload = function(evt) {
+            //     if(localStorage.countPages > 0){
+            //         localStorage.countPages --;
+            //     }
+            //     if(!localStorage.countPages || localStorage.countPages <= 0){
+            //         sessionStorage.setItem("prev_session_token", SESSION_TOKEN);
+            //         // sessionStorage.setItem("prev_GKEY", Cookies.get("GKEY"));
+            //         // Cookies.remove("GKEY");
+            //         Cookies.remove("session_token");
+            //         $.ajax({
+            //             url: `/api/sessions/${ID}/${USERNAME}/temporary/${SESSION_TOKEN}`, 	
+            //             method: "DELETE", 
+            //             headers: {
+            //                 "Authorization": SESSION_TOKEN
+            //             },
+            //             async:false,
+            //         });
+            //     }
+            // }
         }
     },
     lastActive: function(ID,USERNAME,SESSION_TOKEN){
@@ -846,7 +968,7 @@ const HISTORY = {
         data_maintenance: function(ID,USERNAME,ROLE,SESSION_TOKEN,modalHTML="",initializeArray=[]){
             $(`body`).append(modalHTML);
 
-            function initialize(_urlPath_,key,objectData){
+            function initialize(_urlPath_,key,objectData,callback=()=>{return true;}){
 
                 function addToList(val){
                     var _class_ = (val.delete) ? "text-danger" : "";
@@ -868,7 +990,7 @@ const HISTORY = {
                 }
                 $.ajax({
                     url: `/api/${_urlPath_}/${ID}/${USERNAME}/all/${JSON.stringify({})}/0/0`,
-                    method: "GET",
+                    method: "get",
                     timeout: 90000, // 1 minute and 30 seconds
                     headers: {
                         "Authorization": SESSION_TOKEN
@@ -887,7 +1009,7 @@ const HISTORY = {
                 $(`#${key}-btn`).click(function(){
                     var value = $(`#${key}`).val();
 
-                    if(value._trim()){
+                    if(value._trim() && callback(value)){
                         $(`#${key},#${key}-btn`).attr("disabled",true);
                         $(`#${key}-btn`).html(`<i class="la la-spin la-spinner"></i> Submit`);
                         var obj = {};
@@ -895,7 +1017,7 @@ const HISTORY = {
 
                         $.ajax({
                             url: `/api/${_urlPath_}/${ID}/${USERNAME}`,
-                            method: "POST",
+                            method: "post",
                             timeout: 90000, // 1 minute and 30 seconds
                             headers: {
                                 "Content-Type": "application/json; charset=utf-8",
@@ -935,7 +1057,7 @@ const HISTORY = {
                     });
                     $.ajax({
                         url: `/api/${_urlPath_}/${ID}/${USERNAME}/${_id}`,
-                        method: "PUT",
+                        method: "put",
                         timeout: 90000, // 1 minute and 30 seconds
                         headers: {
                             "Content-Type": "application/json; charset=utf-8",
@@ -968,7 +1090,7 @@ const HISTORY = {
                     });
                     $.ajax({
                         url: `/api/${_urlPath_}/${ID}/${USERNAME}/${_id}`,
-                        method: "PUT",
+                        method: "put",
                         timeout: 90000, // 1 minute and 30 seconds
                         headers: {
                             "Content-Type": "application/json; charset=utf-8",
@@ -994,7 +1116,7 @@ const HISTORY = {
                             $(el).removeClass().addClass("la la-spin la-spinner");
                             $.ajax({
                                 url: `/api/${_urlPath_}/${ID}/${USERNAME}/${_id}`,
-                                method: "DELETE",
+                                method: "delete",
                                 timeout: 90000, // 1 minute and 30 seconds
                                 headers: {
                                     "Authorization": SESSION_TOKEN
@@ -1009,7 +1131,7 @@ const HISTORY = {
             }
 
             initializeArray.forEach(val => {
-                initialize(val.urlPath,val.key,val.objectData);
+                initialize(val.urlPath,val.key,val.objectData,val.callback);
             });
         }
     }
@@ -1206,91 +1328,21 @@ class ProgressBar{
     }
 }
 
-// https://jsfiddle.net/xvkt0yw9/
-// https://stackoverflow.com/questions/29698796/how-to-convert-html-table-to-excel-with-multiple-sheet
-var tablesToExcel = (function ($) {
-    var uri = 'data:application/vnd.ms-excel;base64,'
-    , html_start = `<html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">`
-    , template_ExcelWorksheet = `<x:ExcelWorksheet><x:Name>{SheetName}</x:Name><x:WorksheetSource HRef="sheet{SheetIndex}.htm"/></x:ExcelWorksheet>`
-    , template_ListWorksheet = `<o:File HRef="sheet{SheetIndex}.htm"/>`
-    , template_HTMLWorksheet = '\n------=_NextPart_dummy\n' +
-                                'Content-Location: sheet{SheetIndex}.htm\n' +
-                                'Content-Type: text/html; charset=windows-1252\n\n' +
-                                html_start +
-                                    '<head>' +
-                                        '<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">' +
-                                        '<link id="Main-File" rel="Main-File" href="../WorkBook.htm">' +
-                                        '<link rel="File-List" href="filelist.xml">' +
-                                    '</head>' +
-                                    '<body><table>{SheetContent}</table></body>' +
-                                '</html>'
-    , template_WorkBook = 'MIME-Version: 1.0\n' +
-                            'X-Document-Type: Workbook\n' +
-                            'Content-Type: multipart/related; boundary="----=_NextPart_dummy"\n\n' +
-                            '------=_NextPart_dummy\n' +
-                            'Content-Location: WorkBook.htm\n' +
-                            'Content-Type: text/html; charset=windows-1252\n\n' +
-                            html_start +
-                                '<head>' +
-                                    '<meta name="Excel Workbook Frameset">' +
-                                    '<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">' +
-                                    '<link rel="File-List" href="filelist.xml">' +
-                                    '<!--[if gte mso 9]><xml>' +
-                                        '<x:ExcelWorkbook>' +
-                                            '<x:ExcelWorksheets>{ExcelWorksheets}</x:ExcelWorksheets>' +
-                                            '<x:ActiveSheet>0</x:ActiveSheet>' +
-                                        '</x:ExcelWorkbook>' +
-                                    '</xml><![endif]-->' +
-                                '</head>' +
-                                '<frameset>' +
-                                    '<frame src="sheet0.htm" name="frSheet">' +
-                                    '<noframes><body><p>This page uses frames, but your browser does not support them.</p></body></noframes>' +
-                                '</frameset>' +
-                            '</html>' +
-                            '{HTMLWorksheets}\n' +
-                                'Content-Location: filelist.xml\n' +
-                                'Content-Type: text/xml; charset="utf-8"\n' +
-                                '<xml xmlns:o="urn:schemas-microsoft-com:office:office">\n' +
-                                '<o:MainFile HRef="../WorkBook.htm"/>\n' +
-                                '{ListWorksheets}\n' +
-                                '<o:File HRef="filelist.xml"/>\n' +
-                                '</xml>\n' +
-                                '------=_NextPart_dummy--\n'
-    , base64 = function (s) { return window.btoa(unescape(encodeURIComponent(s))) }
-    , format = function (s, c) { return s.replace(/{(\w+)}/g, function (m, p) { return c[p]; }) }
-    return function (tables, filename) {
-        console.log("OH YEAHHH");
-        var context_WorkBook = {
-            ExcelWorksheets:''
-        ,   HTMLWorksheets: ''
-        ,   ListWorksheets: ''
-        };
-        var tables = jQuery(tables);
-        $.each(tables,function(SheetIndex){
-            var $table = $(this);
-            var SheetName = $table.attr('data-SheetName');
-            if($.trim(SheetName) === ''){
-                SheetName = 'Sheet' + SheetIndex;
-            }
-            context_WorkBook.ExcelWorksheets += format(template_ExcelWorksheet, {
-                SheetIndex: SheetIndex
-            ,   SheetName: SheetName
-            });
-            context_WorkBook.HTMLWorksheets += format(template_HTMLWorksheet, {
-                SheetIndex: SheetIndex
-            ,   SheetContent: $table.html()
-            });
-            context_WorkBook.ListWorksheets += format(template_ListWorksheet, {
-                SheetIndex: SheetIndex
-            });
-        });
-
-        var link = document.createElement("A");
-        link.href = uri + base64(format(template_WorkBook, context_WorkBook));
-        link.download = filename || 'Workbook.xls';
-        link.target = '_blank';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-})(jQuery);
+function s2ab(s) {
+    var buf = new ArrayBuffer(s.length);
+    var view = new Uint8Array(buf);
+    for (var i=0; i<s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
+    return buf;
+}
+function exportTableToExcel(filename) {
+    // get table
+    var table = document.getElementById("report-hidden");
+    // convert table to excel sheet
+    var wb = XLSX.utils.table_to_book(table, {sheet:"Customer Report"});
+    // write sheet to blob
+    var blob = new Blob([s2ab(XLSX.write(wb, {bookType:'xlsx', type:'binary'}))], {
+        type: "application/octet-stream"
+    });
+    // return sheet file
+    return saveAs(blob, `${filename}.xlsx`);
+}

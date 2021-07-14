@@ -51,6 +51,8 @@ app.get('/Wilcon/login',(req,res)=>{ setup("wilcon","login",res,ENVIRONMENT,lTit
 app.get('/Wilcon',(req,res)=>{ setup("wilcon","main",res,ENVIRONMENT,mTitle); });
 app.get('/CokeT2/login',(req,res)=>{ setup("coket2","login",res,ENVIRONMENT,lTitle); });
 app.get('/CokeT2',(req,res)=>{ setup("coket2","main",res,ENVIRONMENT,mTitle); });
+app.get('/Fleet/login',(req,res)=>{ setup("fleet","login",res,ENVIRONMENT,lTitle); });
+app.get('/Fleet',(req,res)=>{ setup("fleet","main",res,ENVIRONMENT,mTitle); });
 /***** END PAGE *****/
 
 /***** ROUTER *****/
@@ -246,7 +248,12 @@ app.use(`/api/vehicles_company`, verifyToken, require("./router/vehicles_company
 app.use(`/api/vehicle_personnel`, verifyToken, require("./router/vehicle_personnel"));
 app.use(`/api/vehicle_personnel_section`, verifyToken, require("./router/vehicle_personnel_section"));
 app.use(`/api/vehicle_personnel_company`, verifyToken, require("./router/vehicle_personnel_company"));
+app.use(`/api/fuel_refill`, verifyToken, require("./router/fuel_refill"));
 app.use(`/api/trailers`, verifyToken, require("./router/trailers"));
+app.use(`/api/chassis`, verifyToken, require("./router/chassis"));
+app.use(`/api/chassis_section`, verifyToken, require("./router/chassis_section"));
+app.use(`/api/chassis_company`, verifyToken, require("./router/chassis_company"));
+app.use(`/api/chassis_type`, verifyToken, require("./router/chassis_type"));
 app.use(`/api/events`, verifyToken, require("./router/events"));
 app.use(`/api/notifications`, verifyToken, require("./router/notifications"));
 app.use(`/api/user_login_activity`, verifyToken, require("./router/user_login_activity"));

@@ -427,6 +427,12 @@ var LIMIT = 200,
                 update: "none",
                 delete: "none",
             },
+            chassis:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none",
+            },
             regions:{
                 read: "all",
                 create: "none",
@@ -502,6 +508,12 @@ var LIMIT = 200,
                 delete: "none",
             },
             vehicle_personnel:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all",
+            },
+            chassis:{
                 read: "all",
                 create: "all",
                 update: "all",
@@ -601,6 +613,12 @@ var LIMIT = 200,
                 update: "all",
                 delete: "all",
             },
+            chassis:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all",
+            },
             regions:{
                 read: "all",
                 create: "all",
@@ -693,8 +711,57 @@ var LIMIT = 200,
                 update: "none",
                 delete: "none",
             },
-        }
+        },
         // end Coke T2
+        
+        // Coke Fleet
+        user_fleet: {
+            vehicles:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none",
+            },
+            fuel_refill: {
+                read: "all",
+                create: "all",
+                update: "none",
+                delete: "all"
+            },
+        },
+        developer_fleet: {
+            users:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all",
+            },
+            vehicles:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none",
+            },
+            fuel_refill: {
+                read: "all",
+                create: "all",
+                update: "none",
+                delete: "all"
+            },
+            all_events: {
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "all"
+            },
+            changelog:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none",
+            },
+        }
+        // end Coke Fleet
     },
     CLIENTS = {
         // Manually create Google Storage Bucket. It will not create automatically.
@@ -708,8 +775,12 @@ var LIMIT = 200,
             type: 1,
             tabCloseAutoLogout: true,
             loadInBackground: ["VEHICLES","REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","USERS","VEHICLES_HISTORY","NOTIFICATIONS","SESSIONS"],
+            allowRolesToViewAs: {
+                developer: ["developer","administrator","management","dispatcher","user"],
+            },
             custom: {
                 dashboard: {
+                    // calendarView: ["day"],
                     visibleStatus: ["in_transit","total_shipment","incomplete","assigned","queueingAtOrigin","processingAtOrigin","complete"]
                 },
                 dispatch: {
@@ -746,6 +817,9 @@ var LIMIT = 200,
                 clusters: {
                     modalFields: ["cluster","region_id"],
                     columns: ["cluster","region","geofences","esq1_lq","esq1_oc","esq1_ot","esq2_lq","esq2_oc","esq2_ot","esq3_lq","esq3_oc","esq3_ot","action"],
+                    rowButtons: { 
+                        buttons: ["edit","delete"],
+                    },
                 },
                 notifications: {
                     columns: ["shipmentNumber","delayType","escalation","timelapse","site","status","dateTime","sentTo","action"],
@@ -759,7 +833,7 @@ var LIMIT = 200,
                     otr: ["origin","destination","route","sn","plateNumber","trailer","palCap","haulerName","targetTransit","actualTimelapse","remarks1","remarks2","truckBasePlant"]
                 },
                 users: {
-                    ignoreRolesWithString: ["t2","wilcon"]
+                    ignoreRolesWithString: ["t2","wilcon","fleet"]
                 }
             },
         },
@@ -770,18 +844,24 @@ var LIMIT = 200,
             appId: 427, //process.env.APP_ID_WILCON
             ggsURL: `wru.server93.com`,
             type: 1,
-            loadInBackground: ["VEHICLES","REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","NOTIFICATIONS","SESSIONS"],
+            loadInBackground: ["VEHICLES","REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE","NOTIFICATIONS","SESSIONS"],
+            allowRolesToViewAs: {
+                developer: ["developer","administrator","management","dispatcher","user"],
+                administrator: ["administrator","management","dispatcher","user"],
+            },
             custom: {
                 dashboard: {
+                    // calendarView: ["day","month"],
                     visibleStatus: ["total_shipment","scheduled","assigned","processingAtOrigin","in_transit","onSite","returning","complete","incomplete"], // "scheduled",
                     filterType: "postingDate-scheduledDate"
                 },
                 dispatch: {
+                    editableChassis: true,
                     autoGeneratedId: true,
                     roundtrip: true,
                     scheduled: true,
-                    statusWhenTruckEnteredOrigin: "processingAtOrigin",
-                    // statusWhenTruckEnteredOrigin: "assigned",
+                    // statusWhenTruckEnteredOrigin: "processingAtOrigin", // SHOULD CHANGE WHEN IN PROCESSSING NA TALAGA
+                    statusWhenTruckEnteredOrigin: "assigned",
                     rowButtons: { 
                         buttons: ["statusUpdate","view","edit","delete"],
                         condition: [
@@ -790,7 +870,7 @@ var LIMIT = 200,
                     },
                     filterType: "postingDate-scheduledDate",
                     columns: {
-                        list: ["_id","ticketNumber","departureDate","_departureDate_","_departureTime_","region","cluster","origin","route","destination","etd","eta","targetTransitTime","targetCicoTime","vehicle","plateNumber","truckNumber","driver","checker","helper","comments","processingDuration","cicoTime","cicoTimeCapped","transitDuration","status","scheduledDate","shiftSchedule","postedBy","postingDate","lateEntry","action"],
+                        list: ["_id","ticketNumber","departureDate","_departureDate_","_departureTime_","region","cluster","origin","route","destination","etd","eta","targetTransitTime","targetCicoTime","vehicle","chassis","plateNumber","truckNumber","driver","checker","helper","comments","processingDuration","cicoTime","cicoTimeCapped","transitDuration","status","scheduledDate","shiftSchedule","postedBy","postingDate","lateEntry","action"],
                         visible: ["_id","departureDate","origin","destination","vehicle","driver","checker","status","postedBy","lateEntry","action"],
                         hiddenInCustomVisibilityOptions: ["_departureDate_","_departureTime_","plateNumber","truckNumber"],
                         notExport: ["departureDate","vehicle","action"]
@@ -798,7 +878,8 @@ var LIMIT = 200,
                 },
                 vehicles: {
                     gSelect2: {
-                        subtext: ["truck_number","availability"],
+                        subtext: ["plate_number","truck_number"],
+                        subtextAdmin: ["plate_number","truck_number"],
                     },
                     tableButtons: { 
                         buttons: ["refresh","filter","export"], 
@@ -818,6 +899,14 @@ var LIMIT = 200,
                         ] 
                     },
                 },
+                chassis: {
+                    tableButtons: { 
+                        buttons: ["create","refresh","filter","export"], 
+                        condition: [
+                            { roles: ["administrator","developer"], additionalButton: ["data_maintenance"] }
+                        ] 
+                    },
+                },
                 routes: {
                     defaultOrigin: {
                         roles: ["dispatcher"],
@@ -828,6 +917,9 @@ var LIMIT = 200,
                 clusters: {
                     modalFields: ["cluster","region_id","sequence"],
                     columns: ["cluster","region","geofences","sequence","esq1_lq","esq1_oc","esq1_ot","esq2_lq","esq2_oc","esq2_ot","esq3_lq","esq3_oc","esq3_ot","action"],
+                    rowButtons: { 
+                        buttons: ["edit","delete"],
+                    },
                 },
                 notifications: {
                     allowExportTable: true,
@@ -843,7 +935,7 @@ var LIMIT = 200,
                     otr: ["origin","destination","route","sn","plateNumber","targetTransit","actualTimelapse","remarks1","remarks2","truckBasePlant"]
                 },
                 users: {
-                    ignoreRolesWithString: ["t2"]
+                    ignoreRolesWithString: ["t2","fleet"]
                 }
             },
         },
@@ -865,7 +957,36 @@ var LIMIT = 200,
                     },
                 },
                 users: {
-                    ignoreRolesWithString: ["wilcon"]
+                    ignoreRolesWithString: ["wilcon","fleet"]
+                }
+            }
+        },
+        fleet: {
+            id: "fleet",
+            name: "Fleet",
+            dsName: "wd-fleet", // database & storage name = dsName
+            appId: 14, //process.env.APP_ID_COKET1
+            ggsURL: `coca-cola.server93.com`,
+            allowDownloadFromOtherDB: "CokeT1",
+            type: 2,
+            tabCloseAutoLogout: true,
+            loadInBackground: ["VEHICLES","USERS","SESSIONS"],
+            menuGroupOptions: [
+                {
+                    title: "Vehicles",
+                    class: "m-0",
+                    roles: ["user"]
+                }
+            ],
+            custom: {
+                vehicles: {
+                    columns: ["name","cn1","cn2","fuelCapacity","truckModel"],
+                    tableButtons: { 
+                        buttons: ["refresh","filter","export"]
+                    },
+                },
+                users: {
+                    ignoreRolesWithString: ["wilcon","coket2"]
                 }
             }
         },
@@ -878,6 +999,10 @@ var LIMIT = 200,
         {
             pathName: "wilcon",
             tempKey: "_wilcon"
+        },
+        {
+            pathName: "fleet",
+            tempKey: "_fleet"
         }
     ];
 

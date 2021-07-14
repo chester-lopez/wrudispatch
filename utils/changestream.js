@@ -174,6 +174,46 @@ var streamList = {
             };
         }
     },
+    chassis: {
+        watch: () => {
+            return {
+                key: 'chassis',
+                collection: 'chassis',
+                pipeline: [],
+                options: { fullDocument : "updateLookup" }
+            };
+        }
+    },
+    chassis_section: {
+        watch: () => {
+            return {
+                key: 'chassis_section',
+                collection: 'chassis_section',
+                pipeline: [],
+                options: { fullDocument : "updateLookup" }
+            };
+        }
+    },
+    chassis_company: {
+        watch: () => {
+            return {
+                key: 'chassis_company',
+                collection: 'chassis_company',
+                pipeline: [],
+                options: { fullDocument : "updateLookup" }
+            };
+        }
+    },
+    chassis_type: {
+        watch: () => {
+            return {
+                key: 'chassis_type',
+                collection: 'chassis_type',
+                pipeline: [],
+                options: { fullDocument : "updateLookup" }
+            };
+        }
+    },
     trailers: {
         watch: () => {
             return {
@@ -189,6 +229,16 @@ var streamList = {
             return {
                 key: 'shift_schedule',
                 collection: 'shift_schedule',
+                pipeline: [],
+                options: { fullDocument : "updateLookup" }
+            };
+        }
+    },
+    fuel_refill: {
+        watch: () => {
+            return {
+                key: 'fuel_refill',
+                collection: 'fuel_refill',
                 pipeline: [],
                 options: { fullDocument : "updateLookup" }
             };
@@ -372,8 +422,8 @@ const connect = function(io,_ping_,ENVIRONMENT){ //io
     
             socket.emit("*",JSON.stringify({
                 type: "credentials",
-                version: "vv.-2.53.110.1",
-                forceUpdate: [],
+                version: "vv.-2.54.111",
+                forceUpdate: ["wilcon"],
                 // ["coket1","coket2","wilcon"]
                 data: auth.getCredentials(dbName)
             }));
@@ -398,6 +448,9 @@ const connect = function(io,_ping_,ENVIRONMENT){ //io
             } else if (pathname.toLowerCase().indexOf('/wilcon') > -1) {
                 console.log("Hello there, Wilcon!");
                 conn("wilcon",socket);
+            } else if (pathname.toLowerCase().indexOf('/fleet') > -1) {
+                console.log("Hello there, Coke Fleet!");
+                conn("fleet",socket);
             } else {
                 // socket.destroy();
             }
