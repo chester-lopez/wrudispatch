@@ -37,7 +37,6 @@ Array.prototype.insert = function ( index, item ) {
 Array.prototype.isEmpty = function ( index, item ) {
     return this.length == 0;
 };
-
 var OBJECT = {
     sortByKey: o => Object.keys(o).sort().reduce((r, k) => (r[k] = o[k], r), {}),
     getKeyByValue: (o,v) => Object.keys(o).find(key => o[key] === v),
@@ -537,17 +536,25 @@ var TOASTR = {
         else toastr.error(message,null,options);
     }
 };
-var ARRAY = {
-    REMOVE_DUPS: function(arr,key){
-        return arr.reduce((unique, o) => {
-            if(!unique.some(obj => obj[key] === o[key])) {
-              unique.push(o);
-            }
-            return unique;
-        },[]);
-    },
-    MERGE: function(arr=[],prop){
-        return arr.map(function(item) { return item; }).filter(function (item, index, self){ return self.findIndex(x=> x[prop] == item[prop]) === index; });
+const ARRAY = {
+    OBJECT: {
+        getDistinctValues: (a=[],k) => [...new Set(a.map(x => x[k]))],
+        sort: function(obj,key,options={}){
+            obj.sort(function(a, b) {
+                a[key] = a[key] || "";
+                b[key] = b[key] || "";
+    
+                if(typeof a[key] == "number"){
+                    var _a = a[key], _b = b[key], sort;
+                    sort = (options.sortType == "asc") ? (_a-_b) : (_b-_a);
+                    return sort;
+                } else { // will work on dates
+                    var sort = (options.sortType == "asc") ? a[key].toLowerCase().localeCompare(b[key].toLowerCase()) : b[key].toLowerCase().localeCompare(a[key].toLowerCase());
+                    return sort;
+                }
+            });
+            return obj;
+        }
     }
 };
 var PING = {

@@ -1,4 +1,14 @@
 const changelogList = {
+    "2.54.111": {
+        date: "July 14, 2021",
+        fix: ["[Adjustment][Wilcon] Chassis is not required in Dispatch Entry"],
+    },
+    "2.54.110": {
+        date: "July 13, 2021",
+        feature: ["[Feature] Added /Fleet page"],
+        improved: ["[Adjustment][Wilcon] Show sites when cluster is clicked",
+                   "[Feature][Wilcon] 'Trailers' Wilcon calls them 'Chassis'"],
+    },
     "2.53.110": {
         date: "June 28, 2021",
         improved: ["[Adjustment][Wilcon] Checker as not required",

@@ -909,6 +909,7 @@ class Table {
         this.url = x.url || `${x.urlPath}/${CLIENT.id}/${USER.username}/all`;
         this.goto = x.goto;
         this.initializeCallback = x.initializeCallback;
+        this.filterType = x.filterType || "server";
         
         this.dataTableOptions = {
             language: { search: '', searchPlaceholder: "Search", sLengthMenu: "_MENU_" },
@@ -1015,6 +1016,8 @@ class Table {
     initialize(){
         const self = this;
 
+        self.tableFilter();
+
         LIST[this.urlPath] = LIST[this.urlPath] || [];
 
         if ($.fn.DataTable.isDataTable(this.id) ) {
@@ -1084,13 +1087,37 @@ class Table {
         $(`#progress-striped-active .progress-bar`).css("width",`0%`).html(`0%`);
         $("div.tbl-progress-bar").hide();
     }
+    tableFilter(){
+        var self = this;
+
+        USER.filters[self.urlPath] = USER.filters[self.urlPath] || {};
+
+        var filter = {};
+        var userDefinedFilter = USER.filters[self.urlPath];
+
+        if(typeof userDefinedFilter == 'string'){
+            try { filter = JSON.parse(USER.filters[self.urlPath]) } catch(error) {}
+        }
+        if(typeof userDefinedFilter == 'object'){
+            filter = userDefinedFilter;
+        }
+        self.filter = (Object.keys(USER.filters[self.urlPath]).length == 0) ? 
+                        {} :  // (self.filter||{}) // error when reset in geofence
+                        filter;
+    }
     retrieveData(length){
         var self = this;
+        
+        self.tableFilter();
+
         if(length == null && self.progressBar){
             self.progressBar.reset();
         }
         if(length == null || length == LIMIT){
-            var filterExtend = (self.filter)?`/${JSON.stringify(self.filter)}`:``;
+            var finalFilter = (self.filterType == 'basic') ? {} : self.filter;
+            var filterExtend = (self.filter)?`/${JSON.stringify(finalFilter)}`:``;
+
+            // var filterExtend = (self.filter)?`/${JSON.stringify(self.filter)}`:``;
 
             $.ajax({
                 url: `/api/${self.url}${filterExtend}/${self.skip}/${LIMIT}`,
@@ -1144,7 +1171,20 @@ class Table {
     }
     populateRows(data){
         const self = this;
+
+        self.tableFilter();
         
+        if(self.filterType == 'basic'){
+            var filtered = LIST[self.urlPath].filter(x => {
+                var condition = true;
+                Object.keys(self.filter).forEach(key => {
+                    (self.filter[key] && x[key] != self.filter[key]) ? condition = false : null;
+                });
+                return condition;
+            });
+    
+            data = filtered;
+        }
         if($(self.id).length > 0 && data.length > 0){
             // donePopulate = true; - dispatch only
             // $(`#search-btn`).css({"pointer-events":"","color":""});  - dispatch only
@@ -1168,7 +1208,9 @@ class Table {
 
             self.progressBar ? self.progressBar.calculate() : null;
         }
-        
+        if(data.length == 0){
+            $(".dataTables_empty").text("No data available in table");
+        }
         // initializeOtherSettings();
     }
     updateRows(data){
@@ -1183,8 +1225,12 @@ class Table {
     }
     countRows(){
         const self = this;
+        self.tableFilter();
+        
+        var finalFilter = (self.filterType == 'basic') ? {} : self.filter;
+
         $.ajax({
-            url: `/api/${self.urlPath}/${CLIENT.id}/${USER.username}/all/${JSON.stringify(self.filter)}/count`,
+            url: `/api/${self.urlPath}/${CLIENT.id}/${USER.username}/all/${JSON.stringify(finalFilter)}/count`,
             method: "GET",
             timeout: 90000, // 1 minute and 30 seconds
             headers: {
@@ -1196,7 +1242,7 @@ class Table {
 
             self.progressBar = new ProgressBar(count);
             self.skip = 0;
-            LIST[self.urlPath] = [];
+            (self.filterType == 'basic') ? null : LIST[self.urlPath] = [];
             
             if(self.dt) { //  && !disableClearTable - dispatch only
                 self.dt.clear().draw();
@@ -2231,6 +2277,40 @@ var DASHBOARD = {
                 saveFilter();
                 populatePage(GENERATE.RANDOM(36));
             }).val(DATETIME.FORMAT(new Date(selectedDate),"MM/DD/YYYY"));  
+
+            // $('#_date').datepicker({
+            //     minViewMode: 1,
+            //     maxViewMode: 2,
+            //     autoclose: true
+            // });
+
+            // $(`[calendarview]`).click(function(){
+            //     var calendarview = $(this).attr("calendarview");
+            //     if(calendarview == "day"){
+            //         $('#_date').datetimepicker('remove').datetimepicker({
+            //             // minViewMode: 0,
+            //             // maxViewMode: 2,
+            //             todayHighlight: true,
+            //             initialDate: new Date(),
+            //             todayBtn: true,
+            //             autoclose: true
+            //         });
+            //     }
+            //     if(calendarview == "month"){
+            //         $('#_date').datetimepicker('remove').datetimepicker({
+            //             format: "mm/yyyy",
+            //             startView: "year",
+            //             minView: "year",
+            //             todayHighlight: true,
+            //             todayBtn: true,
+            //             autoclose: true
+            //         });
+            //     }
+            //     $(`[calendarview]`).removeClass("active");
+            //     $(`[calendarview="${calendarview}"]`).addClass("active");
+            //     $(this).parents(".dropdown").find(".dropdown-toggle b").html(calendarview.toUpperCase());
+            // });
+            // $(`[calendarview="${(clientCustom.calendarView.dashboard||[])[0]||"day"}"]`).trigger("click");
             
             $(`[name="view-d"]`).change(function(){
                 currentView = $(`[name="view-d"]:checked`).val();
@@ -3352,7 +3432,7 @@ var DISPATCH = {
                             if(CLIENT.id == "wilcon"){
                                 if(!ticket_number) isComplete = false;
                                 if(!driver_id) isComplete = false;
-                                if(!chassis) isComplete = false;
+                                // if(!chassis) isComplete = false;
                                 // if(!checker_id) isComplete = false;
                                 // if(!helper_id) isComplete = false;
                             } else { 
@@ -3436,13 +3516,13 @@ var DISPATCH = {
                                                                 // console.log("NO: Idling");
                                                             }
                                                             // processing
-                                                            if(getIndexOf(val.RULE_NAME,["Inside Geofence","Processing"],"and") && !__events_captured[eventDate] && hourDiff < 24){
+                                                            if(getIndexOf(val.RULE_NAME,["Inside","Processing"],"and") && !__events_captured[eventDate] && hourDiff < 24){
                                                                 gCond = true;
                                                                 __events_captured[eventDate] = "processingAtOrigin";
                                                                 // console.log("NO: Processing");
                                                             }
                                                             // queueing
-                                                            if(getIndexOf(val.RULE_NAME,["Inside Geofence","Queueing"],"and") && !__events_captured[eventDate] && hourDiff < 24){
+                                                            if(getIndexOf(val.RULE_NAME,["Inside","Queueing"],"and") && !__events_captured[eventDate] && hourDiff < 24){
                                                                 gCond = true;
                                                                 __events_captured[eventDate] = "queueingAtOrigin";
                                                                 // console.log("NO: Queueing");
@@ -4581,7 +4661,7 @@ var DISPATCH = {
                         if(CLIENT.id == "wilcon"){
                             (ticket_number == null || (ticket_number != null && ticket_number.isEmpty())) ? invalid_arr.push("ticket_number") : $(`#ticket_number`).css(css_default);
                             (driver_id == null || (driver_id != null && driver_id.isEmpty())) ? invalid_arr.push("driver_id") : $(`#driver_id`).css(css_default);
-                            (chassis == null || (chassis != null && chassis.isEmpty())) ? invalid_arr.push("chassis") : $(`#chassis`).css(css_default);
+                            // (chassis == null || (chassis != null && chassis.isEmpty())) ? invalid_arr.push("chassis") : $(`#chassis`).css(css_default);
                             // (checker_id == null || (checker_id != null && checker_id.isEmpty())) ? invalid_arr.push("checker_id") : $(`#checker_id`).css(css_default);
                             // (helper_id == null || (helper_id != null && helper_id.isEmpty())) ? invalid_arr.push("helper_id") : $(`#helper_id`).css(css_default);
                             (scheduled_date == null || (scheduled_date != null && scheduled_date.isEmpty())) ? invalid_arr.push("scheduled_date") : $(`#scheduled_date`).css(css_default);
@@ -5355,12 +5435,12 @@ var DISPATCH = {
                                                                         obj.events_captured[eventDate] = "idlingAtOrigin";
                                                                     }
                                                                     // processing
-                                                                    if(getIndexOf(val.RULE_NAME,["Inside Geofence","Processing"],"and") && !obj.events_captured[eventDate] && hourDiff < 24){
+                                                                    if(getIndexOf(val.RULE_NAME,["Inside","Processing"],"and") && !obj.events_captured[eventDate] && hourDiff < 24){
                                                                         gCond = true;
                                                                         obj.events_captured[eventDate] = "processingAtOrigin";
                                                                     }
                                                                     // queueing
-                                                                    if(getIndexOf(val.RULE_NAME,["Inside Geofence","Queueing"],"and") && !obj.events_captured[eventDate] && hourDiff < 24){
+                                                                    if(getIndexOf(val.RULE_NAME,["Inside","Queueing"],"and") && !obj.events_captured[eventDate] && hourDiff < 24){
                                                                         gCond = true;
                                                                         obj.events_captured[eventDate] = "queueingAtOrigin";
                                                                     }
@@ -10159,7 +10239,7 @@ var LOCATIONS = {
                         '_row':  obj._row,
                         'Cluster': obj.cluster || "-",
                         'Region': region || "-",
-                        'Geofences': totalGeofences,
+                        'Geofences': totalGeofences + `<a viewSites href="javascript:void(0);" class="ml-2" style="font-size: 11px;"><i class="la la-search-plus" style="margin-right: 3px;"></i>View sites</a>`,
                         'Sequence': obj.sequence || "-",
                         'esq1_lq': getEscalationUsers("escalation1","lq"),
                         'esq1_oc': getEscalationUsers("escalation1","oc"),
@@ -10177,6 +10257,15 @@ var LOCATIONS = {
                     const self = this;
                     TABLE.ROW_LISTENER({table_id:self.id,_row,urlPath,_id,initializeModal,
                         deleteModalContent: `All of the geofences linked to this cluster will be deleted too. Are you sure you still want to delete this cluster?`,
+                        additionalListeners: function(){
+                            $(self.id).on('click', `[_row="${_row}"] [viewSites],[_row="${_row}"] + tr.child [viewSites]`,function(e){
+                                e.stopImmediatePropagation();
+                                USER.filters["geofences"] = { cluster_id: _id };
+                                window.history.pushState({}, null, `${window.location.pathname}#geofences`);
+                                PAGE.GO_TO();
+                            });
+                        
+                        }
                     });
                 };
                 table.filterListener = function(){
@@ -10513,6 +10602,7 @@ var LOCATIONS = {
                         id: "#tbl-geofences",
                         urlPath,
                         goto: "geofences",
+                        filterType: "basic",
                         dataTableOptions: {
                             columns: TABLE.COL_ROW(CUSTOM.COLUMN.geofences).column,
                             order: [[ 0, "desc" ]],
@@ -10532,12 +10622,17 @@ var LOCATIONS = {
                             }
                         }
                     });
-                table.filter = {};
+                // table.filter = {};
                 table.setButtons({
                     loadView: ["create"],
                     actions:{
                         refresh: function(){ table.countRows(); },
+                        filter: function(){
+                            $(`#cv-container`).hide("slide", {direction:'right'},100);
+                            $(`#filter-container`).toggle("slide", {direction:'right'},100);
+                        },
                         column: function(){
+                            $(`#filter-container`).hide("slide", {direction:'right'},100);
                             $(`#cv-container`).toggle("slide", {direction:'right'},100);
                         },
                     }
@@ -10644,6 +10739,25 @@ var LOCATIONS = {
                             }
                         });
                     });
+                    
+                    if(table.filter && Object.keys(table.filter).length > 0) {
+                        $(`.dt-button[data-original-title="Filter"]`).click();
+                        $('.clearable').trigger("input");
+                    }
+                    FILTER.RESET({
+                        selectEl: `#_region_id,#_cluster_id`,
+                        urlPath,
+                        populateTable: function(){
+                            FILTER.STATUS = "new";
+                            $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
+        
+                            table.countRows();
+                        }
+                    });
+                    FILTER.CLICK( table , urlPath, true, [
+                        { id: "#_region_id", key: "region_id", type: "string" }, // string, number, date
+                        { id: "#_cluster_id", key: "cluster_id", type: "string" }, // string, number, date
+                    ]);
                 }
         
                 var initializeModal = function(x){
@@ -10897,6 +11011,20 @@ var LOCATIONS = {
                         if(_userData) { 
                             TABLE.FINISH_LOADING.UPDATE();
                         }
+                        
+                        // regions
+                        var regionOptions = `<option value="">&nbsp;</option>`;
+                        (LIST["regions"]||[]).forEach(val => {
+                            regionOptions += `<option value="${val._id}">${val.region}</option>`;
+                        });
+                        $(`#_region_id`).html(regionOptions).select2().val(table.filter.region_id || "").trigger("change");
+
+                        // cluster
+                        var clusterOptions = `<option value="">&nbsp;</option>`;
+                        (LIST["clusters"]||[]).forEach(val => {
+                            clusterOptions += `<option value="${val._id}">${val.cluster}</option>`;
+                        });
+                        $(`#_cluster_id`).html(clusterOptions).select2().val(table.filter.cluster_id || "").trigger("change");
                     });
                 }
                 /******** END TABLE CHECK ********/
@@ -11920,6 +12048,9 @@ var FUEL_REFILL = {
                     { name: "Time", required: true, error: ["Time is not valid."] },
                     { name: "Quantity", key: "Volume", required: true },
                     { name: "Vehicle License Number", required: true },
+                    { name: "VehicleID", required: false },
+                    { name: "TimeStamp", required: false },
+                    { name: "Volume", required: false },
                 ],
             };
 
@@ -11967,6 +12098,7 @@ var FUEL_REFILL = {
             function convert(import_data,filename){
                 $(listChildEl).html("Converting file...");
                 filename = filename.split('.').slice(0, -1).join('.');
+
                 var errorList = {},
                     warningList = {},
                     importData = [],
@@ -11983,117 +12115,122 @@ var FUEL_REFILL = {
                     };
                 
                 if(import_data.length > 0){
-                    import_data.forEach((val,i) => {
-                        var license_number = val["Vehicle License Number"],
-                            username = (LIST["vehicles"].find(x => x.CN1 == license_number || x.CN2 == license_number || x.name == license_number)||{}).username,
-                            delivery_date = DATETIME.FORMAT(parseDateExcel(val["Delivery Date"]),"MM/DD/YYYY"),
-                            delivery_time = moment(new Date(parseDateExcel(val["Time"]))).format("H:mm:ss"),
-                            errorShipment = false,
-                            identifierKey = val.__rowNum__;
-
-                        var obj = {
-                                "VehicleID": "",
-                                "TimeStamp": "",
-                                "Volume": ""
-                            },
-                            addToNoteList = function(text,causes,key,type,isField){
-                                key = key || (Number(val.__rowNum__) + 1);
-                                if(type == "error"){
-                                    var causesHTML = (causes) ? `<ul level=2><li>${causes.join("</li><li>")}</li></ul>` : "";
-                                    (errorList[key]) ? errorList[key].push(text+causesHTML) : errorList[key] = [(text+causesHTML)];
-                                    errorShipment = true;
-                                } 
-                                if(type == "warning"){
-                                    var causesHTML = (causes) ? `<ul level=2><li>${causes.join("</li><li>")}</li></ul>` : "";
-                                    text = (isField === true) ? `<small class="text-muted">[FIELD NOT SAVED]</small> ${text}` : text;
-                                    (warningList[key]) ? warningList[key].push(text+causesHTML) : warningList[key] = [(text+causesHTML)];
-                                }
-                            };
-                            
-                        if((val.__rowNum__).toString()._trim()){
-                            requiredFields[CLIENT.id].forEach(_val_ => {
-                                if(val[_val_.name].toString()._trim()){
-                                    // okay
-                                    if(_val_.key){
-                                        obj[_val_.key] = val[_val_.name].toString()._trim();
-                                    } else {
-                                        deepChecking(_val_.name,_val_.error);
+                    console.log(import_data)
+                    if(import_data[0]["VehicleID"] != undefined && import_data[0]["TimeStamp"] != undefined && import_data[0]["Volume"] != undefined) {
+                        importData = import_data;
+                    } else {
+                        import_data.forEach((val,i) => {
+                            var license_number = val["Vehicle License Number"],
+                                username = (LIST["vehicles"].find(x => x.CN1 == license_number || x.CN2 == license_number || x.name == license_number)||{}).username,
+                                delivery_date = DATETIME.FORMAT(parseDateExcel(val["Delivery Date"]),"MM/DD/YYYY"),
+                                delivery_time = moment(new Date(parseDateExcel(val["Time"]))).format("H:mm:ss"),
+                                errorShipment = false,
+                                identifierKey = val.__rowNum__;
+    
+                            var obj = {
+                                    "VehicleID": "",
+                                    "TimeStamp": "",
+                                    "Volume": ""
+                                },
+                                addToNoteList = function(text,causes,key,type,isField){
+                                    key = key || (Number(val.__rowNum__) + 1);
+                                    if(type == "error"){
+                                        var causesHTML = (causes) ? `<ul level=2><li>${causes.join("</li><li>")}</li></ul>` : "";
+                                        (errorList[key]) ? errorList[key].push(text+causesHTML) : errorList[key] = [(text+causesHTML)];
+                                        errorShipment = true;
+                                    } 
+                                    if(type == "warning"){
+                                        var causesHTML = (causes) ? `<ul level=2><li>${causes.join("</li><li>")}</li></ul>` : "";
+                                        text = (isField === true) ? `<small class="text-muted">[FIELD NOT SAVED]</small> ${text}` : text;
+                                        (warningList[key]) ? warningList[key].push(text+causesHTML) : warningList[key] = [(text+causesHTML)];
                                     }
-                                } else {
-                                    if(_val_.required === true){
-                                        // error
-                                        addToNoteList(`Missing data in '${_val_.name}'. `,null,val[identifierKey],"error");
+                                };
+                                
+                            if((val.__rowNum__).toString()._trim()){
+                                requiredFields[CLIENT.id].forEach(_val_ => {
+                                    if((val[_val_.name]||"").toString()._trim()){
+                                        // okay
+                                        if(_val_.key){
+                                            obj[_val_.key] = val[_val_.name].toString()._trim();
+                                        } else {
+                                            deepChecking(_val_.name,_val_.error);
+                                        }
                                     } else {
-                                        if(_val_.codependent){
-                                            if(val[_val_.codependent]){
-                                                // error
-                                                addToNoteList(`Missing data in '${_val_.name}'. `,null,val[identifierKey],"warning");
-                                            } else {
-                                                // okay. no error
-                                                obj[_val_.key] = "";
+                                        if(_val_.required === true){
+                                            // error
+                                            addToNoteList(`Missing data in '${_val_.name}'. `,null,val[identifierKey],"error");
+                                        } else {
+                                            if(_val_.codependent){
+                                                if(val[_val_.codependent]){
+                                                    // error
+                                                    addToNoteList(`Missing data in '${_val_.name}'. `,null,val[identifierKey],"warning");
+                                                } else {
+                                                    // okay. no error
+                                                    obj[_val_.key] = "";
+                                                }
                                             }
                                         }
                                     }
-                                }
-                            });
-                        } else {
-                            addToNoteList(`Missing data in '${identifierKey}'.`,null,val[identifierKey],"error");
-                        }
-                        
-                        function deepChecking(columnKey,error){
-                            if(columnKey == "Vehicle License Number"){
-                                if(username){
-                                    obj["VehicleID"] = username;
-                                } else {
-                                    addToNoteList(`Missing data in '${columnKey}'. `,null,val[identifierKey],"error");
-                                }
+                                });
+                            } else {
+                                addToNoteList(`Missing data in '${identifierKey}'.`,null,val[identifierKey],"error");
                             }
-
-                            if(columnKey == "Delivery Date"){
-                                var momentDeliveryDate = moment(delivery_date, 'MM/DD/YYYY', true);
-                                var formattedDeliveryDate = momentDeliveryDate.format("MM/DD/YYYY");
-                                if(momentDeliveryDate.isValid()){
-                                    if(moment(delivery_time, 'H:mm:ss', true).isValid()){
-                                        // Remove the milliseconds and 'Z'
-                                        // Original: 2021-06-18T16:08:26.000Z
-                                        // Output: 2021-06-18T16:08:26
-                                        obj["TimeStamp"] = new Date(`${formattedDeliveryDate}, ${delivery_time}`).toISOString().split('.')[0];
+                            
+                            function deepChecking(columnKey,error){
+                                if(columnKey == "Vehicle License Number"){
+                                    if(username){
+                                        obj["VehicleID"] = username;
+                                    } else {
+                                        addToNoteList(`Missing data in '${columnKey}'. `,null,val[identifierKey],"error");
                                     }
-                                } else {
-                                    addToNoteList(`Invalid data in '${columnKey}'.  Possible causes:`,error,val[identifierKey],"error",true);
                                 }
-                            }
-
-                            if(columnKey == "Time"){
-                                if(moment(delivery_time, 'H:mm:ss', true).isValid()){
+    
+                                if(columnKey == "Delivery Date"){
                                     var momentDeliveryDate = moment(delivery_date, 'MM/DD/YYYY', true);
                                     var formattedDeliveryDate = momentDeliveryDate.format("MM/DD/YYYY");
                                     if(momentDeliveryDate.isValid()){
-                                        // Remove the milliseconds and 'Z'
-                                        // Original: 2021-06-18T16:08:26.000Z
-                                        // Output: 2021-06-18T16:08:26
-                                        obj["TimeStamp"] = new Date(`${formattedDeliveryDate}, ${delivery_time}`).toISOString().split('.')[0];
+                                        if(moment(delivery_time, 'H:mm:ss', true).isValid()){
+                                            // Remove the milliseconds and 'Z'
+                                            // Original: 2021-06-18T16:08:26.000Z
+                                            // Output: 2021-06-18T16:08:26
+                                            obj["TimeStamp"] = new Date(`${formattedDeliveryDate}, ${delivery_time}`).toISOString().split('.')[0];
+                                        }
+                                    } else {
+                                        addToNoteList(`Invalid data in '${columnKey}'.  Possible causes:`,error,val[identifierKey],"error",true);
                                     }
-                                } else {
-                                    addToNoteList(`Invalid data in '${columnKey}'.  Possible causes:`,error,val[identifierKey],"error",true);
+                                }
+    
+                                if(columnKey == "Time"){
+                                    if(moment(delivery_time, 'H:mm:ss', true).isValid()){
+                                        var momentDeliveryDate = moment(delivery_date, 'MM/DD/YYYY', true);
+                                        var formattedDeliveryDate = momentDeliveryDate.format("MM/DD/YYYY");
+                                        if(momentDeliveryDate.isValid()){
+                                            // Remove the milliseconds and 'Z'
+                                            // Original: 2021-06-18T16:08:26.000Z
+                                            // Output: 2021-06-18T16:08:26
+                                            obj["TimeStamp"] = new Date(`${formattedDeliveryDate}, ${delivery_time}`).toISOString().split('.')[0];
+                                        }
+                                    } else {
+                                        addToNoteList(`Invalid data in '${columnKey}'.  Possible causes:`,error,val[identifierKey],"error",true);
+                                    }
                                 }
                             }
-                        }
-
-                        // importData.push(obj);
-                        if(errorShipment === false){
-                            importData.push(obj); // merged
-                        } else {
-                            delete val.__rowNum__;
-                            val["Delivery Date"] = delivery_date;
-                            val["Time"] = delivery_time;
-                            errorData.push(val);
-                        }
-
-                    });
-                    console.log("errorList",errorList);
-                    console.log("LENGTH: "+importData.length);
-                    console.log("final",importData);
+    
+                            // importData.push(obj);
+                            if(errorShipment === false){
+                                importData.push(obj); // merged
+                            } else {
+                                delete val.__rowNum__;
+                                val["Delivery Date"] = delivery_date;
+                                val["Time"] = delivery_time;
+                                errorData.push(val);
+                            }
+    
+                        });
+                        console.log("errorList",errorList);
+                        console.log("LENGTH: "+importData.length);
+                        console.log("final",importData);
+                    }
 
                     exportFiles(importData,errorData,filename);
                 } else {
@@ -12200,6 +12337,7 @@ var FUEL_REFILL = {
                 tempImportData.forEach(val => { callAjax(val); });
 
                 function doneAjax(){
+                    $(listChildEl).html(`Importing data to WRU Main (${successfulData.length}/${importData.length})...`);
                     countAjax++;
                     if(tempImportData.length == countAjax){
                         if(errorValidTemplate.length > 0){
@@ -13421,7 +13559,7 @@ var PAGE = {
                 function: function() { LOCATIONS.FUNCTION.clusters.init() },
                 buttons: {
                     table:["create","refresh","column"],
-                    row:["edit","delete"]
+                    row: getRowButtons("clusters")
                 }
             },
             geofences: {
@@ -13431,7 +13569,7 @@ var PAGE = {
                 display: function() { return views.geofences(); },
                 function: function() { LOCATIONS.FUNCTION.geofences.init() },
                 buttons: {
-                    table:["refresh","column"],
+                    table:["refresh","filter","column"],
                     row: ((USER.role == "developer") ? ["edit","delete"] : ["edit"])
                 }
             },
@@ -13503,7 +13641,6 @@ var PAGE = {
     }
 };
 GET.STATUS = function(status=""){
-    var color = "label-default";
     var stat = { color: "label-default", text: "" };
     if(status == "plan") stat = { color: "label-info", text: "Plan" }; // light blue
     if(status == "assigned") stat = { color: "label-brown", text: "Assigned" }; // brown
@@ -13542,6 +13679,87 @@ var FILTER = {
         }
         $(el).data('daterangepicker').setStartDate(start_formatted);
         $(el).data('daterangepicker').setEndDate(end_formatted);
+    },
+    CLICK: function( table, urlPath, simpleTableFilter, elements ){
+        $(`#filter-btn`).click(function(){
+            var _filter = {};
+
+            elements.forEach(val => {
+                var value = $(val.id).val();
+                if(value){
+                    if(val.type == 'date')
+                        _filter[val.key] = FILTER.DATE(value);
+                    
+                    if(val.type == 'string'){
+                        if (typeof val.customValue === 'function') { 
+                            var _value = val.customValue(value);
+                            _value ? _filter[val.key] = _value : null; 
+                        }
+                        else  _filter[val.key] = value;
+                    }
+    
+                    if(val.type == 'number')
+                        _filter[val.key] = Number(value);
+    
+                    if(val.type == 'array')
+                        _filter[val.key] = { $in: value };
+                }
+            });
+
+            FILTER.STATUS = "new";
+
+            USER.filters[urlPath] = _filter;
+
+            table.dt.clear().draw();
+
+            if(simpleTableFilter){
+                var filtered = LIST[urlPath].filter(x => {
+                    var condition = true;
+                    Object.keys(_filter).forEach(key => {
+                        (x[key] != _filter[key]) ? condition = false : null;
+                    });
+                    return condition;
+                });
+                table.populateRows(filtered);
+                table.hideProgressBar();
+            } else {
+                $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
+                table.countRows();
+            }
+        });
+
+        $(`#save-btn`).click(function(){
+            USER.filters[urlPath] = USER.filters[urlPath] || {};
+
+            var data = {};
+            var filter = {};
+            var userDefinedFilter = USER.filters[urlPath];
+    
+            if(typeof userDefinedFilter == 'string'){
+                try { filter = JSON.parse(USER.filters[urlPath]) } catch(error) {}
+            }
+            if(typeof userDefinedFilter == 'object'){
+                filter = userDefinedFilter;
+            }
+
+            data[`filter.${urlPath}`] = JSON.stringify(filter);
+
+            console.log(filter);
+    
+            $.ajax({
+                url: `/api/users/${CLIENT.id}/${USER.username}/${USER.username}`,
+                method: "put",
+                headers: {
+                    "Content-Type": "application/json; charset=utf-8",
+                    "Authorization": SESSION_TOKEN
+                },
+                data: JSON.stringify(data)
+            }).done(docs => {
+                toastr.success("Filter saved!");
+            }).fail(error => {
+                console.log("Error",error);
+            });  
+        });
     },
     ISEMPTY: function(x){
         var emptyFilter = true;
@@ -13615,7 +13833,7 @@ var FILTER = {
                 if(x.dateElnoVal) $(x.dateElnoVal).removeClass('x onX').val('').change().blur();
             }
             if(x.selectEl){
-                $(x.selectEl).val("all");
+                $(x.selectEl).val("all").trigger("change");
             }
 
             var data = {};
@@ -15249,6 +15467,7 @@ const views = new function(){
         },
         dashboard: function(){
             var summaryStatusHTML = "";
+            var calendarViewHTML = "";
 
             (clientCustom.visibleStatus||[]).forEach(val => {
                 switch (val) {
@@ -15336,6 +15555,36 @@ const views = new function(){
                         break;
                 }
             });
+            if((clientCustom.calendarView.dashboard||[]).length > 1){
+                var options = "";
+                (clientCustom.calendarView.dashboard||[]).forEach(val => {
+                    switch (val) {
+                        case "day":
+                            options += `<li><a href="javascript:void(0);" calendarView="day" class="active"><span>Day</span></a></li>`;
+                            break;
+                        case "month":
+                            options += `<li><a href="javascript:void(0);" calendarView="month"><span>Month</span></a></li>`;
+                            break;
+                        case "year":
+                            options += `<li><a href="javascript:void(0);" calendarView="year"><span>Year</span></a></li>`;
+                            break;
+                        default:
+                            break;
+                    }
+                });
+                calendarViewHTML = `<span class="input-group-addon p-0">
+                                        <ul class="nav navbar-nav navbar-right">
+                                            <li class="dropdown">
+                                                <a href="#" data-toggle="dropdown" class="dropdown-toggle p-0" style="line-height:  10px !important;color: unset !important;padding: 6px 12px !important;vertical-align: top;display: inline;" aria-expanded="false">
+                                                    <span><b>DAY</b></span>
+                                                </a>
+                                                <ul class="dropdown-menu logged-user-menu" style="min-width: 80px;">${options}</ul>
+                                            </li>
+                                        </ul>
+                                    </span>`;
+            } else {
+                calendarViewHTML = `<span class="input-group-addon"><i id="icon-date" class="la la-calendar"></i></span>`;
+            }
 
             return `<div id="dashboard-page" class="page-box row">
                         <div class="col-sm-12" style="height: 66px;">
@@ -15357,7 +15606,7 @@ const views = new function(){
                             <span class="float-right" style="max-width:200px;display:inline-block;">
                                 <span>
                                     <div class="input-group">
-                                        <span class="input-group-addon"><i id="icon-date" class="la la-calendar"></i></span>
+                                        ${calendarViewHTML}
                                         <input id="_date" class="form-control" type="text" readonly>
                                     </div>
                                 </span>
@@ -15790,6 +16039,14 @@ const views = new function(){
         },
         geofences: function(){
             return `<div class="page-box row">
+                ${SLIDER.FILTER(`<div class="mt-2">
+                                    <div style="font-size: 10px;">Region:</div>
+                                    <select id="_region_id" class="form-control" style="width:100%;"> </select>
+                                </div>
+                                <div class="mt-2">
+                                    <div style="font-size: 10px;">Cluster:</div>
+                                    <select id="_cluster_id" class="form-control" style="width:100%;"></select>
+                                </div>`)}
                         <div class="col-sm-12 mt-2">
                             <small class="text-muted mb-2 d-block font-italic">Note: Changes made in <u data-toggle="tooltip" title="${CLIENT.ggsURL}">WRU Main</u> will reflect here after 2-4 minutes.</small>
                             <div class="table-wrapper">
@@ -16246,7 +16503,7 @@ const modalViews = new function(){
                                             <select id="vehicle" class="select-multiple-basic" style="width:100%;"></select>
                                         </div>
                                         <div class="col-sm-3">
-                                            <small><span class="text-danger">*</span>Chassis:</small>
+                                            <small>Chassis:</small>
                                             <select id="chassis" class="select-multiple-basic" style="width:100%;"></select>
                                         </div>
                                         <div class="col-sm-6" style="word-break: break-word;">
@@ -16517,7 +16774,7 @@ const modalViews = new function(){
             import: function(){
                 return `<div class="page-box row">
                             <div class="col-md-12">
-                                <span class="text-muted">Click <a id="download-template-btn" href="javascript:void(0);"class="font-normal">here</a> to download the excel template.</span>
+                                <span class="text-muted"><div style="color: #5e6773;font-weight: normal;margin-bottom: 6px;">Accepts custom tempate file** and converted file.</div>**Click <a id="download-template-btn" href="javascript:void(0);"class="font-normal">here</a> to download the excel template.</span>
                                 <small class="text-info d-block font-italic">Excel Template Updated On: <u>05/07/2021</u></small>
                             </div>
                             <div class="col-md-12"><hr></div>
@@ -16535,7 +16792,7 @@ const modalViews = new function(){
                                         </div>
                                     </div>
                                     <div class="mb-2">Failed to Import
-                                        <img src="https://icon-library.com/images/more-info-icon/more-info-icon-27.jpg" style="margin-top: -3px;" class="ml-1" width="12" data-toggle="tooltip" title="Data that were successfully converted but failed to import to WRU Main due to some reasons such as connection failure.">
+                                        <img src="https://icon-library.com/images/more-info-icon/more-info-icon-27.jpg" style="margin-top: -3px;" class="ml-1" width="12" data-toggle="tooltip" title="Data that were successfully converted but failed to import to WRU Main due to some reasons such as connectivity issue.">
                                         <div id="reportImportFailureList">
                                             <div class="text-muted font-italic">No link available.</div>
                                         </div>

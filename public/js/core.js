@@ -815,6 +815,7 @@ const WEBSOCKET = {
                     return value || defaultValue;
                 };
 
+                clientCustom.calendarView = {};
                 clientCustom.filterType = {};
                 clientCustom.columns = {};
                 clientCustom.gSelect2 = {};
@@ -839,6 +840,8 @@ const WEBSOCKET = {
                 clientCustom.columns.notifications = setValue("custom.notifications.columns", []);
                 clientCustom.columns.clusters = setValue("custom.clusters.columns", []);
                 
+                // calendarView
+                clientCustom.calendarView.dashboard = setValue("custom.dashboard.calendarView", ["day"]);
                 
                 // gSelect2
                 clientCustom.gSelect2.vehicles = setValue("custom.vehicles.gSelect2", {});
@@ -870,6 +873,7 @@ const WEBSOCKET = {
 
                 // rowButtons
                 clientCustom.rowButtons.dispatch = setValue("custom.dispatch.rowButtons", { buttons: [] });
+                clientCustom.rowButtons.clusters = setValue("custom.clusters.rowButtons", { buttons: [] });
             }
 
             SOCKET = io();

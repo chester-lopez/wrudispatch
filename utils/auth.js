@@ -775,8 +775,12 @@ var LIMIT = 200,
             type: 1,
             tabCloseAutoLogout: true,
             loadInBackground: ["VEHICLES","REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","USERS","VEHICLES_HISTORY","NOTIFICATIONS","SESSIONS"],
+            allowRolesToViewAs: {
+                developer: ["developer","administrator","management","dispatcher","user"],
+            },
             custom: {
                 dashboard: {
+                    // calendarView: ["day"],
                     visibleStatus: ["in_transit","total_shipment","incomplete","assigned","queueingAtOrigin","processingAtOrigin","complete"]
                 },
                 dispatch: {
@@ -813,6 +817,9 @@ var LIMIT = 200,
                 clusters: {
                     modalFields: ["cluster","region_id"],
                     columns: ["cluster","region","geofences","esq1_lq","esq1_oc","esq1_ot","esq2_lq","esq2_oc","esq2_ot","esq3_lq","esq3_oc","esq3_ot","action"],
+                    rowButtons: { 
+                        buttons: ["edit","delete"],
+                    },
                 },
                 notifications: {
                     columns: ["shipmentNumber","delayType","escalation","timelapse","site","status","dateTime","sentTo","action"],
@@ -838,8 +845,13 @@ var LIMIT = 200,
             ggsURL: `wru.server93.com`,
             type: 1,
             loadInBackground: ["VEHICLES","REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE","NOTIFICATIONS","SESSIONS"],
+            allowRolesToViewAs: {
+                developer: ["developer","administrator","management","dispatcher","user"],
+                administrator: ["administrator","management","dispatcher","user"],
+            },
             custom: {
                 dashboard: {
+                    // calendarView: ["day","month"],
                     visibleStatus: ["total_shipment","scheduled","assigned","processingAtOrigin","in_transit","onSite","returning","complete","incomplete"], // "scheduled",
                     filterType: "postingDate-scheduledDate"
                 },
@@ -905,6 +917,9 @@ var LIMIT = 200,
                 clusters: {
                     modalFields: ["cluster","region_id","sequence"],
                     columns: ["cluster","region","geofences","sequence","esq1_lq","esq1_oc","esq1_ot","esq2_lq","esq2_oc","esq2_ot","esq3_lq","esq3_oc","esq3_ot","action"],
+                    rowButtons: { 
+                        buttons: ["edit","delete"],
+                    },
                 },
                 notifications: {
                     allowExportTable: true,
