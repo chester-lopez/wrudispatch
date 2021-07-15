@@ -1668,6 +1668,7 @@ var DASHBOARD = {
                 _siteFilter = USER.filters.dashboard.baseplant || "",
                 selectedDate = USER.filters.dashboard.selectedDate || new Date(),
                 currentView = USER.filters.dashboard.currentView || "destination",
+                calendarview = USER.filters.dashboard.calendarview || "day",
                 summary = null,
                 columnIndexes = {},
                 resetSummaryData = function(){
@@ -1745,7 +1746,25 @@ var DASHBOARD = {
                         getData = function(length){
                             if(length == null || length == LIMIT){
                                 // , status:{$ne:"plan"} - plan is still counted in TOTAL SHIPMENT
-                                var  dateFilter = FILTER.DATERANGE(DATETIME.FORMAT(new Date(selectedDate),"MM/DD/YYYY")),
+
+                                var finalSelectedDate = DATETIME.FORMAT(new Date(selectedDate),"MM/DD/YYYY");
+                                if(calendarview == "month"){
+                                    var monthYear = moment(selectedDate).format("MM/DD/YYYY").split("/");
+                                    console.log('selectedDate',selectedDate)
+                                    var month = monthYear[0];
+                                    var year = monthYear[2];
+
+                                    // month in moment is 0 based, so 9 is actually october, subtract 1 to compensate
+                                    // array is 'year', 'month', 'day', etc
+                                    var startDate = moment([year, month - 1]);
+                                
+                                    // Clone the value before .endOf()
+                                    var endDate = moment(startDate).endOf('month');
+
+                                    finalSelectedDate = `${startDate.format("MM/DD/YYYY")} - ${endDate.format("MM/DD/YYYY")}`;
+                                    console.log("finalSelectedDate",finalSelectedDate)
+                                }
+                                var  dateFilter = FILTER.DATERANGE(finalSelectedDate),
                                     _filter = {posting_date: dateFilter};
                                 if(clientCustom.filterType.dashboard == "postingDate-scheduledDate"){
                                     if(moment(selectedDate).format("MM/DD/YYYY") == DEFAULT_DATE){
@@ -1916,7 +1935,7 @@ var DASHBOARD = {
                 populateWithGeofence = function(){
                     resetSummaryData();
 
-                    Object.keys(LIST[urlPath1]).forEach(key => {
+                    Object.keys(LIST[urlPath1]||{}).forEach(key => {
                         var oldData =  JSON.stringify(LIST[urlPath1][key]);
 
                         LIST[urlPath1][key].w_in_cico = 0;
@@ -1947,6 +1966,7 @@ var DASHBOARD = {
                         if(filter != "ALL") __filter__.region = filter;
                         if(_siteFilter != "") __filter__.baseplant = _siteFilter;
                         if(currentView != "destination") __filter__.currentView = currentView;
+                        if(calendarview != "day") __filter__.calendarview = calendarview;
                         
                         USER.filters.dashboard = setFilter || __filter__;
                         GET.AJAX({
@@ -2262,55 +2282,86 @@ var DASHBOARD = {
                 
             PAGE.TOOLTIP(); // add after dt is initialized
 
-            populatePage(random);
+            // populatePage(random);
 
             /******** EVENT LISTENER ********/
+            $('#_date').replaceWith(`<input id="_date" class="form-control" type="text" readonly>`);
             $(`#_date`).daterangepicker({
                 opens: 'left',
                 singleDatePicker:true,
                 autoUpdateInput: false,
                 maxDate: new Date(),
-                startDate: DATETIME.FORMAT(new Date(selectedDate),"MM/DD/YYYY")
+                startDate: DATETIME.FORMAT(new Date(selectedDate),"MM/DD/YYYY"),
+                autoApply: true
             }, function(start, end, label) {
                 $($(this)["0"].element).val(DATETIME.FORMAT(new Date(start),"MM/DD/YYYY"));
                 selectedDate = new Date(start);
                 saveFilter();
                 populatePage(GENERATE.RANDOM(36));
-            }).val(DATETIME.FORMAT(new Date(selectedDate),"MM/DD/YYYY"));  
+            }).on('apply.daterangepicker', function (ev, picker) {
+                $(this).val(DATETIME.FORMAT(new Date(picker.startDate),"MM/DD/YYYY"));
+                selectedDate = new Date(picker.startDate);
+                saveFilter();
+                populatePage(GENERATE.RANDOM(36));
 
-            // $('#_date').datepicker({
-            //     minViewMode: 1,
-            //     maxViewMode: 2,
-            //     autoclose: true
-            // });
+            });
+            $(`#_date`).trigger('apply.daterangepicker',{ startDate: DATETIME.FORMAT(new Date(selectedDate),"MM/DD/YYYY") });
 
-            // $(`[calendarview]`).click(function(){
-            //     var calendarview = $(this).attr("calendarview");
-            //     if(calendarview == "day"){
-            //         $('#_date').datetimepicker('remove').datetimepicker({
-            //             // minViewMode: 0,
-            //             // maxViewMode: 2,
-            //             todayHighlight: true,
-            //             initialDate: new Date(),
-            //             todayBtn: true,
-            //             autoclose: true
-            //         });
-            //     }
-            //     if(calendarview == "month"){
-            //         $('#_date').datetimepicker('remove').datetimepicker({
-            //             format: "mm/yyyy",
-            //             startView: "year",
-            //             minView: "year",
-            //             todayHighlight: true,
-            //             todayBtn: true,
-            //             autoclose: true
-            //         });
-            //     }
-            //     $(`[calendarview]`).removeClass("active");
-            //     $(`[calendarview="${calendarview}"]`).addClass("active");
-            //     $(this).parents(".dropdown").find(".dropdown-toggle b").html(calendarview.toUpperCase());
-            // });
-            // $(`[calendarview="${(clientCustom.calendarView.dashboard||[])[0]||"day"}"]`).trigger("click");
+
+            $(`[calendarview]`).click(function(){
+                calendarview = $(this).attr("calendarview");
+                if(calendarview == "day"){
+                    // $('#_date').datepicker('remove').datepicker({
+                    //     // minViewMode: 0,
+                    //     // maxViewMode: 2,
+                    //     todayHighlight: true,
+                    //     initialDate: new Date(),
+                    //     todayBtn: true,
+                    //     autoclose: true
+                    // });
+                    $('#_date').replaceWith(`<input id="_date" class="form-control" type="text" readonly>`);
+                    $(`#_date`).daterangepicker({
+                        opens: 'left',
+                        singleDatePicker:true,
+                        autoUpdateInput: false,
+                        maxDate: new Date(),
+                        startDate: DATETIME.FORMAT(new Date(selectedDate),"MM/DD/YYYY"),
+                        autoApply: true
+                    }, function(start, end, label) {
+                        $($(this)["0"].element).val(DATETIME.FORMAT(new Date(start),"MM/DD/YYYY"));
+                        selectedDate = new Date(start);
+                        saveFilter();
+                        populatePage(GENERATE.RANDOM(36));
+                    }).on('apply.daterangepicker', function (ev, picker) {
+                        $(this).val(DATETIME.FORMAT(new Date(picker.startDate),"MM/DD/YYYY"));
+                        selectedDate = new Date(picker.startDate);
+                        saveFilter();
+                        populatePage(GENERATE.RANDOM(36));
+
+                    });
+                    $(`#_date`).trigger('apply.daterangepicker',{ startDate: DATETIME.FORMAT(new Date(selectedDate),"MM/DD/YYYY") });
+                }
+                if(calendarview == "month"){
+                    $('#_date').replaceWith(`<input id="_date" class="form-control" type="text" readonly>`);
+                    $('#_date').datepicker('remove').datepicker({
+                        format: "mm/yyyy",
+                        minViewMode: 1,
+                        autoclose: true,
+                        todayHighlight: true,
+                        endDate: new Date()
+                    }).on("changeDate",function (e) {
+                        selectedDate = new Date(e.date);
+                        saveFilter();
+                        populatePage(GENERATE.RANDOM(36));
+                    }).datepicker("setDate",new Date(selectedDate));
+                }
+                $(`[calendarview]`).removeClass("active");
+                $(`[calendarview="${calendarview}"]`).addClass("active");
+                $(this).parents(".dropdown").find(".dropdown-toggle b").html(calendarview.toUpperCase());
+
+                saveFilter();
+            });
+            $(`[calendarview="${calendarview}"]`).trigger("click");
             
             $(`[name="view-d"]`).change(function(){
                 currentView = $(`[name="view-d"]:checked`).val();
@@ -7483,7 +7534,7 @@ var REPORTS = {
                                 } else {
                                     finalStr = "Unknown";
                                 }
-                                console.log("finalStr",addr,finalStr);
+                                // console.log("finalStr",addr,finalStr);
                                 return finalStr;
                             },
                             getAddressStyle = function(addr){
@@ -7807,7 +7858,7 @@ var REPORTS = {
                             </tbody>
                         </table>`;
             },
-            mtur: function(title,docs,date_from,date_to){
+            MTUR: function(title,docs,date_from,date_to){
                 var excelHeaderStyle = "font-family:Arial;font-size:12px;font-weight:bold;vertical-align:middle;border:none;";
                 var tblHeaderStyle = "font-family:Arial;font-size:12px;font-weight:bold;text-align:center;height:22px;vertical-align:middle;border:thin solid black;";
                 var tblBodyStyle = "font-family:Arial;font-size:12px;mso-number-format:'\@';border:thin solid black;";
@@ -8121,6 +8172,167 @@ var REPORTS = {
                             </tbody>
                         </table>
                         ${tablesHTML}`;
+            },
+            CI_CO_R: function(title,docs,date_from,date_to){
+                var empty = "",
+                    width = ["width:100px;","width:100px;","width:100px;","width:110px;","width:100px;","width:180px;","width:180px;"],
+                    lastTimestamp,
+                    lastGeofence,
+                    timeToDeduct = 5, // 5 minutes
+                    hasChangedGeofence = true; // to deduct 5 minutes from datetime
+
+                docs.forEach((val,i) => {
+                    function processReport(){
+                        hasChangedGeofence = false;
+
+                        var _prev = docs[i-1],
+                            _next = docs[i+1],
+                            timestamp = lastTimestamp || val.timestamp,
+                            startAddress = val.GEOFENCE_NAME,
+                            endAddress = (_next && _next.USER_NAME == val.USER_NAME) ? _next.GEOFENCE_NAME : null,
+                            getAddress = function(addr){
+                                var finalStr = {
+                                    short_name: "",
+                                    code: ""
+                                };
+                                if(addr){
+                                    var str = addr.split(" - ");
+
+                                    var geofence = getGeofence(str[0],'short_name');
+
+                                    if(geofence){
+                                        finalStr = {
+                                            short_name: geofence.short_name || "",
+                                            code: geofence.code || ""
+                                        };
+                                    } else {
+                                        finalStr = {
+                                            short_name: str[0] || "",
+                                            code: ""
+                                        };
+                                    }
+                                }
+                                return finalStr;
+                            },
+                            getOriginalAddress = function(addr){
+                                addr = addr || "";
+                                var str = addr.split(" - ");
+                                return str[0];
+                            },
+                            sameCurrentAndNextAddress = getOriginalAddress(startAddress) == getOriginalAddress(endAddress),
+                            sameCurrentAndNextVehicle = (_next && _next.USER_NAME == val.USER_NAME),
+                            duration = (val.timestamp) ? Math.abs(new Date(timestamp).getTime() - new Date(val.timestamp).getTime()) : null,
+                            addHTML = function(address){
+                                if(duration == 0){
+                                    return '';
+                                } else {
+                                    // do not make condition like !duration. Duration could be 0.
+                                    var site = getAddress(startAddress),
+                                        destination = getAddress(address),
+                                        endDate = DATETIME.FORMAT(val.timestamp,"MM/DD/YYYY"),
+                                        endTime = DATETIME.FORMAT(val.timestamp,"H:mm"),
+                                        status = "Finished",
+                                        _duration_ = (duration != null) ? GET.ROUND_OFF(DATETIME.DH(duration,null,"0"),1).toFixed(1) + ' h'  : "-";
+                                    if(new Date(date_to).getTime() > new Date().getTime() && duration == null){
+                                        endDate = "-";
+                                        endTime = "-";
+                                        status = "Pending"
+                                    }
+                                    var vehicle = getVehicle(val.ASSIGNED_VEHICLE_ID) || {};
+                                    return `<tr>
+                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${val.USER_NAME}</td>
+                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${DATETIME.FORMAT(timestamp,"MM/DD/YYYY")}</td>
+                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${DATETIME.FORMAT(timestamp,"H:mm")}</td>
+                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${endDate}</td>
+                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${endTime}</td>
+                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${_duration_}</td>
+                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${site.short_name}</td>
+                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;text-align:center;">${site.code}</td>
+                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${destination.short_name}</td>
+                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;text-align:center;">${destination.code}</td>
+                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${vehicle["Availability"]||""}</td>
+                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${vehicle["Equipment Number"]||""}</td>
+                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${status}</td>
+                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${vehicle["Base Site"]||""}</td>
+                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;text-align:center;">${vehicle["Base Site Code"]||""}</td>
+                                            </tr>`;
+                                }
+                            };
+
+                        if(!sameCurrentAndNextAddress){
+                            hasChangedGeofence = true;
+                        }
+                        if(_next && getOriginalAddress(_next.GEOFENCE_NAME) == getOriginalAddress(val.GEOFENCE_NAME) && _next.USER_NAME == val.USER_NAME){
+                            if(!lastTimestamp) lastTimestamp = val.timestamp; // do not put in parent condition ^. It will be false if timestamp has value
+                        } else {
+                            lastTimestamp = null;
+                            lastGeofence = getOriginalAddress(startAddress);
+
+                            if(!sameCurrentAndNextAddress){
+                                empty += addHTML(endAddress);
+                            } 
+                        }
+
+                        if(!sameCurrentAndNextVehicle){
+                            empty += `<tr>${emptyTd(15)}</tr><tr>${emptyTd(15)}</tr>`;
+                        }
+                    }
+                    if(hasChangedGeofence){
+                        if(val.GEOFENCE_NAME.indexOf("-") == -1){
+                            var date = new Date(val.timestamp);
+                            date.setMinutes(date.getMinutes() - timeToDeduct);
+
+                            if(DATETIME.FORMAT(val.timestamp,"D-MMM") == DATETIME.FORMAT(date_from,"D-MMM")){
+                                if(DATETIME.FORMAT(date_from,"D-MMM") == DATETIME.FORMAT(date,"D-MMM")){
+                                    val.timestamp = date.getTime();
+                                }
+                            } else {
+                                val.timestamp = date.getTime();
+                            }
+                            processReport();
+                        } else { }
+                    } else {
+                        processReport();
+                    }
+                });
+
+                function emptyTd(n){
+                    var tds = "";
+                    for(var i = 0; i < n; i++){
+                        tds += '<td style="border:thin solid #ccc;"></td>';
+                    }
+                    return tds;
+                }
+
+                return `<table id="report-hidden" border="1" style="border-collapse: collapse;opacity:0;">
+                            <tr>
+                                <td style="font-size:15px;border:thin solid #ccc;">Parameter</td>
+                                <td style="font-size:15px;border:thin solid #ccc;" colspan=3>Check In and Check Out Time at Sites</td>
+                                ${emptyTd(2)}
+                                <td style="font-size:15px;border:thin solid #ccc;">ORIGIN</td>
+                                ${emptyTd(1)}
+                                <td style="font-size:15px;border:thin solid #ccc;">DESTINATION</td>
+                            </tr>
+                            <tr>
+                                <td style="font-size:15px;border:thin solid #ccc;"><b>Vehicle</b></td>
+                                <td style="font-size:15px;border:thin solid #ccc;"><b>Check In Date</b></td>
+                                <td style="font-size:15px;border:thin solid #ccc;"><b>Check In Time</b></td>
+                                <td style="font-size:15px;border:thin solid #ccc;"><b>Check Out Date</b></td>
+                                <td style="font-size:15px;border:thin solid #ccc;"><b>Check Out Time</b></td>
+                                <td style="font-size:15px;border:thin solid #ccc;"><b>Duration</b></td>
+                                <td style="font-size:15px;border:thin solid #ccc;"><b>Site</b></td>
+                                <td style="font-size:15px;border:thin solid #ccc;"><b>Site Code</b></td>
+                                <td style="font-size:15px;border:thin solid #ccc;"><b>Destination</b></td>
+                                <td style="font-size:15px;border:thin solid #ccc;"><b>Site Code</b></td>
+                                <td style="font-size:15px;border:thin solid #ccc;"><b>Truck Status</b></td>
+                                <td style="font-size:15px;border:thin solid #ccc;"><b>Equipt No</b></td>
+                                <td style="font-size:15px;border:thin solid #ccc;"><b>Event State</b></td>
+                                <td style="font-size:15px;border:thin solid #ccc;"><b>Truck Base Site</b></td>
+                                <td style="font-size:15px;border:thin solid #ccc;"><b>Truck Base Site Code</b></td>
+                            </tr>
+                            <tr>${emptyTd(15)}</tr>
+                            ${empty}
+                        </table>`;
             },
             TODR: {
                 process: function(docs,_date) {
@@ -8586,6 +8798,25 @@ var REPORTS = {
                                     callback(docs);
                                 }
                             });
+                        },
+                        ci_co_r_report = function(callback){
+                            var daterange = $(`#daterange`).val(),
+                                filter = {
+                                    timestamp: FILTER.DATERANGE(daterange,true,true),
+                                };
+                            date_from = filter.timestamp.$gte;
+                            date_to = filter.timestamp.$lt;
+
+                            pagination({
+                                countURL: `/api/events/${CLIENT.id}/${USER.username}/all/${JSON.stringify(filter)}/count`,
+                                dataURL: `/api/events/${CLIENT.id}/${USER.username}/all/${JSON.stringify(filter)}`,
+                                callback: function(docs){
+                                    docs.sort(function (a, b) {
+                                        return a.USER_NAME.localeCompare(b.USER_NAME) || new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+                                    });
+                                    callback(docs);
+                                }
+                            });
                         };
 
                     // dependent of geofences!!!!!
@@ -8757,7 +8988,7 @@ var REPORTS = {
                                             <button id="generate-1-btn" type="button" class="btn btn-primary col-sm-12 mt-2">Generate report (.ods)</button>`;
                         df_dt_dest(title,"REPORT_MODAL_07",customButtons,function(btnId){
                             mtur_report(function(docs){
-                                $(`body`).append(REPORTS.UI.REPORTS.mtur(title,docs,date_from,date_to));
+                                $(`body`).append(REPORTS.UI.REPORTS.MTUR(title,docs,date_from,date_to));
                                 var fileName = `${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`;
 
                                 if(btnId == "generate-1-btn"){
@@ -8791,6 +9022,23 @@ var REPORTS = {
 
                         $("#_month").val(moment().format("MM"));
                         $("#_year").val(moment().format("YYYY"));
+                    });
+                    $(`[ci_co_r]`).click(function(){
+                        var title = "Check In Check Out Report";
+                        df_dt_dest(title,"REPORT_MODAL_05",null,function(){
+                            ci_co_r_report(function(docs){
+                                $(`body`).append(REPORTS.UI.REPORTS.CI_CO_R(title,docs,date_from,date_to));
+                                GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`);
+                                $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
+                            });
+                        });
+
+                        $('#daterange').daterangepicker({
+                            timePicker: true,
+                            locale: {
+                                format: 'MM/DD/YYYY hh:mm A'
+                            }
+                        });
                     });
                     /**************** END REPORT LISTENER ****************/
                 };
@@ -9575,7 +9823,7 @@ var USERS = {
             var urlPath = "users",
                 actionWidth = "0px",
                 _new_ = true,
-                permission = PERMISSION[PAGE.GET()] || {},
+                allowedChangeableRoles = (CLIENT.allowRolesToChangeUserRole||{})[USER.role], // do not make || []
                 table = new Table({
                     id: "#tbl-users",
                     urlPath,
@@ -9631,7 +9879,7 @@ var USERS = {
                 x.obj.role = x.obj.role || "user";
                 GET.INTLTELINPUT("#phoneNumber");
 
-                if(permission.editPermission !== "all"){
+                if(!allowedChangeableRoles){
                     $(`#role,#priv-title,#exemptAutoLogout`).parent().remove();
                     $(`.modal-dialog.modal-md`).removeClass("modal-md").addClass("modal-sm").css({"width":""});
                     $(`.modal-body > div`).removeClass("col-sm-5").addClass("col-sm-12");
@@ -9642,7 +9890,8 @@ var USERS = {
 
                 var new_permission = PERMISSION_BY_ROLE[x.obj.role] || {};
                 
-                var populatePages = function(_obj_){
+                var populatePages = function(_role_){
+                    var _obj_ = PERMISSION_BY_ROLE[_role_];
                     new_permission = {};
                     $(`#tbl-permission > tbody`).html("");
                     
@@ -9654,12 +9903,9 @@ var USERS = {
                                 updatePermission = _obj_[key].update || "None",
                                 deletePermission = _obj_[key].delete || "None";
                             new_permission[key] = _obj_[key];
-                            if(_obj_[key].editPermission == "all"){
+                            if(key == "users" && (CLIENT.allowRolesToChangeUserRole||{})[_role_]){
                                 subText = `<small class="d-block text-muted">Allowed to Update User's Role & Privileges</small>`;
                             }
-                            // if(_obj_[key].adminButton == "all"){
-                            //     subText = `<small class="d-block text-muted">Allowed to Access Admin Create & Edit Buttons</small>`;
-                            // }
                             $(`#tbl-permission > tbody`).append(`
                                 <tr>
                                     <td class="font-normal" style="word-break: break-word;">${PAGE_FUNCTIONALITIES[key].title || "Unknown"}${subText}</td>
@@ -9678,21 +9924,34 @@ var USERS = {
                     clientCustom.ignoreRolesWithString.forEach(val => {
                         if(key.indexOf(val) > -1) isValid = false;
                     });
+                    (!(allowedChangeableRoles||[]).includes(key)) ? isValid = false : null;
                     if(isValid){
                         var selected = (x.obj.role == key) ? "selected" : "";
                         roleOptions += `<option value="${key}" ${selected}>${key.capitalize()}</option>`;
                     }
                 });
-                $(`#role`).append(roleOptions);
-                var roleSelected = $(`#role option:selected`).val() || "user";
-                populatePages(PERMISSION_BY_ROLE[roleSelected]);
-                $(`#priv-title`).text(`Privileges of ${roleSelected.capitalize()}`);
-                $(`#role`).change(function(){
+                $(`#role`).html(roleOptions).select2().val(x.obj.role || "user").change(function(){
                     var role = $(this).val();
                     
-                    populatePages(PERMISSION_BY_ROLE[role.toLowerCase()]);
+                    if(role){
+                        populatePages(role.toLowerCase());
+                        $(`#priv-title`).text(`Privileges of ${role.capitalize()}`);
+                    } else {
+                        $(`#tbl-permission > tbody`).html("");
+                        $(`#priv-title`).text(`Privileges`);
+                    }
+                }).trigger("change");
+
+                var roleSelected = $(`#role option:selected`).val() || "user";
+                populatePages(roleSelected);
+                $(`#priv-title`).text(`Privileges of ${roleSelected.capitalize()}`);
+
+                if(!(allowedChangeableRoles||[]).includes(x.obj.role)){
+                    var role = x.obj.role;
+                    $(`#role`).html(`<option value="${(role||"user")}" selected>${(role||"user").capitalize()}</option>`).attr('disabled',true);
+                    populatePages(role.toLowerCase());
                     $(`#priv-title`).text(`Privileges of ${role.capitalize()}`);
-                });
+                }
 
                 $(`#exemptAutoLogout`).val((x.obj.exemptAutoLogout||"false").toString());
                 
@@ -9703,6 +9962,10 @@ var USERS = {
                         role = ($(`#role option:selected`).val() || x.obj.role)._trim(),
                         phoneNumber = GET.INTLTELINPUT_VALUE("#phoneNumber"),
                         exemptAutoLogout = $(`#exemptAutoLogout option:selected`).val() || x.obj.exemptAutoLogout || false;
+
+                    if(!(allowedChangeableRoles||[]).includes(role)){
+                        role = x.obj.role || "user";
+                    }
                     if(ALERT.REQUIREDFIELDS(`#modal-error`,$(this).parents("#overlay"))){}
                     else {
                         $(`#submit`).html(`<i class="la la-spinner la-spin mr-2"></i>Submit`).attr("disabled",true);
@@ -9714,8 +9977,33 @@ var USERS = {
                             role: role.toLowerCase(),
                             exemptAutoLogout: (exemptAutoLogout=='true'||exemptAutoLogout==true)
                         };
+                        var historyOptions = {
+                            fields: [
+                                {
+                                    key: "exemptAutoLogout",
+                                    custom: true,
+                                    customFunction: function(original,updated){
+                                        (original?'Yes':'No')
+                                        return (updated != original) ? HISTORY.fromTo('Exempted to Auto Logout',(original?'Yes':'No'),(updated?'Yes':'No')) : null;
+                                    }
+                                },
+                                {
+                                    key: "phoneNumber",
+                                    customTitle: "Phone Number"
+                                },
+                                {
+                                    key: "role",
+                                    custom: true,
+                                    customFunction: function(original,updated){
+                                        return (updated != original) ? HISTORY.fromTo('Role',(original||"").capitalize(),(updated||"").capitalize()) : null;
+                                    }
+                                }
+                            ]
+                        };
+                        
                         if(x.method == "PUT"){
                             delete body._id;
+                            body = HISTORY.check(x.obj,body,USER.username,historyOptions);
                         }
                         GET.AJAX({
                             url: x.url,
@@ -12950,13 +13238,12 @@ var PAGE = {
                                 <div id="navbar-menu">
                                     <ul class="nav navbar-nav navbar-right">
                                         <li class="dropdown">
-                                            <!--<div style="display: inline-block;">
-                                                <span style="display: inline-block;padding-right: 20px;padding-top: 0px;">
-                                                    <img id="junkOne" src="" style="display: none;">
-                                                    <i class="la la-wifi mr-1 text-success"></i>
-                                                    <small id="timer">-ms</small>
-                                                </span>
-                                            </div>-->
+                                            <a href="#" class="dropdown-toggle pt-0 pr-2 mr-3" style="float: right;text-align: right;" data-toggle="dropdown">
+                                                <span><i style="top: -1px;position: absolute;" class="la la-eye mr-2 font-16"></i><span class="pl-4" viewas-title></span></span>
+                                            </a>
+                                            <ul id="viewas-container" class="dropdown-menu logged-user-menu"></ul>
+                                        </li>
+                                        <li class="dropdown">
                                             <img src="../public/img/${CLIENT.id}-dashboard.png" style="height: 17px;margin-top: 13px;image-rendering: -webkit-optimize-contrast;">
                                             <a href="#" class="dropdown-toggle pt-0 pr-2 pl-1" style="min-width: 100px;float: right;text-align: right;" data-toggle="dropdown">
                                                 <span>${USER.username}<i style="font-size: 9px;margin-left: 6px;" class="icon-submenu la la-angle-down"></i></span>
@@ -13152,6 +13439,25 @@ var PAGE = {
                     }
                 } else {
                     LOGOUT();
+                }
+
+                if((CLIENT.allowRolesToViewAs||{})[USER.originalRole]){
+                    ((CLIENT.allowRolesToViewAs||{})[USER.originalRole]||[]).forEach(val => {
+                        var text = val.capitalize();
+    
+                        var active = USER.role==val ? "active" : "";
+                        (USER.role==val) ? $(`[viewas-title]`).text(text) : null;
+                        
+                        $(`#viewas-container`).append(`<li><a href="javascript:void(0);" class="${active}" viewas="${val}"><span>${text}</span></a></li>`);
+                    });
+                    $(`#viewas-container`).append(`<li class="p-2" style="line-height: 10px;cursor: default;background-color: #089d4b;color: white;"><span style="font-size: 10px;">Please note that viewing as a certain role will only take effect on this current tab. Opening another tab will allow you to view as a different role.</span></li>`);
+                    $(`[viewas]`).click(function(){
+                        var viewas = $(this).attr("viewas");
+                        sessionStorage.setItem("view_as",viewas);
+                        location.reload();
+                    });
+                } else {
+                    $(`#viewas-container`).parents(".dropdown").remove();
                 }
 
                 $(`body`).append(`<audio id="audio01" src="public/sounds/notif.mp3" autostart="0" ></audio>`);
@@ -15154,9 +15460,8 @@ var TABLE = {
             }
 
             if(urlPath == "users"){
-                // console.log("usersssss",docs._id,USER.username);
                 if(docs && docs._id == USER.username){
-                    var originalRole = USER.role;
+                    var originalRole = USER.originalRole;
                     USER.fullName = docs.name;
                     USER.email = docs.email;
                     USER.phoneNumber = docs.phoneNumber;
@@ -15168,6 +15473,7 @@ var TABLE = {
                     $(`#profile-page #role`).html(USER.role.capitalize());
 
                     if((docs.role||"user") != originalRole){
+                        sessionStorage.removeItem("view_as");
                         toastr.warning("Your privileges has been changed. This page will automatically refresh in 5 seconds.",null,{timeOut: 5000});
                         setTimeout(function(){
                             location.reload();
@@ -15862,6 +16168,8 @@ const views = new function(){
                 User Login Activity Report - ular
                 DE Summary Report - desr
                 Scheduled Entries Report - ser
+                Manpower and Truck Utilization Report - mtur
+                Check In Check Out Report - ci_co_r
             */
             var ularHTML = "";
             var DESummaryReport = "";
@@ -15886,6 +16194,12 @@ const views = new function(){
             if(clientCustom.reports.mtur){
                 DESummaryReport += ` <div mtur class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
                                         <span>Manpower and Truck Utilization Report</span>
+                                        <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
+                                    </div>`;
+            }
+            if(clientCustom.reports.ci_co_r){
+                DESummaryReport += ` <div ci_co_r class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
+                                        <span>Check In Check Out Report</span>
                                         <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
                                     </div>`;
             }

@@ -1,4 +1,9 @@
 const changelogList = {
+    "2.55.111": {
+        date: "July 15, 2021",
+        feature: ["[Feature][Wilcon] Monthly Dashboard View"],
+        improved: ["[Security][Wilcon] Allow Admin to edit user roles"]
+    },
     "2.54.111": {
         date: "July 14, 2021",
         fix: ["[Adjustment][Wilcon] Chassis is not required in Dispatch Entry"],

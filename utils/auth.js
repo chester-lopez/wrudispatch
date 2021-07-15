@@ -267,7 +267,6 @@ var LIMIT = 200,
                 create: "all",
                 update: "all",
                 delete: "all",
-                editPermission: "all"
             },
             vehicles:{
                 read: "all",
@@ -599,7 +598,6 @@ var LIMIT = 200,
                 create: "all",
                 update: "all",
                 delete: "all",
-                editPermission: "all"
             },
             vehicles:{
                 read: "all",
@@ -691,7 +689,6 @@ var LIMIT = 200,
                 create: "all",
                 update: "all",
                 delete: "all",
-                editPermission: "all"
             },
             vehicles:{
                 read: "all",
@@ -778,9 +775,12 @@ var LIMIT = 200,
             allowRolesToViewAs: {
                 developer: ["developer","administrator","management","dispatcher","user"],
             },
+            allowRolesToChangeUserRole: {
+                developer: ["developer","administrator","management","dispatcher","user"],
+            },
             custom: {
                 dashboard: {
-                    // calendarView: ["day"],
+                    calendarView: ["day"],
                     visibleStatus: ["in_transit","total_shipment","incomplete","assigned","queueingAtOrigin","processingAtOrigin","complete"]
                 },
                 dispatch: {
@@ -826,6 +826,7 @@ var LIMIT = 200,
                 },
                 reports: {
                     desr: true,
+                    // ci_co_r: true,
                     ular: {
                         roles: ["administrator","developer"]
                     },
@@ -849,9 +850,13 @@ var LIMIT = 200,
                 developer: ["developer","administrator","management","dispatcher","user"],
                 administrator: ["administrator","management","dispatcher","user"],
             },
+            allowRolesToChangeUserRole: {
+                developer: ["developer","administrator","management","dispatcher","user"],
+                administrator: ["administrator","management","dispatcher","user"],
+            },
             custom: {
                 dashboard: {
-                    // calendarView: ["day","month"],
+                    calendarView: ["day","month"],
                     visibleStatus: ["total_shipment","scheduled","assigned","processingAtOrigin","in_transit","onSite","returning","complete","incomplete"], // "scheduled",
                     filterType: "postingDate-scheduledDate"
                 },
@@ -949,6 +954,12 @@ var LIMIT = 200,
             type: 2,
             tabCloseAutoLogout: true,
             loadInBackground: ["VEHICLES","USERS","SESSIONS"],
+            allowRolesToViewAs: {
+                developer: ["developer","administrator","management","dispatcher","user"],
+            },
+            allowRolesToChangeUserRole: {
+                developer: ["developer","administrator","management","dispatcher","user"],
+            },
             custom: {
                 vehicles: {
                     columns: ["name","trailer","equipmentNumber","site","availability"],
@@ -971,6 +982,12 @@ var LIMIT = 200,
             type: 2,
             tabCloseAutoLogout: true,
             loadInBackground: ["VEHICLES","USERS","SESSIONS"],
+            allowRolesToViewAs: {
+                developer: ["developer","administrator","management","dispatcher","user"],
+            },
+            allowRolesToChangeUserRole: {
+                developer: ["developer","administrator","management","dispatcher","user"],
+            },
             menuGroupOptions: [
                 {
                     title: "Vehicles",
