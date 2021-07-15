@@ -1234,8 +1234,11 @@ class User {
     get phoneNumber(){ return this._phoneNumber; }
     set phoneNumber(val){ return this._phoneNumber = val || "-"; }
 
-    get role(){ return this._role; }
+    get originalRole(){ return this._role; }
+    get role(){ return sessionStorage.getItem("view_as") || this._role; }
     set role(val){ return this._role = val || "user"; }
+    // get role(){ return this._role; }
+    // set role(val){ return this._role = val || "user"; }
 
     get dc(){ return this._dc; }
     set dc(val){ return this._dc = val; }

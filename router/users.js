@@ -266,6 +266,8 @@ router.post('/:dbName/:username', (req,res,next)=>{
         if(err){
             next(_ERROR_.UNPROCESSABLE_ENTITY(err));
         } else {
+            userInput.created_by = username;
+            userInput.created_on = new Date().toISOString();
             db.getCollection(dbName,collection).insertOne(userInput,(err,result)=>{
                 if(err){
                     var error = (err.name=="MongoError" && err.code==11000) ? _ERROR_.DUPLICATE("Username") : _ERROR_.INTERNAL_SERVER(err);
