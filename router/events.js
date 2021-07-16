@@ -38,6 +38,29 @@ router.get('/:dbName/:username/all/:filter/:skip/:limit', (req,res,next)=>{
     });
 });
 
+// get one with filter - ci_co_r
+router.get('/:dbName/:username/:filter', (req,res,next)=>{
+    const dbName = req.params.dbName;
+    const username = req.params.username;
+    const filter = JSON.parse(req.params.filter);
+
+    if(filter && Object.keys(filter).length > 0){
+        const query = db.getCollectionOtherDB(`${dbName}-logging`,collection).find(filter).sort( { 'timestamp': 1 } ).limit(5);
+        query.toArray((err,docs)=>{
+            if(err) next(_ERROR_.INTERNAL_SERVER(err));
+            else {
+                if(docs.length < auth.LIMIT){
+                    console.log(`CLOSE {${collection}} @`,docs.length);
+                    query.close();
+                }
+                res.json(docs);
+            }
+        });
+    } else {
+        next(_ERROR_.BAD_REQUEST());
+    }
+});
+
 // get count
 router.get('/:dbName/:username/all/:filter/count', (req,res,next)=>{
     const dbName = req.params.dbName;

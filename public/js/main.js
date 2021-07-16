@@ -1935,28 +1935,33 @@ var DASHBOARD = {
                 populateWithGeofence = function(){
                     resetSummaryData();
 
-                    Object.keys(LIST[urlPath1]||{}).forEach(key => {
-                        var oldData =  JSON.stringify(LIST[urlPath1][key]);
-
-                        LIST[urlPath1][key].w_in_cico = 0;
-                        var location_id = LIST[urlPath1][key].location_id;
-                        var geofence = getGeofence(location_id);
-                        if(geofence){
-                            // console.log(filter,geofence.region_id,(filter == "ALL" || filter.toString() == geofence.region_id.toString()))
-                            // do not merge condition. it removes the data from table. (check else statement)
-                            if(filter == "ALL" || filter.toString() == geofence.region_id.toString()){
-                                LIST[urlPath1][key].plant = geofence.short_name;
-                                LIST[urlPath1][key].region_id = geofence.region_id;
-                                
+                    if(LIST[urlPath1] && Object.keys(LIST[urlPath1]).length > 0){
+                        Object.keys(LIST[urlPath1]||{}).forEach(key => {
+                            var oldData =  JSON.stringify(LIST[urlPath1][key]);
+    
+                            LIST[urlPath1][key].w_in_cico = 0;
+                            var location_id = LIST[urlPath1][key].location_id;
+                            var geofence = getGeofence(location_id);
+                            if(geofence){
+                                // console.log(filter,geofence.region_id,(filter == "ALL" || filter.toString() == geofence.region_id.toString()))
+                                // do not merge condition. it removes the data from table. (check else statement)
+                                if(filter == "ALL" || filter.toString() == geofence.region_id.toString()){
+                                    LIST[urlPath1][key].plant = geofence.short_name;
+                                    LIST[urlPath1][key].region_id = geofence.region_id;
+                                    
+                                    // updateTableAndSummary(key, (oldData != JSON.stringify(LIST[urlPath1][key])));
+                                }
                                 updateTableAndSummary(key, (oldData != JSON.stringify(LIST[urlPath1][key])));
+                            } else {
+                                console.log("NONE",location_id)
+                                LIST[urlPath1][key].plant = "-";
+                                updateTableAndSummary(key, (oldData != JSON.stringify(LIST[urlPath1][key])));
+                                // dt.row(`[_row="${LIST[urlPath1][key]._row}"]`).remove().draw(false);
                             }
-                        } else {
-                            console.log("NONE",location_id)
-                            LIST[urlPath1][key].plant = "-";
-                            updateTableAndSummary(key, (oldData != JSON.stringify(LIST[urlPath1][key])));
-                            // dt.row(`[_row="${LIST[urlPath1][key]._row}"]`).remove().draw(false);
-                        }
-                    });
+                        });
+                    }
+
+                   
                     console.log("summary",summary);
                 },
                 saveFilter = function(setFilter){
@@ -2132,6 +2137,7 @@ var DASHBOARD = {
                         toastr.info("Please wait while data is loading.");
                     }
                 };
+            
             setColumnIndexes();
             $(`[name="view-d"][value="${currentView}"]`).prop("checked",true);
 
@@ -2139,7 +2145,7 @@ var DASHBOARD = {
             TABLE.WATCH({urlPath});
 
             function updateTableAndSummary(key,condition){
-                if(_siteFilter == LIST[urlPath1][key].plant || !_siteFilter){
+                if((_siteFilter == LIST[urlPath1][key].plant || !_siteFilter) && (filter == LIST[urlPath1][key].region_id || !filter || (filter && filter.toLowerCase() == 'all'))){
                     var scheduledCount = LIST[urlPath1][key].scheduled,
                         queueingCount = LIST[urlPath1][key].queueingAtOrigin,
                         processingCount = LIST[urlPath1][key].processingAtOrigin,
@@ -2282,6 +2288,17 @@ var DASHBOARD = {
                 
             PAGE.TOOLTIP(); // add after dt is initialized
 
+            function initializeExportButton(){
+                $('#export-container').html('');
+                TABLE.TOOLBAR(dt, function(){
+                    var _date = calendarview == "day" ? moment(selectedDate).format("MM.DD.YYYY") : moment(selectedDate).format("MM.YYYY");
+                    var _region = filter && filter.toLowerCase() != 'all' ? (getRegion(filter)||{}).region || '-' : 'All';
+                    return `Deployment Dashboard - ${currentView.capitalize()} View - Region ${_region} - Filter ${calendarview.capitalize()} - ${_date}`
+                });
+                $(`.buttons-copy`).remove();
+                $(`.buttons-csv`).remove();
+                $(`.buttons-excel span`).html('<i class="la la-file-download"></i>');
+            }
             // populatePage(random);
 
             /******** EVENT LISTENER ********/
@@ -2310,6 +2327,9 @@ var DASHBOARD = {
 
             $(`[calendarview]`).click(function(){
                 calendarview = $(this).attr("calendarview");
+
+                initializeExportButton();
+
                 if(calendarview == "day"){
                     // $('#_date').datepicker('remove').datepicker({
                     //     // minViewMode: 0,
@@ -2365,6 +2385,9 @@ var DASHBOARD = {
             
             $(`[name="view-d"]`).change(function(){
                 currentView = $(`[name="view-d"]:checked`).val();
+
+                initializeExportButton();
+
                 saveFilter();
                 populatePage(GENERATE.RANDOM(36));
             });
@@ -2399,6 +2422,8 @@ var DASHBOARD = {
                         TBL.column(0).search(_filter).draw();
                         TBL.column(1).search(_siteFilter,true,false).draw();
 
+                        initializeExportButton();
+
                         saveFilter();
                         populateWithGeofence();
 
@@ -2413,6 +2438,8 @@ var DASHBOARD = {
                             
                         TBL.column(0).search(_filter).draw();
                         TBL.column(1).search(_siteFilter,true,false).draw();
+
+                        initializeExportButton();
 
                         saveFilter();
 
@@ -3271,9 +3298,6 @@ var DISPATCH = {
                         populateTable();
                     });
                     FIXFILTER();
-
-
-
 
 
                     $(`#clone-btn`).click(function(){
@@ -7862,6 +7886,7 @@ var REPORTS = {
                 var excelHeaderStyle = "font-family:Arial;font-size:12px;font-weight:bold;vertical-align:middle;border:none;";
                 var tblHeaderStyle = "font-family:Arial;font-size:12px;font-weight:bold;text-align:center;height:22px;vertical-align:middle;border:thin solid black;";
                 var tblBodyStyle = "font-family:Arial;font-size:12px;mso-number-format:'\@';border:thin solid black;";
+                var tblBottomStyle = "font-family:Arial;font-size:12px;font-weight:bold;vertical-align:middle;border:thin solid black;mso-number-format:'\@';text-align:center;";
 
                 var finalClusters = [{cluster:"Total",sequence:0}];
                 finalClusters = finalClusters.concat(LIST["clusters"]||[]);
@@ -7873,11 +7898,25 @@ var REPORTS = {
                 var totalVehicles = LIST["vehicles"].length;
                 var totalChassis = LIST["chassis"].length;
                 var totalManpower = LIST["vehicle_personnel"].filter(x => x.occupation == "Driver" || x.occupation == "Checker" || x.occupation == "Helper").length;
+                var totalDriver = LIST["vehicle_personnel"].filter(x => x.occupation == "Driver").length;
+                var totalChecker = LIST["vehicle_personnel"].filter(x => x.occupation == "Checker").length;
+                var totalHelper = LIST["vehicle_personnel"].filter(x => x.occupation == "Helper").length;
 
 
                 var dataTotalVehicles = [];
                 var dataTotalChassis = [];
                 var dataTotalManpower = [];
+                var dataTotalDriver = [];
+                var dataTotalChecker = [];
+                var dataTotalHelper = [];
+
+                // for data from July 19, 2021 to present -- I don't know why they want that
+                var aveDataTotalVehicles = [];
+                var aveDataTotalChassis = [];
+                var aveDataTotalManpower = [];
+                var aveDataTotalDriver = [];
+                var aveDataTotalChecker = [];
+                var aveDataTotalHelper = [];
 
                 var tablesHTML = "";
 
@@ -7896,6 +7935,13 @@ var REPORTS = {
                 var dailyCheckerTableHeader = [];
                 var dailyHelperTableHeader = [];
                 var dailyTableSubHeader = [];
+
+                var truckTypes = [];
+                (LIST['vehicles']||[]).forEach(val => {
+                    if(val.truck_type && !truckTypes.includes(val.truck_type)){
+                        truckTypes.push(val.truck_type);
+                    }
+                });
 
                 function generateRowData(cluster_id){
                     countClusterColumns ++;
@@ -7918,11 +7964,31 @@ var REPORTS = {
                         var uniqueDriverList = [];
                         var uniqueCheckerList = [];
                         var uniqueHelperList = [];
+
+                        var perTruckType = {};
+                        truckTypes.forEach(val => {
+                            perTruckType[val] = {
+                                vehicle_ids: [],
+                                chassis_ids: [],
+                                manpower_driver_ids: [],
+                                manpower_checker_ids: [],
+                                manpower_helper_ids: [],
+
+                                uniqueVehicleList: [],
+                                uniqueChassisList: [],
+                                uniqueDriverList: [],
+                                uniqueCheckerList: [],
+                                uniqueHelperList: [],
+                            };
+                        });
     
                         filtered.forEach(val => {
                             var origin = getGeofence(val.origin_id) || {};
+                            var vehicle = getVehicle(val.vehicle_id) || {};
+                            var truck_type = vehicle.truck_type;
+
                             if(!cluster_id || origin.cluster_id == cluster_id){
-                                console.log("val.chassis",val);
+                                
                                 (val.vehicle_id) ? vehicle_ids.push(val.vehicle_id) : null;
                                 (val.chassis) ? chassis_ids.push(val.chassis) : null;
                                 (val.driver_id) ? manpower_driver_ids.push(val.driver_id) : null;
@@ -7940,6 +8006,35 @@ var REPORTS = {
                                 (dataTotalManpower.includes(val.driver_id)) ? null : dataTotalManpower.push(val.driver_id);
                                 (dataTotalManpower.includes(val.checker_id)) ? null : dataTotalManpower.push(val.checker_id);
                                 (dataTotalManpower.includes(val.helper_id)) ? null : dataTotalManpower.push(val.helper_id);
+                                (dataTotalDriver.includes(val.driver_id)) ? null : dataTotalDriver.push(val.driver_id);
+                                (dataTotalChecker.includes(val.checker_id)) ? null : dataTotalChecker.push(val.checker_id);
+                                (dataTotalHelper.includes(val.helper_id)) ? null : dataTotalHelper.push(val.helper_id);
+        
+                                if(new Date(val.posting_date).getTime() >= 1626624000000) {// July 19, 2021, 12:00 AM
+                                    (aveDataTotalVehicles.includes(val.vehicle_id)) ? null : aveDataTotalVehicles.push(val.vehicle_id);
+                                    (aveDataTotalChassis.includes(val.chassis)) ? null : aveDataTotalChassis.push(val.chassis);
+                                    (aveDataTotalManpower.includes(val.driver_id)) ? null : aveDataTotalManpower.push(val.driver_id);
+                                    (aveDataTotalManpower.includes(val.checker_id)) ? null : aveDataTotalManpower.push(val.checker_id);
+                                    (aveDataTotalManpower.includes(val.helper_id)) ? null : aveDataTotalManpower.push(val.helper_id);
+                                    (aveDataTotalDriver.includes(val.driver_id)) ? null : aveDataTotalDriver.push(val.driver_id);
+                                    (aveDataTotalChecker.includes(val.checker_id)) ? null : aveDataTotalChecker.push(val.checker_id);
+                                    (aveDataTotalHelper.includes(val.helper_id)) ? null : aveDataTotalHelper.push(val.helper_id);
+                                }
+
+                                
+                                if(perTruckType[truck_type]){
+                                    (val.vehicle_id) ? perTruckType[truck_type].vehicle_ids.push(val.vehicle_id) : null;
+                                    (val.chassis) ? perTruckType[truck_type].chassis_ids.push(val.chassis) : null;
+                                    (val.driver_id) ? perTruckType[truck_type].manpower_driver_ids.push(val.driver_id) : null;
+                                    (val.checker_id) ? perTruckType[truck_type].manpower_checker_ids.push(val.checker_id) : null;
+                                    (val.helper_id) ? perTruckType[truck_type].manpower_helper_ids.push(val.helper_id) : null;
+                                    
+                                    (val.vehicle_id && !perTruckType[truck_type].uniqueVehicleList.includes(val.vehicle_id)) ? perTruckType[truck_type].uniqueVehicleList.push(val.vehicle_id) : null;
+                                    (val.chassis && !perTruckType[truck_type].uniqueChassisList.includes(val.chassis)) ? perTruckType[truck_type].uniqueChassisList.push(val.chassis) : null;
+                                    (val.driver_id && !perTruckType[truck_type].uniqueDriverList.includes(val.driver_id)) ? perTruckType[truck_type].uniqueDriverList.push(val.driver_id) : null;
+                                    (val.checker_id && !perTruckType[truck_type].uniqueCheckerList.includes(val.checker_id)) ? perTruckType[truck_type].uniqueCheckerList.push(val.checker_id) : null;
+                                    (val.helper_id && !perTruckType[truck_type].uniqueHelperList.includes(val.helper_id)) ? perTruckType[truck_type].uniqueHelperList.push(val.helper_id) : null;
+                                }
                             }
                         });
     
@@ -7971,6 +8066,8 @@ var REPORTS = {
                             totalHelperCount: manpower_helper_ids.length,
                             uniqueHelperCount: uniqueHelperList.length,
                             totalHelperPercentage: helperPercentage,
+
+                            perTruckType
                         });
                          
                         function dailyRows(id_list,tempDailyRows,totalCount,getCallback){
@@ -8032,6 +8129,7 @@ var REPORTS = {
                     dailyTableTitle.push(`<td style="${tblHeaderStyle}text-align:left;" colspan=2><b>${val.cluster}</b></td>`);
 
                     tableHeader.push(`<td style="${tblHeaderStyle}width:90px;" rowspan=2><b>Date</b></td>
+                                      <td style="${tblHeaderStyle}width:90px;" rowspan=2><b>Truck Type</b></td>
                                       <td style="${tblHeaderStyle}width:160px;" colspan=2><b>Truck Utilization</b></td>
                                       <td style="${tblHeaderStyle}width:160px;" colspan=2><b>Chassis Utilization</b></td>
                                       <td style="${tblHeaderStyle}width:160px;" colspan=6><b>Manpower Utilization</b></td>`);
@@ -8056,8 +8154,9 @@ var REPORTS = {
                     // [[data],[data1]]
                     
                     generateRowData(val._id).forEach((arr,i) => {
-                        rows[arr.date] = rows[arr.date] || [];
-                        rows[arr.date].push(`<td style="${tblBodyStyle}text-align:center;font-weight:bold;">${arr.date}</td>
+                        rows[`${arr.date}-total`] = rows[`${arr.date}-total`] || [];
+                        rows[`${arr.date}-total`].push(`<td style="${tblBodyStyle}text-align:center;font-weight:bold;">${arr.date}</td>
+                                            <td style="${tblBodyStyle}text-align:center;">Total</td>
                                             <td style="${tblBodyStyle}text-align:center;">${arr.uniqueVehicleCount}</td>
                                             <td style="${tblBodyStyle}text-align:center;">${arr.totalVehiclePercentage}%</td>
                                             <td style="${tblBodyStyle}text-align:center;">${arr.uniqueChassisCount}</td>
@@ -8068,6 +8167,23 @@ var REPORTS = {
                                             <td style="${tblBodyStyle}text-align:center;">${arr.totalCheckerPercentage}%</td>
                                             <td style="${tblBodyStyle}text-align:center;">${arr.uniqueHelperCount}</td>
                                             <td style="${tblBodyStyle}text-align:center;">${arr.totalHelperPercentage}%</td>`);
+                                        
+                        Object.keys(arr.perTruckType).forEach(key => {
+                            var ptt = arr.perTruckType[key];
+                            rows[`${arr.date}-${key}`] = rows[`${arr.date}-${key}`] || [];
+                            rows[`${arr.date}-${key}`].push(`<td style="${tblBodyStyle}text-align:center;font-weight:bold;"></td>
+                                                <td style="${tblBodyStyle}text-align:center;">${key}</td>
+                                                <td style="${tblBodyStyle}text-align:center;">${ptt.uniqueVehicleList.length}</td>
+                                                <td style="${tblBodyStyle}text-align:center;">${GET.ROUND_OFF((ptt.uniqueVehicleList.length/totalVehicles)*100)}%</td>
+                                                <td style="${tblBodyStyle}text-align:center;">${ptt.uniqueChassisList.length}</td>
+                                                <td style="${tblBodyStyle}text-align:center;">${GET.ROUND_OFF((ptt.uniqueChassisList.length/totalChassis)*100)}%</td>
+                                                <td style="${tblBodyStyle}text-align:center;">${ptt.uniqueDriverList.length}</td>
+                                                <td style="${tblBodyStyle}text-align:center;">${GET.ROUND_OFF((ptt.uniqueDriverList.length/totalManpower)*100)}%</td>
+                                                <td style="${tblBodyStyle}text-align:center;">${ptt.uniqueCheckerList.length}</td>
+                                                <td style="${tblBodyStyle}text-align:center;">${GET.ROUND_OFF((ptt.uniqueCheckerList.length/totalManpower)*100)}%</td>
+                                                <td style="${tblBodyStyle}text-align:center;">${ptt.uniqueHelperList.length}</td>
+                                                <td style="${tblBodyStyle}text-align:center;">${GET.ROUND_OFF((ptt.uniqueHelperList.length/totalManpower)*100)}%</td>`);
+                        });
                                             
                         dailyVehicleTableHeader[i] = dailyVehicleTableHeader[i] || [];
                         dailyVehicleTableHeader[i].push(`<td style="${tblHeaderStyle}" colspan=3><b>Truck Utilization (${arr.totalVehiclePercentage}%)</b></td>`);
@@ -8150,25 +8266,98 @@ var REPORTS = {
 
                 var monthlyVehicleUtilization = GET.ROUND_OFF((dataTotalVehicles.length/totalVehicles)*100);
                 var monthlyChassisUtilization = GET.ROUND_OFF((dataTotalChassis.length/totalChassis)*100);
-                var monthlyManpowerUtilization = GET.ROUND_OFF((dataTotalManpower.length/totalVehicles)*100);
+                var monthlyManpowerUtilization = GET.ROUND_OFF((dataTotalManpower.length/totalManpower)*100);
+                var monthlyDriverUtilization = GET.ROUND_OFF((dataTotalDriver.length/totalDriver)*100);
+                var monthlyCheckerUtilization = GET.ROUND_OFF((dataTotalChecker.length/totalChecker)*100);
+                var monthlyHelperUtilization = GET.ROUND_OFF((dataTotalHelper.length/totalHelper)*100);
+                
+                var aveMonthlyVehicleUtilization = GET.ROUND_OFF((aveDataTotalVehicles.length/totalVehicles)*100);
+                var aveMonthlyChassisUtilization = GET.ROUND_OFF((aveDataTotalChassis.length/totalChassis)*100);
+                var aveMonthlyManpowerUtilization = GET.ROUND_OFF((aveDataTotalManpower.length/totalManpower)*100);
+                var aveMonthlyDriverUtilization = GET.ROUND_OFF((aveDataTotalDriver.length/totalDriver)*100);
+                var aveMonthlyCheckerUtilization = GET.ROUND_OFF((aveDataTotalChecker.length/totalChecker)*100);
+                var aveMonthlyHelperUtilization = GET.ROUND_OFF((aveDataTotalHelper.length/totalHelper)*100);
+
                 return `<table id="report-hidden" data-SheetName="Overview" border="1" style="border-collapse: collapse;opacity:0;">
                             <tbody>
                                 <tr> <td style="${excelHeaderStyle}text-align:center;" colspan=5><b>${title}</b></td> </tr>
                                 <tr> <td style="${excelHeaderStyle}text-align:center;" colspan=5><b>${moment(date_from).format("MM-YYYY")}</b></td> </tr>
                                 <tr> <td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td> </tr>
-                                <tr> <td style="${excelHeaderStyle}" colspan=5>Total # of Trucks: <b>${totalVehicles}</b></td> </tr>
+
+                                <tr>${tableTitle.join(`<td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td>><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
+                                <tr>${tableHeader.join(`<td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
+                                <tr>${tableSubHeader.join(`<td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
+                                ${tableRows}
+                                <tr> <td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td> </tr>
+                                <tr> <td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td> </tr>
+
+                                <tr> 
+                                    <td style="${tblBottomStyle}"></td>
+                                    <td style="${tblBottomStyle}">Total #</td>
+                                    <td style="${tblBottomStyle}">Monthly Utilization</td>
+                                    <td style="${tblBottomStyle}">Average Monthly Utilization</td>
+                                </tr>
+                                <tr> 
+                                    <td style="${tblBottomStyle}">Truck</td>
+                                    <td style="${tblBottomStyle}">${totalVehicles}</td>
+                                    <td style="${tblBottomStyle}">${monthlyVehicleUtilization}%</td>
+                                    <td style="${tblBottomStyle}">${aveMonthlyVehicleUtilization}%</td>
+                                </tr>
+                                <tr> 
+                                    <td style="${tblBottomStyle}">Chassis</td>
+                                    <td style="${tblBottomStyle}">${totalChassis}</td>
+                                    <td style="${tblBottomStyle}">${monthlyChassisUtilization}%</td>
+                                    <td style="${tblBottomStyle}">${aveMonthlyChassisUtilization}%</td>
+                                </tr>
+                                <tr> 
+                                    <td style="${tblBottomStyle}">Manpower</td>
+                                    <td style="${tblBottomStyle}">${totalManpower}</td>
+                                    <td style="${tblBottomStyle}">${monthlyManpowerUtilization}%</td>
+                                    <td style="${tblBottomStyle}">${aveMonthlyManpowerUtilization}%</td>
+                                </tr>
+                                <tr> 
+                                    <td style="${tblBottomStyle}padding-left:25px;">Driver</td>
+                                    <td style="${tblBottomStyle}">${totalDriver}</td>
+                                    <td style="${tblBottomStyle}">${monthlyDriverUtilization}%</td>
+                                    <td style="${tblBottomStyle}">${aveMonthlyDriverUtilization}%</td>
+                                </tr>
+                                <tr> 
+                                    <td style="${tblBottomStyle}padding-left:25px;">Checker</td>
+                                    <td style="${tblBottomStyle}">${totalChecker}</td>
+                                    <td style="${tblBottomStyle}">${monthlyCheckerUtilization}%</td>
+                                    <td style="${tblBottomStyle}">${aveMonthlyCheckerUtilization}%</td>
+                                </tr>
+                                <tr> 
+                                    <td style="${tblBottomStyle}padding-left:25px;">Helper</td>
+                                    <td style="${tblBottomStyle}">${totalHelper}</td>
+                                    <td style="${tblBottomStyle}">${monthlyHelperUtilization}%</td>
+                                    <td style="${tblBottomStyle}">${aveMonthlyHelperUtilization}%</td>
+                                </tr>
+
+
+                                <!--<tr> <td style="${excelHeaderStyle}" colspan=5>Total # of Trucks: <b>${totalVehicles}</b></td> </tr>
                                 <tr> <td style="${excelHeaderStyle}" colspan=5>Total # of Chassis: <b>${totalChassis}</b></td> </tr>
                                 <tr> <td style="${excelHeaderStyle}" colspan=5>Total # of Manpower: <b>${totalManpower}</b></td> </tr>
+                                <tr> <td style="${excelHeaderStyle}padding-left:25px;" colspan=5>Total # of Driver: <b>${totalDriver}</b></td> </tr>
+                                <tr> <td style="${excelHeaderStyle}padding-left:25px;" colspan=5>Total # of Checker: <b>${totalChecker}</b></td> </tr>
+                                <tr> <td style="${excelHeaderStyle}padding-left:25px;" colspan=5>Total # of Helper: <b>${totalHelper}</b></td> </tr>
+
                                 <tr> <td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td> </tr>
                                 <tr> <td style="${excelHeaderStyle}" colspan=5>Monthly Truck Utilization: <b>${monthlyVehicleUtilization}%</b></td> </tr>
                                 <tr> <td style="${excelHeaderStyle}" colspan=5>Monthly Chassis Utilization: <b>${monthlyChassisUtilization}%</b></td> </tr>
                                 <tr> <td style="${excelHeaderStyle}" colspan=5>Monthly Manpower Utilization: <b>${monthlyManpowerUtilization}%</b></td> </tr>
+                                <tr> <td style="${excelHeaderStyle}padding-left:25px;" colspan=5>Monthly Driver Utilization: <b>${monthlyDriverUtilization}%</b></td> </tr>
+                                <tr> <td style="${excelHeaderStyle}padding-left:25px;" colspan=5>Monthly Checker Utilization: <b>${monthlyCheckerUtilization}%</b></td> </tr>
+                                <tr> <td style="${excelHeaderStyle}padding-left:25px;" colspan=5>Monthly Helper Utilization: <b>${monthlyHelperUtilization}%</b></td> </tr>
+
                                 <tr> <td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td> </tr>
 
-                                <tr>${tableTitle.join(`<td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td>><td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
-                                <tr>${tableHeader.join(`<td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
-                                <tr>${tableSubHeader.join(`<td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
-                                ${tableRows}
+                                <tr> <td style="${excelHeaderStyle}" colspan=5>Average Monthly Truck Utilization: <b>${aveMonthlyVehicleUtilization}%</b></td> </tr>
+                                <tr> <td style="${excelHeaderStyle}" colspan=5>Average Monthly Chassis Utilization: <b>${aveMonthlyChassisUtilization}%</b></td> </tr>
+                                <tr> <td style="${excelHeaderStyle}" colspan=5>Average Monthly Manpower Utilization: <b>${aveMonthlyManpowerUtilization}%</b></td> </tr>
+                                <tr> <td style="${excelHeaderStyle}padding-left:25px;" colspan=5>Average Monthly Driver Utilization: <b>${aveMonthlyDriverUtilization}%</b></td> </tr>
+                                <tr> <td style="${excelHeaderStyle}padding-left:25px;" colspan=5>Average Monthly Checker Utilization: <b>${aveMonthlyCheckerUtilization}%</b></td> </tr>
+                                <tr> <td style="${excelHeaderStyle}padding-left:25px;" colspan=5>Average Monthly Helper Utilization: <b>${aveMonthlyHelperUtilization}%</b></td> </tr>-->
                             </tbody>
                         </table>
                         ${tablesHTML}`;
@@ -8179,14 +8368,46 @@ var REPORTS = {
                     lastTimestamp,
                     lastGeofence,
                     timeToDeduct = 5, // 5 minutes
-                    hasChangedGeofence = true; // to deduct 5 minutes from datetime
+                    hasChangedGeofence = true, // to deduct 5 minutes from datetime
+                    totalAddHtmlCount = 0,
+                    extendSearchCount = 0;
+
+                var tableHtml = `<table id="report-hidden" border="1" style="border-collapse: collapse;opacity:0;">
+                                    <tr>
+                                        <td style="font-size:15px;border:thin solid #ccc;">Parameter</td>
+                                        <td style="font-size:15px;border:thin solid #ccc;" colspan=3>Check In and Check Out Time at Sites</td>
+                                        ${emptyTd(2)}
+                                        <td style="font-size:15px;border:thin solid #ccc;">ORIGIN</td>
+                                        ${emptyTd(1)}
+                                        <td style="font-size:15px;border:thin solid #ccc;">DESTINATION</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Vehicle</b></td>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Check In Date</b></td>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Check In Time</b></td>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Check Out Date</b></td>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Check Out Time</b></td>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Duration</b></td>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Site</b></td>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Site Code</b></td>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Destination</b></td>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Site Code</b></td>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Truck Status</b></td>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Equipt No</b></td>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Event State</b></td>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Truck Base Site</b></td>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Truck Base Site Code</b></td>
+                                    </tr>
+                                    <tr>${emptyTd(15)}</tr>
+                                </table>`;
+
+                $(`body`).append(tableHtml);
 
                 docs.forEach((val,i) => {
                     function processReport(){
                         hasChangedGeofence = false;
 
-                        var _prev = docs[i-1],
-                            _next = docs[i+1],
+                        var _next = docs[i+1],
                             timestamp = lastTimestamp || val.timestamp,
                             startAddress = val.GEOFENCE_NAME,
                             endAddress = (_next && _next.USER_NAME == val.USER_NAME) ? _next.GEOFENCE_NAME : null,
@@ -8223,12 +8444,12 @@ var REPORTS = {
                             sameCurrentAndNextVehicle = (_next && _next.USER_NAME == val.USER_NAME),
                             duration = (val.timestamp) ? Math.abs(new Date(timestamp).getTime() - new Date(val.timestamp).getTime()) : null,
                             addHTML = function(address){
-                                if(duration == 0){
-                                    return '';
-                                } else {
+
+                                function addTds(startAddress,timestamp,address,val){
                                     // do not make condition like !duration. Duration could be 0.
                                     var site = getAddress(startAddress),
                                         destination = getAddress(address),
+                                        duration = (val.timestamp) ? Math.abs(new Date(timestamp).getTime() - new Date(val.timestamp).getTime()) : null,
                                         endDate = DATETIME.FORMAT(val.timestamp,"MM/DD/YYYY"),
                                         endTime = DATETIME.FORMAT(val.timestamp,"H:mm"),
                                         status = "Finished",
@@ -8239,23 +8460,67 @@ var REPORTS = {
                                         status = "Pending"
                                     }
                                     var vehicle = getVehicle(val.ASSIGNED_VEHICLE_ID) || {};
-                                    return `<tr>
-                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${val.USER_NAME}</td>
-                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${DATETIME.FORMAT(timestamp,"MM/DD/YYYY")}</td>
-                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${DATETIME.FORMAT(timestamp,"H:mm")}</td>
-                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${endDate}</td>
-                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${endTime}</td>
-                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${_duration_}</td>
-                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${site.short_name}</td>
-                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;text-align:center;">${site.code}</td>
-                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${destination.short_name}</td>
-                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;text-align:center;">${destination.code}</td>
-                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${vehicle["Availability"]||""}</td>
-                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${vehicle["Equipment Number"]||""}</td>
-                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${status}</td>
-                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${vehicle["Base Site"]||""}</td>
-                                                <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;text-align:center;">${vehicle["Base Site Code"]||""}</td>
-                                            </tr>`;
+
+                                    return `<td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${val.USER_NAME}</td>
+                                            <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${DATETIME.FORMAT(timestamp,"MM/DD/YYYY")}</td>
+                                            <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${DATETIME.FORMAT(timestamp,"H:mm")}</td>
+                                            <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${endDate}</td>
+                                            <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${endTime}</td>
+                                            <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${_duration_}</td>
+                                            <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${site.short_name}</td>
+                                            <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;text-align:center;">${site.code}</td>
+                                            <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${destination.short_name}</td>
+                                            <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;text-align:center;">${destination.code}</td>
+                                            <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${vehicle["Availability"]||""}</td>
+                                            <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${vehicle["Equipment Number"]||""}</td>
+                                            <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${status}</td>
+                                            <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${vehicle["Base Site"]||""}</td>
+                                            <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;text-align:center;">${vehicle["Base Site Code"]||""}</td>`;
+                                }
+                                
+                                if(duration == 0){
+                                    if(sameCurrentAndNextVehicle){
+                                        extendSearchDone();
+                                    } else {
+                                        $(`#report-hidden`).append(`<tr data-attribute="${val.USER_NAME}-${getOriginalAddress(val.GEOFENCE_NAME)}">${addTds(startAddress,timestamp,address,val)}</tr>`);
+                                                    
+                                        $.ajax({
+                                            url: `/api/events/${CLIENT.id}/${USER.username}/${JSON.stringify({
+                                                USER_NAME: val.USER_NAME,
+                                                // GEOFENCE_NAME: /DVO DC/, // do not include GEOFENCE_NAME because we need to know if geofenceHasBeenChanged - to know what event we will end
+                                                timestamp: {
+                                                    $gte: new Date(val.timestamp).toISOString()
+                                                }
+                                            })}`,
+                                            method: "GET",
+                                            timeout: 90000, // 1 minute and 30 seconds
+                                            headers: {
+                                                "Authorization": SESSION_TOKEN
+                                            },
+                                            async: true
+                                        }).done(function (docs1) {
+                                            console.log("docs",docs1);
+
+                                            var originalEvent = docs1[0];
+                                            var found = false;
+
+                                            docs1.forEach((val,i) => {
+                                                if(!found && originalEvent._id != val._id){
+                                                    var endAddress = (docs1[i+1] && docs1[i+1].USER_NAME == val.USER_NAME) ? docs1[i+1].GEOFENCE_NAME : null;
+                                                    var sameCurrentAndNextAddress = getOriginalAddress(originalEvent.GEOFENCE_NAME) == getOriginalAddress(endAddress);
+    
+                                                    if(!sameCurrentAndNextAddress){
+                                                        found = true;
+                                                        $(`#report-hidden [data-attribute="${originalEvent.USER_NAME}-${getOriginalAddress(originalEvent.GEOFENCE_NAME)}"]`).html(addTds(originalEvent.GEOFENCE_NAME,originalEvent.timestamp,null,val));
+                                                    }
+                                                }
+                                            });
+                                            extendSearchDone();
+                                        });
+                                    }
+                                } else {
+                                    $(`#report-hidden`).append(`<tr>${addTds(startAddress,timestamp,address,val)}</tr>`);
+                                    extendSearchDone();
                                 }
                             };
 
@@ -8264,33 +8529,41 @@ var REPORTS = {
                         }
                         if(_next && getOriginalAddress(_next.GEOFENCE_NAME) == getOriginalAddress(val.GEOFENCE_NAME) && _next.USER_NAME == val.USER_NAME){
                             if(!lastTimestamp) lastTimestamp = val.timestamp; // do not put in parent condition ^. It will be false if timestamp has value
+                            extendSearchDone();
                         } else {
                             lastTimestamp = null;
                             lastGeofence = getOriginalAddress(startAddress);
 
                             if(!sameCurrentAndNextAddress){
-                                empty += addHTML(endAddress);
-                            } 
+                                addHTML(endAddress);
+                            } else {
+                                extendSearchDone();
+                            }
                         }
 
                         if(!sameCurrentAndNextVehicle){
-                            empty += `<tr>${emptyTd(15)}</tr><tr>${emptyTd(15)}</tr>`;
+                            $(`#report-hidden`).append(`<tr>${emptyTd(15)}</tr><tr>${emptyTd(15)}</tr>`);
                         }
                     }
                     if(hasChangedGeofence){
                         if(val.GEOFENCE_NAME.indexOf("-") == -1){
                             var date = new Date(val.timestamp);
                             date.setMinutes(date.getMinutes() - timeToDeduct);
-
+ 
                             if(DATETIME.FORMAT(val.timestamp,"D-MMM") == DATETIME.FORMAT(date_from,"D-MMM")){
                                 if(DATETIME.FORMAT(date_from,"D-MMM") == DATETIME.FORMAT(date,"D-MMM")){
                                     val.timestamp = date.getTime();
+                                    processReport();
+                                } else {
+                                    extendSearchDone();
                                 }
                             } else {
                                 val.timestamp = date.getTime();
+                                processReport();
                             }
-                            processReport();
-                        } else { }
+                        } else {
+                            extendSearchDone();
+                        }
                     } else {
                         processReport();
                     }
@@ -8304,35 +8577,15 @@ var REPORTS = {
                     return tds;
                 }
 
-                return `<table id="report-hidden" border="1" style="border-collapse: collapse;opacity:0;">
-                            <tr>
-                                <td style="font-size:15px;border:thin solid #ccc;">Parameter</td>
-                                <td style="font-size:15px;border:thin solid #ccc;" colspan=3>Check In and Check Out Time at Sites</td>
-                                ${emptyTd(2)}
-                                <td style="font-size:15px;border:thin solid #ccc;">ORIGIN</td>
-                                ${emptyTd(1)}
-                                <td style="font-size:15px;border:thin solid #ccc;">DESTINATION</td>
-                            </tr>
-                            <tr>
-                                <td style="font-size:15px;border:thin solid #ccc;"><b>Vehicle</b></td>
-                                <td style="font-size:15px;border:thin solid #ccc;"><b>Check In Date</b></td>
-                                <td style="font-size:15px;border:thin solid #ccc;"><b>Check In Time</b></td>
-                                <td style="font-size:15px;border:thin solid #ccc;"><b>Check Out Date</b></td>
-                                <td style="font-size:15px;border:thin solid #ccc;"><b>Check Out Time</b></td>
-                                <td style="font-size:15px;border:thin solid #ccc;"><b>Duration</b></td>
-                                <td style="font-size:15px;border:thin solid #ccc;"><b>Site</b></td>
-                                <td style="font-size:15px;border:thin solid #ccc;"><b>Site Code</b></td>
-                                <td style="font-size:15px;border:thin solid #ccc;"><b>Destination</b></td>
-                                <td style="font-size:15px;border:thin solid #ccc;"><b>Site Code</b></td>
-                                <td style="font-size:15px;border:thin solid #ccc;"><b>Truck Status</b></td>
-                                <td style="font-size:15px;border:thin solid #ccc;"><b>Equipt No</b></td>
-                                <td style="font-size:15px;border:thin solid #ccc;"><b>Event State</b></td>
-                                <td style="font-size:15px;border:thin solid #ccc;"><b>Truck Base Site</b></td>
-                                <td style="font-size:15px;border:thin solid #ccc;"><b>Truck Base Site Code</b></td>
-                            </tr>
-                            <tr>${emptyTd(15)}</tr>
-                            ${empty}
-                        </table>`;
+
+                function extendSearchDone(){
+                    extendSearchCount ++;
+                    console.log(docs.length,extendSearchCount);
+                    if(docs.length == extendSearchCount){
+                        GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`);
+                        $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
+                    }
+                }
             },
             TODR: {
                 process: function(docs,_date) {
@@ -8576,7 +8829,9 @@ var REPORTS = {
                                     } else {
                                         $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-2"></i>Generating... 100%`);
                                         x.callback(docs);
-                                        $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
+                                        if(!x.doNotRemoveTable){
+                                            $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
+                                        }
                                     }
                                 }
                                 retrieveData();
@@ -8815,7 +9070,8 @@ var REPORTS = {
                                         return a.USER_NAME.localeCompare(b.USER_NAME) || new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
                                     });
                                     callback(docs);
-                                }
+                                },
+                                doNotRemoveTable: true
                             });
                         };
 
@@ -9027,9 +9283,7 @@ var REPORTS = {
                         var title = "Check In Check Out Report";
                         df_dt_dest(title,"REPORT_MODAL_05",null,function(){
                             ci_co_r_report(function(docs){
-                                $(`body`).append(REPORTS.UI.REPORTS.CI_CO_R(title,docs,date_from,date_to));
-                                GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`);
-                                $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
+                                REPORTS.UI.REPORTS.CI_CO_R(title,docs,date_from,date_to);
                             });
                         });
 
@@ -9543,7 +9797,7 @@ var EVENT_VIEWER = {
                     dom: 'lB<"toolbar">frti<"tbl-progress-bar">p',
                 }
             });
-            table.filter = (CLIENT.type != 2) ? {timestamp: FILTER.DATERANGE(), shipment_number: {$exists:true}} : {timestamp: FILTER.DATERANGE()};
+            USER.filters["events"] = (CLIENT.type != 2) ? {timestamp: FILTER.DATERANGE(), shipment_number: {$exists:true}} : {timestamp: FILTER.DATERANGE()};
             table.setButtons({
                 actions:{
                     refresh: function(){ table.countRows(); },
@@ -9599,7 +9853,8 @@ var EVENT_VIEWER = {
                         FILTER.STATUS = "new";
 
                         $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
-                        table.filter = (CLIENT.type != 2) ? {timestamp: FILTER.DATERANGE(_date), shipment_number: {$exists:true}} : {timestamp: FILTER.DATERANGE(_date)};
+                        
+                        USER.filters["events"] = (CLIENT.type != 2) ? {timestamp: FILTER.DATERANGE(_date), shipment_number: {$exists:true}} : {timestamp: FILTER.DATERANGE(_date)};
                         table.countRows();
                     }
                 });
@@ -9623,7 +9878,7 @@ var EVENT_VIEWER = {
                     $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
 
                     
-                    table.filter = (CLIENT.type != 2) ? {timestamp: FILTER.DATERANGE(_date), shipment_number: {$exists:true}} : {timestamp: FILTER.DATERANGE(_date)};
+                    USER.filters["events"] = (CLIENT.type != 2) ? {timestamp: FILTER.DATERANGE(_date), shipment_number: {$exists:true}} : {timestamp: FILTER.DATERANGE(_date)};
                     table.countRows();
                 });
                 
@@ -9726,7 +9981,7 @@ var ALL_EVENTS = {
                     dom: 'lBrti<"tbl-progress-bar">p',
                 }
             });
-            table.filter = {timestamp: FILTER.DATERANGE()};
+            USER.filters["events"] = {timestamp: FILTER.DATERANGE()};
             table.setButtons({
                 actions:{
                     refresh: function(){ table.countRows(); },
@@ -9783,7 +10038,8 @@ var ALL_EVENTS = {
 
                         $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
 
-                        table.filter = {timestamp: FILTER.DATERANGE(_date)};
+                        
+                        USER.filters["events"] = {timestamp: FILTER.DATERANGE(_date)};
                         table.countRows();
                     }
                 });
@@ -9806,7 +10062,7 @@ var ALL_EVENTS = {
 
                     $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
 
-                    table.filter = {timestamp: FILTER.DATERANGE(_date)};
+                    USER.filters["events"] = {timestamp: FILTER.DATERANGE(_date)};
                     table.countRows();
                 });
                 // initialize filter
@@ -10910,7 +11166,6 @@ var LOCATIONS = {
                             }
                         }
                     });
-                // table.filter = {};
                 table.setButtons({
                     loadView: ["create"],
                     actions:{
@@ -11609,6 +11864,7 @@ var VEHICLES = {
                     'Equipment Number': obj["Equipment Number"] || "-",
                     'Conduction Number': obj["Tractor Conduction"] || "-",
                     'Truck Number': obj["Truck Number"] || "-",
+                    'Truck Type': obj.truck_type || "-",
                     'Site': obj["Site"] || "-",
                     'CN1': obj["CN1"] || "-",
                     'CN2': obj["CN2"] || "-",
@@ -11636,6 +11892,9 @@ var VEHICLES = {
                                     switch (val) {
                                         case "Trailer":
                                             arr.push({title:"Trailer",id:"Trailer",type:"select2",attr:"blankStringIfEmpty"});
+                                            break;
+                                        case "truck_type":
+                                            arr.push({ title:"Truck Type", id:"truck_type", type:"text", value: obj.truck_type||""});
                                             break;
                                         case "section_id":
                                             arr.push({ title:"Section", id:"section_id", type:"select2"});
@@ -15507,13 +15766,13 @@ var TABLE = {
         }
         return {column,row};
     },
-    TOOLBAR: function(dt){
+    TOOLBAR: function(dt,filenameCallback){
         new $.fn.dataTable.Buttons(dt, {
                 buttons: [
                     {
                         extend: 'copy',
                         text: 'Copy',
-                        title: null,
+                        title: filenameCallback ? filenameCallback() : undefined,
                         exportOptions: {
                             modifier: {
                                 search: 'applied',
@@ -15525,7 +15784,7 @@ var TABLE = {
                                     var _data = data;
                                     
                                     (_data === "You") ? _data = _data.replace("You", USER.fullName) : null; // change "You" to user's full name
-                                    (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; // return text inside html tags
+                                    try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags 
 
                                     return _data;
                                 }
@@ -15535,7 +15794,7 @@ var TABLE = {
                     {
                         extend: 'csv',
                         text: 'CSV',
-                        title: null,
+                        title: filenameCallback ? filenameCallback() : undefined,
                         exportOptions: {
                             modifier: {
                                 search: 'applied',
@@ -15547,7 +15806,7 @@ var TABLE = {
                                     var _data = data;
                                     
                                     (_data === "You") ? _data = _data.replace("You", USER.fullName) : null; // change "You" to user's full name
-                                    (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; // return text inside html tags
+                                    try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags 
 
                                     return _data;
                                 }
@@ -15557,7 +15816,7 @@ var TABLE = {
                     {
                         extend: 'excel',
                         text: 'Excel',
-                        title: null,
+                        title: filenameCallback ? filenameCallback() : undefined,
                         exportOptions: {
                             modifier: {
                                 search: 'applied',
@@ -15569,7 +15828,7 @@ var TABLE = {
                                     var _data = data;
                                     
                                     (_data === "You") ? _data = _data.replace("You", USER.fullName) : null; // change "You" to user's full name
-                                    (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; // return text inside html tags
+                                    try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags 
 
                                     return _data;
                                 }
@@ -15774,6 +16033,7 @@ const views = new function(){
         dashboard: function(){
             var summaryStatusHTML = "";
             var calendarViewHTML = "";
+            var exportBtnHTML = "";
 
             (clientCustom.visibleStatus||[]).forEach(val => {
                 switch (val) {
@@ -15891,6 +16151,9 @@ const views = new function(){
             } else {
                 calendarViewHTML = `<span class="input-group-addon"><i id="icon-date" class="la la-calendar"></i></span>`;
             }
+            if(clientCustom.exportTable.dashboard){
+                exportBtnHTML = `<span id="export-container" class="normal-button d-inline-block"></span>`;
+            }
 
             return `<div id="dashboard-page" class="page-box row">
                         <div class="col-sm-12" style="height: 66px;">
@@ -15909,8 +16172,9 @@ const views = new function(){
                                     <a></a>
                                 </div>
                             </div>
-                            <span class="float-right" style="max-width:200px;display:inline-block;">
-                                <span>
+                            <span class="float-right" style="max-width:420px;display:inline-block;">
+                                ${exportBtnHTML}
+                                <span class="d-inline-block"">
                                     <div class="input-group">
                                         ${calendarViewHTML}
                                         <input id="_date" class="form-control" type="text" readonly>
