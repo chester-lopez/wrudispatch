@@ -6814,53 +6814,28 @@ var chassis = [
     }
 ];
 // DELETE AFTER
-router.get('/test/update/chassis', (req,res,next)=>{
+router.get('/test/get/event', (req,res,next)=>{
     // PRODUCTION
     // const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     // DEVELOPMENT
     const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
-    var dbName = "wd-wilcon";
+    var dbName = "wd-coket1-logging";
     
     MongoClient.connect(url, mongoOptions, (err,client) => {
         if(err){
             console.log("ERROR1",err);
         } else {
             var childPromise = [];
-            client.db(dbName).collection("chassis").find({}).toArray().then(docs => {
-                // docs.forEach(val => {
-                //     var newObj = {
-                //         _id: val.name,
-                //         created_by: val.username || val.created_by,
-                //         created_on: val.timestamp || val.created_on
-                //     };
-                //     (val.type_id) ? newObj.type_id = db.getPrimaryKey(val.type_id) : null;
-                //     (val.section_id) ? newObj.section_id = db.getPrimaryKey(val.section_id) : null;
-                //     (val.company_id) ? newObj.company_id = db.getPrimaryKey(val.company_id) : null;
-                //     (val.vehicle_id) ? newObj.vehicle_id = Number(val.vehicle_id) : null;
-
-                //     childPromise.push(client.db(dbName).collection("chassis").insertOne(newObj));
-                //     childPromise.push(client.db(dbName).collection("chassis").deleteOne({ _id: db.getPrimaryKey(val._id) }));
-                // });
-                docs.forEach(val => {
-                    if(val._id.indexOf("–") > -1){
-                        var finalId = val._id.replace(/–/g,"-");
-                        var newObj = {
-                            _id: finalId,
-                            created_by: val.username || val.created_by,
-                            created_on: val.timestamp || val.created_on
-                        };
-                        (val.type_id) ? newObj.type_id = db.getPrimaryKey(val.type_id) : null;
-                        (val.section_id) ? newObj.section_id = db.getPrimaryKey(val.section_id) : null;
-                        (val.company_id) ? newObj.company_id = db.getPrimaryKey(val.company_id) : null;
-                        (val.vehicle_id) ? newObj.vehicle_id = Number(val.vehicle_id) : null;
-    
-                        childPromise.push(client.db(dbName).collection("chassis").insertOne(newObj));
-                        childPromise.push(client.db(dbName).collection("chassis").deleteOne({ _id: val._id }));
-                    }
-                });
-                Promise.all(childPromise).then(result => { res.json({ok:1}); }).catch(error => { console.log("Error",error); res.json(error); });
+            client.db(dbName).collection("events").find({
+                USER_NAME: "DCP7707",
+                // GEOFENCE_NAME: /DVO DC/, // do not include GEOFENCE_NAME because we need to know if geofenceHasBeenChanged - to know what event we will end
+                timestamp: {
+                    $gte: "2021-07-14T15:48:00.613Z"
+                }
+            }).limit(5).toArray().then(docs => {
+                res.json(docs);
             });
         }
     });

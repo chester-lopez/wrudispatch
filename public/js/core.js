@@ -32,7 +32,7 @@ const CUSTOM = {
                 return `<i class="la la-info" data-toggle="tooltip" title="${tooltipTitles[key]}" style="color:#5b5b5b;position: absolute;top: 0px;right: 0px;padding:1px 8px 5px 5px;"></i>`;
             }
             var columns = [
-                { data: "Region", visible: false},
+                { data: "Region", className: "notExport", visible: false},
                 { data: "Plant", title: `Plant/DC`},
             ];
 
@@ -477,6 +477,9 @@ const CUSTOM = {
                     case "truckNumber":
                         arr.push({ data: "Truck Number", title: "Truck Number", visible: true });
                         break;
+                    case "truckType":
+                        arr.push({ data: "Truck Type", title: "Truck Type", visible: true });
+                        break;
                     case "site":
                         arr.push({ data: "Site", title: "Site", visible: true });
                         break;
@@ -819,9 +822,11 @@ const WEBSOCKET = {
                 clientCustom.calendarView = {};
                 clientCustom.tableButtons = {};
                 clientCustom.columnOrder = {};
+                clientCustom.exportTable = {};
                 clientCustom.modalFields = {};
                 clientCustom.filterType = {};
                 clientCustom.rowButtons = {};
+                
                 clientCustom.gSelect2 = {};
                 clientCustom.columns = {};
 
@@ -833,6 +838,9 @@ const WEBSOCKET = {
                 // filterType
                 clientCustom.filterType.dashboard = setValue("custom.dashboard.filterType", "");
                 clientCustom.filterType.dispatch = setValue("custom.dispatch.filterType", "");
+
+                // exportTable
+                clientCustom.exportTable.dashboard = setValue("custom.dashboard.exportTable", false);
 
                 // columns
                 clientCustom.columns.notifications = setValue("custom.notifications.columns", []);

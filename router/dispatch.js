@@ -199,7 +199,8 @@ router.get('/:dbName/:username/mtur/:filter/:skip/:limit', (req,res,next)=>{
                     "driver_id": 1,
                     "checker_id": 1,
                     "helper_id": 1,
-                    "scheduled_date": 1
+                    "scheduled_date": 1,
+                    "posting_date": 1
                 }
             },
         ],

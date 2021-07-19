@@ -858,7 +858,8 @@ var LIMIT = 200,
                 dashboard: {
                     calendarView: ["day","month"],
                     visibleStatus: ["total_shipment","scheduled","assigned","processingAtOrigin","in_transit","onSite","returning","complete","incomplete"], // "scheduled",
-                    filterType: "postingDate-scheduledDate"
+                    filterType: "postingDate-scheduledDate",
+                    exportTable: true
                 },
                 dispatch: {
                     editableChassis: true,
@@ -892,9 +893,9 @@ var LIMIT = 200,
                             { roles: ["administrator","developer"], additionalButton: ["data_maintenance"] }
                         ] 
                     },
-                    columns: ["name","plateNumber","truckNumber","section_id","company_id","last2Locations","action"],
+                    columns: ["name","plateNumber","truckNumber","truckType","section_id","company_id","last2Locations","action"],
                     columnOrder: [[ 0, "asc" ]],
-                    modalFields: ["section_id","company_id"]
+                    modalFields: ["truck_type","section_id","company_id"]
                 },
                 vehicle_personnel: {
                     tableButtons: { 
