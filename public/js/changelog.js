@@ -1,4 +1,9 @@
 const changelogList = {
+    "2.55.112": {
+        date: "July 17, 2021",
+        improved: ["[Adjustment][Wilcon] Utilization Report",
+                   "[Feature][Wilcon] Export Monthly view of dashboard"]
+    },
     "2.55.111": {
         date: "July 15, 2021",
         feature: ["[Feature][Wilcon] Monthly Dashboard View"],

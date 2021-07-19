@@ -826,7 +826,7 @@ var LIMIT = 200,
                 },
                 reports: {
                     desr: true,
-                    ci_co_r: true,
+                    // ci_co_r: true,
                     ular: {
                         roles: ["administrator","developer"]
                     },

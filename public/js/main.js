@@ -2294,6 +2294,50 @@ var DASHBOARD = {
                     var _date = calendarview == "day" ? moment(selectedDate).format("MM.DD.YYYY") : moment(selectedDate).format("MM.YYYY");
                     var _region = filter && filter.toLowerCase() != 'all' ? (getRegion(filter)||{}).region || '-' : 'All';
                     return `Deployment Dashboard - ${currentView.capitalize()} View - Region ${_region} - Filter ${calendarview.capitalize()} - ${_date}`
+                }, function (xlsx) {
+                    var sheet = xlsx.xl.worksheets['sheet1.xml'];
+                    var clRow = $('row', sheet);
+
+                    var alphabet = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
+                    var total = [{ k: alphabet[0], v: 'Total' }];
+                    
+                    console.log(Object.keys(clRow).length);
+                    //update Row
+                    clRow.each(function () {
+                        $(this).find('v').each((i,el) => {
+                            var content = $(el).get(0).innerHTML;
+                            total[i+1] = total[i+1] || { k: alphabet[i+1], v: 0 };
+                            total[i+1].v += Number(content);
+                        });
+                    });
+                    console.log("total",total);
+             
+                    function Addrow(index,data) {
+                        msg='<row r="'+index+'">'
+                        for(i=0;i<data.length;i++){
+                            var key=data[i].k;
+                            
+                            var value=data[i].v;
+                            if(i == 0){
+                                msg += '<c t="inlineStr" r="' + key + index + '" >';
+                                msg += '<is>';
+                                msg +=  '<t xml:space="preserve">'+value+'</t>';
+                                msg+=  '</is>';
+                                msg+='</c>';
+                            } else {
+                                msg += '<c r="' + key + index + '" s="65" >';
+                                msg +=    '<v>'+value+'</v>';
+                                msg+='</c>';
+                            }
+                        }
+                        msg += '</row>';
+                        return msg;
+                    }
+
+                    //insert
+                    var r1 = Addrow(Object.keys(clRow).length-1, total);
+                    
+                    sheet.childNodes[0].childNodes[1].innerHTML =  sheet.childNodes[0].childNodes[1].innerHTML + r1;
                 });
                 $(`.buttons-copy`).remove();
                 $(`.buttons-csv`).remove();
@@ -8293,43 +8337,43 @@ var REPORTS = {
 
                                 <tr> 
                                     <td style="${tblBottomStyle}"></td>
-                                    <td style="${tblBottomStyle}">Total #</td>
+                                    <!--<td style="${tblBottomStyle}">Total #</td>-->
                                     <td style="${tblBottomStyle}">Monthly Utilization</td>
                                     <td style="${tblBottomStyle}">Average Monthly Utilization</td>
                                 </tr>
                                 <tr> 
                                     <td style="${tblBottomStyle}">Truck</td>
-                                    <td style="${tblBottomStyle}">${totalVehicles}</td>
+                                    <!--<td style="${tblBottomStyle}">${totalVehicles}</td>-->
                                     <td style="${tblBottomStyle}">${monthlyVehicleUtilization}%</td>
                                     <td style="${tblBottomStyle}">${aveMonthlyVehicleUtilization}%</td>
                                 </tr>
                                 <tr> 
                                     <td style="${tblBottomStyle}">Chassis</td>
-                                    <td style="${tblBottomStyle}">${totalChassis}</td>
+                                    <!--<td style="${tblBottomStyle}">${totalChassis}</td>-->
                                     <td style="${tblBottomStyle}">${monthlyChassisUtilization}%</td>
                                     <td style="${tblBottomStyle}">${aveMonthlyChassisUtilization}%</td>
                                 </tr>
                                 <tr> 
                                     <td style="${tblBottomStyle}">Manpower</td>
-                                    <td style="${tblBottomStyle}">${totalManpower}</td>
+                                    <!--<td style="${tblBottomStyle}">${totalManpower}</td>-->
                                     <td style="${tblBottomStyle}">${monthlyManpowerUtilization}%</td>
                                     <td style="${tblBottomStyle}">${aveMonthlyManpowerUtilization}%</td>
                                 </tr>
                                 <tr> 
                                     <td style="${tblBottomStyle}padding-left:25px;">Driver</td>
-                                    <td style="${tblBottomStyle}">${totalDriver}</td>
+                                    <!--<td style="${tblBottomStyle}">${totalDriver}</td>-->
                                     <td style="${tblBottomStyle}">${monthlyDriverUtilization}%</td>
                                     <td style="${tblBottomStyle}">${aveMonthlyDriverUtilization}%</td>
                                 </tr>
                                 <tr> 
                                     <td style="${tblBottomStyle}padding-left:25px;">Checker</td>
-                                    <td style="${tblBottomStyle}">${totalChecker}</td>
+                                    <!--<td style="${tblBottomStyle}">${totalChecker}</td>-->
                                     <td style="${tblBottomStyle}">${monthlyCheckerUtilization}%</td>
                                     <td style="${tblBottomStyle}">${aveMonthlyCheckerUtilization}%</td>
                                 </tr>
                                 <tr> 
                                     <td style="${tblBottomStyle}padding-left:25px;">Helper</td>
-                                    <td style="${tblBottomStyle}">${totalHelper}</td>
+                                    <!--<td style="${tblBottomStyle}">${totalHelper}</td>-->
                                     <td style="${tblBottomStyle}">${monthlyHelperUtilization}%</td>
                                     <td style="${tblBottomStyle}">${aveMonthlyHelperUtilization}%</td>
                                 </tr>
@@ -8403,6 +8447,8 @@ var REPORTS = {
 
                 $(`body`).append(tableHtml);
 
+                var extendSearchDetails = {};
+
                 docs.forEach((val,i) => {
                     function processReport(){
                         hasChangedGeofence = false;
@@ -8443,7 +8489,7 @@ var REPORTS = {
                             sameCurrentAndNextAddress = getOriginalAddress(startAddress) == getOriginalAddress(endAddress),
                             sameCurrentAndNextVehicle = (_next && _next.USER_NAME == val.USER_NAME),
                             duration = (val.timestamp) ? Math.abs(new Date(timestamp).getTime() - new Date(val.timestamp).getTime()) : null,
-                            addHTML = function(address){
+                            addHTML = function(address,extendSearch){
 
                                 function addTds(startAddress,timestamp,address,val){
                                     // do not make condition like !duration. Duration could be 0.
@@ -8477,51 +8523,108 @@ var REPORTS = {
                                             <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${vehicle["Base Site"]||""}</td>
                                             <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;text-align:center;">${vehicle["Base Site Code"]||""}</td>`;
                                 }
-                                
-                                if(duration == 0){
-                                    if(sameCurrentAndNextVehicle){
+
+                                if(extendSearch){
+                                    $(`#report-hidden`).append(`<tr data-attribute="${val.USER_NAME}-${getOriginalAddress(val.GEOFENCE_NAME)}">${addTds(startAddress,timestamp,address,val)}</tr>`);
+                                                    
+                                    extendSearchDetails[`${val.USER_NAME}-${getOriginalAddress(val.GEOFENCE_NAME)}`] = timestamp;
+                                    $.ajax({
+                                        url: `/api/events/${CLIENT.id}/${USER.username}/${JSON.stringify({
+                                            USER_NAME: val.USER_NAME,
+                                            // GEOFENCE_NAME: /DVO DC/, // do not include GEOFENCE_NAME because we need to know if geofenceHasBeenChanged - to know what event we will end
+                                            timestamp: {
+                                                $gte: new Date(val.timestamp).toISOString()
+                                            }
+                                        })}`,
+                                        method: "GET",
+                                        timeout: 90000, // 1 minute and 30 seconds
+                                        headers: {
+                                            "Authorization": SESSION_TOKEN
+                                        },
+                                        async: true
+                                    }).done(function (docs1) {
+                                        console.log("docs",docs1);
+
+                                        var originalEvent = docs1[0];
+                                        var found = false;
+
+                                        docs1.forEach((val,i) => {
+                                            /*** do not delete me. Code in events.js: XX001. Purpose:  originalEvent._id == val._id */
+                                            if(!found && originalEvent._id == val._id){
+                                                var endAddress = (docs1[i+1] && docs1[i+1].USER_NAME == val.USER_NAME) ? docs1[i+1].GEOFENCE_NAME : null;
+                                                var sameCurrentAndNextAddress = getOriginalAddress(originalEvent.GEOFENCE_NAME) == getOriginalAddress(endAddress);
+
+                                                extendSearchDetails[`${originalEvent.USER_NAME}-${getOriginalAddress(originalEvent.GEOFENCE_NAME)}`]
+                                                var _timestamp = extendSearchDetails[`${originalEvent.USER_NAME}-${getOriginalAddress(originalEvent.GEOFENCE_NAME)}`];
+
+                                                if(!sameCurrentAndNextAddress){
+                                                    found = true;
+                                                    $(`#report-hidden [data-attribute="${originalEvent.USER_NAME}-${getOriginalAddress(originalEvent.GEOFENCE_NAME)}"]`).html(addTds(originalEvent.GEOFENCE_NAME,_timestamp,null,val));
+                                                }
+                                            }
+                                        });
+                                        extendSearchDone();
+                                    });
+                                } else {
+                                    if(duration == 0){
                                         extendSearchDone();
                                     } else {
-                                        $(`#report-hidden`).append(`<tr data-attribute="${val.USER_NAME}-${getOriginalAddress(val.GEOFENCE_NAME)}">${addTds(startAddress,timestamp,address,val)}</tr>`);
-                                                    
-                                        $.ajax({
-                                            url: `/api/events/${CLIENT.id}/${USER.username}/${JSON.stringify({
-                                                USER_NAME: val.USER_NAME,
-                                                // GEOFENCE_NAME: /DVO DC/, // do not include GEOFENCE_NAME because we need to know if geofenceHasBeenChanged - to know what event we will end
-                                                timestamp: {
-                                                    $gte: new Date(val.timestamp).toISOString()
-                                                }
-                                            })}`,
-                                            method: "GET",
-                                            timeout: 90000, // 1 minute and 30 seconds
-                                            headers: {
-                                                "Authorization": SESSION_TOKEN
-                                            },
-                                            async: true
-                                        }).done(function (docs1) {
-                                            console.log("docs",docs1);
-
-                                            var originalEvent = docs1[0];
-                                            var found = false;
-
-                                            docs1.forEach((val,i) => {
-                                                if(!found && originalEvent._id != val._id){
-                                                    var endAddress = (docs1[i+1] && docs1[i+1].USER_NAME == val.USER_NAME) ? docs1[i+1].GEOFENCE_NAME : null;
-                                                    var sameCurrentAndNextAddress = getOriginalAddress(originalEvent.GEOFENCE_NAME) == getOriginalAddress(endAddress);
-    
-                                                    if(!sameCurrentAndNextAddress){
-                                                        found = true;
-                                                        $(`#report-hidden [data-attribute="${originalEvent.USER_NAME}-${getOriginalAddress(originalEvent.GEOFENCE_NAME)}"]`).html(addTds(originalEvent.GEOFENCE_NAME,originalEvent.timestamp,null,val));
-                                                    }
-                                                }
-                                            });
-                                            extendSearchDone();
-                                        });
+                                        $(`#report-hidden`).append(`<tr>${addTds(startAddress,timestamp,address,val)}</tr>`);
+                                        extendSearchDone();
                                     }
-                                } else {
-                                    $(`#report-hidden`).append(`<tr>${addTds(startAddress,timestamp,address,val)}</tr>`);
-                                    extendSearchDone();
                                 }
+                                
+                                // if(duration == 0){
+                                //     if(sameCurrentAndNextVehicle){
+                                //         extendSearchDone();
+                                //     } else {
+                                //         // console.log("Duration is 0 and current and next is NOT same");
+                                //         $(`#report-hidden`).append(`<tr data-attribute="${val.USER_NAME}-${getOriginalAddress(val.GEOFENCE_NAME)}">${addTds(startAddress,timestamp,address,val)}</tr>`);
+                                                    
+                                //         $.ajax({
+                                //             url: `/api/events/${CLIENT.id}/${USER.username}/${JSON.stringify({
+                                //                 USER_NAME: val.USER_NAME,
+                                //                 // GEOFENCE_NAME: /DVO DC/, // do not include GEOFENCE_NAME because we need to know if geofenceHasBeenChanged - to know what event we will end
+                                //                 timestamp: {
+                                //                     $gte: new Date(val.timestamp).toISOString()
+                                //                 }
+                                //             })}`,
+                                //             method: "GET",
+                                //             timeout: 90000, // 1 minute and 30 seconds
+                                //             headers: {
+                                //                 "Authorization": SESSION_TOKEN
+                                //             },
+                                //             async: true
+                                //         }).done(function (docs1) {
+                                //             console.log("docs",docs1);
+
+                                //             var originalEvent = docs1[0];
+                                //             var found = false;
+
+                                //             docs1.forEach((val,i) => {
+                                //                 if(!found && originalEvent._id != val._id){
+                                //                     var endAddress = (docs1[i+1] && docs1[i+1].USER_NAME == val.USER_NAME) ? docs1[i+1].GEOFENCE_NAME : null;
+                                //                     var sameCurrentAndNextAddress = getOriginalAddress(originalEvent.GEOFENCE_NAME) == getOriginalAddress(endAddress);
+    
+                                //                     if(!sameCurrentAndNextAddress){
+                                //                         found = true;
+                                //                         $(`#report-hidden [data-attribute="${originalEvent.USER_NAME}-${getOriginalAddress(originalEvent.GEOFENCE_NAME)}"]`).html(addTds(originalEvent.GEOFENCE_NAME,originalEvent.timestamp,null,val));
+                                //                     }
+                                //                 }
+                                //             });
+                                //             extendSearchDone();
+                                //         });
+                                //     }
+                                // } else {
+                                //     if(getOriginalAddress(startAddress) == "Outside Geofence"){
+                                //         // console.log("Duration is > 0 and current IS Outside Geofence");
+                                //         $(`#report-hidden`).append(`<tr>${addTds(startAddress,timestamp,address,val)}</tr>`);
+                                //         extendSearchDone();
+                                //     } else {
+                                //         // console.log("Duration is > 0 and current is NOT Outside Geofence");
+                                        
+                                //     }
+                                // }
                             };
 
                         if(!sameCurrentAndNextAddress){
@@ -8534,10 +8637,24 @@ var REPORTS = {
                             lastTimestamp = null;
                             lastGeofence = getOriginalAddress(startAddress);
 
-                            if(!sameCurrentAndNextAddress){
-                                addHTML(endAddress);
+                            // if current event vehicle is the same as next event vehicle
+                            if(sameCurrentAndNextVehicle){
+
+                                // if current event address is NOT the same as next event address
+                                if(!sameCurrentAndNextAddress){
+                                    addHTML(endAddress);
+                                } else {
+                                    extendSearchDone();
+                                }
                             } else {
-                                extendSearchDone();
+
+                                // if rule name is NOT yet Outside Geofence (or Outside), 
+                                // extend search to next possible event with date greater than current data's date and with the same vehicle - limited data response
+                                if(val.RULE_NAME.indexOf("Outside") == -1){
+                                    addHTML(endAddress,true);
+                                } else {
+                                    addHTML(endAddress);
+                                }
                             }
                         }
 
@@ -8546,10 +8663,14 @@ var REPORTS = {
                         }
                     }
                     if(hasChangedGeofence){
-                        if(val.GEOFENCE_NAME.indexOf("-") == -1){
+                        // check if "inside geofence"
+                        if(val.USER_NAME == "ACP8844"){
+                            console.log(val.GEOFENCE_NAME,val.RULE_NAME,moment(val.timestamp).format("MM/DD/YYYY, hh:mm A"))
+                        }
+                        if(val.RULE_NAME == "Inside Geofence"){
                             var date = new Date(val.timestamp);
                             date.setMinutes(date.getMinutes() - timeToDeduct);
- 
+
                             if(DATETIME.FORMAT(val.timestamp,"D-MMM") == DATETIME.FORMAT(date_from,"D-MMM")){
                                 if(DATETIME.FORMAT(date_from,"D-MMM") == DATETIME.FORMAT(date,"D-MMM")){
                                     val.timestamp = date.getTime();
@@ -8580,7 +8701,7 @@ var REPORTS = {
 
                 function extendSearchDone(){
                     extendSearchCount ++;
-                    console.log(docs.length,extendSearchCount);
+                    // console.log(docs.length,extendSearchCount);
                     if(docs.length == extendSearchCount){
                         GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`);
                         $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
@@ -15766,7 +15887,7 @@ var TABLE = {
         }
         return {column,row};
     },
-    TOOLBAR: function(dt,filenameCallback){
+    TOOLBAR: function(dt,filenameCallback,customizeCallback){
         new $.fn.dataTable.Buttons(dt, {
                 buttons: [
                     {
@@ -15817,6 +15938,7 @@ var TABLE = {
                         extend: 'excel',
                         text: 'Excel',
                         title: filenameCallback ? filenameCallback() : undefined,
+                        customize: customizeCallback ? customizeCallback : undefined,
                         exportOptions: {
                             modifier: {
                                 search: 'applied',
