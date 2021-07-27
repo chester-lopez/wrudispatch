@@ -52,9 +52,13 @@ router.get('/:dbName/:username/all/:filter/:skip/:limit', (req,res,next)=>{
             })
         }
     });
+    
+    (filter.origin_id) ? filter.origin_id = db.getPrimaryKey(filter.origin_id) : null;
+    (filter.destination_id) ? filter[`destination.0.location_id`] = db.getPrimaryKey(filter.destination_id) : null;
 
     delete filter.region; // do not delete
     delete filter.cluster; // do not delete
+    delete filter.destination_id; // do not delete
 
     defaultFilter.set(filter,{
         condition: !filter.posting_date && !filter.departure_date,

@@ -447,6 +447,7 @@ class Dispatch {
         this.onSite_datetime = (["onSite","returning","complete","incomplete"].includes(obj.status)) ? DATETIME.FORMAT(getDateTime("onSite",obj,"last")) : "-";
         this.returning_datetime = (["returning","complete","incomplete"].includes(obj.status)) ? DATETIME.FORMAT(getDateTime("returning",obj,"last")) : "-";
         this.complete_datetime = (["complete"].includes(obj.status)) ? DATETIME.FORMAT(getDateTime("complete",obj,"last")) : "-";
+        this.incomplete_datetime = (["incomplete"].includes(obj.status)) ? DATETIME.FORMAT(getDateTime("incompleteByReturningToOrigin",obj,"last")) : "-";
         this.status = GET.STATUS(obj.status).html;
         this.statusText = GET.STATUS(obj.status).text;
         this.scheduled_date = DATETIME.FORMAT(obj.scheduled_date,"MMM DD, YYYY");
@@ -721,14 +722,6 @@ class Dispatch {
 
                                                     ${this.tbl().empty} ${this.tbl().empty}
                                                 `}
-
-                                                ${(CLIENT.id == "wilcon")?`
-                                                    ${this.tbl().getTr("Driver",this.driver)}
-                                                    ${this.tbl().getTr("Checker",this.checker)}
-                                                    ${this.tbl().getTr("Helper",this.helper)} ${this.tbl().empty}
-
-                                                    ${this.tbl().empty} ${this.tbl().empty}
-                                                `:""}
 
                                                 ${this.tbl().getTr("Check In Date & Time",this.entered_datetime)} ${this.tbl().empty}
                                                 ${this.tbl().getTr("Queueing Duration",this.queueingDuration)} ${this.tbl().empty}
@@ -2971,6 +2964,7 @@ var DISPATCH = {
                 dt = null,
                 _new_ = true,
                 _new2_ = true,
+                _new3_ = true,
                 donePopulate = false,
                 rowData = function(obj){
                     var de = new Dispatch(obj,table_id);
@@ -3275,7 +3269,9 @@ var DISPATCH = {
                     if(filter.status) $(`#_status`).val(filter.status);
                     if(filter.region) $(`#_region`).val(filter.region);
                     if(filter.cluster) $(`#_cluster`).val(decodeURIComponent(filter.cluster));
-                    if(filter.departure_date || filter.posting_date || filter.scheduled_date || filter.status || filter.region || filter.cluster) {
+                    if(filter.origin_id) $(`#_origin_id`).val(filter.origin_id);
+                    if(filter.destination_id) $(`#_destination_id`).val(filter.destination_id);
+                    if(filter.departure_date || filter.posting_date || filter.scheduled_date || filter.status || filter.region || filter.cluster || filter.origin_id || filter.destination_id) {
                         $(`#filter-container`).toggle("slide", {direction:'right'},100);
                         $('.clearable').trigger("input");
                         FILTER.STATUS = "new";
@@ -3284,7 +3280,7 @@ var DISPATCH = {
                     FILTER.RESET({
                         dateEl: `#_posting_date`,
                         dateElnoVal: `#_departure_date,#_scheduled_date`,
-                        selectEl: `#_status,#_region,#_cluster`,
+                        selectEl: `#_status,#_region,#_cluster,#_origin_id,#_destination_id`,
                         urlPath,
                         populateTable
                     });
@@ -3295,28 +3291,32 @@ var DISPATCH = {
                             _posting_date = (_departure_date || _scheduled_date) ? $(`#_posting_date`).val() : ( $(`#_posting_date`).val() || DEFAULT_DATE),
                             _status = $(`#_status`).val(),
                             _region = $(`#_region`).val(),
-                            _cluster = $(`#_cluster`).val()
-                            _origin_id = [];
+                            _cluster = $(`#_cluster`).val(),
+                            _origin_id = $(`#_origin_id`).val(),
+                            _destination_id = $(`#_destination_id`).val(),
+                            ___origin_id = [];
                         console.log("_departure_date",_departure_date,_posting_date);
                         (!_departure_date.isEmpty()) ? filter["departure_date"] = FILTER.DATERANGE(_departure_date,true,true) : null;
                         (!_posting_date.isEmpty()) ? filter["posting_date"] = FILTER.DATERANGE(_posting_date,true,true) : null; 
                         (!_scheduled_date.isEmpty()) ? filter["scheduled_date"] = FILTER.DATERANGE(_scheduled_date,true,true) : null; 
+                        (!_origin_id.isEmpty() && _origin_id != "all") ? filter["origin_id"] = _origin_id : null; 
+                        (!_destination_id.isEmpty() && _destination_id != "all") ? filter["destination_id"] = _destination_id : null; 
                         (_status != "all") ? filter["status"] = _status : null;
                         if(_region != "all") {
                             filter["region"] = encodeURIComponent(_region);
                             var geofences = LIST["geofences"].filter(x => x.region_id == _region);
                             geofences.forEach(val => {
-                                _origin_id.push(val._id);
+                                ___origin_id.push(val._id);
                             });
                         }
                         if(_cluster != "all") {
                             filter["cluster"] = encodeURIComponent(_cluster);
                             var geofences = LIST["geofences"].filter(x => x.cluster_id == _cluster);
                             geofences.forEach(val => {
-                                _origin_id.push(val._id);
+                                ___origin_id.push(val._id);
                             });
                         }
-                        (_origin_id.length > 0) ? filter.origin_id = {$in:_origin_id} : null;
+                        (___origin_id.length > 0) ? filter.origin_id = {$in:___origin_id} : null;
 
                         // var _data_ = {};
                         if(FILTER.STATUS != "reset") {} else {
@@ -3412,8 +3412,8 @@ var DISPATCH = {
                         LIST["clusters"].forEach(val => {
                             clusterOptions += `<option value="${val._id}">${val.cluster}</option>`;
                         });
-                        $(`#_region`).html(regionOptions);
-                        $(`#_cluster`).html(clusterOptions);
+                        $(`#_region`).html(regionOptions).select2();
+                        $(`#_cluster`).html(clusterOptions).select2();
                     }
                 };
             __data.for = urlPath;
@@ -3426,6 +3426,8 @@ var DISPATCH = {
             LIST[urlPath] = [];
             populateTable(true);
             /******** END TABLE ********/
+
+            $(`#_status`).select2();
 
             /******** TABLE CHECK ********/
             TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
@@ -3445,6 +3447,16 @@ var DISPATCH = {
                 isFinishedLoading(["REGIONS","CLUSTERS"], _new2_, function(){
                     _new2_ = false;
                     FIXFILTER();
+                });
+                isFinishedLoading(["GEOFENCES"], _new3_, function(){
+                    _new3_ = false;
+                   
+                    var options = `<option value="all">All</option>`;
+                    LIST["geofences"].forEach(val => {
+                        options += `<option value="${val._id}">${val.short_name}</option>`;
+                    });
+                    $(`#_origin_id`).html(options).select2();
+                    $(`#_destination_id`).html(options).select2();
                 });
             }
             TABLE.FINISH_LOADING.START_CHECK();
@@ -7665,21 +7677,32 @@ var REPORTS = {
                     }
                     if(hasChangedGeofence){
                         if(val.GEOFENCE_NAME.indexOf("-") == -1){
-                            var date = new Date(val.timestamp);
-                            date.setMinutes(date.getMinutes() - timeToDeduct);
-
-                            if(DATETIME.FORMAT(val.timestamp,"D-MMM") == DATETIME.FORMAT(date_from,"D-MMM")){
-                                if(DATETIME.FORMAT(date_from,"D-MMM") == DATETIME.FORMAT(date,"D-MMM")){
-                                    val.timestamp = date.getTime();
-                                }
-                            } else {
-                                val.timestamp = date.getTime();
-                            }
                             processReport();
-                        } else { }
+                        } else {
+                            // extendSearchDone();
+                        }
                     } else {
                         processReport();
                     }
+
+                    // if(hasChangedGeofence){
+                    //     if(val.GEOFENCE_NAME.indexOf("-") == -1){
+                    //         // var date = new Date(val.timestamp);
+                    //         // date.setMinutes(date.getMinutes() - timeToDeduct);
+
+                    //         if(DATETIME.FORMAT(val.timestamp,"D-MMM") == DATETIME.FORMAT(date_from,"D-MMM")){
+                    //             val.timestamp = date.getTime();
+                    //             // if(DATETIME.FORMAT(date_from,"D-MMM") == DATETIME.FORMAT(date,"D-MMM")){
+                    //             //     val.timestamp = date.getTime();
+                    //             // }
+                    //         } else {
+                    //             val.timestamp = date.getTime();
+                    //         }
+                    //         processReport();
+                    //     } else { }
+                    // } else {
+                    //     processReport();
+                    // }
                 });
 
                 return `<table id="report-hidden" style="opacity:0;">
@@ -7885,12 +7908,15 @@ var REPORTS = {
                     var data = new Dispatch(val);
                     var comments = (data.comments == "-") ? "" : data.comments;
 
+                    console.log("data",data);
+                    var timeIn = data.complete_datetime != "-" ? data.complete_datetime : data.incomplete_datetime;
+
                     rows += `<tr>
                                 <td style="${tblBodyStyle}">${data.truck_number}</td>
                                 <td style="${tblBodyStyle}">${data.destination}</td>
                                 <td style="${tblBodyStyle}">${data.shift_schedule}</td>
                                 <td style="${tblBodyStyle}">${data.departure_date}</td>
-                                <td style="${tblBodyStyle}">${data.complete_datetime}</td>
+                                <td style="${tblBodyStyle}">${timeIn}</td>
                                 <td style="${tblBodyStyle}">${(data.driver||"").toUpperCase()}</td>
                                 <td style="${tblBodyStyle}">${(data.checker||"").toUpperCase()}</td>
                                 <td style="${tblBodyStyle}">${(data.helper||"").toUpperCase()}</td>
@@ -8197,25 +8223,11 @@ var REPORTS = {
                                          <td style="${tblHeaderStyle}width:130px;"><b>Percentage (Helper)</b></td>`);
                     // [[data],[data1]]
                     
-                    generateRowData(val._id).forEach((arr,i) => {
-                        rows[`${arr.date}-total`] = rows[`${arr.date}-total`] || [];
-                        rows[`${arr.date}-total`].push(`<td style="${tblBodyStyle}text-align:center;font-weight:bold;">${arr.date}</td>
-                                            <td style="${tblBodyStyle}text-align:center;">Total</td>
-                                            <td style="${tblBodyStyle}text-align:center;">${arr.uniqueVehicleCount}</td>
-                                            <td style="${tblBodyStyle}text-align:center;">${arr.totalVehiclePercentage}%</td>
-                                            <td style="${tblBodyStyle}text-align:center;">${arr.uniqueChassisCount}</td>
-                                            <td style="${tblBodyStyle}text-align:center;">${arr.totalChassisPercentage}%</td>
-                                            <td style="${tblBodyStyle}text-align:center;">${arr.uniqueDriverCount}</td>
-                                            <td style="${tblBodyStyle}text-align:center;">${arr.totalDriverPercentage}%</td>
-                                            <td style="${tblBodyStyle}text-align:center;">${arr.uniqueCheckerCount}</td>
-                                            <td style="${tblBodyStyle}text-align:center;">${arr.totalCheckerPercentage}%</td>
-                                            <td style="${tblBodyStyle}text-align:center;">${arr.uniqueHelperCount}</td>
-                                            <td style="${tblBodyStyle}text-align:center;">${arr.totalHelperPercentage}%</td>`);
-                                        
-                        Object.keys(arr.perTruckType).forEach(key => {
+                    generateRowData(val._id).forEach((arr,i) => {      
+                        Object.keys(arr.perTruckType).forEach((key,iPtt) => {
                             var ptt = arr.perTruckType[key];
                             rows[`${arr.date}-${key}`] = rows[`${arr.date}-${key}`] || [];
-                            rows[`${arr.date}-${key}`].push(`<td style="${tblBodyStyle}text-align:center;font-weight:bold;"></td>
+                            rows[`${arr.date}-${key}`].push(`<td style="${tblBodyStyle}text-align:center;font-weight:bold;">${iPtt==0?arr.date:""}</td>
                                                 <td style="${tblBodyStyle}text-align:center;">${key}</td>
                                                 <td style="${tblBodyStyle}text-align:center;">${ptt.uniqueVehicleList.length}</td>
                                                 <td style="${tblBodyStyle}text-align:center;">${GET.ROUND_OFF((ptt.uniqueVehicleList.length/totalVehicles)*100)}%</td>
@@ -8228,6 +8240,21 @@ var REPORTS = {
                                                 <td style="${tblBodyStyle}text-align:center;">${ptt.uniqueHelperList.length}</td>
                                                 <td style="${tblBodyStyle}text-align:center;">${GET.ROUND_OFF((ptt.uniqueHelperList.length/totalManpower)*100)}%</td>`);
                         });
+
+                        rows[`${arr.date}-total`] = rows[`${arr.date}-total`] || [];
+                        rows[`${arr.date}-total`].push(`<td style="${tblBodyStyle}text-align:center;font-weight:bold;"></td>
+                                            <td style="${tblBodyStyle}text-align:center;">Total</td>
+                                            <td style="${tblBodyStyle}text-align:center;">${arr.uniqueVehicleCount}</td>
+                                            <td style="${tblBodyStyle}text-align:center;">${arr.totalVehiclePercentage}%</td>
+                                            <td style="${tblBodyStyle}text-align:center;">${arr.uniqueChassisCount}</td>
+                                            <td style="${tblBodyStyle}text-align:center;">${arr.totalChassisPercentage}%</td>
+                                            <td style="${tblBodyStyle}text-align:center;">${arr.uniqueDriverCount}</td>
+                                            <td style="${tblBodyStyle}text-align:center;">${arr.totalDriverPercentage}%</td>
+                                            <td style="${tblBodyStyle}text-align:center;">${arr.uniqueCheckerCount}</td>
+                                            <td style="${tblBodyStyle}text-align:center;">${arr.totalCheckerPercentage}%</td>
+                                            <td style="${tblBodyStyle}text-align:center;">${arr.uniqueHelperCount}</td>
+                                            <td style="${tblBodyStyle}text-align:center;">${arr.totalHelperPercentage}%</td>`);
+                                            
                                             
                         dailyVehicleTableHeader[i] = dailyVehicleTableHeader[i] || [];
                         dailyVehicleTableHeader[i].push(`<td style="${tblHeaderStyle}" colspan=3><b>Truck Utilization (${arr.totalVehiclePercentage}%)</b></td>`);
@@ -8449,199 +8476,219 @@ var REPORTS = {
 
                 var extendSearchDetails = {};
 
+                function getAddress(addr){
+                    var finalStr = {
+                        short_name: "",
+                        code: ""
+                    };
+                    if(addr){
+                        var str = addr.split(" - ");
+
+                        var geofence = getGeofence(str[0],'short_name');
+
+                        if(geofence){
+                            finalStr = {
+                                short_name: geofence.short_name || "",
+                                code: geofence.code || ""
+                            };
+                        } else {
+                            finalStr = {
+                                short_name: str[0] || "",
+                                code: ""
+                            };
+                        }
+                    }
+                    return finalStr;
+                }
+                function getOriginalAddress(addr){
+                    addr = addr || "";
+                    var separator = " - ";
+                    
+                    if(addr.indexOf(" - ") > -1)
+                        separator = " - ";
+                    else if(addr.indexOf("- ") > -1) 
+                        separator = "- ";
+                    else if(addr.indexOf(" -") > -1)
+                        separator = " -";
+
+                    var str = addr.split(separator);
+                    return str[0];
+                }
+
                 docs.forEach((val,i) => {
+                    
+                    var _next = docs[i+1],
+                        timestamp = lastTimestamp || val.timestamp,
+                        startAddress = val.GEOFENCE_NAME,
+                        endAddress = (_next && _next.USER_NAME == val.USER_NAME) ? _next.GEOFENCE_NAME : null,
+                        sameCurrentAndNextAddress = getOriginalAddress(startAddress) == getOriginalAddress(endAddress),
+                        sameCurrentAndNextVehicle = (_next && _next.USER_NAME == val.USER_NAME),
+                        duration = (val.timestamp) ? Math.abs(new Date(timestamp).getTime() - new Date(val.timestamp).getTime()) : null;
+                        
                     function processReport(){
                         hasChangedGeofence = false;
 
-                        var _next = docs[i+1],
-                            timestamp = lastTimestamp || val.timestamp,
-                            startAddress = val.GEOFENCE_NAME,
-                            endAddress = (_next && _next.USER_NAME == val.USER_NAME) ? _next.GEOFENCE_NAME : null,
-                            getAddress = function(addr){
-                                var finalStr = {
-                                    short_name: "",
-                                    code: ""
-                                };
-                                if(addr){
-                                    var str = addr.split(" - ");
+                        function addHTML(address,extendSearch){
 
-                                    var geofence = getGeofence(str[0],'short_name');
-
-                                    if(geofence){
-                                        finalStr = {
-                                            short_name: geofence.short_name || "",
-                                            code: geofence.code || ""
-                                        };
-                                    } else {
-                                        finalStr = {
-                                            short_name: str[0] || "",
-                                            code: ""
-                                        };
-                                    }
+                            function addTds(USER_NAME,startAddress,startTimestamp,endAddress,endTimestamp){
+                                // do not make condition like !duration. Duration could be 0.
+                                var site = getAddress(startAddress),
+                                    destination = getAddress(endAddress),
+                                    duration = (endTimestamp) ? Math.abs(new Date(startTimestamp).getTime() - new Date(endTimestamp).getTime()) : null,
+                                    endDate = DATETIME.FORMAT(endTimestamp,"MM/DD/YYYY"),
+                                    endTime = DATETIME.FORMAT(endTimestamp,"H:mm"),
+                                    status = "Finished",
+                                    _duration_ = (duration != null) ? GET.ROUND_OFF(DATETIME.DH(duration,null,"0"),1).toFixed(1) + ' h'  : "-";
+                                if(new Date(date_to).getTime() > new Date().getTime() && duration == null){
+                                    endDate = "-";
+                                    endTime = "-";
+                                    status = "Pending"
                                 }
-                                return finalStr;
-                            },
-                            getOriginalAddress = function(addr){
-                                addr = addr || "";
-                                var str = addr.split(" - ");
-                                return str[0];
-                            },
-                            sameCurrentAndNextAddress = getOriginalAddress(startAddress) == getOriginalAddress(endAddress),
-                            sameCurrentAndNextVehicle = (_next && _next.USER_NAME == val.USER_NAME),
-                            duration = (val.timestamp) ? Math.abs(new Date(timestamp).getTime() - new Date(val.timestamp).getTime()) : null,
-                            addHTML = function(address,extendSearch){
+                                // do not use "ASSIGNED_VEHICLE_ID" because events from before does not save ASSIGNED_VEHICLE_ID
+                                var vehicle = getVehicle(USER_NAME,"name") || {};
 
-                                function addTds(startAddress,timestamp,address,val){
-                                    // do not make condition like !duration. Duration could be 0.
-                                    var site = getAddress(startAddress),
-                                        destination = getAddress(address),
-                                        duration = (val.timestamp) ? Math.abs(new Date(timestamp).getTime() - new Date(val.timestamp).getTime()) : null,
-                                        endDate = DATETIME.FORMAT(val.timestamp,"MM/DD/YYYY"),
-                                        endTime = DATETIME.FORMAT(val.timestamp,"H:mm"),
-                                        status = "Finished",
-                                        _duration_ = (duration != null) ? GET.ROUND_OFF(DATETIME.DH(duration,null,"0"),1).toFixed(1) + ' h'  : "-";
-                                    if(new Date(date_to).getTime() > new Date().getTime() && duration == null){
-                                        endDate = "-";
-                                        endTime = "-";
-                                        status = "Pending"
-                                    }
-                                    var vehicle = getVehicle(val.ASSIGNED_VEHICLE_ID) || {};
+                                return `<td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${USER_NAME}</td>
+                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${DATETIME.FORMAT(startTimestamp,"MM/DD/YYYY")}</td>
+                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${DATETIME.FORMAT(startTimestamp,"H:mm")}</td>
+                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${endDate}</td>
+                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${endTime}</td>
+                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${_duration_}</td>
+                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${site.short_name}</td>
+                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;text-align:center;">${site.code}</td>
+                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${destination.short_name}</td>
+                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;text-align:center;">${destination.code}</td>
+                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${vehicle["Availability"]||""}</td>
+                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${vehicle["Equipment Number"]||""}</td>
+                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${status}</td>
+                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${vehicle["Base Site"]||""}</td>
+                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;text-align:center;">${vehicle["Base Site Code"]||""}</td>`;
+                            }
 
-                                    return `<td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${val.USER_NAME}</td>
-                                            <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${DATETIME.FORMAT(timestamp,"MM/DD/YYYY")}</td>
-                                            <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${DATETIME.FORMAT(timestamp,"H:mm")}</td>
-                                            <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${endDate}</td>
-                                            <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${endTime}</td>
-                                            <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${_duration_}</td>
-                                            <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${site.short_name}</td>
-                                            <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;text-align:center;">${site.code}</td>
-                                            <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${destination.short_name}</td>
-                                            <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;text-align:center;">${destination.code}</td>
-                                            <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${vehicle["Availability"]||""}</td>
-                                            <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${vehicle["Equipment Number"]||""}</td>
-                                            <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${status}</td>
-                                            <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${vehicle["Base Site"]||""}</td>
-                                            <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;text-align:center;">${vehicle["Base Site Code"]||""}</td>`;
-                                }
+                            if(extendSearch){
+                                $(`#report-hidden`).append(`<tr data-attribute="${val.USER_NAME}-${getOriginalAddress(val.GEOFENCE_NAME)}">${
+                                    addTds(val.USER_NAME,startAddress,timestamp)
+                                }</tr>`);
+                                                
+                                extendSearchDetails[`${val.USER_NAME}-${getOriginalAddress(val.GEOFENCE_NAME)}`] = timestamp;
+                                $.ajax({
+                                    url: `/api/events/${CLIENT.id}/${USER.username}/${JSON.stringify({
+                                        USER_NAME: val.USER_NAME,
+                                        // GEOFENCE_NAME: /DVO DC/, // do not include GEOFENCE_NAME because we need to know if geofenceHasBeenChanged - to know what event we will end
+                                        timestamp: {
+                                            $gte: new Date(val.timestamp).toISOString()
+                                        }
+                                    })}`,
+                                    method: "GET",
+                                    timeout: 90000, // 1 minute and 30 seconds
+                                    headers: {
+                                        "Authorization": SESSION_TOKEN
+                                    },
+                                    async: true
+                                }).done(function (docs1) {
+                                    // console.log("docs",docs1);
 
-                                if(extendSearch){
-                                    $(`#report-hidden`).append(`<tr data-attribute="${val.USER_NAME}-${getOriginalAddress(val.GEOFENCE_NAME)}">${addTds(startAddress,timestamp,address,val)}</tr>`);
-                                                    
-                                    extendSearchDetails[`${val.USER_NAME}-${getOriginalAddress(val.GEOFENCE_NAME)}`] = timestamp;
-                                    $.ajax({
-                                        url: `/api/events/${CLIENT.id}/${USER.username}/${JSON.stringify({
-                                            USER_NAME: val.USER_NAME,
-                                            // GEOFENCE_NAME: /DVO DC/, // do not include GEOFENCE_NAME because we need to know if geofenceHasBeenChanged - to know what event we will end
-                                            timestamp: {
-                                                $gte: new Date(val.timestamp).toISOString()
+                                    var originalEvent = docs1[0];
+                                    var found = false;
+
+                                    docs1.forEach((val,i) => {
+                                        /*** do not delete me. Code in events.js: XX001. Purpose:  originalEvent._id == val._id */
+                                        if(!found && originalEvent._id == val._id){
+                                            var endAddress = (docs1[i+1] && docs1[i+1].USER_NAME == val.USER_NAME) ? docs1[i+1].GEOFENCE_NAME : null;
+                                            var sameCurrentAndNextAddress = getOriginalAddress(originalEvent.GEOFENCE_NAME) == getOriginalAddress(endAddress);
+
+                                            extendSearchDetails[`${originalEvent.USER_NAME}-${getOriginalAddress(originalEvent.GEOFENCE_NAME)}`]
+                                            var _timestamp = extendSearchDetails[`${originalEvent.USER_NAME}-${getOriginalAddress(originalEvent.GEOFENCE_NAME)}`];
+
+                                            if(!sameCurrentAndNextAddress){
+                                                found = true;
+                                                $(`#report-hidden [data-attribute="${originalEvent.USER_NAME}-${getOriginalAddress(originalEvent.GEOFENCE_NAME)}"]`).html(
+                                                    addTds(originalEvent.USER_NAME,originalEvent.GEOFENCE_NAME,_timestamp,null,val.timestamp)
+                                                );
                                             }
-                                        })}`,
-                                        method: "GET",
-                                        timeout: 90000, // 1 minute and 30 seconds
-                                        headers: {
-                                            "Authorization": SESSION_TOKEN
-                                        },
-                                        async: true
-                                    }).done(function (docs1) {
-                                        console.log("docs",docs1);
-
-                                        var originalEvent = docs1[0];
-                                        var found = false;
-
-                                        docs1.forEach((val,i) => {
-                                            /*** do not delete me. Code in events.js: XX001. Purpose:  originalEvent._id == val._id */
-                                            if(!found && originalEvent._id == val._id){
-                                                var endAddress = (docs1[i+1] && docs1[i+1].USER_NAME == val.USER_NAME) ? docs1[i+1].GEOFENCE_NAME : null;
-                                                var sameCurrentAndNextAddress = getOriginalAddress(originalEvent.GEOFENCE_NAME) == getOriginalAddress(endAddress);
-
-                                                extendSearchDetails[`${originalEvent.USER_NAME}-${getOriginalAddress(originalEvent.GEOFENCE_NAME)}`]
-                                                var _timestamp = extendSearchDetails[`${originalEvent.USER_NAME}-${getOriginalAddress(originalEvent.GEOFENCE_NAME)}`];
-
-                                                if(!sameCurrentAndNextAddress){
-                                                    found = true;
-                                                    $(`#report-hidden [data-attribute="${originalEvent.USER_NAME}-${getOriginalAddress(originalEvent.GEOFENCE_NAME)}"]`).html(addTds(originalEvent.GEOFENCE_NAME,_timestamp,null,val));
-                                                }
-                                            }
-                                        });
-                                        extendSearchDone();
+                                        }
                                     });
+                                    extendSearchDone();
+                                });
+                            } else {
+                                if(duration == 0){
+                                    extendSearchDone();
                                 } else {
-                                    if(duration == 0){
-                                        extendSearchDone();
-                                    } else {
-                                        $(`#report-hidden`).append(`<tr>${addTds(startAddress,timestamp,address,val)}</tr>`);
-                                        extendSearchDone();
-                                    }
+                                    $(`#report-hidden`).append(`<tr>${addTds(val.USER_NAME,startAddress,timestamp,address,val.timestamp)}</tr>`);
+                                    extendSearchDone();
                                 }
-                                
-                                // if(duration == 0){
-                                //     if(sameCurrentAndNextVehicle){
-                                //         extendSearchDone();
-                                //     } else {
-                                //         // console.log("Duration is 0 and current and next is NOT same");
-                                //         $(`#report-hidden`).append(`<tr data-attribute="${val.USER_NAME}-${getOriginalAddress(val.GEOFENCE_NAME)}">${addTds(startAddress,timestamp,address,val)}</tr>`);
-                                                    
-                                //         $.ajax({
-                                //             url: `/api/events/${CLIENT.id}/${USER.username}/${JSON.stringify({
-                                //                 USER_NAME: val.USER_NAME,
-                                //                 // GEOFENCE_NAME: /DVO DC/, // do not include GEOFENCE_NAME because we need to know if geofenceHasBeenChanged - to know what event we will end
-                                //                 timestamp: {
-                                //                     $gte: new Date(val.timestamp).toISOString()
-                                //                 }
-                                //             })}`,
-                                //             method: "GET",
-                                //             timeout: 90000, // 1 minute and 30 seconds
-                                //             headers: {
-                                //                 "Authorization": SESSION_TOKEN
-                                //             },
-                                //             async: true
-                                //         }).done(function (docs1) {
-                                //             console.log("docs",docs1);
+                            }
+                            
+                            // if(duration == 0){
+                            //     if(sameCurrentAndNextVehicle){
+                            //         extendSearchDone();
+                            //     } else {
+                            //         // console.log("Duration is 0 and current and next is NOT same");
+                            //         $(`#report-hidden`).append(`<tr data-attribute="${val.USER_NAME}-${getOriginalAddress(val.GEOFENCE_NAME)}">${addTds(startAddress,timestamp,address,val)}</tr>`);
+                                                
+                            //         $.ajax({
+                            //             url: `/api/events/${CLIENT.id}/${USER.username}/${JSON.stringify({
+                            //                 USER_NAME: val.USER_NAME,
+                            //                 // GEOFENCE_NAME: /DVO DC/, // do not include GEOFENCE_NAME because we need to know if geofenceHasBeenChanged - to know what event we will end
+                            //                 timestamp: {
+                            //                     $gte: new Date(val.timestamp).toISOString()
+                            //                 }
+                            //             })}`,
+                            //             method: "GET",
+                            //             timeout: 90000, // 1 minute and 30 seconds
+                            //             headers: {
+                            //                 "Authorization": SESSION_TOKEN
+                            //             },
+                            //             async: true
+                            //         }).done(function (docs1) {
+                            //             console.log("docs",docs1);
 
-                                //             var originalEvent = docs1[0];
-                                //             var found = false;
+                            //             var originalEvent = docs1[0];
+                            //             var found = false;
 
-                                //             docs1.forEach((val,i) => {
-                                //                 if(!found && originalEvent._id != val._id){
-                                //                     var endAddress = (docs1[i+1] && docs1[i+1].USER_NAME == val.USER_NAME) ? docs1[i+1].GEOFENCE_NAME : null;
-                                //                     var sameCurrentAndNextAddress = getOriginalAddress(originalEvent.GEOFENCE_NAME) == getOriginalAddress(endAddress);
-    
-                                //                     if(!sameCurrentAndNextAddress){
-                                //                         found = true;
-                                //                         $(`#report-hidden [data-attribute="${originalEvent.USER_NAME}-${getOriginalAddress(originalEvent.GEOFENCE_NAME)}"]`).html(addTds(originalEvent.GEOFENCE_NAME,originalEvent.timestamp,null,val));
-                                //                     }
-                                //                 }
-                                //             });
-                                //             extendSearchDone();
-                                //         });
-                                //     }
-                                // } else {
-                                //     if(getOriginalAddress(startAddress) == "Outside Geofence"){
-                                //         // console.log("Duration is > 0 and current IS Outside Geofence");
-                                //         $(`#report-hidden`).append(`<tr>${addTds(startAddress,timestamp,address,val)}</tr>`);
-                                //         extendSearchDone();
-                                //     } else {
-                                //         // console.log("Duration is > 0 and current is NOT Outside Geofence");
-                                        
-                                //     }
-                                // }
-                            };
+                            //             docs1.forEach((val,i) => {
+                            //                 if(!found && originalEvent._id != val._id){
+                            //                     var endAddress = (docs1[i+1] && docs1[i+1].USER_NAME == val.USER_NAME) ? docs1[i+1].GEOFENCE_NAME : null;
+                            //                     var sameCurrentAndNextAddress = getOriginalAddress(originalEvent.GEOFENCE_NAME) == getOriginalAddress(endAddress);
 
-                        if(!sameCurrentAndNextAddress){
+                            //                     if(!sameCurrentAndNextAddress){
+                            //                         found = true;
+                            //                         $(`#report-hidden [data-attribute="${originalEvent.USER_NAME}-${getOriginalAddress(originalEvent.GEOFENCE_NAME)}"]`).html(addTds(originalEvent.GEOFENCE_NAME,originalEvent.timestamp,null,val));
+                            //                     }
+                            //                 }
+                            //             });
+                            //             extendSearchDone();
+                            //         });
+                            //     }
+                            // } else {
+                            //     if(getOriginalAddress(startAddress) == "Outside Geofence"){
+                            //         // console.log("Duration is > 0 and current IS Outside Geofence");
+                            //         $(`#report-hidden`).append(`<tr>${addTds(startAddress,timestamp,address,val)}</tr>`);
+                            //         extendSearchDone();
+                            //     } else {
+                            //         // console.log("Duration is > 0 and current is NOT Outside Geofence");
+                                    
+                            //     }
+                            // }
+                        };
+
+                        if(!sameCurrentAndNextAddress || val.RULE_NAME.indexOf("Outside") > -1){ //  || val.RULE_NAME.indexOf("Outside") > -1
                             hasChangedGeofence = true;
                         }
-                        if(_next && getOriginalAddress(_next.GEOFENCE_NAME) == getOriginalAddress(val.GEOFENCE_NAME) && _next.USER_NAME == val.USER_NAME){
+                        if(_next && getOriginalAddress(_next.GEOFENCE_NAME) == getOriginalAddress(val.GEOFENCE_NAME) && _next.USER_NAME == val.USER_NAME && !hasChangedGeofence){
                             if(!lastTimestamp) lastTimestamp = val.timestamp; // do not put in parent condition ^. It will be false if timestamp has value
                             extendSearchDone();
                         } else {
                             lastTimestamp = null;
                             lastGeofence = getOriginalAddress(startAddress);
 
+                            // if(val.USER_NAME == "NFZ6770"){
+                            //     console.log("nfz6770",sameCurrentAndNextVehicle,val.RULE_NAME,getOriginalAddress(val.GEOFENCE_NAME),"  |  next:  ",_next.RULE_NAME,_next.USER_NAME,getOriginalAddress(_next.GEOFENCE_NAME))
+                            // }
                             // if current event vehicle is the same as next event vehicle
                             if(sameCurrentAndNextVehicle){
 
                                 // if current event address is NOT the same as next event address
-                                if(!sameCurrentAndNextAddress){
+                                if(hasChangedGeofence){
                                     addHTML(endAddress);
                                 } else {
                                     extendSearchDone();
@@ -8655,34 +8702,43 @@ var REPORTS = {
                                 } else {
                                     addHTML(endAddress);
                                 }
+                                // if(DATETIME.FORMAT(val.timestamp,"D-MMM") == DATETIME.FORMAT(date_from,"D-MMM")){}
                             }
                         }
 
+                        // if(val.USER_NAME == "DDM2695"){
+                        //     console.log("DDM2695",sameCurrentAndNextVehicle,_next.USER_NAME,val.USER_NAME);
+                        // }
                         if(!sameCurrentAndNextVehicle){
                             $(`#report-hidden`).append(`<tr>${emptyTd(15)}</tr><tr>${emptyTd(15)}</tr>`);
                         }
                     }
+                    
+                    // if(val.USER_NAME == "DDM2695"){
+                    //     console.log("DDM2695",hasChangedGeofence,val.RULE_NAME,val.GEOFENCE_NAME)
+                    // }
                     if(hasChangedGeofence){
-                        // check if "inside geofence"
-                        if(val.USER_NAME == "ACP8844"){
-                            console.log(val.GEOFENCE_NAME,val.RULE_NAME,moment(val.timestamp).format("MM/DD/YYYY, hh:mm A"))
-                        }
                         if(val.RULE_NAME == "Inside Geofence"){
-                            var date = new Date(val.timestamp);
-                            date.setMinutes(date.getMinutes() - timeToDeduct);
+                            processReport();
 
-                            if(DATETIME.FORMAT(val.timestamp,"D-MMM") == DATETIME.FORMAT(date_from,"D-MMM")){
-                                if(DATETIME.FORMAT(date_from,"D-MMM") == DATETIME.FORMAT(date,"D-MMM")){
-                                    val.timestamp = date.getTime();
-                                    processReport();
-                                } else {
-                                    extendSearchDone();
-                                }
-                            } else {
-                                val.timestamp = date.getTime();
-                                processReport();
-                            }
+                            // var date = new Date(val.timestamp);
+                            // date.setMinutes(date.getMinutes() - timeToDeduct);
+
+                            // if(DATETIME.FORMAT(val.timestamp,"D-MMM") == DATETIME.FORMAT(date_from,"D-MMM")){
+                            //     if(DATETIME.FORMAT(date_from,"D-MMM") == DATETIME.FORMAT(date,"D-MMM")){
+                            //         val.timestamp = date.getTime();
+                            //         processReport();
+                            //     } else {
+                            //         extendSearchDone();
+                            //     }
+                            // } else {
+                            //     val.timestamp = date.getTime();
+                            //     processReport();
+                            // }
                         } else {
+                            if(!sameCurrentAndNextVehicle){
+                                $(`#report-hidden`).append(`<tr>${emptyTd(15)}</tr><tr>${emptyTd(15)}</tr>`);
+                            }
                             extendSearchDone();
                         }
                     } else {
@@ -14339,6 +14395,7 @@ GET.STATUS = function(status=""){
     if(status == "returning") stat = { color: "label-pink", text: "Returning" }; // pink
     if(status == "complete") stat = { color: "label-success", text: "Complete" }; // green
     if(status == "incomplete") stat = { color: "label-danger", text: "Incomplete" }; // red
+    if(status == "incompleteByReturningToOrigin") stat = { color: "label-danger", text: "Incomplete (Returned to Origin)" }; // red
     if(status == "deleted") stat = { color: "label-default", text: "Deleted" }; // gray
     
     return {
@@ -14494,6 +14551,9 @@ var FILTER = {
             _date1 = new Date(_date[0]),
             _date2 = (_date[1]) ? new Date(_date[1]) : new Date(_date[0]);
             
+        _date1 = moment(_date1).startOf('minute');
+        _date2 = moment(_date2).endOf('minute');
+
         if(!hasTime0) _date1 = moment(_date1).startOf('day');
         if(!hasTime1) _date2 = moment(_date2).endOf('day');
 
@@ -16297,7 +16357,7 @@ const views = new function(){
                             <span class="float-right" style="max-width:420px;display:inline-block;">
                                 ${exportBtnHTML}
                                 <span class="d-inline-block"">
-                                    <div class="input-group">
+                                    <div class="input-group" style="max-width: 250px;">
                                         ${calendarViewHTML}
                                         <input id="_date" class="form-control" type="text" readonly>
                                     </div>
@@ -16472,7 +16532,7 @@ const views = new function(){
                                         ${scheduledDateHTML}
                                         <div class="mt-2">
                                             <div style="font-size: 10px;">Status:</div>
-                                            <select id="_status" class="form-control">
+                                            <select id="_status" class="form-control" style="width:100%;">
                                                 <option value="all">All</option>
                                                 <option value="plan">Plan</option>
                                                 <option value="scheduled">Scheduled</option>
@@ -16488,11 +16548,19 @@ const views = new function(){
                                         </div>
                                         <div class="mt-2">
                                             <div style="font-size: 10px;">Region:</div>
-                                            <select id="_region" class="form-control"></select>
+                                            <select id="_region" class="form-control" style="width:100%;"></select>
                                         </div>
                                         <div class="mt-2">
                                             <div style="font-size: 10px;">Cluster:</div>
-                                            <select id="_cluster" class="form-control"></select>
+                                            <select id="_cluster" class="form-control" style="width:100%;"></select>
+                                        </div>
+                                        <div class="mt-2">
+                                            <div style="font-size: 10px;">Origin:</div>
+                                            <select id="_origin_id" class="form-control" style="width:100%;"></select>
+                                        </div>
+                                        <div class="mt-2">
+                                            <div style="font-size: 10px;">Destination:</div>
+                                            <select id="_destination_id" class="form-control" style="width:100%;"></select>
                                         </div>`)}
                         ${sliderClone}
                         <div id="alert"></div>
