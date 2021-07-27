@@ -1,4 +1,15 @@
 const changelogList = {
+    "2.55.114": {
+        date: "July 27, 2021",
+        fix: ["Fix date UI in Deployment Dashboard"]
+    },
+    "2.55.113": {
+        date: "July 26, 2021",
+        improved: ["[Adjustment][Wilcon] Add filters for Origin, Destination in DE page",
+                   "[Adjustment][Wilcon] Utilization Report: Move the total truck types per day row (in the overall) to the bottom)",
+                   "[Adjustment][Wilcon] Start of measurement of Over CICO to shift schedule",
+                   "[Adjustment[Wilcon] Scheduled Entries Report: Time in and Time out check should still show if Incomplete"]
+    },
     "2.55.112": {
         date: "July 17, 2021",
         improved: ["[Adjustment][Wilcon] Utilization Report",

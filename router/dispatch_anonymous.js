@@ -1919,7 +1919,7 @@ router.get('/test/check/events', (req,res,next)=>{
                         stage: val.stage,
                         USER_NAME: val.USER_NAME,
                         USER_USERNAME: val.USER_USERNAME,
-                        ASSIGNED_VEHICLE_ID: val.GEOASSIGNED_VEHICLE_IDFENCE_NAME,
+                        ASSIGNED_VEHICLE_ID: val.ASSIGNED_VEHICLE_ID,
                         Region: val.Region,
                         Cluster: val.Cluster,
                         Site: val.Site,
@@ -2989,7 +2989,13 @@ var wdDocs = [];
 
 
 router.post('/test/please/makeitwork', (req,res,next)=>{
-    var url1 = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    
+    // PRODUCTION
+    // const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    // DEVELOPMENT
+    const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+
+    // var url1 = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     const query = req.query;
     const startDate = query.startDate;
@@ -3037,7 +3043,7 @@ router.post('/test/please/makeitwork', (req,res,next)=>{
         }
     }
     
-    var dbName = "wd-coket1";
+    var dbName = "wd-wilcon";
 
     var newSets = {};
     var notifSet = {};
@@ -3045,7 +3051,7 @@ router.post('/test/please/makeitwork', (req,res,next)=>{
     var originalSet = null;
     var hasEntryUpdateOrRemark = {};
     
-    MongoClient.connect(url1, mongoOptions, (err,client) => {
+    MongoClient.connect(url, mongoOptions, (err,client) => {
         if(err){
             console.log("ERROR1",err);
         } else {
@@ -3433,15 +3439,29 @@ router.post('/test/please/makeitwork', (req,res,next)=>{
 
 
 router.post('/test/please/help', (req,res,next)=>{
-    var url1 = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+
+    // var url1 = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     const query = req.query;
     const _id = query._id;
     const enteredOrigin = query.enteredOrigin;
     const inTransit = query.inTransit;
+    const OnSite = query.OnSite;
+    const Returning = query.Returning;
     const Complete = query.Complete;
     const Incomplete = query.Incomplete;
     const view = query.view;
+    const db = query.db;
+
+    var url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+    if(db == "production"){
+        url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    }
+    // PRODUCTION
+    // const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    // DEVELOPMENT
+    // const url = 
+
 
     function ddd(date,transitTime=0,posting_date){
         function iso(){return new Date(date).toISOString()};
@@ -3483,9 +3503,9 @@ router.post('/test/please/help', (req,res,next)=>{
         }
     }
     
-    var dbName = "wd-coket1";
+    var dbName = "wd-wilcon";
     
-    MongoClient.connect(url1, mongoOptions, (err,client) => {
+    MongoClient.connect(url, mongoOptions, (err,client) => {
         if(err){
             console.log("ERROR1",err);
         } else {
@@ -3506,6 +3526,8 @@ router.post('/test/please/help', (req,res,next)=>{
     
                                 var entered_origin = (enteredOrigin) ? ddd(enteredOrigin) : null;
                                 var in_transit = (inTransit) ? ddd(inTransit,rDoc.transit_time,doc.posting_date) : null;
+                                var onSite = (OnSite) ? ddd(OnSite) : null;
+                                var returning = (Returning) ? ddd(Returning) : null;
                                 var complete = (Complete) ? ddd(Complete) : null;
     
                                 if(enteredOrigin){
@@ -3517,6 +3539,12 @@ router.post('/test/please/help', (req,res,next)=>{
                                     set["destination.0.etd"] = in_transit.iso;
                                     set["destination.0.eta"] = in_transit.eta;
                                 }
+                                if(OnSite){
+                                    events_captured[onSite.timestamp] = "onSite";
+                                }
+                                if(Returning){
+                                    events_captured[returning.timestamp] = "returning";
+                                }
                                 if(Complete){
                                     events_captured[complete.timestamp] = "complete";
                                 }
@@ -3526,6 +3554,7 @@ router.post('/test/please/help', (req,res,next)=>{
                                 }
             
                                 var sortedEC = OBJECT.sortByKey(events_captured);
+                                console.log("sortedEC",sortedEC);
                                 var eo = OBJECT.getKeyByValue(sortedEC,"entered_origin");
     
                                 var newHistory = {};
@@ -3545,15 +3574,21 @@ router.post('/test/please/help', (req,res,next)=>{
                                         if(Incomplete && Number(key) > in_transit.incomplete){
                                             delete sortedEC[key];
                                         }
-                                        // delete keys in between in transit and complete OR incomplete
-                                        if((inTransit && Number(key) > in_transit.timestamp) && ((complete && Number(key) < complete.timestamp) || (Incomplete && Number(key) < in_transit.incomplete))){
-                                            delete sortedEC[key];
-                                        }
+                                        // // delete keys in between in transit and complete OR incomplete
+                                        // if((inTransit && Number(key) > in_transit.timestamp) && ((complete && Number(key) < complete.timestamp) || (Incomplete && Number(key) < in_transit.incomplete))){
+                                        //     delete sortedEC[key];
+                                        // }
                                         // remove duplicates
                                         if(entered_origin && val == "entered_origin" && key != entered_origin.timestamp){
                                             delete sortedEC[key];
                                         }
                                         if(in_transit && val == "in_transit" && (inTransit && key != in_transit.timestamp)){
+                                            delete sortedEC[key];
+                                        }
+                                        if(onSite && val == "onSite" && (OnSite && key != onSite.timestamp)){
+                                            delete sortedEC[key];
+                                        }
+                                        if(returning && val == "returning" && (Returning && key != returning.timestamp)){
                                             delete sortedEC[key];
                                         }
                                         if(complete && val == "complete" && key != complete.timestamp){
@@ -3685,32 +3720,43 @@ router.post('/test/please/help', (req,res,next)=>{
                                         }
                                     });
                                     var original = doc.history.original;
-                                    if(isLateEntry === true){
-                                        set[`late_entry`] = true;
-                                        original = original.replace("entered_origin",lateEntryStatus);
-                                        original = original.replace("plan",lateEntryStatus);
-                                        original = original.replace("assigned",lateEntryStatus);
-                                        original = original.replace("queueingAtOrigin",lateEntryStatus);
-                                        original = original.replace("processingAtOrigin",lateEntryStatus);
-                                        original = original.replace("idlingAtOrigin",lateEntryStatus);
-                                        original = original.replace("in_transit",lateEntryStatus);
-                                        original = original.replace("complete",lateEntryStatus);
-                                    } else {
-                                        set[`late_entry`] = false;
-                                        original = original.replace("entered_origin",originalStatus);
-                                        original = original.replace("plan",originalStatus);
-                                        original = original.replace("assigned",originalStatus);
-                                        original = original.replace("queueingAtOrigin",originalStatus);
-                                        original = original.replace("processingAtOrigin",originalStatus);
-                                        original = original.replace("idlingAtOrigin",originalStatus);
-                                        original = original.replace("in_transit",originalStatus);
-                                        original = original.replace("complete",originalStatus);
+                                    if(original){
+                                        if(isLateEntry === true){
+                                            set[`late_entry`] = true;
+                                            original = original.replace("entered_origin",lateEntryStatus);
+                                            original = original.replace("plan",lateEntryStatus);
+                                            original = original.replace("assigned",lateEntryStatus);
+                                            original = original.replace("queueingAtOrigin",lateEntryStatus);
+                                            original = original.replace("processingAtOrigin",lateEntryStatus);
+                                            original = original.replace("idlingAtOrigin",lateEntryStatus);
+                                            original = original.replace("in_transit",lateEntryStatus);
+                                            original = original.replace("complete",lateEntryStatus);
+                                        } else {
+                                            set[`late_entry`] = false;
+                                            original = original.replace("entered_origin",originalStatus);
+                                            original = original.replace("plan",originalStatus);
+                                            original = original.replace("assigned",originalStatus);
+                                            original = original.replace("queueingAtOrigin",originalStatus);
+                                            original = original.replace("processingAtOrigin",originalStatus);
+                                            original = original.replace("idlingAtOrigin",originalStatus);
+                                            original = original.replace("in_transit",originalStatus);
+                                            original = original.replace("complete",originalStatus);
+                                        }
                                     }
+
+                                    var updatedToAssigned = "";
+                                    // console.log(doc.history);
+                                    Object.keys(doc.history).forEach(key => {
+                                        if((doc.history[key]||"").indexOf("Scheduled Dispatch -") > -1){
+                                            updatedToAssigned = key;
+                                        }
+                                    })
     
                                     var sortedNewHistory = OBJECT.sortByKey(newHistory);
                                     var updatedHistory = {};
                                     updatedHistory.original = original;
                                     updatedHistory.vehicle = doc.history.vehicle;
+                                    (updatedToAssigned) ? updatedHistory[updatedToAssigned] = "Scheduled Dispatch - Status updated to <status>assigned</status>." : null;
     
                                     Object.keys(sortedNewHistory).forEach(key => {
                                         updatedHistory[key] = sortedNewHistory[key];
@@ -6814,33 +6860,110 @@ var chassis = [
     }
 ];
 // DELETE AFTER
-router.get('/test/get/event', (req,res,next)=>{
+router.get('/test/get/event/:skip/:limit', (req,res,next)=>{
+    const skip = Number(req.params.skip);
+    const limit = Number(req.params.limit);
     // PRODUCTION
     // const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     // DEVELOPMENT
     const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
-    var dbName = "wd-coket1-logging";
+    var dbName = "wd-coket2-logging";
     
     MongoClient.connect(url, mongoOptions, (err,client) => {
         if(err){
             console.log("ERROR1",err);
+            res.json({ error: 1, err });
         } else {
             var childPromise = [];
             client.db(dbName).collection("events").find({
-                USER_NAME: "DCP7707",
-                // GEOFENCE_NAME: /DVO DC/, // do not include GEOFENCE_NAME because we need to know if geofenceHasBeenChanged - to know what event we will end
-                timestamp: {
-                    $gte: "2021-07-14T15:48:00.613Z"
+                RULE_NAME: "Check Out",
+                iamme: { $exists: false },
+                iamokay: { $exists: false },
+                stage: "start"
+            }).skip(skip).limit(limit).toArray().then(docs => {
+                console.log("HELO",docs.length);
+
+                try {
+                    if(docs.length > 0){
+                        docs.forEach(val => {
+                            var date = new Date(val.timestamp);
+                            date.setMinutes(date.getMinutes() - 5);
+        
+                            childPromise.push( client.db(dbName).collection("events").updateOne(
+                                { _id: db.getPrimaryKey(val._id) },
+                                {
+                                    $set:  { 
+                                        timestamp: date.toISOString(),
+                                        iamokay: true
+                                    }
+                                }
+                            ) );
+                        });
+                        
+                        if(childPromise.length > 0){
+                            Promise.all(childPromise).then(result => {
+                                client.close();
+                                res.json({ ok: 1, length: result.length });
+                            }).catch(error => {
+                                client.close();
+                                res.json({ error: 1, error });
+                            })
+                        } else {
+                            client.close();
+                            res.json({ none: 1 });
+                        }
+                    } else {
+                        client.close();
+                        res.json({ none: 1 });
+                    }
+                } catch(error) {
+                    res.json({ error: 1, error });
                 }
-            }).limit(5).toArray().then(docs => {
-                res.json(docs);
             });
         }
     });
     /**************** END OTHER COLLECTIONS */
 });
+
+router.post('/test/help/meeeeeeeeee/:_id', (req,res,next)=>{
+    const _id = req.params._id;
+    const body = req.body;
+
+    const query = req.query;
+    const db = query.db;
+
+    var url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+    if(db == "production"){
+        url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    }
+
+    // // PRODUCTION
+    // // const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    // // DEVELOPMENT
+    // const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+    var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
+    
+    var dbName = "wd-wilcon";
+
+    console.log("body",body);
+    
+    MongoClient.connect(url, mongoOptions, (err,client) => {
+        if(err){
+            console.log("ERROR1",err);
+            res.json({ error: 1, err });
+        } else {
+            client.db(dbName).collection("dispatch").updateOne({ _id: _id }, { $set: body }).then(docs => {
+                res.json({ ok: 1, docs });
+            }).catch(error => {
+                res.json({ error: 1, error });
+            });
+        }
+    });
+    /**************** END OTHER COLLECTIONS */
+});
+
 // import chassis
 router.get('/test/import/chassis', (req,res,next)=>{
     // PRODUCTION
