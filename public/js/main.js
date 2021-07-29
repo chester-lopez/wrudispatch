@@ -283,6 +283,8 @@ function withinSchedule(date,minMaxTime,allowAllGreaterMinTime){
 
     console.log(date);
     
+    // (allowAllGreaterMinTime && now < minSchedule) // allowAllGreaterMinTime is true and NOW is less than minimum schedule -- for cases like user choosing future dates. Eg. Today is 07/28/2021, 8:00 AM. but user wants to schedule for 07/30/2021, 10:00 AM. 
+    // (currentTime >= minTime && currentTime <= maxTime) is only valid when today is 07/28/2021, 8:00 AM and schedule picked is 07/28/2021, 6:00 AM - 10:00 AM
     if((currentTime >= minTime && currentTime <= maxTime) || (allowAllGreaterMinTime && currentTime < minTime)){
         _withinSchedule_ = true;
     }
@@ -3263,6 +3265,8 @@ var DISPATCH = {
                         $(`#_region`).val("all");
                     });
 
+                    // console.log("HI",filter)
+
                     if(filter.departure_date) FILTER.INITIALIZE(`#_departure_date`,filter.departure_date["$gte"],filter.departure_date["$lt"],'MM/DD/YYYY hh:mm A');
                     if(filter.scheduled_date) FILTER.INITIALIZE(`#_scheduled_date`,filter.scheduled_date["$gte"],filter.scheduled_date["$lt"],'MM/DD/YYYY hh:mm A');
                     if(filter.posting_date) FILTER.INITIALIZE(`#_posting_date`,filter.posting_date["$gte"],filter.posting_date["$lt"],'MM/DD/YYYY hh:mm A');
@@ -3292,7 +3296,7 @@ var DISPATCH = {
                             _status = $(`#_status`).val(),
                             _region = $(`#_region`).val(),
                             _cluster = $(`#_cluster`).val(),
-                            _origin_id = $(`#_origin_id`).val(),
+                            _origin_id = $(`#_origin_id`).val() || "",
                             _destination_id = $(`#_destination_id`).val(),
                             ___origin_id = [];
                         console.log("_departure_date",_departure_date,_posting_date);
@@ -3324,6 +3328,8 @@ var DISPATCH = {
                         }
 
                         USER.filters.dispatch = filter;
+
+                        console.log(USER.filters.dispatch);
                         
                         GET.AJAX({
                             url: `/api/users/${CLIENT.id}/${USER.username}/${USER.username}`,
@@ -3341,8 +3347,6 @@ var DISPATCH = {
 
                         populateTable();
                     });
-                    FIXFILTER();
-
 
                     $(`#clone-btn`).click(function(){
                         filter = {};
@@ -3401,20 +3405,6 @@ var DISPATCH = {
                             }
                         }
                     });
-                },
-                FIXFILTER = function(){
-                    if(GGS.STATUS.REGIONS && GGS.STATUS.CLUSTERS){
-                        var regionOptions = `<option value="all">All</option>`,
-                            clusterOptions = `<option value="all">All</option>`;
-                        LIST["regions"].forEach(val => {
-                            regionOptions += `<option value="${val._id}">${val.region}</option>`;
-                        });
-                        LIST["clusters"].forEach(val => {
-                            clusterOptions += `<option value="${val._id}">${val.cluster}</option>`;
-                        });
-                        $(`#_region`).html(regionOptions).select2();
-                        $(`#_cluster`).html(clusterOptions).select2();
-                    }
                 };
             __data.for = urlPath;
 
@@ -3445,18 +3435,30 @@ var DISPATCH = {
                     TABLE.FINISH_LOADING.UPDATE();
                 });
                 isFinishedLoading(["REGIONS","CLUSTERS"], _new2_, function(){
-                    _new2_ = false;
-                    FIXFILTER();
+                    if(dt){
+                        _new2_ = false;
+                        var regionOptions = `<option value="all">All</option>`,
+                            clusterOptions = `<option value="all">All</option>`;
+                        LIST["regions"].forEach(val => {
+                            regionOptions += `<option value="${val._id}">${val.region}</option>`;
+                        });
+                        LIST["clusters"].forEach(val => {
+                            clusterOptions += `<option value="${val._id}">${val.cluster}</option>`;
+                        });
+                        $(`#_region`).html(regionOptions).select2();
+                        $(`#_cluster`).html(clusterOptions).select2();
+                    }
                 });
                 isFinishedLoading(["GEOFENCES"], _new3_, function(){
-                    _new3_ = false;
-                   
-                    var options = `<option value="all">All</option>`;
-                    LIST["geofences"].forEach(val => {
-                        options += `<option value="${val._id}">${val.short_name}</option>`;
-                    });
-                    $(`#_origin_id`).html(options).select2();
-                    $(`#_destination_id`).html(options).select2();
+                    if(dt){
+                        _new3_ = false;
+                        var options = `<option value="all">All</option>`;
+                        LIST["geofences"].forEach(val => {
+                            options += `<option value="${val._id}">${val.short_name}</option>`;
+                        });
+                        $(`#_origin_id`).html(options).select2().val(filter.origin_id||"all").trigger("change");
+                        $(`#_destination_id`).html(options).select2().val(filter.destination_id||"all").trigger("change");
+                    }
                 });
             }
             TABLE.FINISH_LOADING.START_CHECK();

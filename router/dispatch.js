@@ -43,7 +43,7 @@ router.get('/:dbName/:username/all/:filter/:skip/:limit', (req,res,next)=>{
     const filter = JSON.parse(req.params.filter) || {};
 
     (filter.origin_id && typeof filter.origin_id == "string") ? filter.origin_id = db.getPrimaryKey(filter.origin_id) : null;
-    (filter.destination && filter.destination.$elemMatch.location_id) ? filter.destination.$elemMatch.location_id = db.getPrimaryKey(filter.destination.$elemMatch.location_id) : null;
+    (filter.destination_id && typeof filter.destination_id == "string") ? filter[`destination.0.location_id`] = db.getPrimaryKey(filter.destination_id) : null;
 
     Object.keys(filter).forEach(key => {
         if(filter.origin_id && filter.origin_id.$in){
@@ -52,9 +52,6 @@ router.get('/:dbName/:username/all/:filter/:skip/:limit', (req,res,next)=>{
             })
         }
     });
-    
-    (filter.origin_id) ? filter.origin_id = db.getPrimaryKey(filter.origin_id) : null;
-    (filter.destination_id) ? filter[`destination.0.location_id`] = db.getPrimaryKey(filter.destination_id) : null;
 
     delete filter.region; // do not delete
     delete filter.cluster; // do not delete
