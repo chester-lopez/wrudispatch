@@ -288,92 +288,92 @@ const connect = function(io,_ping_,ENVIRONMENT){ //io
                                 wsClients[dbName].splice(closedWsClientsIndex[i],1);
                             }
                         } else {
-                            if(ENVIRONMENT == "production" && dbName == "coket1"){
-                                var fullDocument = event.fullDocument;
-                                var origin_id = fullDocument.origin_id;
-                                var destination_id = fullDocument.destination[0].location_id;
+                            // if(ENVIRONMENT == "production" && dbName == "coket1"){
+                            //     var fullDocument = event.fullDocument;
+                            //     var origin_id = fullDocument.origin_id;
+                            //     var destination_id = fullDocument.destination[0].location_id;
     
-                                function getDateTime(status,obj,type="first"){
-                                    var OBJECT = {
-                                        sortByKey: o => Object.keys(o).sort().reduce((r, k) => (r[k] = o[k], r), {}),
-                                        getKeyByValue: (o,v) => Object.keys(o).find(key => o[key] === v),
-                                    };
+                            //     function getDateTime(status,obj,type="first"){
+                            //         var OBJECT = {
+                            //             sortByKey: o => Object.keys(o).sort().reduce((r, k) => (r[k] = o[k], r), {}),
+                            //             getKeyByValue: (o,v) => Object.keys(o).find(key => o[key] === v),
+                            //         };
     
-                                    var events_captured = OBJECT.sortByKey(obj);
-                                    var datetime = 0;
-                                    Object.keys(events_captured).forEach(key => {
-                                        if(events_captured[key] == status){
-                                            if(type == "first" && !datetime){
-                                                datetime = Number(key);
-                                            }
-                                            if(type == "last"){
-                                                datetime = Number(key);
-                                            }
-                                        }
-                                        if(!status && !["plan","in_transit","complete","incomplete"].includes(events_captured[key])){
-                                            if(type == "first" && !datetime){
-                                                datetime = Number(key);
-                                            }
-                                            if(type == "last"){
-                                                datetime = Number(key);
-                                            }
-                                        }
-                                    });
-                                    return datetime;
-                                }
+                            //         var events_captured = OBJECT.sortByKey(obj);
+                            //         var datetime = 0;
+                            //         Object.keys(events_captured).forEach(key => {
+                            //             if(events_captured[key] == status){
+                            //                 if(type == "first" && !datetime){
+                            //                     datetime = Number(key);
+                            //                 }
+                            //                 if(type == "last"){
+                            //                     datetime = Number(key);
+                            //                 }
+                            //             }
+                            //             if(!status && !["plan","in_transit","complete","incomplete"].includes(events_captured[key])){
+                            //                 if(type == "first" && !datetime){
+                            //                     datetime = Number(key);
+                            //                 }
+                            //                 if(type == "last"){
+                            //                     datetime = Number(key);
+                            //                 }
+                            //             }
+                            //         });
+                            //         return datetime;
+                            //     }
     
-                                db.getCollection(dbName,"geofences").find({_id:{$in:[db.getPrimaryKey(origin_id),db.getPrimaryKey(destination_id)]}}).toArray().then(gDocs => {
-                                    db.getCollection(dbName,"vehicles").find({_id:Number(fullDocument.vehicle_id)}).toArray().then(vDocs => {
-                                        fullDocument.destination[0] = fullDocument.destination[0] || {};
+                            //     db.getCollection(dbName,"geofences").find({_id:{$in:[db.getPrimaryKey(origin_id),db.getPrimaryKey(destination_id)]}}).toArray().then(gDocs => {
+                            //         db.getCollection(dbName,"vehicles").find({_id:Number(fullDocument.vehicle_id)}).toArray().then(vDocs => {
+                            //             fullDocument.destination[0] = fullDocument.destination[0] || {};
     
-                                        var origin = gDocs.find(x => (x._id||"").toString() == (origin_id||"").toString()) || {};
-                                        var destination = gDocs.find(x => (x._id||"").toString() == (destination_id||"").toString()) || {};
-                                        var vehicle = vDocs.find(x => (x._id||"").toString() == (fullDocument.vehicle_id||"").toString()) || {};
+                            //             var origin = gDocs.find(x => (x._id||"").toString() == (origin_id||"").toString()) || {};
+                            //             var destination = gDocs.find(x => (x._id||"").toString() == (destination_id||"").toString()) || {};
+                            //             var vehicle = vDocs.find(x => (x._id||"").toString() == (fullDocument.vehicle_id||"").toString()) || {};
     
-                                        var events_captured = fullDocument.events_captured || {};
-                                        var entered_origin =  getDateTime(null,events_captured) ? new Date(getDateTime(null,events_captured)).toISOString() : null;
-                                        var in_transit =  getDateTime("in_transit",events_captured,"last") ? new Date(getDateTime("in_transit",events_captured,"last")).toISOString() : null;
-                                        var complete =  getDateTime("complete",events_captured,"last") ? new Date(getDateTime("complete",events_captured,"last")).toISOString() : null;
+                            //             var events_captured = fullDocument.events_captured || {};
+                            //             var entered_origin =  getDateTime(null,events_captured) ? new Date(getDateTime(null,events_captured)).toISOString() : null;
+                            //             var in_transit =  getDateTime("in_transit",events_captured,"last") ? new Date(getDateTime("in_transit",events_captured,"last")).toISOString() : null;
+                            //             var complete =  getDateTime("complete",events_captured,"last") ? new Date(getDateTime("complete",events_captured,"last")).toISOString() : null;
                                         
-                                        try {
-                                            var obj = {
-                                                "_id": fullDocument._id,
-                                                "route": fullDocument.route || "",
-                                                "origin": origin.short_name || "", // origin
-                                                "destination": destination.short_name || "", // destination
+                            //             try {
+                            //                 var obj = {
+                            //                     "_id": fullDocument._id,
+                            //                     "route": fullDocument.route || "",
+                            //                     "origin": origin.short_name || "", // origin
+                            //                     "destination": destination.short_name || "", // destination
         
-                                                "plate_number": vehicle.name || "", // vehicle
-                                                "pal_cap": vehicle["Pal Cap"] || "", // vehicle
-                                                "conduction": vehicle["Tractor Conduction"] || "", // vehicle
-                                                "trailer": fullDocument.trailer || "", // trailer
+                            //                     "plate_number": vehicle.name || "", // vehicle
+                            //                     "pal_cap": vehicle["Pal Cap"] || "", // vehicle
+                            //                     "conduction": vehicle["Tractor Conduction"] || "", // vehicle
+                            //                     "trailer": fullDocument.trailer || "", // trailer
         
-                                                "late_entry": fullDocument.late_entry || false,
-                                                "comments": fullDocument.comments,
-                                                "status": fullDocument.status,
+                            //                     "late_entry": fullDocument.late_entry || false,
+                            //                     "comments": fullDocument.comments,
+                            //                     "status": fullDocument.status,
         
-                                                "checkin_datetime": entered_origin, 
-                                                "checkout_datetime": in_transit,
-                                                "completion_datetime": complete,
+                            //                     "checkin_datetime": entered_origin, 
+                            //                     "checkout_datetime": in_transit,
+                            //                     "completion_datetime": complete,
         
-                                                "username": fullDocument.username,
-                                                "posting_datetime": fullDocument.posting_date,
-                                            };
-                                            var queryParams = Object.keys(obj).map(k => `${encodeURIComponent(k)}=${encodeURIComponent(obj[k])}`).join('&');
-                                            request
-                                                .get(`https://asfa-ccbp-lct-dev-01.azurewebsites.net/api/wrudispatch?code=xyR6Yfbc5cJboGcIkKyCTQswKvRDG3/hs3U00HGaI8h5bJQdUJoZag==&${queryParams}`)
-                                                .on('response', function(response) {
-                                                    console.log("Response",response.statusCode,response.statusMessage);
-                                                    console.log("Object",obj);
-                                                })
-                                                .on('error', function(err) {
-                                                    console.error("Error:",err);
-                                                });
-                                        } catch (error){
-                                            console.log("Request Error",error);
-                                        }
-                                    });
-                                });
-                            }
+                            //                     "username": fullDocument.username,
+                            //                     "posting_datetime": fullDocument.posting_date,
+                            //                 };
+                            //                 var queryParams = Object.keys(obj).map(k => `${encodeURIComponent(k)}=${encodeURIComponent(obj[k])}`).join('&');
+                            //                 request
+                            //                     .get(`https://asfa-ccbp-lct-dev-01.azurewebsites.net/api/wrudispatch?code=xyR6Yfbc5cJboGcIkKyCTQswKvRDG3/hs3U00HGaI8h5bJQdUJoZag==&${queryParams}`)
+                            //                     .on('response', function(response) {
+                            //                         console.log("Response",response.statusCode,response.statusMessage);
+                            //                         console.log("Object",obj);
+                            //                     })
+                            //                     .on('error', function(err) {
+                            //                         console.error("Error:",err);
+                            //                     });
+                            //             } catch (error){
+                            //                 console.log("Request Error",error);
+                            //             }
+                            //         });
+                            //     });
+                            // }
                         }
                     }).on('error', err => {
                         console.log(`Error in ${x.key}: ${err}`);
