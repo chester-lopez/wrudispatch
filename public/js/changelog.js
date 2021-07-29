@@ -1,4 +1,8 @@
 const changelogList = {
+    "2.55.115": {
+        date: "July 29, 2021",
+        fix: ["[Fix] Dispatch Entries filter bug"]
+    },
     "2.55.114": {
         date: "July 27, 2021",
         fix: ["Fix date UI in Deployment Dashboard"]
