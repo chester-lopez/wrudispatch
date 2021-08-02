@@ -7954,7 +7954,44 @@ var REPORTS = {
                             </tbody>
                         </table>`;
             },
-            MTUR: function(title,docs,date_from,date_to){
+            MTUR: function(title,docs,date_from,date_to,holidays){
+                const sundayOrHolidayBG = "background-color:#FFF2CC;";
+
+                // function to get how many specifid weekday there is in a month. Ex. There are 5 sundays in 08/01/2021
+                function getAmountOfWeekDaysInMonth(date, weekday) {
+                    date.date(1);
+                    var dif = (7 + (weekday - date.weekday())) % 7 + 1;
+                    // console.log("weekday: " + weekday + ", FirstOfMonth: " + date.weekday() + ", dif: " + dif);
+                    return Math.floor((date.daysInMonth() - dif) / 7) + 1;
+                }
+                function getHolidaysOfThisMonth(date){
+                    const dateMonth = moment(date).format("MM");
+                    const dateYear = moment(date).format("YYYY");
+
+                    var countHolidays = 0;
+
+                    holidays.forEach(val => {
+                        const startDateMonth = moment(val.start).format("MM");
+                        const startDateYear = moment(val.start).format("YYYY");
+                        const endDateMonth = moment(val.end).format("MM");
+                        const endDateYear = moment(val.end).format("YYYY");
+                        ((dateMonth == startDateMonth && dateYear == startDateYear) || (dateMonth == endDateMonth && dateYear == endDateYear)) ? countHolidays ++ : null;
+                    });
+                    return countHolidays;
+                }
+                function isDateHoliday(date){
+                    var isHoliday = false;
+                    holidays.forEach(val => {
+                        const startDate = moment(val.start);
+                        const endDate = moment(val.end);
+                        
+                        (date.isBetween(startDate, endDate, 'days', true)) ? isHoliday = true : null;
+                    });
+                    return isHoliday;
+                }
+
+                const ignoreWeekDay = 0;
+
                 var excelHeaderStyle = "font-family:Arial;font-size:12px;font-weight:bold;vertical-align:middle;border:none;";
                 var tblHeaderStyle = "font-family:Arial;font-size:12px;font-weight:bold;text-align:center;height:22px;vertical-align:middle;border:thin solid black;";
                 var tblBodyStyle = "font-family:Arial;font-size:12px;mso-number-format:'\@';border:thin solid black;";
@@ -7963,16 +8000,19 @@ var REPORTS = {
                 var finalClusters = [{cluster:"Total",sequence:0}];
                 finalClusters = finalClusters.concat(LIST["clusters"]||[]);
 
-                var month = moment(date_from).format("MMM");
-                var year = moment(date_from).format("YYYY");
-                var daysInMonths = moment(date_from).daysInMonth();
+                const month = moment(date_from).format("MMM");
+                const year = moment(date_from).format("YYYY");
+                const daysInMonth = moment(date_from).daysInMonth();
+                const numberOfSundaysInMonth = getAmountOfWeekDaysInMonth(moment(date_from), ignoreWeekDay);
+                const holidaysInMonth = getHolidaysOfThisMonth(date_from);
+                const daysWithoutSundayAndHoliday = daysInMonth - numberOfSundaysInMonth - holidaysInMonth;
 
-                var totalVehicles = LIST["vehicles"].length;
-                var totalChassis = LIST["chassis"].length;
-                var totalManpower = LIST["vehicle_personnel"].filter(x => x.occupation == "Driver" || x.occupation == "Checker" || x.occupation == "Helper").length;
-                var totalDriver = LIST["vehicle_personnel"].filter(x => x.occupation == "Driver").length;
-                var totalChecker = LIST["vehicle_personnel"].filter(x => x.occupation == "Checker").length;
-                var totalHelper = LIST["vehicle_personnel"].filter(x => x.occupation == "Helper").length;
+                var totalVehicles = LIST["vehicles"].length * daysWithoutSundayAndHoliday;
+                var totalChassis = LIST["chassis"].length * daysWithoutSundayAndHoliday;
+                var totalManpower = LIST["vehicle_personnel"].filter(x => x.occupation == "Driver" || x.occupation == "Checker" || x.occupation == "Helper").length * daysWithoutSundayAndHoliday;
+                var totalDriver = LIST["vehicle_personnel"].filter(x => x.occupation == "Driver").length * daysWithoutSundayAndHoliday;
+                var totalChecker = LIST["vehicle_personnel"].filter(x => x.occupation == "Checker").length * daysWithoutSundayAndHoliday;
+                var totalHelper = LIST["vehicle_personnel"].filter(x => x.occupation == "Helper").length * daysWithoutSundayAndHoliday;
 
 
                 var dataTotalVehicles = [];
@@ -7999,6 +8039,7 @@ var REPORTS = {
                 var dailyHelperRows = {};
                 var countClusterColumns = 0;
 
+                var totalTrips = 0;
 
                 var dailyTableTitle = [];
                 var dailyVehicleTableHeader = {};
@@ -8018,13 +8059,13 @@ var REPORTS = {
                 function generateRowData(cluster_id){
                     countClusterColumns ++;
                     var rowsArr = [];
-                    for(var i = 1; i < daysInMonths+1; i++){
+                    for(var i = 1; i < daysInMonth+1; i++){
                         var dateMoment = moment(`${month} ${i}, ${year}`);
                         var date = dateMoment.format("MM/DD/YYYY");
-    
-                        var startEndDate = moment(date, "MM/DD/YYYY");
-                        var filtered = docs.filter(x => moment(moment(x.scheduled_date).format("MM/DD/YYYY"), "MM/DD/YYYY").isBetween(startEndDate, startEndDate, 'days', '[]'));
-    
+                        var weekDay = Number(dateMoment.format("d"));
+                        var isHoliday = isDateHoliday(dateMoment);
+
+                        
                         var vehicle_ids = [];
                         var chassis_ids = [];
                         var manpower_driver_ids = [];
@@ -8053,135 +8094,175 @@ var REPORTS = {
                                 uniqueHelperList: [],
                             };
                         });
+
+                        // if weekDay is not Sunday (0). Monday - 1 Saturday - 6
+                        if(weekDay != ignoreWeekDay && !isHoliday){
     
-                        filtered.forEach(val => {
-                            var origin = getGeofence(val.origin_id) || {};
-                            var vehicle = getVehicle(val.vehicle_id) || {};
-                            var truck_type = vehicle.truck_type;
-
-                            if(!cluster_id || origin.cluster_id == cluster_id){
-                                
-                                (val.vehicle_id) ? vehicle_ids.push(val.vehicle_id) : null;
-                                (val.chassis) ? chassis_ids.push(val.chassis) : null;
-                                (val.driver_id) ? manpower_driver_ids.push(val.driver_id) : null;
-                                (val.checker_id) ? manpower_checker_ids.push(val.checker_id) : null;
-                                (val.helper_id) ? manpower_helper_ids.push(val.helper_id) : null;
-                                
-                                (val.vehicle_id && !uniqueVehicleList.includes(val.vehicle_id)) ? uniqueVehicleList.push(val.vehicle_id) : null;
-                                (val.chassis && !uniqueChassisList.includes(val.chassis)) ? uniqueChassisList.push(val.chassis) : null;
-                                (val.driver_id && !uniqueDriverList.includes(val.driver_id)) ? uniqueDriverList.push(val.driver_id) : null;
-                                (val.checker_id && !uniqueCheckerList.includes(val.checker_id)) ? uniqueCheckerList.push(val.checker_id) : null;
-                                (val.helper_id && !uniqueHelperList.includes(val.helper_id)) ? uniqueHelperList.push(val.helper_id) : null;
+                            var startEndDate = moment(date, "MM/DD/YYYY");
+                            var filtered = docs.filter(x => moment(moment(x.scheduled_date).format("MM/DD/YYYY"), "MM/DD/YYYY").isBetween(startEndDate, startEndDate, 'days', '[]'));
         
-                                (dataTotalVehicles.includes(val.vehicle_id)) ? null : dataTotalVehicles.push(val.vehicle_id);
-                                (dataTotalChassis.includes(val.chassis)) ? null : dataTotalChassis.push(val.chassis);
-                                (dataTotalManpower.includes(val.driver_id)) ? null : dataTotalManpower.push(val.driver_id);
-                                (dataTotalManpower.includes(val.checker_id)) ? null : dataTotalManpower.push(val.checker_id);
-                                (dataTotalManpower.includes(val.helper_id)) ? null : dataTotalManpower.push(val.helper_id);
-                                (dataTotalDriver.includes(val.driver_id)) ? null : dataTotalDriver.push(val.driver_id);
-                                (dataTotalChecker.includes(val.checker_id)) ? null : dataTotalChecker.push(val.checker_id);
-                                (dataTotalHelper.includes(val.helper_id)) ? null : dataTotalHelper.push(val.helper_id);
         
-                                if(new Date(val.posting_date).getTime() >= 1626624000000) {// July 19, 2021, 12:00 AM
-                                    (aveDataTotalVehicles.includes(val.vehicle_id)) ? null : aveDataTotalVehicles.push(val.vehicle_id);
-                                    (aveDataTotalChassis.includes(val.chassis)) ? null : aveDataTotalChassis.push(val.chassis);
-                                    (aveDataTotalManpower.includes(val.driver_id)) ? null : aveDataTotalManpower.push(val.driver_id);
-                                    (aveDataTotalManpower.includes(val.checker_id)) ? null : aveDataTotalManpower.push(val.checker_id);
-                                    (aveDataTotalManpower.includes(val.helper_id)) ? null : aveDataTotalManpower.push(val.helper_id);
-                                    (aveDataTotalDriver.includes(val.driver_id)) ? null : aveDataTotalDriver.push(val.driver_id);
-                                    (aveDataTotalChecker.includes(val.checker_id)) ? null : aveDataTotalChecker.push(val.checker_id);
-                                    (aveDataTotalHelper.includes(val.helper_id)) ? null : aveDataTotalHelper.push(val.helper_id);
-                                }
+                            filtered.forEach(val => {
+                                var origin = getGeofence(val.origin_id) || {};
+                                var vehicle = getVehicle(val.vehicle_id) || {};
+                                var truck_type = vehicle.truck_type;
+    
+                                if(!cluster_id || origin.cluster_id == cluster_id){
 
-                                
-                                if(perTruckType[truck_type]){
-                                    (val.vehicle_id) ? perTruckType[truck_type].vehicle_ids.push(val.vehicle_id) : null;
-                                    (val.chassis) ? perTruckType[truck_type].chassis_ids.push(val.chassis) : null;
-                                    (val.driver_id) ? perTruckType[truck_type].manpower_driver_ids.push(val.driver_id) : null;
-                                    (val.checker_id) ? perTruckType[truck_type].manpower_checker_ids.push(val.checker_id) : null;
-                                    (val.helper_id) ? perTruckType[truck_type].manpower_helper_ids.push(val.helper_id) : null;
+                                    totalTrips ++;
                                     
-                                    (val.vehicle_id && !perTruckType[truck_type].uniqueVehicleList.includes(val.vehicle_id)) ? perTruckType[truck_type].uniqueVehicleList.push(val.vehicle_id) : null;
-                                    (val.chassis && !perTruckType[truck_type].uniqueChassisList.includes(val.chassis)) ? perTruckType[truck_type].uniqueChassisList.push(val.chassis) : null;
-                                    (val.driver_id && !perTruckType[truck_type].uniqueDriverList.includes(val.driver_id)) ? perTruckType[truck_type].uniqueDriverList.push(val.driver_id) : null;
-                                    (val.checker_id && !perTruckType[truck_type].uniqueCheckerList.includes(val.checker_id)) ? perTruckType[truck_type].uniqueCheckerList.push(val.checker_id) : null;
-                                    (val.helper_id && !perTruckType[truck_type].uniqueHelperList.includes(val.helper_id)) ? perTruckType[truck_type].uniqueHelperList.push(val.helper_id) : null;
-                                }
-                            }
-                        });
+                                    (val.vehicle_id) ? vehicle_ids.push(val.vehicle_id) : null;
+                                    (val.chassis) ? chassis_ids.push(val.chassis) : null;
+                                    (val.driver_id) ? manpower_driver_ids.push(val.driver_id) : null;
+                                    (val.checker_id) ? manpower_checker_ids.push(val.checker_id) : null;
+                                    (val.helper_id) ? manpower_helper_ids.push(val.helper_id) : null;
+                                    
+                                    (val.vehicle_id && !uniqueVehicleList.includes(val.vehicle_id)) ? uniqueVehicleList.push(val.vehicle_id) : null;
+                                    (val.chassis && !uniqueChassisList.includes(val.chassis)) ? uniqueChassisList.push(val.chassis) : null;
+                                    (val.driver_id && !uniqueDriverList.includes(val.driver_id)) ? uniqueDriverList.push(val.driver_id) : null;
+                                    (val.checker_id && !uniqueCheckerList.includes(val.checker_id)) ? uniqueCheckerList.push(val.checker_id) : null;
+                                    (val.helper_id && !uniqueHelperList.includes(val.helper_id)) ? uniqueHelperList.push(val.helper_id) : null;
+            
+                                    (val.vehicle_id) ? dataTotalVehicles.push(val.vehicle_id) : null;
+                                    (val.chassis) ? dataTotalChassis.push(val.chassis) : null;
+                                    (val.driver_id) ? dataTotalManpower.push(val.driver_id) : null;
+                                    (val.checker_id) ? dataTotalManpower.push(val.checker_id) : null;
+                                    (val.helper_id) ? dataTotalManpower.push(val.helper_id) : null;
+                                    (val.driver_id) ? dataTotalDriver.push(val.driver_id) : null;
+                                    (val.checker_id) ? dataTotalChecker.push(val.checker_id) : null;
+                                    (val.helper_id) ? dataTotalHelper.push(val.helper_id) : null;
+            
+                                    if(new Date(val.posting_date).getTime() >= 1626624000000) {// July 19, 2021, 12:00 AM
+                                        (val.vehicle_id) ? aveDataTotalVehicles.push(val.vehicle_id) : null;
+                                        (val.chassis) ? aveDataTotalChassis.push(val.chassis) : null;
+                                        (val.driver_id) ? aveDataTotalManpower.push(val.driver_id) : null;
+                                        (val.checker_id) ? aveDataTotalManpower.push(val.checker_id) : null;
+                                        (val.helper_id) ? aveDataTotalManpower.push(val.helper_id) : null;
+                                        (val.driver_id) ? aveDataTotalDriver.push(val.driver_id) : null;
+                                        (val.checker_id) ? aveDataTotalChecker.push(val.checker_id) : null;
+                                        (val.helper_id) ? aveDataTotalHelper.push(val.helper_id) : null;
+                                    }
     
-                        var vehiclePercentage = GET.ROUND_OFF((uniqueVehicleList.length/totalVehicles)*100);
-                        var chassisPercentage = GET.ROUND_OFF((uniqueChassisList.length/totalChassis)*100);
-                        var driverPercentage = GET.ROUND_OFF((uniqueDriverList.length/totalManpower)*100);
-                        var checkerPercentage = GET.ROUND_OFF((uniqueCheckerList.length/totalManpower)*100);
-                        var helperPercentage = GET.ROUND_OFF((uniqueHelperList.length/totalManpower)*100);
-
-                        rowsArr.push({
-                            date,
-
-                            totalVehicleCount: vehicle_ids.length,
-                            uniqueVehicleCount: uniqueVehicleList.length,
-                            totalVehiclePercentage: vehiclePercentage,
-                            
-                            totalChassisCount: chassis_ids.length,
-                            uniqueChassisCount: uniqueChassisList.length,
-                            totalChassisPercentage: chassisPercentage,
-
-                            totalDriverCount: manpower_driver_ids.length,
-                            uniqueDriverCount: uniqueDriverList.length,
-                            totalDriverPercentage: driverPercentage,
-
-                            totalCheckerCount: manpower_checker_ids.length,
-                            uniqueCheckerCount: uniqueCheckerList.length,
-                            totalCheckerPercentage: checkerPercentage,
-
-                            totalHelperCount: manpower_helper_ids.length,
-                            uniqueHelperCount: uniqueHelperList.length,
-                            totalHelperPercentage: helperPercentage,
-
-                            perTruckType
-                        });
-                         
-                        function dailyRows(id_list,tempDailyRows,totalCount,getCallback){
-                            var tempList = {};
-                            id_list.forEach(val => {
-                                var tempData = getCallback(val);
-                                if(tempData){
-                                    tempList[tempData.name || tempData._id] = tempList[tempData.name || tempData._id] || 0;
-                                    tempList[tempData.name || tempData._id]++;
+                                    
+                                    if(perTruckType[truck_type]){
+                                        (val.vehicle_id) ? perTruckType[truck_type].vehicle_ids.push(val.vehicle_id) : null;
+                                        (val.chassis) ? perTruckType[truck_type].chassis_ids.push(val.chassis) : null;
+                                        (val.driver_id) ? perTruckType[truck_type].manpower_driver_ids.push(val.driver_id) : null;
+                                        (val.checker_id) ? perTruckType[truck_type].manpower_checker_ids.push(val.checker_id) : null;
+                                        (val.helper_id) ? perTruckType[truck_type].manpower_helper_ids.push(val.helper_id) : null;
+                                        
+                                        (val.vehicle_id && !perTruckType[truck_type].uniqueVehicleList.includes(val.vehicle_id)) ? perTruckType[truck_type].uniqueVehicleList.push(val.vehicle_id) : null;
+                                        (val.chassis && !perTruckType[truck_type].uniqueChassisList.includes(val.chassis)) ? perTruckType[truck_type].uniqueChassisList.push(val.chassis) : null;
+                                        (val.driver_id && !perTruckType[truck_type].uniqueDriverList.includes(val.driver_id)) ? perTruckType[truck_type].uniqueDriverList.push(val.driver_id) : null;
+                                        (val.checker_id && !perTruckType[truck_type].uniqueCheckerList.includes(val.checker_id)) ? perTruckType[truck_type].uniqueCheckerList.push(val.checker_id) : null;
+                                        (val.helper_id && !perTruckType[truck_type].uniqueHelperList.includes(val.helper_id)) ? perTruckType[truck_type].uniqueHelperList.push(val.helper_id) : null;
+                                    }
                                 }
                             });
-                            tempDailyRows[i] = tempDailyRows[i] || {}; 
+        
+                            var vehiclePercentage = GET.ROUND_OFF((uniqueVehicleList.length/totalVehicles)*100);
+                            var chassisPercentage = GET.ROUND_OFF((uniqueChassisList.length/totalChassis)*100);
+                            var driverPercentage = GET.ROUND_OFF((uniqueDriverList.length/totalManpower)*100);
+                            var checkerPercentage = GET.ROUND_OFF((uniqueCheckerList.length/totalManpower)*100);
+                            var helperPercentage = GET.ROUND_OFF((uniqueHelperList.length/totalManpower)*100);
     
-                            Object.keys(tempList).forEach((key,i1) => {
-                                var percentage = GET.ROUND_OFF((tempList[key]/totalCount)*100);
-                                tempDailyRows[i][i1] = tempDailyRows[i][i1] || []; 
-                                tempDailyRows[i][i1].push(`<td style="${tblBodyStyle}text-align:center;">${i1+1}</td>
-                                                            <td style="${tblBodyStyle}text-align:left;">${key}</td>
-                                                            <td style="${tblBodyStyle}text-align:center;">${tempList[key]}</td>`);
-                                // tempDailyRows[i][i1].push(`<td style="${tblBodyStyle}text-align:center;font-weight:bold;">${key}</td>
-                                //                     <td style="${tblBodyStyle}text-align:center;">${tempList[key]}</td>
-                                //                     <td style="${tblBodyStyle}text-align:center;">${percentage}%</td>`);
+                            rowsArr.push({
+                                date,
+    
+                                totalVehicleCount: vehicle_ids.length || 0,
+                                uniqueVehicleCount: uniqueVehicleList.length || 0,
+                                totalVehiclePercentage: vehiclePercentage || 0,
+                                
+                                totalChassisCount: chassis_ids.length || 0,
+                                uniqueChassisCount: uniqueChassisList.length || 0,
+                                totalChassisPercentage: chassisPercentage || 0,
+    
+                                totalDriverCount: manpower_driver_ids.length || 0,
+                                uniqueDriverCount: uniqueDriverList.length || 0,
+                                totalDriverPercentage: driverPercentage || 0,
+    
+                                totalCheckerCount: manpower_checker_ids.length || 0,
+                                uniqueCheckerCount: uniqueCheckerList.length || 0,
+                                totalCheckerPercentage: checkerPercentage || 0,
+    
+                                totalHelperCount: manpower_helper_ids.length || 0,
+                                uniqueHelperCount: uniqueHelperList.length || 0,
+                                totalHelperPercentage: helperPercentage || 0,
+    
+                                perTruckType
                             });
-                            if(Object.keys(tempDailyRows[i]).length > 0){
-                                Object.keys(tempDailyRows[i]).forEach((key) => {
-                                    while(tempDailyRows[i][key].length < countClusterColumns){
-                                        tempDailyRows[i][key].push(`<td></td><td></td><td></td>`);
+                             
+                            function dailyRows(id_list,tempDailyRows,totalCount,getCallback){
+                                var tempList = {};
+                                id_list.forEach(val => {
+                                    var tempData = getCallback(val);
+                                    if(tempData){
+                                        tempList[tempData.name || tempData._id] = tempList[tempData.name || tempData._id] || 0;
+                                        tempList[tempData.name || tempData._id]++;
                                     }
                                 });
-                            } else {
-                                for(var r = 0; r < countClusterColumns; r++){
-                                    tempDailyRows[i][r] = tempDailyRows[i][r] || []; 
-                                    tempDailyRows[i][r].push(`<td></td><td></td><td></td>`);
+                                tempDailyRows[i] = tempDailyRows[i] || {}; 
+        
+                                Object.keys(tempList).forEach((key,i1) => {
+                                    var percentage = GET.ROUND_OFF((tempList[key]/totalCount)*100);
+                                    tempDailyRows[i][i1] = tempDailyRows[i][i1] || []; 
+                                    tempDailyRows[i][i1].push(`<td style="${tblBodyStyle}text-align:center;">${i1+1}</td>
+                                                                <td style="${tblBodyStyle}text-align:left;">${key}</td>
+                                                                <td style="${tblBodyStyle}text-align:center;">${tempList[key]}</td>`);
+                                    // tempDailyRows[i][i1].push(`<td style="${tblBodyStyle}text-align:center;font-weight:bold;">${key}</td>
+                                    //                     <td style="${tblBodyStyle}text-align:center;">${tempList[key]}</td>
+                                    //                     <td style="${tblBodyStyle}text-align:center;">${percentage}%</td>`);
+                                });
+                                if(Object.keys(tempDailyRows[i]).length > 0){
+                                    Object.keys(tempDailyRows[i]).forEach((key) => {
+                                        while(tempDailyRows[i][key].length < countClusterColumns){
+                                            tempDailyRows[i][key].push(`<td></td><td></td><td></td>`);
+                                        }
+                                    });
+                                } else {
+                                    for(var r = 0; r < countClusterColumns; r++){
+                                        tempDailyRows[i][r] = tempDailyRows[i][r] || []; 
+                                        tempDailyRows[i][r].push(`<td></td><td></td><td></td>`);
+                                    }
                                 }
+                                return tempDailyRows;
                             }
-                            return tempDailyRows;
+                            dailyVehicleRows = dailyRows(vehicle_ids,dailyVehicleRows,totalVehicles,(val) => { return getVehicle(val); });
+                            dailyChassisRows = dailyRows(chassis_ids,dailyChassisRows,totalChassis,(val) => { return getChassis(val); });
+                            dailyDriverRows = dailyRows(manpower_driver_ids,dailyDriverRows,totalManpower,(val) => { return getVehiclePersonnel(val); });
+                            dailyCheckerRows = dailyRows(manpower_checker_ids,dailyCheckerRows,totalManpower,(val) => { return getVehiclePersonnel(val); });
+                            dailyHelperRows = dailyRows(manpower_helper_ids,dailyHelperRows,totalManpower,(val) => { return getVehiclePersonnel(val); });
+                        } else {
+                            const ignoreType = isHoliday ? "Holiday" : "Sunday";
+
+                            rowsArr.push({
+                                date,
+                                ignoreType,
+    
+                                totalVehicleCount: vehicle_ids.length || 0,
+                                uniqueVehicleCount: uniqueVehicleList.length || 0,
+                                totalVehiclePercentage: vehiclePercentage || 0,
+                                
+                                totalChassisCount: chassis_ids.length || 0,
+                                uniqueChassisCount: uniqueChassisList.length || 0,
+                                totalChassisPercentage: chassisPercentage || 0,
+    
+                                totalDriverCount: manpower_driver_ids.length || 0,
+                                uniqueDriverCount: uniqueDriverList.length || 0,
+                                totalDriverPercentage: driverPercentage || 0,
+    
+                                totalCheckerCount: manpower_checker_ids.length || 0,
+                                uniqueCheckerCount: uniqueCheckerList.length || 0,
+                                totalCheckerPercentage: checkerPercentage || 0,
+    
+                                totalHelperCount: manpower_helper_ids.length || 0,
+                                uniqueHelperCount: uniqueHelperList.length || 0,
+                                totalHelperPercentage: helperPercentage || 0,
+    
+                                perTruckType
+                            });
+                            // console.log("IT'S A SUNDAY",weekDay);
                         }
-                        dailyVehicleRows = dailyRows(vehicle_ids,dailyVehicleRows,totalVehicles,(val) => { return getVehicle(val); });
-                        dailyChassisRows = dailyRows(chassis_ids,dailyChassisRows,totalChassis,(val) => { return getChassis(val); });
-                        dailyDriverRows = dailyRows(manpower_driver_ids,dailyDriverRows,totalManpower,(val) => { return getVehiclePersonnel(val); });
-                        dailyCheckerRows = dailyRows(manpower_checker_ids,dailyCheckerRows,totalManpower,(val) => { return getVehiclePersonnel(val); });
-                        dailyHelperRows = dailyRows(manpower_helper_ids,dailyHelperRows,totalManpower,(val) => { return getVehiclePersonnel(val); });
                     }
                     return rowsArr;
                 }
@@ -8225,37 +8306,44 @@ var REPORTS = {
                                          <td style="${tblHeaderStyle}width:130px;"><b>Percentage (Helper)</b></td>`);
                     // [[data],[data1]]
                     
-                    generateRowData(val._id).forEach((arr,i) => {      
+                    generateRowData(val._id).forEach((arr,i) => {   
+                        const bgColor = arr.ignoreType ? sundayOrHolidayBG : "";
+
                         Object.keys(arr.perTruckType).forEach((key,iPtt) => {
                             var ptt = arr.perTruckType[key];
                             rows[`${arr.date}-${key}`] = rows[`${arr.date}-${key}`] || [];
-                            rows[`${arr.date}-${key}`].push(`<td style="${tblBodyStyle}text-align:center;font-weight:bold;">${iPtt==0?arr.date:""}</td>
-                                                <td style="${tblBodyStyle}text-align:center;">${key}</td>
-                                                <td style="${tblBodyStyle}text-align:center;">${ptt.uniqueVehicleList.length}</td>
-                                                <td style="${tblBodyStyle}text-align:center;">${GET.ROUND_OFF((ptt.uniqueVehicleList.length/totalVehicles)*100)}%</td>
-                                                <td style="${tblBodyStyle}text-align:center;">${ptt.uniqueChassisList.length}</td>
-                                                <td style="${tblBodyStyle}text-align:center;">${GET.ROUND_OFF((ptt.uniqueChassisList.length/totalChassis)*100)}%</td>
-                                                <td style="${tblBodyStyle}text-align:center;">${ptt.uniqueDriverList.length}</td>
-                                                <td style="${tblBodyStyle}text-align:center;">${GET.ROUND_OFF((ptt.uniqueDriverList.length/totalManpower)*100)}%</td>
-                                                <td style="${tblBodyStyle}text-align:center;">${ptt.uniqueCheckerList.length}</td>
-                                                <td style="${tblBodyStyle}text-align:center;">${GET.ROUND_OFF((ptt.uniqueCheckerList.length/totalManpower)*100)}%</td>
-                                                <td style="${tblBodyStyle}text-align:center;">${ptt.uniqueHelperList.length}</td>
-                                                <td style="${tblBodyStyle}text-align:center;">${GET.ROUND_OFF((ptt.uniqueHelperList.length/totalManpower)*100)}%</td>`);
+
+                            var text = "";
+                            (iPtt==0) ? text = arr.date : null;
+                            (iPtt==1 && arr.ignoreType) ? text = `(${arr.ignoreType})` : null;
+
+                            rows[`${arr.date}-${key}`].push(`<td class="test" style="${tblBodyStyle}text-align:center;font-weight:bold;${bgColor}">${text}</td>
+                                                <td style="${tblBodyStyle}text-align:center;${bgColor}">${key}</td>
+                                                <td style="${tblBodyStyle}text-align:center;${bgColor}">${ptt.uniqueVehicleList.length}</td>
+                                                <td style="${tblBodyStyle}text-align:center;${bgColor}">${GET.ROUND_OFF((ptt.uniqueVehicleList.length/totalVehicles)*100)}%</td>
+                                                <td style="${tblBodyStyle}text-align:center;${bgColor}">${ptt.uniqueChassisList.length}</td>
+                                                <td style="${tblBodyStyle}text-align:center;${bgColor}">${GET.ROUND_OFF((ptt.uniqueChassisList.length/totalChassis)*100)}%</td>
+                                                <td style="${tblBodyStyle}text-align:center;${bgColor}">${ptt.uniqueDriverList.length}</td>
+                                                <td style="${tblBodyStyle}text-align:center;${bgColor}">${GET.ROUND_OFF((ptt.uniqueDriverList.length/totalManpower)*100)}%</td>
+                                                <td style="${tblBodyStyle}text-align:center;${bgColor}">${ptt.uniqueCheckerList.length}</td>
+                                                <td style="${tblBodyStyle}text-align:center;${bgColor}">${GET.ROUND_OFF((ptt.uniqueCheckerList.length/totalManpower)*100)}%</td>
+                                                <td style="${tblBodyStyle}text-align:center;${bgColor}">${ptt.uniqueHelperList.length}</td>
+                                                <td style="${tblBodyStyle}text-align:center;${bgColor}">${GET.ROUND_OFF((ptt.uniqueHelperList.length/totalManpower)*100)}%</td>`);
                         });
 
                         rows[`${arr.date}-total`] = rows[`${arr.date}-total`] || [];
-                        rows[`${arr.date}-total`].push(`<td style="${tblBodyStyle}text-align:center;font-weight:bold;"></td>
-                                            <td style="${tblBodyStyle}text-align:center;">Total</td>
-                                            <td style="${tblBodyStyle}text-align:center;">${arr.uniqueVehicleCount}</td>
-                                            <td style="${tblBodyStyle}text-align:center;">${arr.totalVehiclePercentage}%</td>
-                                            <td style="${tblBodyStyle}text-align:center;">${arr.uniqueChassisCount}</td>
-                                            <td style="${tblBodyStyle}text-align:center;">${arr.totalChassisPercentage}%</td>
-                                            <td style="${tblBodyStyle}text-align:center;">${arr.uniqueDriverCount}</td>
-                                            <td style="${tblBodyStyle}text-align:center;">${arr.totalDriverPercentage}%</td>
-                                            <td style="${tblBodyStyle}text-align:center;">${arr.uniqueCheckerCount}</td>
-                                            <td style="${tblBodyStyle}text-align:center;">${arr.totalCheckerPercentage}%</td>
-                                            <td style="${tblBodyStyle}text-align:center;">${arr.uniqueHelperCount}</td>
-                                            <td style="${tblBodyStyle}text-align:center;">${arr.totalHelperPercentage}%</td>`);
+                        rows[`${arr.date}-total`].push(`<td style="${tblBodyStyle}text-align:center;font-weight:bold;${bgColor}"></td>
+                                            <td style="${tblBodyStyle}text-align:center;${bgColor}">Total</td>
+                                            <td style="${tblBodyStyle}text-align:center;${bgColor}">${arr.uniqueVehicleCount}</td>
+                                            <td style="${tblBodyStyle}text-align:center;${bgColor}">${arr.totalVehiclePercentage}%</td>
+                                            <td style="${tblBodyStyle}text-align:center;${bgColor}">${arr.uniqueChassisCount}</td>
+                                            <td style="${tblBodyStyle}text-align:center;${bgColor}">${arr.totalChassisPercentage}%</td>
+                                            <td style="${tblBodyStyle}text-align:center;${bgColor}">${arr.uniqueDriverCount}</td>
+                                            <td style="${tblBodyStyle}text-align:center;${bgColor}">${arr.totalDriverPercentage}%</td>
+                                            <td style="${tblBodyStyle}text-align:center;${bgColor}">${arr.uniqueCheckerCount}</td>
+                                            <td style="${tblBodyStyle}text-align:center;${bgColor}">${arr.totalCheckerPercentage}%</td>
+                                            <td style="${tblBodyStyle}text-align:center;${bgColor}">${arr.uniqueHelperCount}</td>
+                                            <td style="${tblBodyStyle}text-align:center;${bgColor}">${arr.totalHelperPercentage}%</td>`);
                                             
                                             
                         dailyVehicleTableHeader[i] = dailyVehicleTableHeader[i] || [];
@@ -8275,12 +8363,19 @@ var REPORTS = {
                     });
                 });
                 
-                for(var i = 1; i < daysInMonths+1; i++){
+                for(var i = 1; i < daysInMonth+1; i++){
                     var dateMoment = moment(`${month} ${i}, ${year}`);
+                    var date = dateMoment.format("MM/DD/YYYY");
+                    var weekDay = Number(dateMoment.format("d"));
+                    var isHoliday = isDateHoliday(dateMoment);
+                    const bgColor = (weekDay == ignoreWeekDay || isHoliday) ? sundayOrHolidayBG : "";
+                    const holidayText = (isHoliday) ? " (Holiday)" : "";
+                    // if weekDay is not Sunday (0). Monday - 1 Saturday - 6
+                    // if(weekDay != ignoreWeekDay && !isHoliday){
 
                     function getRowsArr(rowArr){
                         var tempArr = [];
-                        Object.keys(rowArr[i]).forEach(i1 => {
+                        Object.keys(rowArr[i]||{}).forEach(i1 => {
                             tempArr.push(`<tr>${rowArr[i][i1].join(`<td style="border:none;"></td><td style="border:none;"></td>`)}</tr>`);
                         });
                         return tempArr;
@@ -8288,7 +8383,7 @@ var REPORTS = {
                     
                     tablesHTML += `<table id="report-hidden-${i}" data-SheetName="${dateMoment.format("MMM DD")}" border="1" style="border-collapse: collapse;opacity:0;">
                                         <tbody>
-                                            <tr> <td style="${excelHeaderStyle}text-align:left;" colspan=5><b>Date: ${dateMoment.format("MMM DD, YYYY (dddd)")}</b></td> </tr>
+                                            <tr> <td style="${excelHeaderStyle}text-align:left;${bgColor}" colspan=5><b>Date: ${dateMoment.format("MMM DD, YYYY (dddd)")}${holidayText}</b></td> </tr>
                                             <tr> <td style="${excelHeaderStyle}text-align:left;" colspan=5><b>${title}</b></td> </tr>
 
                                             <tr> <td style="border:none;"></td><td style="border:none;"></td> </tr>
@@ -8337,6 +8432,8 @@ var REPORTS = {
                     tableRows.push(`<tr>${rows[key].join(`<td style="border:none;"></td><td style="border:none;"></td>`)}</tr>`);
                 });
 
+
+                // trip based
                 var monthlyVehicleUtilization = GET.ROUND_OFF((dataTotalVehicles.length/totalVehicles)*100);
                 var monthlyChassisUtilization = GET.ROUND_OFF((dataTotalChassis.length/totalChassis)*100);
                 var monthlyManpowerUtilization = GET.ROUND_OFF((dataTotalManpower.length/totalManpower)*100);
@@ -8351,10 +8448,17 @@ var REPORTS = {
                 var aveMonthlyCheckerUtilization = GET.ROUND_OFF((aveDataTotalChecker.length/totalChecker)*100);
                 var aveMonthlyHelperUtilization = GET.ROUND_OFF((aveDataTotalHelper.length/totalHelper)*100);
 
+                console.log("Vehicle",`${dataTotalVehicles.length}/${totalVehicles} = ${monthlyVehicleUtilization}%  |  ${aveDataTotalVehicles.length}/${totalVehicles} = ${aveMonthlyVehicleUtilization}%`);
+                console.log("Chassis",`${dataTotalChassis.length}/${totalChassis} = ${monthlyChassisUtilization}%  |  ${aveDataTotalChassis.length}/${totalChassis} = ${aveMonthlyChassisUtilization}%`);
+                console.log("Manpower",`${dataTotalManpower.length}/${totalManpower} = ${monthlyManpowerUtilization}%  |  ${aveDataTotalManpower.length}/${totalManpower} = ${aveMonthlyManpowerUtilization}%`);
+                console.log("Driver",`${dataTotalDriver.length}/${totalDriver} = ${monthlyDriverUtilization}%  |  ${aveDataTotalDriver.length}/${totalDriver} = ${aveMonthlyDriverUtilization}%`);
+                console.log("Checker",`${dataTotalChecker.length}/${totalChecker} = ${monthlyCheckerUtilization}%  |  ${aveDataTotalChecker.length}/${totalChecker} = ${aveMonthlyCheckerUtilization}%`);
+                console.log("Helper",`${dataTotalHelper.length}/${totalHelper} = ${monthlyHelperUtilization}%  |  ${aveDataTotalHelper.length}/${totalHelper} = ${aveMonthlyHelperUtilization}%`);
+
                 return `<table id="report-hidden" data-SheetName="Overview" border="1" style="border-collapse: collapse;opacity:0;">
                             <tbody>
-                                <tr> <td style="${excelHeaderStyle}text-align:center;" colspan=5><b>${title}</b></td> </tr>
-                                <tr> <td style="${excelHeaderStyle}text-align:center;" colspan=5><b>${moment(date_from).format("MM-YYYY")}</b></td> </tr>
+                                <tr> <td style="${excelHeaderStyle}" colspan=5><b>${title}</b></td> </tr>
+                                <tr> <td style="${excelHeaderStyle}" colspan=5><b>${moment(date_from).format("MM-YYYY")}</b></td> </tr>
                                 <tr> <td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td> </tr>
 
                                 <tr>${tableTitle.join(`<td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td>><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
@@ -9226,10 +9330,34 @@ var REPORTS = {
                                 dataURL: `/api/dispatch/${CLIENT.id}/${USER.username}/mtur/${JSON.stringify(filter)}`,
                                 callback: function(docs){
                                     console.log("docs",docs);
-                                    docs.sort(function (a, b) {
-                                        return new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime();
+
+                                    /* get holidays from Google Calendar API
+                                    -----------------------------------------------------------------*/
+                                    
+                                    const publicAPIKey = "AIzaSyC4GSP3uLbIvfO_RPqUzlEyxb9Duy5vjYk";
+                                    const country = "philippines";
+                                    var calendarUrl = 'https://www.googleapis.com/calendar/v3/calendars/en.' + country
+                                                    + '%23holiday%40group.v.calendar.google.com/events?key=' + publicAPIKey;
+
+                                    $.getJSON(calendarUrl).done(function(data) {
+                                        console.log(data);
+                                        const holidays = [];
+                                        data.items.forEach(val => {
+                                            holidays.push({
+                                                title: val.summary,
+                                                start: val.start.date,
+                                                end: moment(val.end.date).subtract(1,'day').toDate()
+                                            });
+                                        });
+                                        
+                                        docs.sort(function (a, b) {
+                                            return new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime();
+                                        });
+                                        callback(docs,holidays);
+                                        
+                                    }).fail(function(error) {
+                                        console.log("error",error)
                                     });
-                                    callback(docs);
                                 }
                             });
                         },
@@ -9422,8 +9550,8 @@ var REPORTS = {
                         var customButtons = `<button id="generate-btn" type="button" class="btn btn-primary col-sm-12 mt-4">Generate report (.xls)</button>
                                             <button id="generate-1-btn" type="button" class="btn btn-primary col-sm-12 mt-2">Generate report (.ods)</button>`;
                         df_dt_dest(title,"REPORT_MODAL_07",customButtons,function(btnId){
-                            mtur_report(function(docs){
-                                $(`body`).append(REPORTS.UI.REPORTS.MTUR(title,docs,date_from,date_to));
+                            mtur_report(function(docs,holidays){
+                                $(`body`).append(REPORTS.UI.REPORTS.MTUR(title,docs,date_from,date_to,holidays));
                                 var fileName = `${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`;
 
                                 if(btnId == "generate-1-btn"){
@@ -13539,6 +13667,236 @@ var CHASSIS = {
         }
     }
 };
+var CALENDAR = {
+    init: function(){
+        PAGE.DISPLAY();
+
+        /* initialize the calendar
+        -----------------------------------------------------------------*/
+
+        var calendar = $('#calendar').fullCalendar({
+            header: {
+                left: 'agendaDay,agendaWeek,month ',
+                center: 'title',
+                right: 'today prev,next'
+            },
+            eventClick: function(info) {
+                console.log('Event: ', info);
+            },
+            eventRender: function(event, element) {
+                console.log("event",event)
+                element.find(".fc-event-inner").append("<span class='closeon float-right'><i class='la la-times'></i></span>");
+                element.find(".closeon").click(function() {
+                    var text = (event.eventType == "holiday") ? "National Holiday" : "Custom Event";
+                    MODAL.CONFIRMATION({
+                        content: `Are you sure you want to delete this ${text}?<br><br><b>${event.title}</b>`,
+                        confirmCloseCondition: true,
+                        confirmCallback: function(){
+                            $('#calendar').fullCalendar('removeEvents', event._id);
+                            $(`#confirm-modal,#overlay`).remove(); 
+                        },
+                        cancelCallback: function(){
+                            $(`#modal #submit`).html(`Submit`).attr("disabled",false);
+                        }
+                    });
+                });
+            },
+            editable: true,
+            firstDay: 0, //  1(Monday) this can be changed to 0(Sunday) for the USA system
+            selectable: true,
+            defaultView: 'month',
+
+            axisFormat: 'h:mm',
+            columnFormat: {
+                month: 'ddd', // Mon
+                week: 'ddd d', // Mon 7
+                day: 'dddd M/d', // Monday 9/7
+                agendaDay: 'dddd d'
+            },
+            titleFormat: {
+                month: 'MMMM yyyy', // September 2009
+                week: "MMMM yyyy", // September 2009
+                day: 'MMMM yyyy' // Tuesday, Sep 8, 2009
+            },
+            allDaySlot: false,
+            selectHelper: true,
+            select: function(start, end, allDay) {
+                var title = prompt('Event Title:');
+                if (title) {
+                    calendar.fullCalendar('renderEvent', {
+                            title: title,
+                            start: start,
+                            end: end,
+                            allDay: allDay
+                        },
+                        true // make the event "stick"
+                    );
+                }
+                calendar.fullCalendar('unselect');
+            },
+            droppable: true, // this allows things to be dropped onto the calendar !!!
+            drop: function(date, allDay) { // this function is called when something is dropped
+
+                // retrieve the dropped element's stored Event Object
+                var originalEventObject = $(this).data('eventObject');
+
+                // we need to copy it, so that multiple events don't have a reference to the same object
+                var copiedEventObject = $.extend({}, originalEventObject);
+
+                // assign it the date that was reported
+                copiedEventObject.start = date;
+                copiedEventObject.allDay = allDay;
+
+                // render the event on the calendar
+                // the last `true` argument determines if the event "sticks" (http://arshaw.com/fullcalendar/docs/event_rendering/renderEvent/)
+                $('#calendar').fullCalendar('renderEvent', copiedEventObject, true);
+
+                // is the "remove after drop" checkbox checked?
+                if ($('#drop-remove').is(':checked')) {
+                    // if so, remove the element from the "Draggable Events" list
+                    $(this).remove();
+                }
+
+            },
+
+            // events: [
+            //     {
+            //         title: 'All Day Event',
+            //         start: new Date(y, m, 1)
+            //     },
+            //     {
+            //         id: 999,
+            //         title: 'Repeating Event',
+            //         start: new Date(y, m, d - 3, 16, 0),
+            //         allDay: false,
+            //         className: 'info'
+            //     },
+            //     {
+            //         id: 999,
+            //         title: 'Repeating Event',
+            //         start: new Date(y, m, d + 4, 16, 0),
+            //         allDay: false,
+            //         className: 'info'
+            //     },
+            //     {
+            //         title: 'Meeting',
+            //         start: new Date(y, m, d, 10, 30),
+            //         allDay: false,
+            //         className: 'important'
+            //     },
+            //     {
+            //         title: 'Lunch',
+            //         start: new Date(y, m, d, 12, 0),
+            //         end: new Date(y, m, d, 14, 0),
+            //         allDay: false,
+            //         className: 'important'
+            //     },
+            //     {
+            //         title: 'Birthday Party',
+            //         start: new Date(y, m, d + 1, 19, 0),
+            //         end: new Date(y, m, d + 1, 22, 30),
+            //         allDay: false,
+            //     },
+            //     {
+            //         title: 'Click for Google',
+            //         start: new Date(y, m, 28),
+            //         end: new Date(y, m, 29),
+            //         url: 'https://ccp.cloudaccess.net/aff.php?aff=5188',
+            //         className: 'success'
+            //     }
+            // ],
+        });
+
+
+        /* Add customized button in header
+        -----------------------------------------------------------------*/
+        $('.fc-header .fc-header-left').append(
+            $('<button type="button" class="fc-button fc-state-default fc-corner-left fc-corner-right"><i class="la la-plus"></i> Event</button>')
+                .on('click', function() {
+                    $(`body`).append(MODAL.CREATE.BASIC({title:"New Event", el: [
+                        {title:"Event Title",id:"title",type:"text",required:true},
+                        {title:"Start Date",id:"start",type:"text",required:true},
+                        {title:"End Date",id:"end",type:"text",required:true},
+                    ]}));
+                    $(`#start`).replaceWith(`<div class="input-group">
+                                                <span class="input-group-addon"><i id="icon-date" class="la la-calendar"></i></span>
+                                                <input id="start" class="form-control" type="text" required=true onkeydown="event.preventDefault()">
+                                            </div>`);
+                    $(`#end`).replaceWith(`<div class="input-group">
+                                                <span class="input-group-addon"><i id="icon-date" class="la la-calendar"></i></span>
+                                                <input id="end" class="form-control" type="text" required=true onkeydown="event.preventDefault()" disabled>
+                                            </div>`);
+                    
+                    $(`#start`).daterangepicker({
+                        opens: 'left',
+                        singleDatePicker:true,
+                        autoUpdateInput: false,
+                        autoApply: true
+                    }).on('apply.daterangepicker', function (ev, picker) {
+                        $(this).val(DATETIME.FORMAT(new Date(picker.startDate),"MM/DD/YYYY"));
+
+                        $(`#end`).daterangepicker({
+                            opens: 'left',
+                            singleDatePicker:true,
+                            autoUpdateInput: false,
+                            minDate: new Date(picker.startDate),
+                            autoApply: true
+                        }).on('apply.daterangepicker', function (ev, picker) {
+                            $(this).val(DATETIME.FORMAT(new Date(picker.startDate),"MM/DD/YYYY"));
+                        }).attr("disabled",false);
+                        
+                        if(new Date(picker.startDate).getTime() >= new Date($(`#end`).val()||undefined).getTime()){
+                            $(`#end`).trigger('apply.daterangepicker',{ startDate: new Date(picker.startDate) });
+                        }
+                    });
+
+                    
+                    $('#submit').click(function(){
+                        const title = $('#title').val();
+                        const start = $('#start').val();
+                        const end = $('#end').val();
+
+                        calendar.fullCalendar('renderEvent', {
+                                title: title,
+                                start: start,
+                                end: end,
+                                allDay: true,
+                                eventType: "custom",
+                                className: "custom-event"
+                            },
+                            true // make the event "stick"
+                        );
+                        $('#overlay').remove();
+                    });
+            })
+        );
+
+
+        /* get holidays from Google Calendar API
+        -----------------------------------------------------------------*/
+        
+        const publicAPIKey = "AIzaSyC4GSP3uLbIvfO_RPqUzlEyxb9Duy5vjYk";
+        const country = "philippines";
+        var calendarUrl = 'https://www.googleapis.com/calendar/v3/calendars/en.' + country
+                        + '%23holiday%40group.v.calendar.google.com/events?key=' + publicAPIKey;
+
+        $.getJSON(calendarUrl).done(function(data) {
+            console.log(data);
+            data.items.forEach(val => {
+                const event = {
+                    title: val.summary,
+                    start: val.start.date,
+                    end: moment(val.end.date).subtract(1,'day').toDate(),
+                    allDay: true,
+                    eventType: "holiday"
+                };
+                $('#calendar').fullCalendar( 'renderEvent', event, true);
+            });
+        }).fail(function(error) {
+            console.log("error",error)
+        });
+    }
+};
 var CHANGELOG = {
     FUNCTION: {
         init:function(){
@@ -14323,6 +14681,17 @@ var PAGE = {
                 icon: "la la-route",
                 display: function() { return views.routes(); },
                 function: function() { LOCATIONS.FUNCTION.routes.init() },
+                buttons: {
+                    table:["create","refresh","search"],
+                    row:["edit","delete"]
+                }
+            },
+            calendar: {
+                title: "Calendar",
+                name: "calendar",
+                icon: "la la-calendar",
+                display: function() { return views.calendar(); },
+                function: function() { CALENDAR.init() },
                 buttons: {
                     table:["create","refresh","search"],
                     row:["edit","delete"]
@@ -16915,6 +17284,23 @@ const views = new function(){
                                     <thead></thead>
                                     <tbody></tbody>
                                 </table>
+                            </div>
+                        </div>
+                    </div>`;
+        },
+        calendar: function(){
+            return `<div id='wrap'>
+                        <div id='calendar'></div>
+                        <div style='clear:both'></div>
+                        <div>
+                            <div class="col-sm-12 mt-3 mb-3">
+                                <div style="font-weight: normal;margin-bottom: 3px;">Legend:</div>
+                                <div>
+                                    <span style="width: 10px;height: 10px;display: inline-block;background-color: #b79e7d;border-radius: 20px;margin-right: 13px;"></span>National Holiday
+                                </div>
+                                <div>
+                                    <span style="width: 10px;height: 10px;display: inline-block;background-color: #9abd8d;border-radius: 20px;margin-right: 13px;"></span>Custom Event
+                                </div>
                             </div>
                         </div>
                     </div>`;
