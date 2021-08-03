@@ -1,4 +1,8 @@
 const changelogList = {
+    "2.55.116": {
+        date: "August 03, 2021",
+        improved: ["[Adjustment][Wilcon] Utilization Report"]
+    },
     "2.55.115": {
         date: "July 29, 2021",
         fix: ["[Fix] Dispatch Entries filter bug"]

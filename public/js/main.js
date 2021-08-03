@@ -8039,8 +8039,6 @@ var REPORTS = {
                 var dailyHelperRows = {};
                 var countClusterColumns = 0;
 
-                var totalTrips = 0;
-
                 var dailyTableTitle = [];
                 var dailyVehicleTableHeader = {};
                 var dailyChassisTableHeader = {};
@@ -8108,8 +8106,6 @@ var REPORTS = {
                                 var truck_type = vehicle.truck_type;
     
                                 if(!cluster_id || origin.cluster_id == cluster_id){
-
-                                    totalTrips ++;
                                     
                                     (val.vehicle_id) ? vehicle_ids.push(val.vehicle_id) : null;
                                     (val.chassis) ? chassis_ids.push(val.chassis) : null;
@@ -8457,8 +8453,8 @@ var REPORTS = {
 
                 return `<table id="report-hidden" data-SheetName="Overview" border="1" style="border-collapse: collapse;opacity:0;">
                             <tbody>
-                                <tr> <td style="${excelHeaderStyle}" colspan=5><b>${title}</b></td> </tr>
-                                <tr> <td style="${excelHeaderStyle}" colspan=5><b>${moment(date_from).format("MM-YYYY")}</b></td> </tr>
+                                <tr> <td style="${excelHeaderStyle}text-align:left;" colspan=5><b>${title}</b></td> </tr>
+                                <tr> <td style="${excelHeaderStyle}text-align:left;" colspan=5><b>${moment(date_from).format("MM-YYYY")}</b></td> </tr>
                                 <tr> <td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td> </tr>
 
                                 <tr>${tableTitle.join(`<td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td>><td style="border:none;"></td><td style="border:none;"></td><td style="border:none;"></td>`)}</tr>
@@ -8473,42 +8469,49 @@ var REPORTS = {
                                     <!--<td style="${tblBottomStyle}">Total #</td>-->
                                     <td style="${tblBottomStyle}">Monthly Utilization</td>
                                     <td style="${tblBottomStyle}">Average Monthly Utilization</td>
+                                    <td style="${tblBottomStyle}">Total Trips</td>
                                 </tr>
                                 <tr> 
                                     <td style="${tblBottomStyle}">Truck</td>
                                     <!--<td style="${tblBottomStyle}">${totalVehicles}</td>-->
                                     <td style="${tblBottomStyle}">${monthlyVehicleUtilization}%</td>
                                     <td style="${tblBottomStyle}">${aveMonthlyVehicleUtilization}%</td>
+                                    <td style="${tblBottomStyle}">${dataTotalVehicles.length}</td>
                                 </tr>
                                 <tr> 
                                     <td style="${tblBottomStyle}">Chassis</td>
                                     <!--<td style="${tblBottomStyle}">${totalChassis}</td>-->
                                     <td style="${tblBottomStyle}">${monthlyChassisUtilization}%</td>
                                     <td style="${tblBottomStyle}">${aveMonthlyChassisUtilization}%</td>
+                                    <td style="${tblBottomStyle}">${dataTotalChassis.length}</td>
                                 </tr>
                                 <tr> 
                                     <td style="${tblBottomStyle}">Manpower</td>
                                     <!--<td style="${tblBottomStyle}">${totalManpower}</td>-->
                                     <td style="${tblBottomStyle}">${monthlyManpowerUtilization}%</td>
                                     <td style="${tblBottomStyle}">${aveMonthlyManpowerUtilization}%</td>
+                                    <td style="${tblBottomStyle}">${dataTotalManpower.length}</td>
                                 </tr>
                                 <tr> 
                                     <td style="${tblBottomStyle}padding-left:25px;">Driver</td>
                                     <!--<td style="${tblBottomStyle}">${totalDriver}</td>-->
                                     <td style="${tblBottomStyle}">${monthlyDriverUtilization}%</td>
                                     <td style="${tblBottomStyle}">${aveMonthlyDriverUtilization}%</td>
+                                    <td style="${tblBottomStyle}">${dataTotalDriver.length}</td>
                                 </tr>
                                 <tr> 
                                     <td style="${tblBottomStyle}padding-left:25px;">Checker</td>
                                     <!--<td style="${tblBottomStyle}">${totalChecker}</td>-->
                                     <td style="${tblBottomStyle}">${monthlyCheckerUtilization}%</td>
                                     <td style="${tblBottomStyle}">${aveMonthlyCheckerUtilization}%</td>
+                                    <td style="${tblBottomStyle}">${dataTotalChecker.length}</td>
                                 </tr>
                                 <tr> 
                                     <td style="${tblBottomStyle}padding-left:25px;">Helper</td>
                                     <!--<td style="${tblBottomStyle}">${totalHelper}</td>-->
                                     <td style="${tblBottomStyle}">${monthlyHelperUtilization}%</td>
                                     <td style="${tblBottomStyle}">${aveMonthlyHelperUtilization}%</td>
+                                    <td style="${tblBottomStyle}">${dataTotalHelper.length}</td>
                                 </tr>
 
 
