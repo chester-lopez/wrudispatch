@@ -259,6 +259,7 @@ app.use(`/api/notifications`, verifyToken, require("./router/notifications"));
 app.use(`/api/user_login_activity`, verifyToken, require("./router/user_login_activity"));
 app.use(`/api/user_action`, verifyToken, require("./router/user_action"));
 app.use(`/api/shift_schedule`, verifyToken, require("./router/shift_schedule"));
+app.use(`/api/calendar`, verifyToken, require("./router/calendar"));
 
 app.use(`/api/remarks`, require("./router/remarks"));
 // app.use(`/api/dispatch_anon`, require("./router/dispatch_anonymous"));

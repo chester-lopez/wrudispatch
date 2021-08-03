@@ -494,6 +494,12 @@ var LIMIT = 200,
                 update: "all",
                 delete: "none"
             },
+            // calendar:{
+            //     read: "all",
+            //     create: "all",
+            //     update: "all",
+            //     delete: "all",
+            // },
             users:{
                 read: "all",
                 create: "all",
@@ -593,6 +599,12 @@ var LIMIT = 200,
                 update: "none",
                 delete: "all"
             },
+            // calendar:{
+            //     read: "all",
+            //     create: "all",
+            //     update: "all",
+            //     delete: "all",
+            // },
             users:{
                 read: "all",
                 create: "all",
