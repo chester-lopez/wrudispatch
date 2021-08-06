@@ -446,7 +446,7 @@ const CUSTOM = {
             return [
                 { data: "Name", title: "Name", visible: true },
                 { data: "_id", title: "Username", visible: true },
-                { data: "Title", title: "Title", visible: true },
+                // { data: "Title", title: "Title", visible: true },
                 { data: "Email", title: "Email", visible: true },
                 { data: "Phone Number", title: "Phone Number", visible: true },
                 { data: "Role", title: "Role", visible: true },
@@ -878,6 +878,7 @@ const WEBSOCKET = {
                 clientCustom.tableButtons.vehicle_personnel = setValue("custom.vehicle_personnel.tableButtons", { buttons: [] });
                 clientCustom.tableButtons.vehicles = setValue("custom.vehicles.tableButtons", { buttons: [] });
                 clientCustom.tableButtons.chassis = setValue("custom.chassis.tableButtons", { buttons: [] });
+                clientCustom.tableButtons.users = setValue("custom.users.tableButtons", { buttons: [] });
 
                 // rowButtons
                 clientCustom.rowButtons.dispatch = setValue("custom.dispatch.rowButtons", { buttons: [] });

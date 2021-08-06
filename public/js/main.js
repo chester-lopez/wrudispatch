@@ -8873,26 +8873,23 @@ var REPORTS = {
                     }
                 }
             },
-            TODR: {
+            otdr: {
                 process: function(docs,_date) {
                     var obj = {},
                         format = "hh:mm:ss A",
                         todayDate = moment(new Date(_date)).format("MM/DD/YYYY"),
-                        yesterdayDate = moment(new Date(_date)).subtract(1, 'days').format("MM/DD/YYYY"),
-                        yesterdayDoc = [],
                         todayDoc = [],
                         gMoment = function(type,time){
-                            var date = (type == "t") ? todayDate : yesterdayDate;
-                            return moment(new Date(`${date} ${time}`),format);
+                            return moment(new Date(`${todayDate} ${time}`),format);
                         },
                         summaryTotal = {
                             "total":0,
-                            "P05:01:00 PM - 12:00:59 AM":0,
-                            "12:01:00 AM - 07:00:59 AM":0,
-                            "07:01:00 AM - 09:00:59 AM":0,
-                            "09:01:00 AM - 12:00:59 PM":0,
-                            "12:01:00 PM - 03:00:59 PM":0,
-                            "03:01:00 PM - 05:00:59 PM":0,
+                            "12:00 AM - 07:00 AM":0,
+                            "07:00 AM - 09:00 AM":0,
+                            "09:00 AM - 12:00 PM":0,
+                            "12:00 PM - 03:00 PM":0,
+                            "03:00 PM - 05:00 PM":0,
+                            "05:00 PM - 11:59 PM":0,
                         };
                     docs.forEach(val => {
                         // "YYYY-MM-DD[T]HH:mm:ss.SSS[Z]"
@@ -8902,10 +8899,6 @@ var REPORTS = {
                         if(_timestamp == _today){ // do not add "new Date(..)"
                             todayDoc.push(val);
                         }
-                        if(_timestamp == _yesterday){
-                            yesterdayDoc.push(val);
-                        }
-                        
                     });
                     if(todayDoc.length > 0){
                         todayDoc.forEach(ev => {
@@ -8914,63 +8907,45 @@ var REPORTS = {
                             if(ev.stage == "end"){
                                 if(!obj[ev.GEOFENCE_NAME]){
                                     obj[ev.GEOFENCE_NAME] = {
-                                        "P05:01:00 PM - 12:00:59 AM":[],
-                                        "12:01:00 AM - 07:00:59 AM":[],
-                                        "07:01:00 AM - 09:00:59 AM":[],
-                                        "09:01:00 AM - 12:00:59 PM":[],
-                                        "12:01:00 PM - 03:00:59 PM":[],
-                                        "03:01:00 PM - 05:00:59 PM":[],
+                                        "12:00 AM - 07:00 AM":[],
+                                        "07:00 AM - 09:00 AM":[],
+                                        "09:00 AM - 12:00 PM":[],
+                                        "12:00 PM - 03:00 PM":[],
+                                        "03:00 PM - 05:00 PM":[],
+                                        "05:00 PM - 11:59 PM":[],
                                     };
                                 }
                                 var time = moment(new Date(ev.timestamp),format); // do not remove new Date. Dont know why its working
                                 
-                                if (time.isBetween(gMoment("t","12:00:00 AM"), gMoment("t","12:00:59 AM"))) {
-                                    if(obj[ev.GEOFENCE_NAME]["P05:01:00 PM - 12:00:59 AM"].indexOf(ev.USER_NAME) == -1)
-                                    obj[ev.GEOFENCE_NAME]["P05:01:00 PM - 12:00:59 AM"].push(ev.USER_NAME);
+                                // 12 AM - 7 AM
+                                if (time.isBetween(gMoment("t","12:00 AM"), gMoment("t","06:59:59 AM"))) {
+                                    // if(obj[ev.GEOFENCE_NAME]["12:00 AM - 07:00 AM"].indexOf(ev.USER_NAME) == -1)
+                                        obj[ev.GEOFENCE_NAME]["12:00 AM - 07:00 AM"].push(ev.USER_NAME);
                                 }
-                                if (time.isBetween(gMoment("t","12:01:00 AM"), gMoment("t","07:00:59 AM"))) {
-                                    if(obj[ev.GEOFENCE_NAME]["12:01:00 AM - 07:00:59 AM"].indexOf(ev.USER_NAME) == -1)
-                                        obj[ev.GEOFENCE_NAME]["12:01:00 AM - 07:00:59 AM"].push(ev.USER_NAME);
+                                // 7 AM - 9 AM
+                                if (time.isBetween(gMoment("t","07:00 AM"), gMoment("t","08:59:59 AM"))) {
+                                    // if(obj[ev.GEOFENCE_NAME]["07:00 AM - 09:00 AM"].indexOf(ev.USER_NAME) == -1)
+                                        obj[ev.GEOFENCE_NAME]["07:00 AM - 09:00 AM"].push(ev.USER_NAME);
                                 }
-                                if (time.isBetween(gMoment("t","07:01:00 AM"), gMoment("t","09:00:59 AM"))) {
-                                    if(obj[ev.GEOFENCE_NAME]["07:01:00 AM - 09:00:59 AM"].indexOf(ev.USER_NAME) == -1)
-                                        obj[ev.GEOFENCE_NAME]["07:01:00 AM - 09:00:59 AM"].push(ev.USER_NAME);
+                                // 9 AM - 12 PM
+                                if (time.isBetween(gMoment("t","09:00 AM"), gMoment("t","11:59:59 AM"))) {
+                                    // if(obj[ev.GEOFENCE_NAME]["09:00 AM - 12:00 PM"].indexOf(ev.USER_NAME) == -1)
+                                        obj[ev.GEOFENCE_NAME]["09:00 AM - 12:00 PM"].push(ev.USER_NAME);
                                 }
-                                if (time.isBetween(gMoment("t","09:01:00 AM"), gMoment("t","12:00:59 PM"))) {
-                                    if(obj[ev.GEOFENCE_NAME]["09:01:00 AM - 12:00:59 PM"].indexOf(ev.USER_NAME) == -1)
-                                        obj[ev.GEOFENCE_NAME]["09:01:00 AM - 12:00:59 PM"].push(ev.USER_NAME);
+                                // 12 PM - 3 PM
+                                if (time.isBetween(gMoment("t","12:00 PM"), gMoment("t","02:59:59 PM"))) {
+                                    // if(obj[ev.GEOFENCE_NAME]["12:00 PM - 03:00 PM"].indexOf(ev.USER_NAME) == -1)
+                                        obj[ev.GEOFENCE_NAME]["12:00 PM - 03:00 PM"].push(ev.USER_NAME);
                                 }
-                                if (time.isBetween(gMoment("t","12:01:00 PM"), gMoment("t","03:00:59 PM"))) {
-                                    if(obj[ev.GEOFENCE_NAME]["12:01:00 PM - 03:00:59 PM"].indexOf(ev.USER_NAME) == -1)
-                                        obj[ev.GEOFENCE_NAME]["12:01:00 PM - 03:00:59 PM"].push(ev.USER_NAME);
+                                // 3 PM - 5 PM
+                                if (time.isBetween(gMoment("t","03:00 PM"), gMoment("t","04:59:59 PM"))) {
+                                    // if(obj[ev.GEOFENCE_NAME]["03:00 PM - 05:00 PM"].indexOf(ev.USER_NAME) == -1)
+                                        obj[ev.GEOFENCE_NAME]["03:00 PM - 05:00 PM"].push(ev.USER_NAME);
                                 }
-                                if (time.isBetween(gMoment("t","03:01:00 PM"), gMoment("t","05:00:59 PM"))) {
-                                    if(obj[ev.GEOFENCE_NAME]["03:01:00 PM - 05:00:59 PM"].indexOf(ev.USER_NAME) == -1)
-                                        obj[ev.GEOFENCE_NAME]["03:01:00 PM - 05:00:59 PM"].push(ev.USER_NAME);
-                                }
-                            }
-                        });
-                    }
-                    
-                    if(yesterdayDoc.length > 0){
-                        yesterdayDoc.forEach(ev => {
-                            // stage is end
-                            // from T2 - RULE_NAME is Check Out (start/end)
-                            if(ev.stage == "end"){
-                                if(!obj[ev.GEOFENCE_NAME]){
-                                    obj[ev.GEOFENCE_NAME] = {
-                                        "P05:01:00 PM - 12:00:59 AM":[],
-                                        "12:01:00 AM - 07:00:59 AM":[],
-                                        "07:01:00 AM - 09:00:59 AM":[],
-                                        "09:01:00 AM - 12:00:59 PM":[],
-                                        "12:01:00 PM - 03:00:59 PM":[],
-                                        "03:01:00 PM - 05:00:59 PM":[],
-                                    };
-                                }
-                                var time = moment(new Date(ev.timestamp),format); // do not add new Date. Dont know why its not working
-                                if (time.isBetween(gMoment("y","05:01:00 PM"), gMoment("y","11:59:59 PM"))) {
-                                    if(obj[ev.GEOFENCE_NAME]["P05:01:00 PM - 12:00:59 AM"].indexOf(ev.USER_NAME) == -1)
-                                        obj[ev.GEOFENCE_NAME]["P05:01:00 PM - 12:00:59 AM"].push(ev.USER_NAME);
+                                // 5 PM - 11:59 PM
+                                if (time.isBetween(gMoment("t","05:00 PM"), gMoment("t","11:59:59 PM"))) {
+                                    // if(obj[ev.GEOFENCE_NAME]["05:00 PM - 11:59 PM"].indexOf(ev.USER_NAME) == -1)
+                                        obj[ev.GEOFENCE_NAME]["05:00 PM - 11:59 PM"].push(ev.USER_NAME);
                                 }
                             }
                         });
@@ -9004,8 +8979,12 @@ var REPORTS = {
                         var perHTML = "";
                         Object.keys(obj[key]).forEach(key1 => {
                             if(key1 == type){
-                                perHTML += `<td style="text-align:left;word-wrap: break-word;vertical-align:top;${exlStyle}">${obj[key][key1].length}</td>`;
-                                perHTML += `<td style="text-align:left;word-wrap: break-word;vertical-align:top;${exlStyle}">${obj[key][key1].join(", ")}</td>`;
+                                const trucks = obj[key][key1];
+                                const removed_dups = new Set(trucks);
+                                const finalTruck = Array.from(removed_dups);
+
+                                perHTML += `<td style="text-align:left;word-wrap: break-word;vertical-align:top;${exlStyle}">${trucks.length}</td>`;
+                                perHTML += `<td style="text-align:left;word-wrap: break-word;vertical-align:top;${exlStyle}">${finalTruck.join(", ")}</td>`;
                             }
                         });
                         html += `<tr>
@@ -9029,7 +9008,7 @@ var REPORTS = {
                                 <tr><td style="border: none;"></td></tr>
                                 <tr>
                                     <td style="background-color:black;color:white;vertical-align:middle;${exlStyle}">Distribution Center (DC)</td>
-                                    <td style="background-color:black;color:white;vertical-align:middle;${exlStyle}">Total No. of Trucks Outside DC</td>
+                                    <td style="background-color:black;color:white;vertical-align:middle;${exlStyle}">No. of Times the Trucks Exited the DC</td>
                                     <td style="background-color:black;color:white;vertical-align:middle;${exlStyle}">Truck List</td>
                                 </tr>
                                 ${html}
@@ -10193,7 +10172,7 @@ var EVENT_VIEWER = {
                 });
                 
                 // for CokeT2
-                var todr;
+                var otdr;
                 $(`#report-btn`).click(function(){
                     var _rdate = $(`#_rdate`).val() || DEFAULT_DATE;
                     $(this).html(`<i class="la la-spinner la-spin"></i> Generate`).addClass("disabled");
@@ -10202,7 +10181,7 @@ var EVENT_VIEWER = {
 
                     var yesterday = moment(new Date(_rdate)).subtract(1, 'days').format("MM/DD/YYYY"),
                         filter = {
-                            timestamp: FILTER.DATERANGE(`${yesterday}, 05:00 PM - ${_rdate}`,true),
+                            timestamp: FILTER.DATERANGE(_rdate),
                         };
                     $.ajax({
                         url: `/api/events/${CLIENT.id}/${USER.username}/all/${JSON.stringify(filter)}/0/0`,
@@ -10216,20 +10195,20 @@ var EVENT_VIEWER = {
                         console.log("Events SN:",docs);
                         // check until what time only
                         // enable or show dl links if here is report
-                        todr = REPORTS.UI.REPORTS.TODR.process(docs,_rdate);
+                        otdr = REPORTS.UI.REPORTS.otdr.process(docs,_rdate);
 
                         $(`#report-btn`).html(`Generate`).removeClass("disabled");
                         $(`#mreport-container`).show();
                         $(`#mreport-date`).html(moment(_rdate).format("MMMM DD, YYYY"));
 
-                        Object.keys(todr.summaryTotal).forEach(key => {
-                            if(todr.summaryTotal[key] > 0){
-                                if(key == "P05:01:00 PM - 12:00:59 AM") $(`[mreport="todr-05-12"]`).removeClass("disabled");
-                                if(key == "12:01:00 AM - 07:00:59 AM") $(`[mreport="todr-12-07"]`).removeClass("disabled");
-                                if(key == "07:01:00 AM - 09:00:59 AM") $(`[mreport="todr-07-09"]`).removeClass("disabled");
-                                if(key == "09:01:00 AM - 12:00:59 PM") $(`[mreport="todr-09-12"]`).removeClass("disabled");
-                                if(key == "12:01:00 PM - 03:00:59 PM") $(`[mreport="todr-12-03"]`).removeClass("disabled");
-                                if(key == "03:01:00 PM - 05:00:59 PM") $(`[mreport="todr-03-05"]`).removeClass("disabled");
+                        Object.keys(otdr.summaryTotal).forEach(key => {
+                            if(otdr.summaryTotal[key] > 0){
+                                if(key == "12:00 AM - 07:00 AM") $(`[mreport="otdr-12-07"]`).removeClass("disabled");
+                                if(key == "07:00 AM - 09:00 AM") $(`[mreport="otdr-07-09"]`).removeClass("disabled");
+                                if(key == "09:00 AM - 12:00 PM") $(`[mreport="otdr-09-12"]`).removeClass("disabled");
+                                if(key == "12:00 PM - 03:00 PM") $(`[mreport="otdr-12-03"]`).removeClass("disabled");
+                                if(key == "03:00 PM - 05:00 PM") $(`[mreport="otdr-03-05"]`).removeClass("disabled");
+                                if(key == "05:00 PM - 11:59 PM") $(`[mreport="otdr-05-12"]`).removeClass("disabled");
                             }
                         });
                     }).fail(function(error){
@@ -10238,31 +10217,31 @@ var EVENT_VIEWER = {
                         toastr.error("Something went wrong</br></br>Error Code - ec016/01");
                     });
                 });
-                var excelTitle = "Trucks Outside DC",
-                    generateReport = function(type,customType){
-                        var _title = `${excelTitle} On ${todr.date} @ ${customType || type}`,
+                var excelTitle = "On Time Departure",
+                    generateReport = function(type){
+                        var _title = `${excelTitle} On ${otdr.date} @ ${type}`,
                             _filename = _title.replace(/\//g,"_").replace(/:/g,"_").replace(/ /g,"_").replace(/@/g,"");
-                        $(`body`).append(REPORTS.UI.REPORTS.TODR.generate(_title,type,todr.obj));
+                        $(`body`).append(REPORTS.UI.REPORTS.otdr.generate(_title,type,otdr.obj));
                         GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",_filename);
                         $(`#report-hidden,#temp-link,[data-SheetName]`).remove();
                     };
-                $(`[mreport="todr-05-12"]`).click(function(){
-                    generateReport("P05:01:00 PM - 12:00:59 AM","(Prev) 05:01:00 PM - 12:00:59 AM");
+                $(`[mreport="otdr-12-07"]`).click(function(){
+                    generateReport("12:00 AM - 07:00 AM");
                 });
-                $(`[mreport="todr-12-07"]`).click(function(){
-                    generateReport("12:01:00 AM - 07:00:59 AM");
+                $(`[mreport="otdr-07-09"]`).click(function(){
+                    generateReport("07:00 AM - 09:00 AM");
                 });
-                $(`[mreport="todr-07-09"]`).click(function(){
-                    generateReport("07:01:00 AM - 09:00:59 AM");
+                $(`[mreport="otdr-09-12"]`).click(function(){
+                    generateReport("09:00 AM - 12:00 PM");
                 });
-                $(`[mreport="todr-09-12"]`).click(function(){
-                    generateReport("09:01:00 AM - 12:00:59 PM");
+                $(`[mreport="otdr-12-03"]`).click(function(){
+                    generateReport("12:00 PM - 03:00 PM");
                 });
-                $(`[mreport="todr-12-03"]`).click(function(){
-                    generateReport("12:01:00 PM - 03:00:59 PM");
+                $(`[mreport="otdr-03-05"]`).click(function(){
+                    generateReport("03:00 PM - 05:00 PM");
                 });
-                $(`[mreport="todr-03-05"]`).click(function(){
-                    generateReport("03:01:00 PM - 05:00:59 PM");
+                $(`[mreport="otdr-05-12"]`).click(function(){
+                    generateReport("05:00 PM - 11:59 PM");
                 });
                 // end for CokeT2
             };
@@ -10413,6 +10392,9 @@ var USERS = {
                         });
                     },
                     refresh: function(){ table.countRows(); },
+                    export: function(){
+                        $(`#export-container`).toggle("slide", {direction:'right'},100);
+                    }
                 }
             });
             table.addRow = function(obj){
@@ -10436,6 +10418,13 @@ var USERS = {
             table.rowListeners = function(_row,_id){
                 const self = this;
                 TABLE.ROW_LISTENER({table_id:self.id,_row,urlPath,_id,initializeModal});
+            };
+            table.filterListener = function(){
+                $(`.page-box`).append(SLIDER.EXPORT()); 
+                TABLE.TOOLBAR(table.dt);
+                $(`.buttons-copy span`).html("Copy Table");
+                $(`.buttons-csv span`).html("Export Table As CSV File");
+                $(`.buttons-excel span`).html("Export Table As Excel File");
             };
 
             var initializeModal = function(x){
@@ -14556,7 +14545,7 @@ var PAGE = {
                 display: function() { return views.users(); },
                 function: function() { USERS.FUNCTION.init() },
                 buttons: {
-                    table:["create","refresh"],
+                    table: getClientTableButtons("users"),
                     row:["edit","delete"]
                 }
             },
@@ -15156,26 +15145,30 @@ var SLIDER = {
                         </div>
                         <button id="report-btn" style="width: 100%;" class="btn btn-success mt-3">Apply</button>
                         <div id="mreport-container" class="mt-3" style="display:none;">
-                            <div class="mt-3 mb-1 font-bold">Generate Report for <span id="mreport-date">October 30, 2020</span>:</div>
-                            <div mreport="todr-05-12" class="custom-btn-01 col-sm-12 pt-2 pb-2 pr-3 pl-3 disabled">
+                            <div class="mt-3 mb-1 font-bold">Generate Report for <span id="mreport-date"></span>:</div>
+                            <div mreport="otdr-12-07" class="custom-btn-01 col-sm-12 pt-2 pb-2 pr-3 pl-3 disabled">
                                 <span class="float-right pt-1 pl-3 "><i class="la la-download"></i></span>
-                                <span>Trucks Outside DC Report<br>(Prev) 05:01:00 PM - 12:00:59 AM</span>
+                                <span>On Time Departure Report<br>12:00 AM - 07:00 AM</span>
                             </div>
-                            <div mreport="todr-07-09" class="custom-btn-01 col-sm-12 pt-2 pb-2 pr-3 pl-3 mt-1 disabled">
+                            <div mreport="otdr-07-09" class="custom-btn-01 col-sm-12 pt-2 pb-2 pr-3 pl-3 mt-1 disabled">
                                 <span class="float-right pt-1 pl-3 "><i class="la la-download"></i></span>
-                                <span>Trucks Outside DC Report<br>07:01:00 AM - 09:00:59 AM</span>
+                                <span>On Time Departure Report<br>07:00 AM - 09:00 AM</span>
                             </div>
-                            <div mreport="todr-09-12" class="custom-btn-01 col-sm-12 pt-2 pb-2 pr-3 pl-3 mt-1 disabled">
+                            <div mreport="otdr-09-12" class="custom-btn-01 col-sm-12 pt-2 pb-2 pr-3 pl-3 mt-1 disabled">
                                 <span class="float-right pt-1 pl-3 "><i class="la la-download"></i></span>
-                                <span>Trucks Outside DC Report<br>09:01:00 AM - 12:00:59 PM</span>
+                                <span>On Time Departure Report<br>09:00 AM - 12:00 PM</span>
                             </div>
-                            <div mreport="todr-12-03" class="custom-btn-01 col-sm-12 pt-2 pb-2 pr-3 pl-3 mt-1 disabled">
+                            <div mreport="otdr-12-03" class="custom-btn-01 col-sm-12 pt-2 pb-2 pr-3 pl-3 mt-1 disabled">
                                 <span class="float-right pt-1 pl-3 "><i class="la la-download"></i></span>
-                                <span>Trucks Outside DC Report<br>12:01:00 PM - 03:00:59 PM</span>
+                                <span>On Time Departure Report<br>12:00 PM - 03:00 PM</span>
                             </div>
-                            <div mreport="todr-03-05" class="custom-btn-01 col-sm-12 pt-2 pb-2 pr-3 pl-3 mt-1 disabled">
+                            <div mreport="otdr-03-05" class="custom-btn-01 col-sm-12 pt-2 pb-2 pr-3 pl-3 mt-1 disabled">
                                 <span class="float-right pt-1 pl-3 "><i class="la la-download"></i></span>
-                                <span>Trucks Outside DC Report<br>03:01:00 PM - 05:00:59 PM</span>
+                                <span>On Time Departure Report<br>03:00 PM - 05:00 PM</span>
+                            </div>
+                            <div mreport="otdr-05-12" class="custom-btn-01 col-sm-12 pt-2 pb-2 pr-3 pl-3 mt-1 disabled">
+                                <span class="float-right pt-1 pl-3 "><i class="la la-download"></i></span>
+                                <span>On Time Departure Report<br>05:00 PM - 11:59 PM</span>
                             </div>
                             <div style="font-size: 9px;font-weight: 100;" class="col-sm-12 text-muted mt-2 p-0">
                                 Please click 'Yes' when a pop-up appears saying "The file format and extension of 'FILENAME.xls' don't match. The file could be corrupted or unsafe. Unless you trust its source, don't open it. Do you want to open it anyway?".

@@ -846,7 +846,13 @@ var LIMIT = 200,
                     otr: ["origin","destination","route","sn","plateNumber","trailer","palCap","haulerName","targetTransit","actualTimelapse","remarks1","remarks2","truckBasePlant"]
                 },
                 users: {
-                    ignoreRolesWithString: ["t2","wilcon","fleet"]
+                    ignoreRolesWithString: ["t2","wilcon","fleet"],
+                    tableButtons: { 
+                        buttons: ["create","refresh"], 
+                        condition: [
+                            { roles: ["administrator","developer"], additionalButton: ["export"] }
+                        ] 
+                    },
                 }
             },
         },
@@ -981,7 +987,13 @@ var LIMIT = 200,
                     },
                 },
                 users: {
-                    ignoreRolesWithString: ["wilcon","fleet"]
+                    ignoreRolesWithString: ["wilcon","fleet"],
+                    tableButtons: { 
+                        buttons: ["create","refresh"], 
+                        condition: [
+                            { roles: ["administrator","developer"], additionalButton: ["export"] }
+                        ] 
+                    },
                 }
             }
         },
@@ -1016,7 +1028,13 @@ var LIMIT = 200,
                     },
                 },
                 users: {
-                    ignoreRolesWithString: ["wilcon","coket2"]
+                    ignoreRolesWithString: ["wilcon","coket2"],
+                    tableButtons: { 
+                        buttons: ["create","refresh"], 
+                        condition: [
+                            { roles: ["administrator","developer"], additionalButton: ["export"] }
+                        ] 
+                    },
                 }
             }
         },
