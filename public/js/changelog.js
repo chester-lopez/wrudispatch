@@ -1,4 +1,8 @@
 const changelogList = {
+    "2.55.117": {
+        date: "August 06, 2021",
+        improved: ["[Adjustment][CokeT2] On Time Departure Report"]
+    },
     "2.55.116": {
         date: "August 03, 2021",
         improved: ["[Adjustment][Wilcon] Utilization Report"]

@@ -589,6 +589,7 @@ var _SESSION_ = {
                     Cookies.remove("session_token");
                     Cookies.remove("tabs");
                     $.ajax({
+                        // temp_sessions
                         url: `/api/sessions/${ID}/${USERNAME}/temporary/${SESSION_TOKEN}`, 	
                         method: "DELETE", 
                         headers: {
