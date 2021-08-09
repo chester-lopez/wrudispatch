@@ -676,6 +676,12 @@ var LIMIT = 200,
                 update: "none",
                 delete: "all"
             },
+            reports:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
             users:{
                 read: "all",
                 create: "all",
@@ -695,6 +701,12 @@ var LIMIT = 200,
                 create: "none",
                 update: "none",
                 delete: "all"
+            },
+            reports:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
             },
             users:{
                 read: "all",
@@ -837,13 +849,19 @@ var LIMIT = 200,
                     columns: ["shipmentNumber","delayType","escalation","timelapse","site","status","dateTime","sentTo","action"],
                 },
                 reports: {
-                    desr: true,
-                    // ci_co_r: true,
+                    dvr: true,
+                    cicor: ["destination","origin","route","sn","plateNumber","trailer","palCap","haulerName","targetCico","actualTimelapse","remarks1","remarks2","truckBasePlant"],
+                    otr: ["origin","destination","route","sn","plateNumber","trailer","palCap","haulerName","targetTransit","actualTimelapse","remarks1","remarks2","truckBasePlant"],
+                    pbpa: true,
+                    hwtr: true,
+                    ar: true,
+                    tr: true,
+                    vcr: true,
                     ular: {
                         roles: ["administrator","developer"]
                     },
-                    cicor: ["destination","origin","route","sn","plateNumber","trailer","palCap","haulerName","targetCico","actualTimelapse","remarks1","remarks2","truckBasePlant"],
-                    otr: ["origin","destination","route","sn","plateNumber","trailer","palCap","haulerName","targetTransit","actualTimelapse","remarks1","remarks2","truckBasePlant"]
+                    
+                    desr: true,
                 },
                 users: {
                     ignoreRolesWithString: ["t2","wilcon","fleet"],
@@ -950,13 +968,20 @@ var LIMIT = 200,
                     columns: ["shipmentNumber","departureDate","delayType","escalation","timelapse","site","status","dateTime","sentTo","action"],
                 },
                 reports: {
-                    ser: true,
-                    mtur: true,
+                    dvr: true,
+                    cicor: ["destination","origin","route","sn","plateNumber","targetCico","actualTimelapse","remarks1","remarks2","truckBasePlant"],
+                    otr: ["origin","destination","route","sn","plateNumber","targetTransit","actualTimelapse","remarks1","remarks2","truckBasePlant"],
+                    pbpa: true,
+                    hwtr: true,
+                    ar: true,
+                    tr: true,
+                    vcr: true,
                     ular: {
                         roles: ["administrator","developer"]
                     },
-                    cicor: ["destination","origin","route","sn","plateNumber","targetCico","actualTimelapse","remarks1","remarks2","truckBasePlant"],
-                    otr: ["origin","destination","route","sn","plateNumber","targetTransit","actualTimelapse","remarks1","remarks2","truckBasePlant"]
+
+                    ser: true,
+                    mtur: true,
                 },
                 users: {
                     ignoreRolesWithString: ["t2","fleet"]
@@ -985,6 +1010,9 @@ var LIMIT = 200,
                     tableButtons: { 
                         buttons: ["refresh","filter","export"]
                     },
+                },
+                reports: {
+                    otdr: true
                 },
                 users: {
                     ignoreRolesWithString: ["wilcon","fleet"],

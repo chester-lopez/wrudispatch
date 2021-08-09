@@ -4101,7 +4101,7 @@ var DISPATCH = {
                         format: 'MM/DD/YYYY',
                     //   cancelLabel: 'Clear'
                     }
-                }, function(start, end, label) { }).on('apply.daterangepicker', function(ev,picker){;
+                }, function(start, end, label) { }).on('apply.daterangepicker', function(ev,picker){
                     var formattedDate = moment(new Date(picker.startDate)).format('MM/DD/YYYY');
                     $(this).val(formattedDate);
                     $(this).data('daterangepicker').setStartDate(formattedDate);
@@ -8543,13 +8543,9 @@ var REPORTS = {
                         ${tablesHTML}`;
             },
             CI_CO_R: function(title,docs,date_from,date_to){
-                var empty = "",
-                    width = ["width:100px;","width:100px;","width:100px;","width:110px;","width:100px;","width:180px;","width:180px;"],
+                var lastGeofence,
                     lastTimestamp,
-                    lastGeofence,
-                    timeToDeduct = 5, // 5 minutes
-                    hasChangedGeofence = true, // to deduct 5 minutes from datetime
-                    totalAddHtmlCount = 0,
+                    hasChangedGeofence = true,
                     extendSearchCount = 0;
 
                 var tableHtml = `<table id="report-hidden" border="1" style="border-collapse: collapse;opacity:0;">
@@ -8694,8 +8690,6 @@ var REPORTS = {
                                     },
                                     async: true
                                 }).done(function (docs1) {
-                                    // console.log("docs",docs1);
-
                                     var originalEvent = docs1[0];
                                     var found = false;
 
@@ -8726,58 +8720,6 @@ var REPORTS = {
                                     extendSearchDone();
                                 }
                             }
-                            
-                            // if(duration == 0){
-                            //     if(sameCurrentAndNextVehicle){
-                            //         extendSearchDone();
-                            //     } else {
-                            //         // console.log("Duration is 0 and current and next is NOT same");
-                            //         $(`#report-hidden`).append(`<tr data-attribute="${val.USER_NAME}-${getOriginalAddress(val.GEOFENCE_NAME)}">${addTds(startAddress,timestamp,address,val)}</tr>`);
-                                                
-                            //         $.ajax({
-                            //             url: `/api/events/${CLIENT.id}/${USER.username}/${JSON.stringify({
-                            //                 USER_NAME: val.USER_NAME,
-                            //                 // GEOFENCE_NAME: /DVO DC/, // do not include GEOFENCE_NAME because we need to know if geofenceHasBeenChanged - to know what event we will end
-                            //                 timestamp: {
-                            //                     $gte: new Date(val.timestamp).toISOString()
-                            //                 }
-                            //             })}`,
-                            //             method: "GET",
-                            //             timeout: 90000, // 1 minute and 30 seconds
-                            //             headers: {
-                            //                 "Authorization": SESSION_TOKEN
-                            //             },
-                            //             async: true
-                            //         }).done(function (docs1) {
-                            //             console.log("docs",docs1);
-
-                            //             var originalEvent = docs1[0];
-                            //             var found = false;
-
-                            //             docs1.forEach((val,i) => {
-                            //                 if(!found && originalEvent._id != val._id){
-                            //                     var endAddress = (docs1[i+1] && docs1[i+1].USER_NAME == val.USER_NAME) ? docs1[i+1].GEOFENCE_NAME : null;
-                            //                     var sameCurrentAndNextAddress = getOriginalAddress(originalEvent.GEOFENCE_NAME) == getOriginalAddress(endAddress);
-
-                            //                     if(!sameCurrentAndNextAddress){
-                            //                         found = true;
-                            //                         $(`#report-hidden [data-attribute="${originalEvent.USER_NAME}-${getOriginalAddress(originalEvent.GEOFENCE_NAME)}"]`).html(addTds(originalEvent.GEOFENCE_NAME,originalEvent.timestamp,null,val));
-                            //                     }
-                            //                 }
-                            //             });
-                            //             extendSearchDone();
-                            //         });
-                            //     }
-                            // } else {
-                            //     if(getOriginalAddress(startAddress) == "Outside Geofence"){
-                            //         // console.log("Duration is > 0 and current IS Outside Geofence");
-                            //         $(`#report-hidden`).append(`<tr>${addTds(startAddress,timestamp,address,val)}</tr>`);
-                            //         extendSearchDone();
-                            //     } else {
-                            //         // console.log("Duration is > 0 and current is NOT Outside Geofence");
-                                    
-                            //     }
-                            // }
                         };
 
                         if(!sameCurrentAndNextAddress || val.RULE_NAME.indexOf("Outside") > -1){ //  || val.RULE_NAME.indexOf("Outside") > -1
@@ -8790,9 +8732,6 @@ var REPORTS = {
                             lastTimestamp = null;
                             lastGeofence = getOriginalAddress(startAddress);
 
-                            // if(val.USER_NAME == "NFZ6770"){
-                            //     console.log("nfz6770",sameCurrentAndNextVehicle,val.RULE_NAME,getOriginalAddress(val.GEOFENCE_NAME),"  |  next:  ",_next.RULE_NAME,_next.USER_NAME,getOriginalAddress(_next.GEOFENCE_NAME))
-                            // }
                             // if current event vehicle is the same as next event vehicle
                             if(sameCurrentAndNextVehicle){
 
@@ -8803,7 +8742,6 @@ var REPORTS = {
                                     extendSearchDone();
                                 }
                             } else {
-
                                 // if rule name is NOT yet Outside Geofence (or Outside), 
                                 // extend search to next possible event with date greater than current data's date and with the same vehicle - limited data response
                                 if(val.RULE_NAME.indexOf("Outside") == -1){
@@ -8811,39 +8749,16 @@ var REPORTS = {
                                 } else {
                                     addHTML(endAddress);
                                 }
-                                // if(DATETIME.FORMAT(val.timestamp,"D-MMM") == DATETIME.FORMAT(date_from,"D-MMM")){}
                             }
                         }
-
-                        // if(val.USER_NAME == "DDM2695"){
-                        //     console.log("DDM2695",sameCurrentAndNextVehicle,_next.USER_NAME,val.USER_NAME);
-                        // }
                         if(!sameCurrentAndNextVehicle){
                             $(`#report-hidden`).append(`<tr>${emptyTd(15)}</tr><tr>${emptyTd(15)}</tr>`);
                         }
                     }
                     
-                    // if(val.USER_NAME == "DDM2695"){
-                    //     console.log("DDM2695",hasChangedGeofence,val.RULE_NAME,val.GEOFENCE_NAME)
-                    // }
                     if(hasChangedGeofence){
                         if(val.RULE_NAME == "Inside Geofence"){
                             processReport();
-
-                            // var date = new Date(val.timestamp);
-                            // date.setMinutes(date.getMinutes() - timeToDeduct);
-
-                            // if(DATETIME.FORMAT(val.timestamp,"D-MMM") == DATETIME.FORMAT(date_from,"D-MMM")){
-                            //     if(DATETIME.FORMAT(date_from,"D-MMM") == DATETIME.FORMAT(date,"D-MMM")){
-                            //         val.timestamp = date.getTime();
-                            //         processReport();
-                            //     } else {
-                            //         extendSearchDone();
-                            //     }
-                            // } else {
-                            //     val.timestamp = date.getTime();
-                            //     processReport();
-                            // }
                         } else {
                             if(!sameCurrentAndNextVehicle){
                                 $(`#report-hidden`).append(`<tr>${emptyTd(15)}</tr><tr>${emptyTd(15)}</tr>`);
@@ -8866,155 +8781,632 @@ var REPORTS = {
 
                 function extendSearchDone(){
                     extendSearchCount ++;
-                    // console.log(docs.length,extendSearchCount);
                     if(docs.length == extendSearchCount){
                         GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`);
                         $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
                     }
                 }
             },
-            otdr: {
-                process: function(docs,_date) {
-                    var obj = {},
-                        format = "hh:mm:ss A",
-                        todayDate = moment(new Date(_date)).format("MM/DD/YYYY"),
-                        todayDoc = [],
-                        gMoment = function(type,time){
-                            return moment(new Date(`${todayDate} ${time}`),format);
-                        },
-                        summaryTotal = {
-                            "total":0,
-                            "12:00 AM - 07:00 AM":0,
-                            "07:00 AM - 09:00 AM":0,
-                            "09:00 AM - 12:00 PM":0,
-                            "12:00 PM - 03:00 PM":0,
-                            "03:00 PM - 05:00 PM":0,
-                            "05:00 PM - 11:59 PM":0,
-                        };
-                    docs.forEach(val => {
-                        // "YYYY-MM-DD[T]HH:mm:ss.SSS[Z]"
-                        var _timestamp = moment(new Date(val.timestamp)).format("YYYY-MM-DD"),
-                            _today = moment(new Date(_date)).format("YYYY-MM-DD"),
-                            _yesterday = moment(new Date(_date)).subtract(1, 'days').format("YYYY-MM-DD");
-                        if(_timestamp == _today){ // do not add "new Date(..)"
-                            todayDoc.push(val);
+            OTDR1: function(title,docs,date_from,date_to){
+                var lastGeofence,
+                    lastTimestamp,
+                    hasChangedGeofence = true,
+                    extendSearchCount = 0;
+
+                var tableHtml = `<table id="report-hidden" border="1" style="border-collapse: collapse;opacity:0;">
+                                    <tr>
+                                        <td style="font-size:15px;border:thin solid #ccc;">Parameter</td>
+                                        <td style="font-size:15px;border:thin solid #ccc;" colspan=3>Check In and Check Out Time at Sites</td>
+                                        ${emptyTd(2)}
+                                        <td style="font-size:15px;border:thin solid #ccc;">ORIGIN</td>
+                                        ${emptyTd(1)}
+                                        <td style="font-size:15px;border:thin solid #ccc;">DESTINATION</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Vehicle</b></td>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Check In Date</b></td>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Check In Time</b></td>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Check Out Date</b></td>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Check Out Time</b></td>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Duration</b></td>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Site</b></td>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Site Code</b></td>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Destination</b></td>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Site Code</b></td>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Truck Status</b></td>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Equipt No</b></td>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Event State</b></td>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Truck Base Site</b></td>
+                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Truck Base Site Code</b></td>
+                                    </tr>
+                                    <tr>${emptyTd(15)}</tr>
+                                </table>`;
+
+                $(`body`).append(tableHtml);
+
+                var extendSearchDetails = {};
+
+                function getAddress(addr){
+                    var finalStr = {
+                        short_name: "",
+                        code: ""
+                    };
+                    if(addr){
+                        var str = addr.split(" - ");
+
+                        var geofence = getGeofence(str[0],'short_name');
+
+                        if(geofence){
+                            finalStr = {
+                                short_name: geofence.short_name || "",
+                                code: geofence.code || ""
+                            };
+                        } else {
+                            finalStr = {
+                                short_name: str[0] || "",
+                                code: ""
+                            };
                         }
-                    });
-                    if(todayDoc.length > 0){
-                        todayDoc.forEach(ev => {
-                            // stage is end
-                            // from T2 - RULE_NAME is Check Out (start/end)
-                            if(ev.stage == "end"){
-                                if(!obj[ev.GEOFENCE_NAME]){
-                                    obj[ev.GEOFENCE_NAME] = {
-                                        "12:00 AM - 07:00 AM":[],
-                                        "07:00 AM - 09:00 AM":[],
-                                        "09:00 AM - 12:00 PM":[],
-                                        "12:00 PM - 03:00 PM":[],
-                                        "03:00 PM - 05:00 PM":[],
-                                        "05:00 PM - 11:59 PM":[],
-                                    };
-                                }
-                                var time = moment(new Date(ev.timestamp),format); // do not remove new Date. Dont know why its working
-                                
-                                // 12 AM - 7 AM
-                                if (time.isBetween(gMoment("t","12:00 AM"), gMoment("t","06:59:59 AM"))) {
-                                    // if(obj[ev.GEOFENCE_NAME]["12:00 AM - 07:00 AM"].indexOf(ev.USER_NAME) == -1)
-                                        obj[ev.GEOFENCE_NAME]["12:00 AM - 07:00 AM"].push(ev.USER_NAME);
-                                }
-                                // 7 AM - 9 AM
-                                if (time.isBetween(gMoment("t","07:00 AM"), gMoment("t","08:59:59 AM"))) {
-                                    // if(obj[ev.GEOFENCE_NAME]["07:00 AM - 09:00 AM"].indexOf(ev.USER_NAME) == -1)
-                                        obj[ev.GEOFENCE_NAME]["07:00 AM - 09:00 AM"].push(ev.USER_NAME);
-                                }
-                                // 9 AM - 12 PM
-                                if (time.isBetween(gMoment("t","09:00 AM"), gMoment("t","11:59:59 AM"))) {
-                                    // if(obj[ev.GEOFENCE_NAME]["09:00 AM - 12:00 PM"].indexOf(ev.USER_NAME) == -1)
-                                        obj[ev.GEOFENCE_NAME]["09:00 AM - 12:00 PM"].push(ev.USER_NAME);
-                                }
-                                // 12 PM - 3 PM
-                                if (time.isBetween(gMoment("t","12:00 PM"), gMoment("t","02:59:59 PM"))) {
-                                    // if(obj[ev.GEOFENCE_NAME]["12:00 PM - 03:00 PM"].indexOf(ev.USER_NAME) == -1)
-                                        obj[ev.GEOFENCE_NAME]["12:00 PM - 03:00 PM"].push(ev.USER_NAME);
-                                }
-                                // 3 PM - 5 PM
-                                if (time.isBetween(gMoment("t","03:00 PM"), gMoment("t","04:59:59 PM"))) {
-                                    // if(obj[ev.GEOFENCE_NAME]["03:00 PM - 05:00 PM"].indexOf(ev.USER_NAME) == -1)
-                                        obj[ev.GEOFENCE_NAME]["03:00 PM - 05:00 PM"].push(ev.USER_NAME);
-                                }
-                                // 5 PM - 11:59 PM
-                                if (time.isBetween(gMoment("t","05:00 PM"), gMoment("t","11:59:59 PM"))) {
-                                    // if(obj[ev.GEOFENCE_NAME]["05:00 PM - 11:59 PM"].indexOf(ev.USER_NAME) == -1)
-                                        obj[ev.GEOFENCE_NAME]["05:00 PM - 11:59 PM"].push(ev.USER_NAME);
-                                }
-                            }
-                        });
                     }
-
-                    // SORT BY KEY(DC)
-                    const ordered = {};
-                    Object.keys(obj).sort().forEach(function(key) {
-                        ordered[key] = obj[key];
-                    });
-                    obj = ordered;
-                    
-                    // SUMMARY
-                    Object.keys(obj).forEach(key => {
-                        Object.keys(obj[key]).forEach(key1 => {
-                            summaryTotal.total += obj[key][key1].length;
-                            summaryTotal[key1] += obj[key][key1].length;
-                        });
-                    });
-
-                    return {
-                        summaryTotal,
-                        obj,
-                        date:_date
-                    }
-                },
-                generate: function(title,type,obj){
-                    var html = ""
-
-                    Object.keys(obj).forEach(key => {
-                        var perHTML = "";
-                        Object.keys(obj[key]).forEach(key1 => {
-                            if(key1 == type){
-                                const trucks = obj[key][key1];
-                                const removed_dups = new Set(trucks);
-                                const finalTruck = Array.from(removed_dups);
-
-                                perHTML += `<td style="text-align:left;word-wrap: break-word;vertical-align:top;${exlStyle}">${trucks.length}</td>`;
-                                perHTML += `<td style="text-align:left;word-wrap: break-word;vertical-align:top;${exlStyle}">${finalTruck.join(", ")}</td>`;
-                            }
-                        });
-                        html += `<tr>
-                                        <td style="text-align:left;word-wrap: break-word;vertical-align:top;${exlStyle}">${key}</td>
-                                        ${perHTML}
-                                    </tr>`;
-                    });
-                    
-                    return `<table id="report-hidden" style="opacity:0;">
-                                <colgroup>
-                                    <col width="250" style="vertical-align:middle;" />
-                                    <col width="200" style="vertical-align:middle;" />
-                                    <col width="750" style="vertical-align:middle;" />
-                                </colgroup>
-                                <tr>
-                                    <td style="border: none;text-align:left;${exlStyle}" colspan=3>Report name: <b style="color:#c00000;">${title}</b></td>
-                                </tr>
-                                <tr>
-                                    <td style="border: none;text-align:left;${exlStyle}" colspan=3>Date and Time of Download: ${DATETIME.FORMAT(new Date(),"MM/DD/YYYY hh:mm:ss A")}</td>
-                                </tr>
-                                <tr><td style="border: none;"></td></tr>
-                                <tr>
-                                    <td style="background-color:black;color:white;vertical-align:middle;${exlStyle}">Distribution Center (DC)</td>
-                                    <td style="background-color:black;color:white;vertical-align:middle;${exlStyle}">No. of Times the Trucks Exited the DC</td>
-                                    <td style="background-color:black;color:white;vertical-align:middle;${exlStyle}">Truck List</td>
-                                </tr>
-                                ${html}
-                            </table> `;
+                    return finalStr;
                 }
-            }
+                function getOriginalAddress(addr){
+                    addr = addr || "";
+                    var separator = " - ";
+                    
+                    if(addr.indexOf(" - ") > -1)
+                        separator = " - ";
+                    else if(addr.indexOf("- ") > -1) 
+                        separator = "- ";
+                    else if(addr.indexOf(" -") > -1)
+                        separator = " -";
+
+                    var str = addr.split(separator);
+                    return str[0];
+                }
+
+                docs.forEach((val,i) => {
+                    
+                    var _next = docs[i+1],
+                        timestamp = lastTimestamp || val.timestamp,
+                        startAddress = val.GEOFENCE_NAME,
+                        endAddress = (_next && _next.USER_NAME == val.USER_NAME) ? _next.GEOFENCE_NAME : null,
+                        sameCurrentAndNextAddress = getOriginalAddress(startAddress) == getOriginalAddress(endAddress) && (_next && _next.stage == "start" && val.stage == "start"),
+                        sameCurrentAndNextVehicle = (_next && _next.USER_NAME == val.USER_NAME),
+                        duration = (val.timestamp) ? Math.abs(new Date(timestamp).getTime() - new Date(val.timestamp).getTime()) : 0;
+                        
+                    console.log(val.USER_NAME,getOriginalAddress(startAddress),getOriginalAddress(endAddress),sameCurrentAndNextAddress,val.stage,lastTimestamp,duration);
+                    function processReport(){
+                        hasChangedGeofence = false;
+
+                        function addHTML(address,extendSearch){
+
+                            function addTds(USER_NAME,startAddress,startTimestamp,endAddress,endTimestamp){
+                                // do not make condition like !duration. Duration could be 0.
+                                var site = getAddress(startAddress),
+                                    destination = getAddress(endAddress),
+                                    duration = (endTimestamp) ? Math.abs(new Date(startTimestamp).getTime() - new Date(endTimestamp).getTime()) : null,
+                                    endDate = DATETIME.FORMAT(endTimestamp,"MM/DD/YYYY"),
+                                    endTime = DATETIME.FORMAT(endTimestamp,"H:mm"),
+                                    status = "Finished",
+                                    _duration_ = (duration != null) ? GET.ROUND_OFF(DATETIME.DH(duration,null,"0"),1).toFixed(1) + ' h'  : "-";
+                                if(new Date(date_to).getTime() > new Date().getTime() && duration == null){
+                                    endDate = "-";
+                                    endTime = "-";
+                                    status = "Pending"
+                                }
+                                // do not use "ASSIGNED_VEHICLE_ID" because events from before does not save ASSIGNED_VEHICLE_ID
+                                var vehicle = getVehicle(USER_NAME,"name") || {};
+
+                                return `<td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${USER_NAME}</td>
+                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${DATETIME.FORMAT(startTimestamp,"MM/DD/YYYY")}</td>
+                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${DATETIME.FORMAT(startTimestamp,"H:mm")}</td>
+                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${endDate}</td>
+                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${endTime}</td>
+                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${_duration_}</td>
+                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${site.short_name}</td>
+                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;text-align:center;">${site.code}</td>
+                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${destination.short_name}</td>
+                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;text-align:center;">${destination.code}</td>
+                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${vehicle["Availability"]||""}</td>
+                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${vehicle["Equipment Number"]||""}</td>
+                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${status}</td>
+                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${vehicle["Base Site"]||""}</td>
+                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;text-align:center;">${vehicle["Base Site Code"]||""}</td>`;
+                            }
+
+                            if(extendSearch){
+                                $(`#report-hidden`).append(`<tr data-attribute="${val.USER_NAME}-${getOriginalAddress(val.GEOFENCE_NAME)}">${
+                                    addTds(val.USER_NAME,startAddress,timestamp)
+                                }</tr>`);
+                                                
+                                extendSearchDetails[`${val.USER_NAME}-${getOriginalAddress(val.GEOFENCE_NAME)}`] = timestamp;
+                                $.ajax({
+                                    url: `/api/events/${CLIENT.id}/${USER.username}/${JSON.stringify({
+                                        USER_NAME: val.USER_NAME,
+                                        // GEOFENCE_NAME: /DVO DC/, // do not include GEOFENCE_NAME because we need to know if geofenceHasBeenChanged - to know what event we will end
+                                        timestamp: {
+                                            $gte: new Date(val.timestamp).toISOString()
+                                        }
+                                    })}`,
+                                    method: "GET",
+                                    timeout: 90000, // 1 minute and 30 seconds
+                                    headers: {
+                                        "Authorization": SESSION_TOKEN
+                                    },
+                                    async: true
+                                }).done(function (docs1) {
+                                    var originalEvent = docs1[0];
+                                    var found = false;
+
+                                    docs1.forEach((val,i) => {
+                                        /*** do not delete me. Code in events.js: XX001. Purpose:  originalEvent._id == val._id */
+                                        if(!found && originalEvent._id == val._id){
+                                            var endAddress = (docs1[i+1] && docs1[i+1].USER_NAME == val.USER_NAME) ? docs1[i+1].GEOFENCE_NAME : null;
+                                            var sameCurrentAndNextAddress = getOriginalAddress(originalEvent.GEOFENCE_NAME) == getOriginalAddress(endAddress);
+
+                                            extendSearchDetails[`${originalEvent.USER_NAME}-${getOriginalAddress(originalEvent.GEOFENCE_NAME)}`]
+                                            var _timestamp = extendSearchDetails[`${originalEvent.USER_NAME}-${getOriginalAddress(originalEvent.GEOFENCE_NAME)}`];
+
+                                            if(!sameCurrentAndNextAddress){
+                                                found = true;
+                                                $(`#report-hidden [data-attribute="${originalEvent.USER_NAME}-${getOriginalAddress(originalEvent.GEOFENCE_NAME)}"]`).html(
+                                                    addTds(originalEvent.USER_NAME,originalEvent.GEOFENCE_NAME,_timestamp,null,val.timestamp)
+                                                );
+                                            }
+                                        }
+                                    });
+                                    extendSearchDone();
+                                });
+                            } else {
+                                if(duration == 0){
+                                    extendSearchDone();
+                                } else {
+                                    $(`#report-hidden`).append(`<tr>${addTds(val.USER_NAME,lastGeofence,timestamp,startAddress,val.timestamp)}</tr>`);
+                                    extendSearchDone();
+                                }
+                            }
+                        };
+
+                        if(val.stage == "end"){ //  || val.RULE_NAME.indexOf("Outside") > -1
+                            hasChangedGeofence = true;
+                        }
+                        console.log("----------------",val.USER_NAME,hasChangedGeofence);
+                        if(_next && _next.USER_NAME == val.USER_NAME && !hasChangedGeofence){
+                            if(!lastTimestamp) lastTimestamp = val.timestamp; // do not put in parent condition ^. It will be false if timestamp has value
+                            extendSearchDone();
+                        } else {
+                            lastTimestamp = null;
+
+                            // if current event vehicle is the same as next event vehicle
+                            if(sameCurrentAndNextVehicle){
+
+                                // if current event address is NOT the same as next event address
+                                if(hasChangedGeofence){
+                                    addHTML(endAddress);
+                                } else {
+                                    extendSearchDone();
+                                }
+                            } else {
+                                // if rule name is NOT yet Outside Geofence (or Outside), 
+                                // extend search to next possible event with date greater than current data's date and with the same vehicle - limited data response
+                                if(val.stage == "start"){
+                                    addHTML(endAddress,true);
+                                } else {
+                                    addHTML(endAddress);
+                                }
+                            }
+                            lastGeofence = getOriginalAddress(startAddress);
+                        }
+                        if(!sameCurrentAndNextVehicle){
+                            $(`#report-hidden`).append(`<tr>${emptyTd(15)}</tr><tr>${emptyTd(15)}</tr>`);
+                        }
+                    }
+                    
+                    processReport();
+                });
+
+                function emptyTd(n){
+                    var tds = "";
+                    for(var i = 0; i < n; i++){
+                        tds += '<td style="border:thin solid #ccc;"></td>';
+                    }
+                    return tds;
+                }
+
+
+                function extendSearchDone(){
+                    extendSearchCount ++;
+                    if(docs.length == extendSearchCount){
+                        GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`);
+                        $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
+                    }
+                }
+            },
+            OTDR: function(title,docs,date_from,date_to){
+                var sheetTables = "";
+                var summaryTableHtml = "";
+
+
+                var totalEventsPerSite = docs.length;
+                var extendSearchCount = 0;
+
+
+                const date = moment(new Date(date_from)).format("MM/DD/YYYY");
+                const timeDataPerSite = {};
+                const eventsPerSite = {};
+                const htmlPerSite = {};
+
+                function isBetween(target,start,finish){
+                    target = moment(target);
+                    start = moment(new Date(`${date}, ${start}`)).startOf('minute');
+                    finish = moment(new Date(`${date}, ${finish}`)).endOf('minute');
+
+                    return target.isBetween(start, finish, 'minutes', '[]'); // all inclusive
+                }
+
+                var lastTimestamp,
+                    lastGeofence,
+                    hasChangedGeofence = true,
+                    extendSearchDetails = {};
+
+                function getAddress(addr){
+                    var finalStr = {
+                        short_name: "",
+                        code: ""
+                    };
+                    if(addr){
+                        var str = addr.split(" - ");
+
+                        var geofence = getGeofence(str[0],'short_name');
+
+                        if(geofence){
+                            finalStr = {
+                                short_name: geofence.short_name || "",
+                                code: geofence.code || ""
+                            };
+                        } else {
+                            finalStr = {
+                                short_name: str[0] || "",
+                                code: ""
+                            };
+                        }
+                    }
+                    return finalStr;
+                }
+
+                docs.forEach((val,i) => {
+
+
+                    ///////////////////////////////
+                    var _next = docs[i+1],
+                            timestamp = lastTimestamp || val.timestamp,
+                            startAddress = val.GEOFENCE_NAME,
+                            endAddress = (_next && _next.USER_NAME == val.USER_NAME) ? _next.GEOFENCE_NAME : null,
+                            sameCurrentAndNextVehicle = (_next && _next.USER_NAME == val.USER_NAME),
+                            duration = (val.timestamp) ? Math.abs(new Date(timestamp).getTime() - new Date(val.timestamp).getTime()) : 0;
+                            
+                        console.log(val.USER_NAME,startAddress,endAddress,val.stage,lastTimestamp,duration);
+                        function processReport(){
+                            hasChangedGeofence = false;
+
+                            function addHTML(address,extendSearch){
+
+                                function addTds(USER_NAME,startAddress,startTimestamp,endAddress,endTimestamp){
+                                    // do not make condition like !duration. Duration could be 0.
+                                    var site = getAddress(startAddress),
+                                        destination = getAddress(endAddress),
+                                        duration = (endTimestamp) ? Math.abs(new Date(startTimestamp).getTime() - new Date(endTimestamp).getTime()) : null,
+                                        endDate = DATETIME.FORMAT(endTimestamp,"MM/DD/YYYY"),
+                                        endTime = DATETIME.FORMAT(endTimestamp,"hh:mm:ss A"),
+                                        status = "Finished",
+                                        _duration_ = (duration != null) ? DATETIME.DURATION_TIME_FORMAT(duration,1,1,1)  : "-";
+                                    if(new Date(date_to).getTime() > new Date().getTime() && duration == null){
+                                        endDate = "-";
+                                        endTime = "-";
+                                        status = "Pending"
+                                    }
+                                    // do not use "ASSIGNED_VEHICLE_ID" because events from before does not save ASSIGNED_VEHICLE_ID
+                                    var vehicle = getVehicle(USER_NAME,"name") || {};
+
+                                    return destination.short_name ? {
+                                        "Date": moment(startTimestamp).format("M/D/YYYY"),
+                                        "Time": moment(startTimestamp).format("hh:mm:ss A"),
+                                        "Duration": _duration_,
+                                        "Vehicle": vehicle.name||"",
+                                        "Status": status,
+                                        "Check Out": site.short_name,
+                                        "Check In": destination.short_name,
+                                        "Truck Base Site": vehicle["Site"]||"",
+                                        "Equipt No": vehicle["Equipment Number"]||"",
+                                        "Check In Date": endDate,
+                                        "Check In Time": endTime,
+                                        "Truck Base Site Code": vehicle["Site Code"]||"",
+                                        timestamp: new Date(startTimestamp).getTime() // for sorting later
+                                    } : null;
+                                }
+
+                                if(extendSearch){     
+                                    extendSearchDetails[`${val.USER_NAME}-${val.GEOFENCE_NAME}`] = timestamp;
+                                    $.ajax({
+                                        url: `/api/events/${CLIENT.id}/${USER.username}/${JSON.stringify({
+                                            USER_NAME: val.USER_NAME,
+                                            // GEOFENCE_NAME: /DVO DC/, // do not include GEOFENCE_NAME because we need to know if geofenceHasBeenChanged - to know what event we will end
+                                            timestamp: {
+                                                $gte: new Date(val.timestamp).toISOString()
+                                            }
+                                        })}`,
+                                        method: "GET",
+                                        timeout: 90000, // 1 minute and 30 seconds
+                                        headers: {
+                                            "Authorization": SESSION_TOKEN
+                                        },
+                                        async: true
+                                    }).done(function (docs1) {
+                                        var originalEvent = docs1[0];
+                                        var found = false;
+
+                                        docs1.forEach((val,i) => {
+                                            /*** do not delete me. Code in events.js: XX001. Purpose:  originalEvent._id == val._id */
+                                            if(!found && originalEvent._id == val._id){
+                                                var endAddress = (docs1[i+1] && docs1[i+1].USER_NAME == val.USER_NAME) ? docs1[i+1].GEOFENCE_NAME : null;
+                                                var sameCurrentAndNextAddress = originalEvent.GEOFENCE_NAME == endAddress;
+
+                                                extendSearchDetails[`${originalEvent.USER_NAME}-${originalEvent.GEOFENCE_NAME}`]
+                                                var _timestamp = extendSearchDetails[`${originalEvent.USER_NAME}-${originalEvent.GEOFENCE_NAME}`];
+
+                                                if(!sameCurrentAndNextAddress){
+                                                    found = true;
+                                                    console.log(">>>>",val.USER_NAME,originalEvent.GEOFENCE_NAME);
+
+                                                    const addedTd = addTds(originalEvent.USER_NAME,originalEvent.GEOFENCE_NAME,_timestamp,null,val.timestamp);
+                                                    htmlPerSite[originalEvent.GEOFENCE_NAME] = htmlPerSite[originalEvent.GEOFENCE_NAME] || [];
+                                                    addedTd ? htmlPerSite[originalEvent.GEOFENCE_NAME].push(addedTd) : null;
+                                                }
+                                            }
+                                        });
+                                        extendSearchDone();
+                                    });
+                                } else {
+                                    if(duration == 0){
+                                        extendSearchDone();
+                                    } else {
+                                        console.log(">>>>",val.USER_NAME,lastGeofence);
+                                        
+                                        const addedTd = addTds(val.USER_NAME,lastGeofence,timestamp,startAddress,val.timestamp);
+                                        htmlPerSite[lastGeofence] = htmlPerSite[lastGeofence] || [];
+                                        addedTd ? htmlPerSite[lastGeofence].push(addedTd) : null;
+
+                                        extendSearchDone();
+                                    }
+                                }
+                            };
+
+                            if(val.stage == "end"){ //  || val.RULE_NAME.indexOf("Outside") > -1
+                                hasChangedGeofence = true;
+                            }
+                            console.log("----------------",val.USER_NAME,hasChangedGeofence,lastGeofence);
+                            if(_next && _next.USER_NAME == val.USER_NAME && !hasChangedGeofence){
+                                if(!lastTimestamp) {
+                                    lastTimestamp = val.timestamp;
+                                    lastGeofence = startAddress;
+                                } // do not put in parent condition ^. It will be false if timestamp has value
+                                extendSearchDone();
+                            } else {
+                                lastTimestamp = null;
+
+                                // if current event vehicle is the same as next event vehicle
+                                if(sameCurrentAndNextVehicle){
+
+                                    // if current event address is NOT the same as next event address
+                                    if(hasChangedGeofence){
+                                        addHTML(endAddress);
+                                    } else {
+                                        extendSearchDone();
+                                    }
+                                } else {
+                                    // if rule name is NOT yet Outside Geofence (or Outside), 
+                                    // extend search to next possible event with date greater than current data's date and with the same vehicle - limited data response
+                                    if(val.stage == "start"){
+                                        // addHTML(endAddress,true);
+                                        extendSearchDone();
+                                    } else {
+                                        addHTML(endAddress);
+                                    }
+                                }
+                            }
+                        }
+                        
+                        processReport();
+                });
+
+                function extendSearchDone(){
+                    extendSearchCount ++;
+                    console.log(totalEventsPerSite,extendSearchCount);
+                    if(totalEventsPerSite == extendSearchCount){
+                       
+                        
+
+                            const sortedHtmlPerSite = OBJECT.sortByKey(htmlPerSite);
+                            Object.keys(sortedHtmlPerSite).forEach((dc,i) => {
+
+                                const sortedEvents = ARRAY.OBJECT.sort(sortedHtmlPerSite[dc],"timestamp",{ sortType: "asc" });
+
+                                var totalEvents = sortedEvents.length;
+                                var totalVehicles = [];
+
+                                var trsPerSite = "";
+                                sortedEvents.forEach(val => {
+                                        // eventsPerSite[val["Check Out"]] = eventsPerSite[val["Check Out"]] || [];
+                                        timeDataPerSite[val["Check Out"]] = timeDataPerSite[val["Check Out"]] || {
+                                            "12:00 AM - 07:00 AM": [],
+                                            "7:01 AM - 9:00 AM": [],
+                                            "9:01 AM - 12:00 PM": [],
+                                            "12:01 PM - 3:00 PM": [],
+                                            "3:01 PM - 5:00 PM": [],
+                                            "5:01 PM - 11:59 PM": [],
+                                        };
+
+                                        // eventsPerSite[val["Check Out"]].push(val);
+
+                                        // 12:00 AM - 07:00 AM
+                                        if (isBetween(val.timestamp,"12:00 AM","7:00 AM")) 
+                                            timeDataPerSite[val["Check Out"]]["12:00 AM - 07:00 AM"].push(val["Vehicle"]);
+                                        // 7:01 AM - 9:00 AM
+                                        if (isBetween(val.timestamp,"7:01 AM","9:00 AM")) 
+                                            timeDataPerSite[val["Check Out"]]["7:01 AM - 9:00 AM"].push(val["Vehicle"]);
+                                        // 9:01 AM - 12:00 PM
+                                        if (isBetween(val.timestamp,"9:01 AM","12:00 PM")) 
+                                            timeDataPerSite[val["Check Out"]]["9:01 AM - 12:00 PM"].push(val["Vehicle"]);
+                                        // 12:01 PM - 3:00 PM
+                                        if (isBetween(val.timestamp,"12:01 PM","3:00 PM")) 
+                                            timeDataPerSite[val["Check Out"]]["12:01 PM - 3:00 PM"].push(val["Vehicle"]);
+                                        // 3:01 PM - 5:00 PM
+                                        if (isBetween(val.timestamp,"3:01 PM","5:00 PM")) 
+                                            timeDataPerSite[val["Check Out"]]["3:01 PM - 5:00 PM"].push(val["Vehicle"]);
+                                        // 5:01 PM - 11:59 PM
+                                        if (isBetween(val.timestamp,"5:01 PM","11:59 PM")) 
+                                            timeDataPerSite[val["Check Out"]]["5:01 PM - 11:59 PM"].push(val["Vehicle"]);
+                                            
+                                    trsPerSite += `
+                                    <tr>
+                                        <td style="text-align:center;">${val["Date"]}</td>
+                                        <td style="text-align:center;">${val["Time"]}</td>
+                                        <td style="text-align:center;">${val["Duration"]}</td>
+                                        <td style="text-align:center;">${val["Vehicle"]}</td>
+                                        <td style="text-align:center;">${val["Status"]}</td>
+                                        <td style="text-align:center;">${val["Check Out"]}</td>
+                                        <td style="text-align:center;">${val["Check In"]}</td>
+                                        <td style="text-align:center;">${val["Truck Base Site"]}</td>
+                                        <td style="text-align:center;">${val["Equipt No"]}</td>
+                                        <td style="text-align:center;">${val["Check In Date"]}</td>
+                                        <td style="text-align:center;">${val["Check In Time"]}</td>
+                                        <td style="text-align:center;">${val["Truck Base Site Code"]}</td>
+                                    </tr>`;
+
+
+                                    (totalVehicles.includes(val["Vehicle"])) ? null : totalVehicles.push(val["Vehicle"]);
+                                });
+                                $('body').append(`<table id="report-hidden-${i}" data-SheetName="${dc}" border="1" style="border-collapse: collapse;opacity:0;">
+                                                        <tr>
+                                                            <td style="border: none;" colspan=4><b>OTD Report</b></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="border: none;" colspan=4><b>Geofence: ${dc}</b></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="border: none;" colspan=4><b>Period Start: ${moment(date_from).format("MM/DD/YYYY")}</b></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="border: none;" colspan=4><b>Period End: ${moment(date_from).format("MM/DD/YYYY")}</b></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="border: none;" colspan=4><b>Generated On: ${moment().format("MM/DD/YYYY, hh:mm A")}</b></td>
+                                                        </tr>
+                                                        <tr><td style="border: none;" colspan=4></td></tr>
+                                                        <tr>
+                                                            <td style="border: none;" colspan=4><b>Total Events: ${totalEvents}</b></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="border: none;" colspan=4><b>Total Vehicles: ${totalVehicles.length}</b></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="font-weight:bold;text-align:left;">Date</td>
+                                                            <td style="font-weight:bold;text-align:left;">Time</td>
+                                                            <td style="font-weight:bold;text-align:center;">Duration</td>
+                                                            <td style="font-weight:bold;text-align:center;">Vehicle</td>
+                                                            <td style="font-weight:bold;text-align:center;">Status</td>
+                                                            <td style="font-weight:bold;text-align:center;">Check Out</td>
+                                                            <td style="font-weight:bold;text-align:center;">Check In</td>
+                                                            <td style="font-weight:bold;text-align:center;">Truck Base Site</td>
+                                                            <td style="font-weight:bold;text-align:center;">Equipt No</td>
+                                                            <td style="font-weight:bold;text-align:center;">Check In Date</td>
+                                                            <td style="font-weight:bold;text-align:center;">Check In Time</td>
+                                                            <td style="font-weight:bold;text-align:center;">Truck Base Site Code</td>
+                                                        </tr>
+                                                        ${trsPerSite}
+                                                    </table>`);
+                            });
+
+                            
+
+                const sortedTimeDataPerSite = OBJECT.sortByKey(timeDataPerSite);
+
+                Object.keys(sortedTimeDataPerSite).forEach((dc,i) => {
+                    var tdsSummary = "";
+                    Object.keys(sortedTimeDataPerSite[dc]).forEach(key => {
+                        const timeData = sortedTimeDataPerSite[dc][key];
+
+                        const removedDups = new Set(timeData);
+                        const finalArray = Array.from(removedDups);
+                        const percent = GET.ROUND_OFF((finalArray.length/timeData.length)*100);
+
+                        console.log(dc,key,finalArray);
+
+                        tdsSummary += ` <td style="text-align:center;">${timeData.length||""}</td>
+                                        <td style="text-align:center;">${finalArray.length||""}</td>
+                                        <td style="text-align:center;">${percent?percent+"%":""}</td>`;
+                    });
+                    summaryTableHtml += `<tr>
+                                            <td>${dc}</td>
+                                            ${tdsSummary}
+                                        </tr>`;
+                });
+
+                $(`body`).prepend(`<table id="report-hidden" data-SheetName="Summary" border="1" style="border-collapse: collapse;opacity:0;">
+                <tr>
+                    <td style="border: none;"><b>OTD Report (Summary)</b></td>
+                </tr>
+                <tr>
+                    <td style="border: none;"><b>Date: ${moment(date_from).format("MM/DD/YYYY")}</b></td>
+                </tr>
+                <tr>
+                    <td style="border: none;"><b>Generated On: ${moment().format("MM/DD/YYYY, hh:mm A")}</b></td>
+                </tr>
+                <tr><td style="border: none;"></td></tr>
+                <tr>
+                    <td style="font-weight:bold;text-align:right;">Period</td>
+                    <td style="font-weight:bold;text-align:center;" colspan=3>12:00 AM to 7:00 AM</td>
+                    <td style="font-weight:bold;text-align:center;" colspan=3>7:01 AM to 9:00 AM</td>
+                    <td style="font-weight:bold;text-align:center;" colspan=3>9:01 AM to 12:00 PM</td>
+                    <td style="font-weight:bold;text-align:center;" colspan=3>12:01 PM to 3:00 PM</td>
+                    <td style="font-weight:bold;text-align:center;" colspan=3>3:01 PM to 5:00 PM</td>
+                    <td style="font-weight:bold;text-align:center;" colspan=3>5:01 PM to 11:59 PM</td>
+                </tr>
+                <tr>
+                    <td style="font-weight:bold;text-align:left;">DC</td>
+                    <td style="font-weight:bold;text-align:center;">Number</td>
+                    <td style="font-weight:bold;text-align:center;">Total Trucks</td>
+                    <td style="font-weight:bold;text-align:center;">%</td>
+                    <td style="font-weight:bold;text-align:center;">Number</td>
+                    <td style="font-weight:bold;text-align:center;">Total Trucks</td>
+                    <td style="font-weight:bold;text-align:center;">%</td>
+                    <td style="font-weight:bold;text-align:center;">Number</td>
+                    <td style="font-weight:bold;text-align:center;">Total Trucks</td>
+                    <td style="font-weight:bold;text-align:center;">%</td>
+                    <td style="font-weight:bold;text-align:center;">Number</td>
+                    <td style="font-weight:bold;text-align:center;">Total Trucks</td>
+                    <td style="font-weight:bold;text-align:center;">%</td>
+                    <td style="font-weight:bold;text-align:center;">Number</td>
+                    <td style="font-weight:bold;text-align:center;">Total Trucks</td>
+                    <td style="font-weight:bold;text-align:center;">%</td>
+                    <td style="font-weight:bold;text-align:center;">Number</td>
+                    <td style="font-weight:bold;text-align:center;">Total Trucks</td>
+                    <td style="font-weight:bold;text-align:center;">%</td>
+                </tr>
+                ${summaryTableHtml}
+            </table>`);
+                                        
+                        var tableIds = [];
+                        $(`[data-SheetName]`).each((i,el) => { tableIds.push(`#${$(el).attr("id")}`); });
+                        GENERATE.TABLE_TO_EXCEL.MULTISHEET(tableIds.join(","), `${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY")}.xls`);
+                        $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
+
+                        // GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`);
+                        // $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
+                    }
+                }
+            },
         }
     }, 
     FUNCTION: {
@@ -9025,7 +9417,7 @@ var REPORTS = {
                 _new_ = true,
                 initializePage = function(){
                     var geofencesOptions = `<option value="">All</option>`;
-                    LIST["geofences"].forEach(val => {
+                    (LIST["geofences"]||[]).forEach(val => {
                         geofencesOptions += `<option value="${val._id}">${val.value}</option>`;
                     });
                     
@@ -9362,6 +9754,26 @@ var REPORTS = {
                                 },
                                 doNotRemoveTable: true
                             });
+                        },
+                        otdr_report = function(callback){
+                            var daterange = $(`#daterange`).val(),
+                                filter = {
+                                    timestamp: FILTER.DATERANGE(daterange)
+                                };
+                            date_from = filter.timestamp.$gte;
+                            date_to = filter.timestamp.$lt;
+
+                            pagination({
+                                countURL: `/api/events/${CLIENT.id}/${USER.username}/all/${JSON.stringify(filter)}/count`,
+                                dataURL: `/api/events/${CLIENT.id}/${USER.username}/all/${JSON.stringify(filter)}`,
+                                callback: function(docs){
+                                    docs.sort(function (a, b) {
+                                        return a.USER_NAME.localeCompare(b.USER_NAME) || new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+                                    });
+                                    callback(docs);
+                                },
+                                doNotRemoveTable: true
+                            });
                         };
 
                     // dependent of geofences!!!!!
@@ -9583,6 +9995,40 @@ var REPORTS = {
                             }
                         });
                     });
+                    $(`[otdr]`).click(function(){
+                        var title = "On Time Departure";
+                        df_dt_dest(title,"REPORT_MODAL_03",null,function(){
+                            otdr_report(function(docs){
+                                REPORTS.UI.REPORTS.OTDR(title,docs,date_from,date_to);
+                                // $(`body`).append(REPORTS.UI.REPORTS.OTDR(title,docs,date_from));
+
+                                // var tableIds = [];
+                                // $(`[data-SheetName]`).each((i,el) => { tableIds.push(`#${$(el).attr("id")}`); });
+                                // GENERATE.TABLE_TO_EXCEL.MULTISHEET(tableIds.join(","), `${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY")}.xls`);
+                                // $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
+
+                                
+                                // GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY")}`);
+                                // $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
+                            });
+                        });
+
+                        $(`#daterange`).daterangepicker({
+                            opens: 'left',
+                            autoUpdateInput: false,
+                            singleDatePicker:true,
+                            autoApply: true,
+                            locale: {
+                                format: 'MM/DD/YYYY'
+                            }
+                        }, function(start, end, label) { }).on('apply.daterangepicker', function(ev,picker){
+                            console.log("picker.startDate",picker.startDate)
+                            var formattedDate = moment(new Date(picker.startDate)).format('MM/DD/YYYY');
+                            $(this).val(formattedDate);
+                            $(this).data('daterangepicker').setStartDate(formattedDate);
+                            $(this).data('daterangepicker').setEndDate(formattedDate);
+                        });
+                    });
                     /**************** END REPORT LISTENER ****************/
                 };
 
@@ -9590,7 +10036,7 @@ var REPORTS = {
             TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
                 isFinishedLoading(["GEOFENCES","ROUTES","VEHICLES","CLUSTERS","VEHICLE_PERSONNEL","CHASSIS"], _new_, function(){
                     _new_ = false;
-                    LIST["geofences"].forEach(val => {
+                    (LIST["geofences"]||[]).forEach(val => {
                         val.value = val.short_name;
                         _l_GeofenceList.push(val);
                     });
@@ -10135,7 +10581,7 @@ var EVENT_VIEWER = {
             };
             table.filterListener = function(_row,_id){
                 FILTER.RESET({
-                    dateEl: `#_date,#_rdate`,
+                    dateEl: `#_date`,
                     populateTable: function(){
                         var _date = $(`#_date`).val() || DEFAULT_DATE;
 
@@ -10147,7 +10593,7 @@ var EVENT_VIEWER = {
                         table.countRows();
                     }
                 });
-                $(`#_date,#_rdate`).daterangepicker({
+                $(`#_date`).daterangepicker({
                     opens: 'left',
                     autoUpdateInput: false,
                     singleDatePicker:true,
@@ -10170,80 +10616,6 @@ var EVENT_VIEWER = {
                     USER.filters["events"] = (CLIENT.type != 2) ? {timestamp: FILTER.DATERANGE(_date), shipment_number: {$exists:true}} : {timestamp: FILTER.DATERANGE(_date)};
                     table.countRows();
                 });
-                
-                // for CokeT2
-                var otdr;
-                $(`#report-btn`).click(function(){
-                    var _rdate = $(`#_rdate`).val() || DEFAULT_DATE;
-                    $(this).html(`<i class="la la-spinner la-spin"></i> Generate`).addClass("disabled");
-                    $(`#mreport-container`).hide();
-                    $(`[mreport]`).addClass("disabled");
-
-                    var yesterday = moment(new Date(_rdate)).subtract(1, 'days').format("MM/DD/YYYY"),
-                        filter = {
-                            timestamp: FILTER.DATERANGE(_rdate),
-                        };
-                    $.ajax({
-                        url: `/api/events/${CLIENT.id}/${USER.username}/all/${JSON.stringify(filter)}/0/0`,
-                        method: "GET",
-                        timeout: 90000, // 1 minute and 30 seconds
-                        headers: {
-                            "Authorization": SESSION_TOKEN
-                        },
-                        async: true
-                    }).done(function (docs) {
-                        console.log("Events SN:",docs);
-                        // check until what time only
-                        // enable or show dl links if here is report
-                        otdr = REPORTS.UI.REPORTS.otdr.process(docs,_rdate);
-
-                        $(`#report-btn`).html(`Generate`).removeClass("disabled");
-                        $(`#mreport-container`).show();
-                        $(`#mreport-date`).html(moment(_rdate).format("MMMM DD, YYYY"));
-
-                        Object.keys(otdr.summaryTotal).forEach(key => {
-                            if(otdr.summaryTotal[key] > 0){
-                                if(key == "12:00 AM - 07:00 AM") $(`[mreport="otdr-12-07"]`).removeClass("disabled");
-                                if(key == "07:00 AM - 09:00 AM") $(`[mreport="otdr-07-09"]`).removeClass("disabled");
-                                if(key == "09:00 AM - 12:00 PM") $(`[mreport="otdr-09-12"]`).removeClass("disabled");
-                                if(key == "12:00 PM - 03:00 PM") $(`[mreport="otdr-12-03"]`).removeClass("disabled");
-                                if(key == "03:00 PM - 05:00 PM") $(`[mreport="otdr-03-05"]`).removeClass("disabled");
-                                if(key == "05:00 PM - 11:59 PM") $(`[mreport="otdr-05-12"]`).removeClass("disabled");
-                            }
-                        });
-                    }).fail(function(error){
-                        console.log(error);
-                        $(`#report-btn`).html(`Generate`).removeClass("disabled");
-                        toastr.error("Something went wrong</br></br>Error Code - ec016/01");
-                    });
-                });
-                var excelTitle = "On Time Departure",
-                    generateReport = function(type){
-                        var _title = `${excelTitle} On ${otdr.date} @ ${type}`,
-                            _filename = _title.replace(/\//g,"_").replace(/:/g,"_").replace(/ /g,"_").replace(/@/g,"");
-                        $(`body`).append(REPORTS.UI.REPORTS.otdr.generate(_title,type,otdr.obj));
-                        GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",_filename);
-                        $(`#report-hidden,#temp-link,[data-SheetName]`).remove();
-                    };
-                $(`[mreport="otdr-12-07"]`).click(function(){
-                    generateReport("12:00 AM - 07:00 AM");
-                });
-                $(`[mreport="otdr-07-09"]`).click(function(){
-                    generateReport("07:00 AM - 09:00 AM");
-                });
-                $(`[mreport="otdr-09-12"]`).click(function(){
-                    generateReport("09:00 AM - 12:00 PM");
-                });
-                $(`[mreport="otdr-12-03"]`).click(function(){
-                    generateReport("12:00 PM - 03:00 PM");
-                });
-                $(`[mreport="otdr-03-05"]`).click(function(){
-                    generateReport("03:00 PM - 05:00 PM");
-                });
-                $(`[mreport="otdr-05-12"]`).click(function(){
-                    generateReport("05:00 PM - 11:59 PM");
-                });
-                // end for CokeT2
             };
             table.initialize();
             table.countRows();
@@ -14437,7 +14809,6 @@ var PAGE = {
     },
     SET_FUNCTIONALITIES: function(){
         var permission = PERMISSION["dispatch"] || {},
-            cnRerportTbl = (CLIENT.type == 2) ? ["refresh","filter","report"] : ["refresh","filter"],
             vehicleBtn = (USER.role == "developer") ? ["edit","view"] : ["edit"],
             notificationsTblBtn = (clientCustom.allowExportTable.notifications) ? ["refresh","filter","export"] : ["refresh","filter"],
             dispatchTblBtn = (ENVIRONMENT == "development") ? ["create","import","refresh","column","export","filter","clone"] : ["create","import","refresh","column","export","filter"];
@@ -14569,7 +14940,7 @@ var PAGE = {
                 display: function() { return views.event_viewer(); },
                 function: function() { EVENT_VIEWER.FUNCTION.init() },
                 buttons: {
-                    table: cnRerportTbl,
+                    table: ["refresh","filter"],
                     row:["view"]
                 }
             },
@@ -15133,48 +15504,6 @@ var SLIDER = {
         return `<div id="export-container" class="slider-container" style="display:none;">
                     <h5 class="pl-3">Export Options<i id="slider-close" class="la la-times" style="float: right;font-size: 13px;line-height: 20px;padding: 0px 8px;cursor: pointer;"></i></h5>
                     <div class="p-3" style="border-top: 1px solid #eee;"></div>
-                </div>`;
-    },
-    REPORT: function(){
-        return `<div id="report-container" class="slider-container" style="display:none;">
-                    <h5 class="pl-3">Generate Report<i id="slider-close" class="la la-times" style="float: right;font-size: 13px;line-height: 20px;padding: 0px 8px;cursor: pointer;"></i></h5>
-                    <div class="p-3" style="border-top: 1px solid #eee;">
-                        <div>
-                            <div style="font-size: 10px;">Date:</div>
-                            <input type="text" id="_rdate" class="clearable form-control" style="padding-left: 10px;" value="${DEFAULT_DATE}" readonly>
-                        </div>
-                        <button id="report-btn" style="width: 100%;" class="btn btn-success mt-3">Apply</button>
-                        <div id="mreport-container" class="mt-3" style="display:none;">
-                            <div class="mt-3 mb-1 font-bold">Generate Report for <span id="mreport-date"></span>:</div>
-                            <div mreport="otdr-12-07" class="custom-btn-01 col-sm-12 pt-2 pb-2 pr-3 pl-3 disabled">
-                                <span class="float-right pt-1 pl-3 "><i class="la la-download"></i></span>
-                                <span>On Time Departure Report<br>12:00 AM - 07:00 AM</span>
-                            </div>
-                            <div mreport="otdr-07-09" class="custom-btn-01 col-sm-12 pt-2 pb-2 pr-3 pl-3 mt-1 disabled">
-                                <span class="float-right pt-1 pl-3 "><i class="la la-download"></i></span>
-                                <span>On Time Departure Report<br>07:00 AM - 09:00 AM</span>
-                            </div>
-                            <div mreport="otdr-09-12" class="custom-btn-01 col-sm-12 pt-2 pb-2 pr-3 pl-3 mt-1 disabled">
-                                <span class="float-right pt-1 pl-3 "><i class="la la-download"></i></span>
-                                <span>On Time Departure Report<br>09:00 AM - 12:00 PM</span>
-                            </div>
-                            <div mreport="otdr-12-03" class="custom-btn-01 col-sm-12 pt-2 pb-2 pr-3 pl-3 mt-1 disabled">
-                                <span class="float-right pt-1 pl-3 "><i class="la la-download"></i></span>
-                                <span>On Time Departure Report<br>12:00 PM - 03:00 PM</span>
-                            </div>
-                            <div mreport="otdr-03-05" class="custom-btn-01 col-sm-12 pt-2 pb-2 pr-3 pl-3 mt-1 disabled">
-                                <span class="float-right pt-1 pl-3 "><i class="la la-download"></i></span>
-                                <span>On Time Departure Report<br>03:00 PM - 05:00 PM</span>
-                            </div>
-                            <div mreport="otdr-05-12" class="custom-btn-01 col-sm-12 pt-2 pb-2 pr-3 pl-3 mt-1 disabled">
-                                <span class="float-right pt-1 pl-3 "><i class="la la-download"></i></span>
-                                <span>On Time Departure Report<br>05:00 PM - 11:59 PM</span>
-                            </div>
-                            <div style="font-size: 9px;font-weight: 100;" class="col-sm-12 text-muted mt-2 p-0">
-                                Please click 'Yes' when a pop-up appears saying "The file format and extension of 'FILENAME.xls' don't match. The file could be corrupted or unsafe. Unless you trust its source, don't open it. Do you want to open it anyway?".
-                            </div>
-                        </div>
-                    </div>
                 </div>`;
     },
 };
@@ -16992,77 +17321,116 @@ const views = new function(){
                 Manpower and Truck Utilization Report - mtur
                 Check In Check Out Report - ci_co_r
             */
-            var ularHTML = "";
-            var DESummaryReport = "";
+           
+            var reportsHTML = "";
+            var i = 0;
+            function htmlTags(buttonHTML){
+                if(i == 0) reportsHTML +=  '<div class="col-sm-4 mt-3">';
+
+                buttonHTML ? reportsHTML +=  buttonHTML : null;
+                i++;
+
+                if(i == 9) {
+                    reportsHTML +=  '</div>';
+                    i = 0;
+                }
+            }
+            htmlTags();
+            if(clientCustom.reports.dvr){
+                htmlTags(`<div class="custom-btn-01 col-sm-12 pt-2 pb-2 pr-3 pl-3 disabled" no_function>
+                            <span>Deployment Visibility Report</span>
+                            <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
+                        </div>`);
+            }
+            if(clientCustom.reports.cicor){
+                htmlTags(`<div cicor class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
+                            <span>CICO Report</span>
+                            <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
+                        </div>`);
+            }
+            if(clientCustom.reports.otr){
+                htmlTags(`<div otr class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
+                            <span>Over Transit Report</span>
+                            <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
+                        </div>`);
+            }
+            if(clientCustom.reports.pbpa){
+                htmlTags(`<div pbpa class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
+                            <span>Per Base Plant Activity</span>
+                            <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
+                        </div>`);
+            }
+            if(clientCustom.reports.hwtr){
+                htmlTags(`<div hwtr class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
+                            <span>Haulage Window Time Report</span>
+                            <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
+                        </div>`);
+            }
+            if(clientCustom.reports.ar){
+                htmlTags(`<div class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled" no_function>
+                            <span>Attendance Report</span>
+                            <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
+                        </div>`);
+            }
+            if(clientCustom.reports.tr){
+                htmlTags(`<div tr class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
+                            <span>Trippage Report</span>
+                            <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
+                        </div>`);
+            }
+            if(clientCustom.reports.vcr){
+                htmlTags(`<div vcr class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
+                            <span>Vehicle CICO Report</span>
+                            <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
+                        </div>`);
+            }
             if(((clientCustom.reports.ular||{}).roles||[]).includes(USER.role)){
-                ularHTML = `<div ular class="custom-btn-01 col-sm-12 pt-2 pb-2 pr-3 pl-3 disabled">
-                                <span>User Login Activity Report</span>
-                                <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
-                            </div>`;
+                htmlTags(`<div ular class="custom-btn-01 col-sm-12 pt-2 pb-2 pr-3 pl-3 disabled">
+                            <span>User Login Activity Report</span>
+                            <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
+                        </div>`);
             }
             if(clientCustom.reports.desr){
-                DESummaryReport += ` <div desr class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
-                                        <span>Dispatch Entries Summary Report</span>
-                                        <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
-                                    </div>`;
+                htmlTags(`<div desr class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
+                            <span>Dispatch Entries Summary Report</span>
+                            <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
+                        </div>`);
             }
             if(clientCustom.reports.ser){
-                DESummaryReport += ` <div ser class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
-                                        <span>Scheduled Entries Report</span>
-                                        <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
-                                    </div>`;
+                htmlTags(`<div ser class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
+                            <span>Scheduled Entries Report</span>
+                            <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
+                        </div>`);
             }
             if(clientCustom.reports.mtur){
-                DESummaryReport += ` <div mtur class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
-                                        <span>Manpower and Truck Utilization Report</span>
-                                        <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
-                                    </div>`;
+                htmlTags(`<div mtur class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
+                            <span>Manpower and Truck Utilization Report</span>
+                            <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
+                        </div>`);
             }
             if(clientCustom.reports.ci_co_r){
-                DESummaryReport += ` <div ci_co_r class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
-                                        <span>Check In Check Out Report</span>
-                                        <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
-                                    </div>`;
+                htmlTags(`<div ci_co_r class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
+                            <span>Check In Check Out Report</span>
+                            <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
+                        </div>`);
             }
+            if(clientCustom.reports.otdr){
+                htmlTags(`<div otdr class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
+                            <span>On Time Departure Report</span>
+                            <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
+                        </div>`);
+            }
+
+
+            if(i < 9){
+                i = 8;
+                htmlTags();
+            }
+            
+            
+
             return `<div class="page-box row">
-                        <div class="col-sm-4 mt-3">
-                            <div class="custom-btn-01 col-sm-12 pt-2 pb-2 pr-3 pl-3 disabled" no_function>
-                                <span>Deployment Visibility Report</span>
-                                <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
-                            </div>
-                            <div cicor class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
-                                <span>CICO Report</span>
-                                <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
-                            </div>
-                            <div otr class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
-                                <span>Over Transit Report</span>
-                                <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
-                            </div>
-                            <div pbpa class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
-                                <span>Per Base Plant Activity</span>
-                                <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
-                            </div>
-                            <div hwtr class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
-                                <span>Haulage Window Time Report</span>
-                                <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
-                            </div>
-                            <div class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled" no_function>
-                                <span>Attendance Report</span>
-                                <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
-                            </div>
-                            <div tr class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
-                                <span>Trippage Report</span>
-                                <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
-                            </div>
-                            <div vcr class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
-                                <span>Vehicle CICO Report</span>
-                                <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
-                            </div>
-                        </div>
-                        <div class="col-sm-4 mt-3 ml-3">
-                            ${ularHTML}
-                            ${DESummaryReport}
-                        </div>
+                        ${reportsHTML}
                         <div style="font-size: 9px;font-weight: 100;" class="col-sm-12 text-muted mt-5">
                             Please click 'Yes' when a pop-up appears saying "The file format and extension of 'FILENAME.xls' don't match. The file could be corrupted or unsafe. Unless you trust its source, don't open it. Do you want to open it anyway?".
                         </div>
@@ -17108,7 +17476,6 @@ const views = new function(){
                                                 <div style="font-size: 10px;">Date:</div>
                                                 <input type="text" id="_date" class="clearable form-control" style="padding-left: 10px;" value="${DEFAULT_DATE}" readonly>
                                             </div>`)}
-                        ${SLIDER.REPORT()}
                         <div class="col-sm-12 mt-2">
                             <div class="table-wrapper">
                                 <table id="tbl-events" class="table table-hover table-bordered">

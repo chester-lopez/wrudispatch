@@ -109,6 +109,23 @@ var DATETIME = {
             hour_minute: def,
         };
     },
+    DURATION_TIME_FORMAT: function(ms,H,M,S){
+        const ms_2_h = moment.duration(ms ,'milliseconds').asHours();
+        const h = Math.floor(ms_2_h);
+
+        const h_2_m = moment.duration((ms_2_h-h) ,'hours').asMinutes();
+        const m = Math.floor(h_2_m);
+
+        const m_2_s = moment.duration((h_2_m-m) ,'minutes').asSeconds();
+        const s = Math.floor(m_2_s);
+
+        var duration = [];
+        (H) ? duration.push(h) : null;
+        (M) ? duration.push(m) : null;
+        (S) ? duration.push(s) : null;
+
+        return duration.join(":");
+    }
 };
 var GET = {
     AJAX:function(settings,successCallback,errorCallback){

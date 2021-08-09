@@ -1,0 +1,4 @@
+target.isBetween(start, finish, 'days', '()') // default exclusive
+target.isBetween(start, finish, 'days', '(]') // right inclusive
+target.isBetween(start, finish, 'days', '[)') // left inclusive
+target.isBetween(start, finish, 'days', '[]') // all inclusive
