@@ -9024,19 +9024,22 @@ var REPORTS = {
                 }
             },
             OTDR: function(title,docs,date_from,date_to){
-                var sheetTables = "";
-                var summaryTableHtml = "";
 
-
+                // variable declation
                 var totalEventsPerSite = docs.length;
                 var extendSearchCount = 0;
 
+                // 'lastTimestamp' and 'lastGeofence' is used to save timestamp and geofence of previous event
+                var lastTimestamp;
+                var lastGeofence;
+
+                var hasChangedGeofence = true;
 
                 const date = moment(new Date(date_from)).format("MM/DD/YYYY");
                 const timeDataPerSite = {};
                 const eventsPerSite = {};
-                const htmlPerSite = {};
 
+                // function to check if target is in between two dates (start and finish)
                 function isBetween(target,start,finish){
                     target = moment(target);
                     start = moment(new Date(`${date}, ${start}`)).startOf('minute');
@@ -9045,365 +9048,315 @@ var REPORTS = {
                     return target.isBetween(start, finish, 'minutes', '[]'); // all inclusive
                 }
 
-                var lastTimestamp,
-                    lastGeofence,
-                    hasChangedGeofence = true,
-                    extendSearchDetails = {};
+                // loop through all events
+                docs.forEach((val,i) => {
+                    hasChangedGeofence = false;
+                    
+                    var _next = docs[i+1];
+                    var timestamp = lastTimestamp || val.timestamp;
+                    var startAddress = val.GEOFENCE_NAME;
+                    var endAddress = (_next && _next.USER_NAME == val.USER_NAME) ? _next.GEOFENCE_NAME : null;
+                    var sameCurrentAndNextVehicle = (_next && _next.USER_NAME == val.USER_NAME);
+                    var duration = (val.timestamp) ? Math.abs(new Date(timestamp).getTime() - new Date(val.timestamp).getTime()) : 0;
+                        
+                    // console.log(val.USER_NAME,startAddress,endAddress,val.stage,lastTimestamp,duration);
 
-                function getAddress(addr){
-                    var finalStr = {
-                        short_name: "",
-                        code: ""
-                    };
-                    if(addr){
-                        var str = addr.split(" - ");
+                    function processEvent(){
 
-                        var geofence = getGeofence(str[0],'short_name');
+                        function getEventData(USER_NAME,startAddress,startTimestamp,endAddress,endTimestamp){
+                            // do not make condition like !duration. Duration could be 0.
+                            var duration = (endTimestamp) ? Math.abs(new Date(startTimestamp).getTime() - new Date(endTimestamp).getTime()) : null,
+                                endDate = DATETIME.FORMAT(endTimestamp,"MM/DD/YYYY"),
+                                endTime = DATETIME.FORMAT(endTimestamp,"hh:mm:ss A"),
+                                status = "Finished",
+                                _duration_ = (duration != null) ? DATETIME.DURATION_TIME_FORMAT(duration,1,1,1)  : "-";
 
-                        if(geofence){
-                            finalStr = {
-                                short_name: geofence.short_name || "",
-                                code: geofence.code || ""
-                            };
+                            if(new Date(date_to).getTime() > new Date().getTime() && duration == null){
+                                endDate = "";
+                                endTime = "";
+                                status = "Pending"
+                            }
+                            // do not use 'ASSIGNED_VEHICLE_ID because events from before does not save 'ASSIGNED_VEHICLE_ID'
+                            var vehicle = getVehicle(USER_NAME,"name") || {};
+
+                            return endAddress ? {
+                                "Date": moment(startTimestamp).format("M/D/YYYY"),
+                                "Time": moment(startTimestamp).format("hh:mm:ss A"),
+                                "Duration": _duration_,
+                                "Vehicle": vehicle.name||"",
+                                "Status": status,
+                                "Check Out": startAddress,
+                                "Check In": endAddress,
+                                "Truck Base Site": vehicle["Site"]||"",
+                                "Equipt No": vehicle["Equipment Number"]||"",
+                                "Check In Date": endDate,
+                                "Check In Time": endTime,
+                                "Truck Base Site Code": vehicle["Site Code"]||"",
+                                timestamp: new Date(startTimestamp).getTime() // for sorting later
+                            } : null;
+                        }
+
+                        if(duration == 0){
+                            extendSearchDone();
                         } else {
-                            finalStr = {
-                                short_name: str[0] || "",
-                                code: ""
-                            };
+                            const eventData = getEventData(val.USER_NAME,lastGeofence,timestamp,startAddress,val.timestamp);
+                            eventsPerSite[lastGeofence] = eventsPerSite[lastGeofence] || [];
+                            eventData ? eventsPerSite[lastGeofence].push(eventData) : null;
+
+                            extendSearchDone();
+                        }
+                    };
+
+                    // only set 'hasChangedGeofence' to true if event stage is 'end'
+                    (val.stage == "end") ? hasChangedGeofence = true : null;
+                    
+                    // if this event and next event has the same vehicle AND 'hasChangedGeofence' is false
+                    if(_next && _next.USER_NAME == val.USER_NAME && !hasChangedGeofence){
+                        // save timestamp and address
+                        if(!lastTimestamp) {  // do not put in parent condition ^. It will be false if timestamp has value
+                            lastTimestamp = val.timestamp;
+                            lastGeofence = startAddress;
+                        }
+                        extendSearchDone();
+                    } else {
+
+                        // set 'lastTimestamp' to null because it's already either different vehicle or geofence
+                        lastTimestamp = null;
+
+                        // if current event vehicle is the same as next event vehicle
+                        if(sameCurrentAndNextVehicle){
+                            // if current event geofence is NOT the same as next event geofence
+                            (hasChangedGeofence) ? processEvent() : extendSearchDone();
+                        } else {
+                            // if event stage is 'start', ignore
+                            // else add data to html
+                            (val.stage == "start") ? extendSearchDone() : processEvent();
                         }
                     }
-                    return finalStr;
-                }
-
-                docs.forEach((val,i) => {
-
-
-                    ///////////////////////////////
-                    var _next = docs[i+1],
-                            timestamp = lastTimestamp || val.timestamp,
-                            startAddress = val.GEOFENCE_NAME,
-                            endAddress = (_next && _next.USER_NAME == val.USER_NAME) ? _next.GEOFENCE_NAME : null,
-                            sameCurrentAndNextVehicle = (_next && _next.USER_NAME == val.USER_NAME),
-                            duration = (val.timestamp) ? Math.abs(new Date(timestamp).getTime() - new Date(val.timestamp).getTime()) : 0;
-                            
-                        console.log(val.USER_NAME,startAddress,endAddress,val.stage,lastTimestamp,duration);
-                        function processReport(){
-                            hasChangedGeofence = false;
-
-                            function addHTML(address,extendSearch){
-
-                                function addTds(USER_NAME,startAddress,startTimestamp,endAddress,endTimestamp){
-                                    // do not make condition like !duration. Duration could be 0.
-                                    var site = getAddress(startAddress),
-                                        destination = getAddress(endAddress),
-                                        duration = (endTimestamp) ? Math.abs(new Date(startTimestamp).getTime() - new Date(endTimestamp).getTime()) : null,
-                                        endDate = DATETIME.FORMAT(endTimestamp,"MM/DD/YYYY"),
-                                        endTime = DATETIME.FORMAT(endTimestamp,"hh:mm:ss A"),
-                                        status = "Finished",
-                                        _duration_ = (duration != null) ? DATETIME.DURATION_TIME_FORMAT(duration,1,1,1)  : "-";
-                                    if(new Date(date_to).getTime() > new Date().getTime() && duration == null){
-                                        endDate = "-";
-                                        endTime = "-";
-                                        status = "Pending"
-                                    }
-                                    // do not use "ASSIGNED_VEHICLE_ID" because events from before does not save ASSIGNED_VEHICLE_ID
-                                    var vehicle = getVehicle(USER_NAME,"name") || {};
-
-                                    return destination.short_name ? {
-                                        "Date": moment(startTimestamp).format("M/D/YYYY"),
-                                        "Time": moment(startTimestamp).format("hh:mm:ss A"),
-                                        "Duration": _duration_,
-                                        "Vehicle": vehicle.name||"",
-                                        "Status": status,
-                                        "Check Out": site.short_name,
-                                        "Check In": destination.short_name,
-                                        "Truck Base Site": vehicle["Site"]||"",
-                                        "Equipt No": vehicle["Equipment Number"]||"",
-                                        "Check In Date": endDate,
-                                        "Check In Time": endTime,
-                                        "Truck Base Site Code": vehicle["Site Code"]||"",
-                                        timestamp: new Date(startTimestamp).getTime() // for sorting later
-                                    } : null;
-                                }
-
-                                if(extendSearch){     
-                                    extendSearchDetails[`${val.USER_NAME}-${val.GEOFENCE_NAME}`] = timestamp;
-                                    $.ajax({
-                                        url: `/api/events/${CLIENT.id}/${USER.username}/${JSON.stringify({
-                                            USER_NAME: val.USER_NAME,
-                                            // GEOFENCE_NAME: /DVO DC/, // do not include GEOFENCE_NAME because we need to know if geofenceHasBeenChanged - to know what event we will end
-                                            timestamp: {
-                                                $gte: new Date(val.timestamp).toISOString()
-                                            }
-                                        })}`,
-                                        method: "GET",
-                                        timeout: 90000, // 1 minute and 30 seconds
-                                        headers: {
-                                            "Authorization": SESSION_TOKEN
-                                        },
-                                        async: true
-                                    }).done(function (docs1) {
-                                        var originalEvent = docs1[0];
-                                        var found = false;
-
-                                        docs1.forEach((val,i) => {
-                                            /*** do not delete me. Code in events.js: XX001. Purpose:  originalEvent._id == val._id */
-                                            if(!found && originalEvent._id == val._id){
-                                                var endAddress = (docs1[i+1] && docs1[i+1].USER_NAME == val.USER_NAME) ? docs1[i+1].GEOFENCE_NAME : null;
-                                                var sameCurrentAndNextAddress = originalEvent.GEOFENCE_NAME == endAddress;
-
-                                                extendSearchDetails[`${originalEvent.USER_NAME}-${originalEvent.GEOFENCE_NAME}`]
-                                                var _timestamp = extendSearchDetails[`${originalEvent.USER_NAME}-${originalEvent.GEOFENCE_NAME}`];
-
-                                                if(!sameCurrentAndNextAddress){
-                                                    found = true;
-                                                    console.log(">>>>",val.USER_NAME,originalEvent.GEOFENCE_NAME);
-
-                                                    const addedTd = addTds(originalEvent.USER_NAME,originalEvent.GEOFENCE_NAME,_timestamp,null,val.timestamp);
-                                                    htmlPerSite[originalEvent.GEOFENCE_NAME] = htmlPerSite[originalEvent.GEOFENCE_NAME] || [];
-                                                    addedTd ? htmlPerSite[originalEvent.GEOFENCE_NAME].push(addedTd) : null;
-                                                }
-                                            }
-                                        });
-                                        extendSearchDone();
-                                    });
-                                } else {
-                                    if(duration == 0){
-                                        extendSearchDone();
-                                    } else {
-                                        console.log(">>>>",val.USER_NAME,lastGeofence);
-                                        
-                                        const addedTd = addTds(val.USER_NAME,lastGeofence,timestamp,startAddress,val.timestamp);
-                                        htmlPerSite[lastGeofence] = htmlPerSite[lastGeofence] || [];
-                                        addedTd ? htmlPerSite[lastGeofence].push(addedTd) : null;
-
-                                        extendSearchDone();
-                                    }
-                                }
-                            };
-
-                            if(val.stage == "end"){ //  || val.RULE_NAME.indexOf("Outside") > -1
-                                hasChangedGeofence = true;
-                            }
-                            console.log("----------------",val.USER_NAME,hasChangedGeofence,lastGeofence);
-                            if(_next && _next.USER_NAME == val.USER_NAME && !hasChangedGeofence){
-                                if(!lastTimestamp) {
-                                    lastTimestamp = val.timestamp;
-                                    lastGeofence = startAddress;
-                                } // do not put in parent condition ^. It will be false if timestamp has value
-                                extendSearchDone();
-                            } else {
-                                lastTimestamp = null;
-
-                                // if current event vehicle is the same as next event vehicle
-                                if(sameCurrentAndNextVehicle){
-
-                                    // if current event address is NOT the same as next event address
-                                    if(hasChangedGeofence){
-                                        addHTML(endAddress);
-                                    } else {
-                                        extendSearchDone();
-                                    }
-                                } else {
-                                    // if rule name is NOT yet Outside Geofence (or Outside), 
-                                    // extend search to next possible event with date greater than current data's date and with the same vehicle - limited data response
-                                    if(val.stage == "start"){
-                                        // addHTML(endAddress,true);
-                                        extendSearchDone();
-                                    } else {
-                                        addHTML(endAddress);
-                                    }
-                                }
-                            }
-                        }
-                        
-                        processReport();
                 });
 
                 function extendSearchDone(){
                     extendSearchCount ++;
-                    console.log(totalEventsPerSite,extendSearchCount);
+                    
                     if(totalEventsPerSite == extendSearchCount){
                        
-                        
+                        // get total vehicles per site
+                        const totalVehicles = {};
+                        (LIST["vehicles"]||[]).forEach(val => {
+                            totalVehicles[val["Site"]] = totalVehicles[val["Site"]] || 0;
+                            totalVehicles[val["Site"]] ++;
+                        });
 
-                            const sortedHtmlPerSite = OBJECT.sortByKey(htmlPerSite);
-                            Object.keys(sortedHtmlPerSite).forEach((dc,i) => {
+                        // sort events per site by geofence name (or key)
+                        const sortedEventsPerSite = OBJECT.sortByKey(eventsPerSite);
+                        Object.keys(sortedEventsPerSite).forEach((dc,i) => {
 
-                                const sortedEvents = ARRAY.OBJECT.sort(sortedHtmlPerSite[dc],"timestamp",{ sortType: "asc" });
+                            const sortedEvents = ARRAY.OBJECT.sort(sortedEventsPerSite[dc],"timestamp",{ sortType: "asc" });
 
-                                var totalEvents = sortedEvents.length;
-                                var totalVehicles = [];
+                            var totalEvents = sortedEvents.length;
+                            var totalVehicles = [];
 
-                                var trsPerSite = "";
-                                sortedEvents.forEach(val => {
-                                        // eventsPerSite[val["Check Out"]] = eventsPerSite[val["Check Out"]] || [];
-                                        timeDataPerSite[val["Check Out"]] = timeDataPerSite[val["Check Out"]] || {
-                                            "12:00 AM - 07:00 AM": [],
-                                            "7:01 AM - 9:00 AM": [],
-                                            "9:01 AM - 12:00 PM": [],
-                                            "12:01 PM - 3:00 PM": [],
-                                            "3:01 PM - 5:00 PM": [],
-                                            "5:01 PM - 11:59 PM": [],
-                                        };
+                            var trsPerSite = "";
 
-                                        // eventsPerSite[val["Check Out"]].push(val);
+                            // the following variables are used to know if the period has changed.
+                            // should add a blank tr everytime period changed
+                            var periodChanged = false;
+                            var lastPeriod = null;
 
-                                        // 12:00 AM - 07:00 AM
-                                        if (isBetween(val.timestamp,"12:00 AM","7:00 AM")) 
-                                            timeDataPerSite[val["Check Out"]]["12:00 AM - 07:00 AM"].push(val["Vehicle"]);
-                                        // 7:01 AM - 9:00 AM
-                                        if (isBetween(val.timestamp,"7:01 AM","9:00 AM")) 
-                                            timeDataPerSite[val["Check Out"]]["7:01 AM - 9:00 AM"].push(val["Vehicle"]);
-                                        // 9:01 AM - 12:00 PM
-                                        if (isBetween(val.timestamp,"9:01 AM","12:00 PM")) 
-                                            timeDataPerSite[val["Check Out"]]["9:01 AM - 12:00 PM"].push(val["Vehicle"]);
-                                        // 12:01 PM - 3:00 PM
-                                        if (isBetween(val.timestamp,"12:01 PM","3:00 PM")) 
-                                            timeDataPerSite[val["Check Out"]]["12:01 PM - 3:00 PM"].push(val["Vehicle"]);
-                                        // 3:01 PM - 5:00 PM
-                                        if (isBetween(val.timestamp,"3:01 PM","5:00 PM")) 
-                                            timeDataPerSite[val["Check Out"]]["3:01 PM - 5:00 PM"].push(val["Vehicle"]);
-                                        // 5:01 PM - 11:59 PM
-                                        if (isBetween(val.timestamp,"5:01 PM","11:59 PM")) 
-                                            timeDataPerSite[val["Check Out"]]["5:01 PM - 11:59 PM"].push(val["Vehicle"]);
-                                            
-                                    trsPerSite += `
+
+                            sortedEvents.forEach(val => {
+                                
+                                // save list of vehicles per site per period
+                                timeDataPerSite[val["Check Out"]] = timeDataPerSite[val["Check Out"]] || {
+                                    "12:00 AM - 07:00 AM": [],
+                                    "7:01 AM - 9:00 AM": [],
+                                    "9:01 AM - 12:00 PM": [],
+                                    "12:01 PM - 3:00 PM": [],
+                                    "3:01 PM - 5:00 PM": [],
+                                    "5:01 PM - 11:59 PM": [],
+                                };
+
+                                // 12:00 AM - 07:00 AM
+                                if (isBetween(val.timestamp,"12:00 AM","7:00 AM")) {
+                                    timeDataPerSite[val["Check Out"]]["12:00 AM - 07:00 AM"].push(val["Vehicle"]);
+                                    lastPeriod = "12:00 AM - 07:00 AM";
+                                }
+                                // 7:01 AM - 9:00 AM
+                                if (isBetween(val.timestamp,"7:01 AM","9:00 AM")) {
+                                    timeDataPerSite[val["Check Out"]]["7:01 AM - 9:00 AM"].push(val["Vehicle"]);
+
+                                    periodChanged = (lastPeriod && lastPeriod != "7:01 AM - 9:00 AM") ? true : false;
+                                    lastPeriod = "7:01 AM - 9:00 AM";
+                                }
+                                // 9:01 AM - 12:00 PM
+                                if (isBetween(val.timestamp,"9:01 AM","12:00 PM")) {
+                                    timeDataPerSite[val["Check Out"]]["9:01 AM - 12:00 PM"].push(val["Vehicle"]);
+
+                                    periodChanged = (lastPeriod && lastPeriod != "9:01 AM - 12:00 PM") ? true : false;
+                                    lastPeriod = "9:01 AM - 12:00 PM";
+                                }
+                                // 12:01 PM - 3:00 PM
+                                if (isBetween(val.timestamp,"12:01 PM","3:00 PM")) {
+                                    timeDataPerSite[val["Check Out"]]["12:01 PM - 3:00 PM"].push(val["Vehicle"]);
+
+                                    periodChanged = (lastPeriod && lastPeriod != "12:01 PM - 3:00 PM") ? true : false;
+                                    lastPeriod = "12:01 PM - 3:00 PM";
+                                }
+                                // 3:01 PM - 5:00 PM
+                                if (isBetween(val.timestamp,"3:01 PM","5:00 PM")) {
+                                    timeDataPerSite[val["Check Out"]]["3:01 PM - 5:00 PM"].push(val["Vehicle"]);
+
+                                    periodChanged = (lastPeriod && lastPeriod != "3:01 PM - 5:00 PM") ? true : false;
+                                    lastPeriod = "3:01 PM - 5:00 PM";
+                                }
+                                // 5:01 PM - 11:59 PM
+                                if (isBetween(val.timestamp,"5:01 PM","11:59 PM")) {
+                                    timeDataPerSite[val["Check Out"]]["5:01 PM - 11:59 PM"].push(val["Vehicle"]);
+
+                                    periodChanged = (lastPeriod && lastPeriod != "5:01 PM - 11:59 PM") ? true : false;
+                                }
+                                // end save list of vehicles per site per period
+                                        
+
+                                // add blank tr everytime period changed
+                                periodChanged ? trsPerSite += `<tr><td colspan=12></td></tr>` : null;
+
+                                // add tr data per site (html)
+                                trsPerSite += `
                                     <tr>
-                                        <td style="text-align:center;">${val["Date"]}</td>
-                                        <td style="text-align:center;">${val["Time"]}</td>
-                                        <td style="text-align:center;">${val["Duration"]}</td>
-                                        <td style="text-align:center;">${val["Vehicle"]}</td>
-                                        <td style="text-align:center;">${val["Status"]}</td>
-                                        <td style="text-align:center;">${val["Check Out"]}</td>
-                                        <td style="text-align:center;">${val["Check In"]}</td>
-                                        <td style="text-align:center;">${val["Truck Base Site"]}</td>
-                                        <td style="text-align:center;">${val["Equipt No"]}</td>
-                                        <td style="text-align:center;">${val["Check In Date"]}</td>
-                                        <td style="text-align:center;">${val["Check In Time"]}</td>
-                                        <td style="text-align:center;">${val["Truck Base Site Code"]}</td>
+                                        <td style="text-align:center;border: thin solid #6a6a6a;">${val["Date"]}</td>
+                                        <td style="text-align:center;border: thin solid #6a6a6a;">${val["Time"]}</td>
+                                        <td style="text-align:center;border: thin solid #6a6a6a;">${val["Duration"]}</td>
+                                        <td style="text-align:center;border: thin solid #6a6a6a;">${val["Vehicle"]}</td>
+                                        <td style="text-align:center;border: thin solid #6a6a6a;">${val["Status"]}</td>
+                                        <td style="text-align:center;border: thin solid #6a6a6a;">${val["Check Out"]}</td>
+                                        <td style="text-align:center;border: thin solid #6a6a6a;">${val["Check In"]}</td>
+                                        <td style="text-align:center;border: thin solid #6a6a6a;">${val["Truck Base Site"]}</td>
+                                        <td style="text-align:center;border: thin solid #6a6a6a;">${val["Equipt No"]}</td>
+                                        <td style="text-align:center;border: thin solid #6a6a6a;">${val["Check In Date"]}</td>
+                                        <td style="text-align:center;border: thin solid #6a6a6a;">${val["Check In Time"]}</td>
+                                        <td style="text-align:center;border: thin solid #6a6a6a;">${val["Truck Base Site Code"]}</td>
                                     </tr>`;
 
-
-                                    (totalVehicles.includes(val["Vehicle"])) ? null : totalVehicles.push(val["Vehicle"]);
-                                });
-                                $('body').append(`<table id="report-hidden-${i}" data-SheetName="${dc}" border="1" style="border-collapse: collapse;opacity:0;">
-                                                        <tr>
-                                                            <td style="border: none;" colspan=4><b>OTD Report</b></td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td style="border: none;" colspan=4><b>Geofence: ${dc}</b></td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td style="border: none;" colspan=4><b>Period Start: ${moment(date_from).format("MM/DD/YYYY")}</b></td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td style="border: none;" colspan=4><b>Period End: ${moment(date_from).format("MM/DD/YYYY")}</b></td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td style="border: none;" colspan=4><b>Generated On: ${moment().format("MM/DD/YYYY, hh:mm A")}</b></td>
-                                                        </tr>
-                                                        <tr><td style="border: none;" colspan=4></td></tr>
-                                                        <tr>
-                                                            <td style="border: none;" colspan=4><b>Total Events: ${totalEvents}</b></td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td style="border: none;" colspan=4><b>Total Vehicles: ${totalVehicles.length}</b></td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td style="font-weight:bold;text-align:left;">Date</td>
-                                                            <td style="font-weight:bold;text-align:left;">Time</td>
-                                                            <td style="font-weight:bold;text-align:center;">Duration</td>
-                                                            <td style="font-weight:bold;text-align:center;">Vehicle</td>
-                                                            <td style="font-weight:bold;text-align:center;">Status</td>
-                                                            <td style="font-weight:bold;text-align:center;">Check Out</td>
-                                                            <td style="font-weight:bold;text-align:center;">Check In</td>
-                                                            <td style="font-weight:bold;text-align:center;">Truck Base Site</td>
-                                                            <td style="font-weight:bold;text-align:center;">Equipt No</td>
-                                                            <td style="font-weight:bold;text-align:center;">Check In Date</td>
-                                                            <td style="font-weight:bold;text-align:center;">Check In Time</td>
-                                                            <td style="font-weight:bold;text-align:center;">Truck Base Site Code</td>
-                                                        </tr>
-                                                        ${trsPerSite}
-                                                    </table>`);
+                                // total unique vehicles per site
+                                (totalVehicles.includes(val["Vehicle"])) ? null : totalVehicles.push(val["Vehicle"]);
                             });
+
+                            // append to body the table/sheet per site
+                            $('body').append(`
+                                <table id="report-hidden-${i}" data-SheetName="${dc}" border="1" style="border-collapse: collapse;opacity:0;">
+                                    <tr>
+                                        <td style="border: none;" colspan=4><b>OTD Report</b></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="border: none;" colspan=4><b>Geofence: ${dc}</b></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="border: none;" colspan=4><b>Period Start: ${moment(date_from).format("MM/DD/YYYY")}</b></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="border: none;" colspan=4><b>Period End: ${moment(date_from).format("MM/DD/YYYY")}</b></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="border: none;" colspan=4><b>Generated On: ${moment().format("MM/DD/YYYY, hh:mm A")}</b></td>
+                                    </tr>
+                                    <tr><td style="border: none;" colspan=4></td></tr>
+                                    <tr>
+                                        <td style="border: none;" colspan=4><b>Total Events: ${totalEvents}</b></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="border: none;" colspan=4><b>Total Vehicles: ${totalVehicles.length}</b></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight:bold;text-align:left;border: thin solid #6a6a6a;">Date</td>
+                                        <td style="font-weight:bold;text-align:left;border: thin solid #6a6a6a;">Time</td>
+                                        <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Duration</td>
+                                        <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Vehicle</td>
+                                        <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Status</td>
+                                        <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Check Out</td>
+                                        <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Check In</td>
+                                        <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Truck Base Site</td>
+                                        <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Equipt No</td>
+                                        <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Check In Date</td>
+                                        <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Check In Time</td>
+                                        <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Truck Base Site Code</td>
+                                    </tr>
+                                    ${trsPerSite}
+                                </table>`);
+                        });
 
                             
 
-                const sortedTimeDataPerSite = OBJECT.sortByKey(timeDataPerSite);
+                        // used for Summary Sheet
+                        // sort object by geofence name (or key)
+                        const sortedTimeDataPerSite = OBJECT.sortByKey(timeDataPerSite);
 
-                Object.keys(sortedTimeDataPerSite).forEach((dc,i) => {
-                    var tdsSummary = "";
-                    Object.keys(sortedTimeDataPerSite[dc]).forEach(key => {
-                        const timeData = sortedTimeDataPerSite[dc][key];
+                        var summaryTableHtml = "";
+                        Object.keys(sortedTimeDataPerSite).forEach((dc,i) => {
+                            var tdsSummary = "";
 
-                        const removedDups = new Set(timeData);
-                        const finalArray = Array.from(removedDups);
-                        const percent = GET.ROUND_OFF((finalArray.length/timeData.length)*100);
+                            // loop data per period for this site
+                            Object.keys(sortedTimeDataPerSite[dc]).forEach(key => {
+                                const eventsPerPeriod = sortedTimeDataPerSite[dc][key];
+                                const percent = GET.ROUND_OFF((eventsPerPeriod.length/totalVehicles[dc]||0)*100);
 
-                        console.log(dc,key,finalArray);
+                                tdsSummary += ` <td style="text-align:center;border: thin solid #6a6a6a;">${eventsPerPeriod.length||""}</td>
+                                                <td style="text-align:center;border: thin solid #6a6a6a;">${percent?percent+"%":""}</td>`;
+                            });
 
-                        tdsSummary += ` <td style="text-align:center;">${timeData.length||""}</td>
-                                        <td style="text-align:center;">${finalArray.length||""}</td>
-                                        <td style="text-align:center;">${percent?percent+"%":""}</td>`;
-                    });
-                    summaryTableHtml += `<tr>
-                                            <td>${dc}</td>
-                                            ${tdsSummary}
-                                        </tr>`;
-                });
+                            // add row per site (html)
+                            summaryTableHtml += `<tr>
+                                                    <td style="border: thin solid #6a6a6a;">${dc}</td>
+                                                    <td style="border: thin solid #6a6a6a;">${totalVehicles[dc]||0}</td>
+                                                    ${tdsSummary}
+                                                </tr>`;
+                        });
 
-                $(`body`).prepend(`<table id="report-hidden" data-SheetName="Summary" border="1" style="border-collapse: collapse;opacity:0;">
-                <tr>
-                    <td style="border: none;"><b>OTD Report (Summary)</b></td>
-                </tr>
-                <tr>
-                    <td style="border: none;"><b>Date: ${moment(date_from).format("MM/DD/YYYY")}</b></td>
-                </tr>
-                <tr>
-                    <td style="border: none;"><b>Generated On: ${moment().format("MM/DD/YYYY, hh:mm A")}</b></td>
-                </tr>
-                <tr><td style="border: none;"></td></tr>
-                <tr>
-                    <td style="font-weight:bold;text-align:right;">Period</td>
-                    <td style="font-weight:bold;text-align:center;" colspan=3>12:00 AM to 7:00 AM</td>
-                    <td style="font-weight:bold;text-align:center;" colspan=3>7:01 AM to 9:00 AM</td>
-                    <td style="font-weight:bold;text-align:center;" colspan=3>9:01 AM to 12:00 PM</td>
-                    <td style="font-weight:bold;text-align:center;" colspan=3>12:01 PM to 3:00 PM</td>
-                    <td style="font-weight:bold;text-align:center;" colspan=3>3:01 PM to 5:00 PM</td>
-                    <td style="font-weight:bold;text-align:center;" colspan=3>5:01 PM to 11:59 PM</td>
-                </tr>
-                <tr>
-                    <td style="font-weight:bold;text-align:left;">DC</td>
-                    <td style="font-weight:bold;text-align:center;">Number</td>
-                    <td style="font-weight:bold;text-align:center;">Total Trucks</td>
-                    <td style="font-weight:bold;text-align:center;">%</td>
-                    <td style="font-weight:bold;text-align:center;">Number</td>
-                    <td style="font-weight:bold;text-align:center;">Total Trucks</td>
-                    <td style="font-weight:bold;text-align:center;">%</td>
-                    <td style="font-weight:bold;text-align:center;">Number</td>
-                    <td style="font-weight:bold;text-align:center;">Total Trucks</td>
-                    <td style="font-weight:bold;text-align:center;">%</td>
-                    <td style="font-weight:bold;text-align:center;">Number</td>
-                    <td style="font-weight:bold;text-align:center;">Total Trucks</td>
-                    <td style="font-weight:bold;text-align:center;">%</td>
-                    <td style="font-weight:bold;text-align:center;">Number</td>
-                    <td style="font-weight:bold;text-align:center;">Total Trucks</td>
-                    <td style="font-weight:bold;text-align:center;">%</td>
-                    <td style="font-weight:bold;text-align:center;">Number</td>
-                    <td style="font-weight:bold;text-align:center;">Total Trucks</td>
-                    <td style="font-weight:bold;text-align:center;">%</td>
-                </tr>
-                ${summaryTableHtml}
-            </table>`);
+                        $(`body`).prepend(`
+                            <table id="report-hidden" data-SheetName="Summary" border="1" style="border-collapse: collapse;opacity:0;">
+                                <tr>
+                                    <td style="border: none;"><b>OTD Report (Summary)</b></td>
+                                </tr>
+                                <tr>
+                                    <td style="border: none;"><b>Date: ${moment(date_from).format("MM/DD/YYYY")}</b></td>
+                                </tr>
+                                <tr>
+                                    <td style="border: none;"><b>Generated On: ${moment().format("MM/DD/YYYY, hh:mm A")}</b></td>
+                                </tr>
+                                <tr><td style="border: none;"></td></tr>
+                                <tr>
+                                    <td style="font-weight:bold;text-align:right;border: thin solid #6a6a6a;"colspan=2>Period</td>
+                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;" colspan=2>12:00 AM to 7:00 AM</td>
+                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;" colspan=2>7:01 AM to 9:00 AM</td>
+                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;" colspan=2>9:01 AM to 12:00 PM</td>
+                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;" colspan=2>12:01 PM to 3:00 PM</td>
+                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;" colspan=2>3:01 PM to 5:00 PM</td>
+                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;" colspan=2>5:01 PM to 11:59 PM</td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight:bold;text-align:left;border: thin solid #6a6a6a;">DC</td>
+                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Total Trucks</td>
+                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Number</td>
+                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">%</td>
+                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Number</td>
+                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">%</td>
+                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Number</td>
+                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">%</td>
+                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Number</td>
+                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">%</td>
+                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Number</td>
+                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">%</td>
+                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Number</td>
+                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">%</td>
+                                </tr>
+                                ${summaryTableHtml}
+                            </table>`);
                                         
+                        // loop each table with attribute '[data-SheetName]'.
                         var tableIds = [];
                         $(`[data-SheetName]`).each((i,el) => { tableIds.push(`#${$(el).attr("id")}`); });
                         GENERATE.TABLE_TO_EXCEL.MULTISHEET(tableIds.join(","), `${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY")}.xls`);
                         $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
-
-                        // GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`);
-                        // $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
                     }
                 }
             },
