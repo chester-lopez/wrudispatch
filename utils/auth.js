@@ -96,7 +96,7 @@ var LIMIT = 200,
             notifications:{
                 read: "all",
                 create: "none",
-                update: "self",
+                update: "none",
                 delete: "none"
             },
             users:{
