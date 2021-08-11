@@ -1,10 +1,10 @@
 /************** GLOBAL VARIABLES **************/
 var vehiclePersonnelCalendarOptions = {
-    rest_days: { optionTitle: "Rest Days", label: "Rest Day" },
-    on_leave:  { optionTitle: "On Leave",  label: "On Leave" },
-    absent:    { optionTitle: "Absences",  label: "Absent" },
-    suspended: { optionTitle: "Suspended", label: "Suspended" },
-    awol: { optionTitle: "AWOL",      label: "AWOL" },
+    rest_days: { optionTitle: "Rest Days", label: "Rest Day",   hex: "#0070C0" },
+    on_leave:  { optionTitle: "On Leave",  label: "On Leave",   hex: "#0070C0" },
+    suspended: { optionTitle: "Suspended", label: "Suspended",  hex: "#C65911" },
+    absent:    { optionTitle: "Absences",  label: "Absent",     hex: "#FF0000" },
+    awol:      { optionTitle: "AWOL",      label: "AWOL",       hex: "#FF0000" },
 };
 /************** END GLOBAL VARIABLES **************/
 
@@ -6782,10 +6782,6 @@ var REPORTS = {
                     </div>`;
         },
         REPORT_MODAL_07: function(title,customButtons){ // month & year
-            var yearOptions = "";
-            for(var i = 2020; i < Number(moment().format("YYYY"))+1; i++){
-                yearOptions += `<option>${i}</option>`;
-            }
             return `<div id="overlay" class="swal2-container swal2-fade swal2-shown" style="overflow-y: auto;">
                         <div id="small-modal" class="modal" role="dialog" aria-labelledby="myLargeModalLabel">
                             <div role="document" class="modal-dialog modal-sm">
@@ -6795,22 +6791,9 @@ var REPORTS = {
                                         <h4 class="modal-title" id="myModalLabel2">${title}</h4>
                                     </div>
                                     <div class="modal-body row pt-2">
-                                        <div class="col-sm-12"> 
-                                            <select id="_month" class="form-control" style="width: 49%;display: inline-block;">
-                                                <option value="01">January</option>
-                                                <option value="02">February</option>
-                                                <option value="03">March</option>
-                                                <option value="04">April</option>
-                                                <option value="05">May</option>
-                                                <option value="06">June</option>
-                                                <option value="07">July</option>
-                                                <option value="08">August</option>
-                                                <option value="09">September</option>
-                                                <option value="10">October</option>
-                                                <option value="11">November</option>
-                                                <option value="12">December</option>
-                                            </select>
-                                            <select id="_year" class="form-control" style="width: 49%;display: inline-block;">${yearOptions}</select>
+                                        <div class="col-sm-12">
+                                            <small><span class="text-danger">*</span>Select Month:</small>
+                                            <input id="daterange" type="input" class="form-control" onkeydown="event.preventDefault()">
                                             ${(customButtons)?customButtons:`<button id="generate-btn" type="button" class="btn btn-primary col-sm-12 mt-4">Generate report</button>`}
                                         </div>
                                     </div>
@@ -7536,6 +7519,95 @@ var REPORTS = {
                             ${details}
                         </table>`;
             },
+            AR: function(docs,date_from,holidays){
+                var tablesHTML = "";
+
+                // declare date variables
+                const month = moment(date_from).format("MM");
+                const year = moment(date_from).format("YYYY");
+                const daysInMonth = moment(date_from).daysInMonth();
+
+                
+                // function to check if target is in between two dates (start and finish)
+                function isSelectedMonth(target){
+                    const start = moment(new Date(`${month}/01/${year}`)).startOf('month');
+                    const finish = moment(new Date(`${month}/${daysInMonth}/${year}`)).endOf('month');
+
+                    return target.isBetween(start, finish, 'months', '[]'); // all inclusive
+                }
+
+                // function to check if date is a holiday
+                function isDateHoliday(date){
+                    var isHoliday = false;
+                    holidays.forEach(val => {
+                        const startDate = moment(val.start).startOf('day');
+                        const endDate = moment(val.end).endOf('day');
+                        
+                        (date.isBetween(startDate, endDate, 'hours', true)) ? isHoliday = true : null;
+                    });
+                    return isHoliday;
+                }
+
+
+                // formatted attendance sheet
+                const attendaceSheet = {};
+                // set values for all days in month as 'Present' (clone later)
+                for(var i = 1; i < daysInMonth+1; i++){
+                    // check if date is a holiday
+                    if(isDateHoliday(moment(`${month}/${i}/${year}`))){
+                        attendaceSheet[moment(`${month}/${i}/${year}`).format("MM/DD/YYYY")] = `<td style="border: thin 1px #ddd;color: #0D0D0D;">Holiday</td>`;
+                    } else {
+                        attendaceSheet[moment(`${month}/${i}/${year}`).format("MM/DD/YYYY")] = `<td style="border: thin 1px #ddd;color: #6f9f34;">Present</td>`;
+                    }
+                }
+
+                // loop through each personnel
+                docs.forEach((val,i) => {
+                    // clone 'attendaceSheet'
+                    const personnelAttendanceSheet = JSON.parse(JSON.stringify(attendaceSheet));
+
+                    // loop through each personnel's calendar info (restday,absent,...)
+                    Object.keys((val.dates||{})).forEach(key => {
+                        const dates = val.dates[key] || [];
+                        dates.forEach(date => {
+                            // check if date is the selected month
+                            if(isSelectedMonth(moment(date))){
+                                // update the corresponding attendance status of personnel
+                                const dayInfo = vehiclePersonnelCalendarOptions[key];
+                                personnelAttendanceSheet[moment(date).format("MM/DD/YYYY")] = `<td style="border: thin 1px #ddd;color: ${dayInfo.hex};">${dayInfo.label}</td>`;
+                            }
+                        });
+                    });
+
+                    var personnelHtml = "";
+                    // loop through the updated attendance sheet of personnel and add tr (html)
+                    Object.keys(personnelAttendanceSheet).forEach(key => {
+                        personnelHtml += `
+                            <tr>
+                                <td style="border: thin 1px #ddd;">${key}</td>
+                                <td style="border: thin 1px #ddd;">${val.occupation||""}</td>
+                                ${personnelAttendanceSheet[key]}
+                            </tr>`;
+                    });
+
+                    // add table as sheet
+                    tablesHTML += `
+                        <table id="report-hidden-${i}" data-SheetName="${val.name}" border="1" style="border-collapse: collapse;opacity:0;">
+                            <tbody>
+                                <tr> <td style="text-align:left;" colspan=3>${val.name}</td> </tr>
+                                <tr> <td style="text-align:left;" colspan=3></td> </tr>
+                                <tr> 
+                                    <td style="font-weight:bold;border: thin 1px #ddd;">Date</td>
+                                    <td style="font-weight:bold;border: thin 1px #ddd;">Position</td>
+                                    <td style="font-weight:bold;border: thin 1px #ddd;">Status</td>
+                                </tr>
+                                ${personnelHtml}
+                            </tbody>
+                        </table>`;
+                });
+
+                return tablesHTML;
+            },
             TR: function(title,location,_date){
                 var empty = "",
                     width = ["width:100px;","width:100px;","width:100px;","width:100px;"];
@@ -7982,8 +8054,8 @@ var REPORTS = {
                 function isDateHoliday(date){
                     var isHoliday = false;
                     holidays.forEach(val => {
-                        const startDate = moment(val.start);
-                        const endDate = moment(val.end);
+                        const startDate = moment(val.start).startOf('day');
+                        const endDate = moment(val.end).endOf('day');
                         
                         (date.isBetween(startDate, endDate, 'days', true)) ? isHoliday = true : null;
                     });
@@ -8787,242 +8859,6 @@ var REPORTS = {
                     }
                 }
             },
-            OTDR1: function(title,docs,date_from,date_to){
-                var lastGeofence,
-                    lastTimestamp,
-                    hasChangedGeofence = true,
-                    extendSearchCount = 0;
-
-                var tableHtml = `<table id="report-hidden" border="1" style="border-collapse: collapse;opacity:0;">
-                                    <tr>
-                                        <td style="font-size:15px;border:thin solid #ccc;">Parameter</td>
-                                        <td style="font-size:15px;border:thin solid #ccc;" colspan=3>Check In and Check Out Time at Sites</td>
-                                        ${emptyTd(2)}
-                                        <td style="font-size:15px;border:thin solid #ccc;">ORIGIN</td>
-                                        ${emptyTd(1)}
-                                        <td style="font-size:15px;border:thin solid #ccc;">DESTINATION</td>
-                                    </tr>
-                                    <tr>
-                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Vehicle</b></td>
-                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Check In Date</b></td>
-                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Check In Time</b></td>
-                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Check Out Date</b></td>
-                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Check Out Time</b></td>
-                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Duration</b></td>
-                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Site</b></td>
-                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Site Code</b></td>
-                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Destination</b></td>
-                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Site Code</b></td>
-                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Truck Status</b></td>
-                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Equipt No</b></td>
-                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Event State</b></td>
-                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Truck Base Site</b></td>
-                                        <td style="font-size:15px;border:thin solid #ccc;"><b>Truck Base Site Code</b></td>
-                                    </tr>
-                                    <tr>${emptyTd(15)}</tr>
-                                </table>`;
-
-                $(`body`).append(tableHtml);
-
-                var extendSearchDetails = {};
-
-                function getAddress(addr){
-                    var finalStr = {
-                        short_name: "",
-                        code: ""
-                    };
-                    if(addr){
-                        var str = addr.split(" - ");
-
-                        var geofence = getGeofence(str[0],'short_name');
-
-                        if(geofence){
-                            finalStr = {
-                                short_name: geofence.short_name || "",
-                                code: geofence.code || ""
-                            };
-                        } else {
-                            finalStr = {
-                                short_name: str[0] || "",
-                                code: ""
-                            };
-                        }
-                    }
-                    return finalStr;
-                }
-                function getOriginalAddress(addr){
-                    addr = addr || "";
-                    var separator = " - ";
-                    
-                    if(addr.indexOf(" - ") > -1)
-                        separator = " - ";
-                    else if(addr.indexOf("- ") > -1) 
-                        separator = "- ";
-                    else if(addr.indexOf(" -") > -1)
-                        separator = " -";
-
-                    var str = addr.split(separator);
-                    return str[0];
-                }
-
-                docs.forEach((val,i) => {
-                    
-                    var _next = docs[i+1],
-                        timestamp = lastTimestamp || val.timestamp,
-                        startAddress = val.GEOFENCE_NAME,
-                        endAddress = (_next && _next.USER_NAME == val.USER_NAME) ? _next.GEOFENCE_NAME : null,
-                        sameCurrentAndNextAddress = getOriginalAddress(startAddress) == getOriginalAddress(endAddress) && (_next && _next.stage == "start" && val.stage == "start"),
-                        sameCurrentAndNextVehicle = (_next && _next.USER_NAME == val.USER_NAME),
-                        duration = (val.timestamp) ? Math.abs(new Date(timestamp).getTime() - new Date(val.timestamp).getTime()) : 0;
-                        
-                    console.log(val.USER_NAME,getOriginalAddress(startAddress),getOriginalAddress(endAddress),sameCurrentAndNextAddress,val.stage,lastTimestamp,duration);
-                    function processReport(){
-                        hasChangedGeofence = false;
-
-                        function addHTML(address,extendSearch){
-
-                            function addTds(USER_NAME,startAddress,startTimestamp,endAddress,endTimestamp){
-                                // do not make condition like !duration. Duration could be 0.
-                                var site = getAddress(startAddress),
-                                    destination = getAddress(endAddress),
-                                    duration = (endTimestamp) ? Math.abs(new Date(startTimestamp).getTime() - new Date(endTimestamp).getTime()) : null,
-                                    endDate = DATETIME.FORMAT(endTimestamp,"MM/DD/YYYY"),
-                                    endTime = DATETIME.FORMAT(endTimestamp,"H:mm"),
-                                    status = "Finished",
-                                    _duration_ = (duration != null) ? GET.ROUND_OFF(DATETIME.DH(duration,null,"0"),1).toFixed(1) + ' h'  : "-";
-                                if(new Date(date_to).getTime() > new Date().getTime() && duration == null){
-                                    endDate = "-";
-                                    endTime = "-";
-                                    status = "Pending"
-                                }
-                                // do not use "ASSIGNED_VEHICLE_ID" because events from before does not save ASSIGNED_VEHICLE_ID
-                                var vehicle = getVehicle(USER_NAME,"name") || {};
-
-                                return `<td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${USER_NAME}</td>
-                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${DATETIME.FORMAT(startTimestamp,"MM/DD/YYYY")}</td>
-                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${DATETIME.FORMAT(startTimestamp,"H:mm")}</td>
-                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${endDate}</td>
-                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${endTime}</td>
-                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${_duration_}</td>
-                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${site.short_name}</td>
-                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;text-align:center;">${site.code}</td>
-                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${destination.short_name}</td>
-                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;text-align:center;">${destination.code}</td>
-                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${vehicle["Availability"]||""}</td>
-                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${vehicle["Equipment Number"]||""}</td>
-                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${status}</td>
-                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;">${vehicle["Base Site"]||""}</td>
-                                        <td style="font-size:15px;mso-number-format:'\@';border:thin solid #ccc;text-align:center;">${vehicle["Base Site Code"]||""}</td>`;
-                            }
-
-                            if(extendSearch){
-                                $(`#report-hidden`).append(`<tr data-attribute="${val.USER_NAME}-${getOriginalAddress(val.GEOFENCE_NAME)}">${
-                                    addTds(val.USER_NAME,startAddress,timestamp)
-                                }</tr>`);
-                                                
-                                extendSearchDetails[`${val.USER_NAME}-${getOriginalAddress(val.GEOFENCE_NAME)}`] = timestamp;
-                                $.ajax({
-                                    url: `/api/events/${CLIENT.id}/${USER.username}/${JSON.stringify({
-                                        USER_NAME: val.USER_NAME,
-                                        // GEOFENCE_NAME: /DVO DC/, // do not include GEOFENCE_NAME because we need to know if geofenceHasBeenChanged - to know what event we will end
-                                        timestamp: {
-                                            $gte: new Date(val.timestamp).toISOString()
-                                        }
-                                    })}`,
-                                    method: "GET",
-                                    timeout: 90000, // 1 minute and 30 seconds
-                                    headers: {
-                                        "Authorization": SESSION_TOKEN
-                                    },
-                                    async: true
-                                }).done(function (docs1) {
-                                    var originalEvent = docs1[0];
-                                    var found = false;
-
-                                    docs1.forEach((val,i) => {
-                                        /*** do not delete me. Code in events.js: XX001. Purpose:  originalEvent._id == val._id */
-                                        if(!found && originalEvent._id == val._id){
-                                            var endAddress = (docs1[i+1] && docs1[i+1].USER_NAME == val.USER_NAME) ? docs1[i+1].GEOFENCE_NAME : null;
-                                            var sameCurrentAndNextAddress = getOriginalAddress(originalEvent.GEOFENCE_NAME) == getOriginalAddress(endAddress);
-
-                                            extendSearchDetails[`${originalEvent.USER_NAME}-${getOriginalAddress(originalEvent.GEOFENCE_NAME)}`]
-                                            var _timestamp = extendSearchDetails[`${originalEvent.USER_NAME}-${getOriginalAddress(originalEvent.GEOFENCE_NAME)}`];
-
-                                            if(!sameCurrentAndNextAddress){
-                                                found = true;
-                                                $(`#report-hidden [data-attribute="${originalEvent.USER_NAME}-${getOriginalAddress(originalEvent.GEOFENCE_NAME)}"]`).html(
-                                                    addTds(originalEvent.USER_NAME,originalEvent.GEOFENCE_NAME,_timestamp,null,val.timestamp)
-                                                );
-                                            }
-                                        }
-                                    });
-                                    extendSearchDone();
-                                });
-                            } else {
-                                if(duration == 0){
-                                    extendSearchDone();
-                                } else {
-                                    $(`#report-hidden`).append(`<tr>${addTds(val.USER_NAME,lastGeofence,timestamp,startAddress,val.timestamp)}</tr>`);
-                                    extendSearchDone();
-                                }
-                            }
-                        };
-
-                        if(val.stage == "end"){ //  || val.RULE_NAME.indexOf("Outside") > -1
-                            hasChangedGeofence = true;
-                        }
-                        console.log("----------------",val.USER_NAME,hasChangedGeofence);
-                        if(_next && _next.USER_NAME == val.USER_NAME && !hasChangedGeofence){
-                            if(!lastTimestamp) lastTimestamp = val.timestamp; // do not put in parent condition ^. It will be false if timestamp has value
-                            extendSearchDone();
-                        } else {
-                            lastTimestamp = null;
-
-                            // if current event vehicle is the same as next event vehicle
-                            if(sameCurrentAndNextVehicle){
-
-                                // if current event address is NOT the same as next event address
-                                if(hasChangedGeofence){
-                                    addHTML(endAddress);
-                                } else {
-                                    extendSearchDone();
-                                }
-                            } else {
-                                // if rule name is NOT yet Outside Geofence (or Outside), 
-                                // extend search to next possible event with date greater than current data's date and with the same vehicle - limited data response
-                                if(val.stage == "start"){
-                                    addHTML(endAddress,true);
-                                } else {
-                                    addHTML(endAddress);
-                                }
-                            }
-                            lastGeofence = getOriginalAddress(startAddress);
-                        }
-                        if(!sameCurrentAndNextVehicle){
-                            $(`#report-hidden`).append(`<tr>${emptyTd(15)}</tr><tr>${emptyTd(15)}</tr>`);
-                        }
-                    }
-                    
-                    processReport();
-                });
-
-                function emptyTd(n){
-                    var tds = "";
-                    for(var i = 0; i < n; i++){
-                        tds += '<td style="border:thin solid #ccc;"></td>';
-                    }
-                    return tds;
-                }
-
-
-                function extendSearchDone(){
-                    extendSearchCount ++;
-                    if(docs.length == extendSearchCount){
-                        GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`);
-                        $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
-                    }
-                }
-            },
             OTDR: function(title,docs,date_from,date_to){
 
                 // variable declation
@@ -9464,7 +9300,7 @@ var REPORTS = {
                             });
                         },
                         pagination = function(x){
-                            $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-2"></i>Generating... 0%`).attr("disabled",true);
+                            $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-1"></i> 0%`).attr("disabled",true);
 
                             $.ajax({
                                 url: x.countURL,
@@ -9501,15 +9337,17 @@ var REPORTS = {
                                                     skip += length;
                                                     docs = docs.concat(_docs_);
                                                     var percent = pb.calculate();
-                        
-                                                    $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-2"></i>Generating... ${percent}%`);
+                                                    
+                                                    $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-1"></i> ${percent}%`);
+                                                    // $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-2"></i>Generating... ${percent}%`);
                                                     
                                                     retrieveData(length);
                                                 }
                                             }
                                         });
                                     } else {
-                                        $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-2"></i>Generating... 100%`);
+                                        $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-1"></i> 100%`);
+                                        // $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-2"></i>Generating... 100%`);
                                         x.callback(docs);
                                         if(!x.doNotRemoveTable){
                                             $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
@@ -9590,6 +9428,56 @@ var REPORTS = {
                                     callback
                                 });
                             }
+                        },
+                        ar_report = function(callback){
+                            var _date = $('#daterange').val().split("/"),
+                                _month = _date[0],
+                                _year = _date[1],
+                                dateMoment = moment(`${_month} 01, ${_year}`),
+                                startDate = dateMoment.clone().startOf('month').format("MM/DD/YYYY"),
+                                endDate = dateMoment.clone().endOf('month').format("MM/DD/YYYY"),
+                                daterange = `${startDate} - ${endDate}`,
+                                filteredDaterange = FILTER.DATERANGE(daterange);
+                                
+                            date_from = filteredDaterange.$gte;
+                            date_to = filteredDaterange.$lt;
+
+                            pagination({
+                                countURL: `/api/vehicle_personnel/${CLIENT.id}/${USER.username}/all/${JSON.stringify({})}/count`,
+                                dataURL: `/api/vehicle_personnel/${CLIENT.id}/${USER.username}/all/${JSON.stringify({})}`,
+                                callback: function(docs){
+                                    
+                                    /* get holidays from Google Calendar API
+                                    -----------------------------------------------------------------*/
+                                    
+                                    const publicAPIKey = "AIzaSyC4GSP3uLbIvfO_RPqUzlEyxb9Duy5vjYk";
+                                    const country = "philippines";
+                                    var calendarUrl = 'https://www.googleapis.com/calendar/v3/calendars/en.' + country
+                                                    + '%23holiday%40group.v.calendar.google.com/events?key=' + publicAPIKey;
+
+                                    $.getJSON(calendarUrl).done(function(data) {
+                                        console.log(data);
+                                        const holidays = [];
+                                        data.items.forEach(val => {
+                                            holidays.push({
+                                                title: val.summary,
+                                                start: moment(val.start.date).format("YYYY-MM-DD"),
+                                                end: moment(val.end.date).subtract(1,'day').format("YYYY-MM-DD")
+                                            });
+                                        });
+
+                                        console.log("holidays",holidays)
+                                    
+                                        docs.sort(function (a, b) {
+                                            return a.name.localeCompare(b.name);
+                                        });
+                                        callback(docs,holidays);
+                                        
+                                    }).fail(function(error) {
+                                        console.log("error",error)
+                                    });
+                                }
+                            });
                         },
                         tr_report = function(callback){
                             var daterange = $(`#daterange`).val(),
@@ -9712,8 +9600,9 @@ var REPORTS = {
                             });
                         },
                         mtur_report = function(callback){
-                            var _month = $(`#_month`).val(),
-                                _year = $(`#_year`).val(),
+                            var _date = $('#daterange').val().split("/"),
+                                _month = _date[0],
+                                _year = _date[1],
                                 dateMoment = moment(`${_month} 01, ${_year}`),
                                 startDate = dateMoment.clone().startOf('month').format("MM/DD/YYYY"),
                                 endDate = dateMoment.clone().endOf('month').format("MM/DD/YYYY"),
@@ -9744,7 +9633,7 @@ var REPORTS = {
                                         data.items.forEach(val => {
                                             holidays.push({
                                                 title: val.summary,
-                                                start: val.start.date,
+                                                start: moment(val.start.date).toDate(),
                                                 end: moment(val.end.date).subtract(1,'day').toDate()
                                             });
                                         });
@@ -9873,6 +9762,58 @@ var REPORTS = {
                             }
                         });
                     });
+                    $(`[ar]`).click(function(){
+                        
+                        const title = "Attendance Report";
+                        var customButtons = `<div class="col-sm-12 mt-4 p-0 mb-1">Generate report in:</div>
+                                             <div class="col-sm-6 pl-0 pr-1"><button id="generate-btn" type="button" class="btn btn-primary col-sm-12"><b>.xls</b> format</button></div>
+                                             <div class="col-sm-6 pl-1 pr-0"><button id="generate-1-btn" type="button" class="btn btn-primary col-sm-12"><b>.ods</b> format</button></div>`;
+                        df_dt_dest(title,"REPORT_MODAL_07",customButtons,function(btnId){
+                            ar_report(function(docs,holidays){
+                                    const fileName = `${title}_${DATETIME.FORMAT(date_from,"MM_YYYY")}`;
+                                    $(`body`).append(REPORTS.UI.REPORTS.AR(docs,date_from,holidays));
+
+                                    if(btnId == "generate-1-btn"){
+                                        // for OpenOffice
+                                        function doExcel1 () {
+                                            var blob,
+                                                wb = {SheetNames:[], Sheets:{}};
+                                            // console.log("$(`[data-SheetName]`)",$(`[data-SheetName]`));
+                                            $(`[data-SheetName]`).each((i,el) => { 
+                                                var sheetname = $(`#${$(el).attr("id")}`).attr("data-SheetName");
+                                                var ws1 = XLSX.utils.table_to_sheet(el, {raw:true});
+                                                if(!wb.SheetNames.includes(sheetname)){
+                                                    wb.SheetNames.push(sheetname); 
+                                                    wb.Sheets[sheetname] = ws1;
+                                                }
+                                            });
+                                            
+                                            blob = new Blob([s2ab(XLSX.write(wb, {bookType:'ods', type:'binary'}))], {
+                                                type: "application/octet-stream"
+                                            });
+                                            
+                                            saveAs(blob, `${fileName}.ods`);
+                                        }
+                                        doExcel1();
+                                        // end for OpenOffice
+                                    } else {
+                                        const tableIds = [];
+                                        $(`[data-SheetName]`).each((i,el) => { tableIds.push(`#${$(el).attr("id")}`); });
+                                        GENERATE.TABLE_TO_EXCEL.MULTISHEET(tableIds.join(","), `${fileName}.xls`);
+                                        $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
+                                    }
+                                }
+                            );
+                        });
+
+                        $('#daterange').datepicker('remove').datepicker({
+                            format: "mm/yyyy",
+                            minViewMode: 1,
+                            autoclose: true,
+                            todayHighlight: true,
+                            endDate: new Date()
+                        }).datepicker("setDate",moment().format("MM/YYYY"));
+                    });
                     $(`[tr]`).click(function(){
                         var title = "Trippage Report";
                         df_dt_dest(title,"REPORT_MODAL_04",null,function(){
@@ -9966,8 +9907,9 @@ var REPORTS = {
                     });
                     $(`[mtur]`).click(function(){
                         var title = "Manpower and Truck Utilization Report";
-                        var customButtons = `<button id="generate-btn" type="button" class="btn btn-primary col-sm-12 mt-4">Generate report (.xls)</button>
-                                            <button id="generate-1-btn" type="button" class="btn btn-primary col-sm-12 mt-2">Generate report (.ods)</button>`;
+                        var customButtons = `<div class="col-sm-12 mt-4 p-0 mb-1">Generate report in:</div>
+                                             <div class="col-sm-6 pl-0 pr-1"><button id="generate-btn" type="button" class="btn btn-primary col-sm-12"><b>.xls</b> format</button></div>
+                                             <div class="col-sm-6 pl-1 pr-0"><button id="generate-1-btn" type="button" class="btn btn-primary col-sm-12"><b>.ods</b> format</button></div>`;
                         df_dt_dest(title,"REPORT_MODAL_07",customButtons,function(btnId){
                             mtur_report(function(docs,holidays){
                                 $(`body`).append(REPORTS.UI.REPORTS.MTUR(title,docs,date_from,date_to,holidays));
@@ -9979,7 +9921,7 @@ var REPORTS = {
                                         var blob,
                                             wb = {SheetNames:[], Sheets:{}};
                                         $(`[data-SheetName]`).each((i,el) => { 
-                                            var sheetname = $(`#${$(el).attr("id")}`).attr("data-sheetname");
+                                            var sheetname = $(`#${$(el).attr("id")}`).attr("data-SheetName");
                                             var ws1 = XLSX.utils.table_to_sheet(el, {raw:true});
                                             wb.SheetNames.push(sheetname); 
                                             wb.Sheets[sheetname] = ws1;
@@ -10002,8 +9944,13 @@ var REPORTS = {
                             });
                         });
 
-                        $("#_month").val(moment().format("MM"));
-                        $("#_year").val(moment().format("YYYY"));
+                        $('#daterange').datepicker('remove').datepicker({
+                            format: "mm/yyyy",
+                            minViewMode: 1,
+                            autoclose: true,
+                            todayHighlight: true,
+                            endDate: new Date()
+                        }).datepicker("setDate",moment().format("MM/YYYY"));
                     });
                     $(`[ci_co_r]`).click(function(){
                         var title = "Check In Check Out Report";
@@ -10764,6 +10711,11 @@ var USERS = {
                         columns: TABLE.COL_ROW(CUSTOM.COLUMN.users()).column,
                         createdRow: function (row, data, dataIndex) {
                             var _row = data._row;
+
+                            if(data._id.indexOf("wru_") > -1 || data['Email'].indexOf("wru.ph") > -1) {
+                                $(row).addClass("notExport");
+                            }
+
                             $(row).attr(`_row`, data._row);
                             table.rowListeners(_row,data._id);
                         },
@@ -16659,6 +16611,7 @@ var TABLE = {
         return {column,row};
     },
     TOOLBAR: function(dt,filenameCallback,customizeCallback){
+
         new $.fn.dataTable.Buttons(dt, {
                 buttons: [
                     {
@@ -16671,12 +16624,13 @@ var TABLE = {
                                 order: 'applied',
                             },
                             columns: ":not(.notExport)",
+                            rows: ":not(.notExport)",
                             format: {
                                 body: function ( data, row, column, node ) {
                                     var _data = data;
                                     
                                     (_data === "You") ? _data = _data.replace("You", USER.fullName) : null; // change "You" to user's full name
-                                    try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags 
+                                    try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags
 
                                     return _data;
                                 }
@@ -16693,6 +16647,7 @@ var TABLE = {
                                 order: 'applied',
                             },
                             columns: ":not(.notExport)",
+                            rows: ":not(.notExport)",
                             format: {
                                 body: function ( data, row, column, node ) {
                                     var _data = data;
@@ -16716,6 +16671,7 @@ var TABLE = {
                                 order: 'applied',
                             },
                             columns: ":not(.notExport)",
+                            rows: ":not(.notExport)",
                             format: {
                                 body: function ( data, row, column, node ) {
                                     var _data = data;
@@ -17382,7 +17338,9 @@ const views = new function(){
                         </div>`);
             }
             if(clientCustom.reports.ar){
-                htmlTags(`<div class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled" no_function>
+                const attr = (clientCustom.reports.ar == "no_function") ? "" : "ar";
+                const noFunction = (clientCustom.reports.ar == "no_function") ? "no_function" : "";
+                htmlTags(`<div ${attr} class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled" ${noFunction}>
                             <span>Attendance Report</span>
                             <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
                         </div>`);
