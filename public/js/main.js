@@ -9224,18 +9224,18 @@ var REPORTS = {
                                 // add tr data per site (html)
                                 trsPerSite += `
                                     <tr>
-                                        <td style="text-align:center;border: thin solid #6a6a6a;">${val["Date"]}</td>
-                                        <td style="text-align:center;border: thin solid #6a6a6a;">${val["Time"]}</td>
-                                        <td style="text-align:center;border: thin solid #6a6a6a;">${val["Duration"]}</td>
-                                        <td style="text-align:center;border: thin solid #6a6a6a;">${val["Vehicle"]}</td>
-                                        <td style="text-align:center;border: thin solid #6a6a6a;">${val["Status"]}</td>
-                                        <td style="text-align:center;border: thin solid #6a6a6a;">${val["Check Out"]}</td>
-                                        <td style="text-align:center;border: thin solid #6a6a6a;">${val["Check In"]}</td>
-                                        <td style="text-align:center;border: thin solid #6a6a6a;">${val["Truck Base Site"]}</td>
-                                        <td style="text-align:center;border: thin solid #6a6a6a;">${val["Equipt No"]}</td>
-                                        <td style="text-align:center;border: thin solid #6a6a6a;">${val["Check In Date"]}</td>
-                                        <td style="text-align:center;border: thin solid #6a6a6a;">${val["Check In Time"]}</td>
-                                        <td style="text-align:center;border: thin solid #6a6a6a;">${val["Truck Base Site Code"]}</td>
+                                        <td style="text-align:center;">${val["Date"]}</td>
+                                        <td style="text-align:center;">${val["Time"]}</td>
+                                        <td style="text-align:center;">${val["Duration"]}</td>
+                                        <td style="text-align:center;">${val["Vehicle"]}</td>
+                                        <td style="text-align:center;">${val["Status"]}</td>
+                                        <td style="text-align:center;">${val["Check Out"]}</td>
+                                        <td style="text-align:center;">${val["Check In"]}</td>
+                                        <td style="text-align:center;">${val["Truck Base Site"]}</td>
+                                        <td style="text-align:center;">${val["Equipt No"]}</td>
+                                        <td style="text-align:center;">${val["Check In Date"]}</td>
+                                        <td style="text-align:center;">${val["Check In Time"]}</td>
+                                        <td style="text-align:center;">${val["Truck Base Site Code"]}</td>
                                     </tr>`;
 
                                 // total unique vehicles per site
@@ -9268,48 +9268,68 @@ var REPORTS = {
                                         <td style="border: none;" colspan=4><b>Total Vehicles: ${totalVehicles.length}</b></td>
                                     </tr>
                                     <tr>
-                                        <td style="font-weight:bold;text-align:left;border: thin solid #6a6a6a;">Date</td>
-                                        <td style="font-weight:bold;text-align:left;border: thin solid #6a6a6a;">Time</td>
-                                        <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Duration</td>
-                                        <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Vehicle</td>
-                                        <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Status</td>
-                                        <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Check Out</td>
-                                        <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Check In</td>
-                                        <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Truck Base Site</td>
-                                        <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Equipt No</td>
-                                        <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Check In Date</td>
-                                        <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Check In Time</td>
-                                        <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Truck Base Site Code</td>
+                                        <td style="font-weight:bold;text-align:left;">Date</td>
+                                        <td style="font-weight:bold;text-align:left;">Time</td>
+                                        <td style="font-weight:bold;text-align:center;">Duration</td>
+                                        <td style="font-weight:bold;text-align:center;">Vehicle</td>
+                                        <td style="font-weight:bold;text-align:center;">Status</td>
+                                        <td style="font-weight:bold;text-align:center;">Check Out</td>
+                                        <td style="font-weight:bold;text-align:center;">Check In</td>
+                                        <td style="font-weight:bold;text-align:center;">Truck Base Site</td>
+                                        <td style="font-weight:bold;text-align:center;">Equipt No</td>
+                                        <td style="font-weight:bold;text-align:center;">Check In Date</td>
+                                        <td style="font-weight:bold;text-align:center;">Check In Time</td>
+                                        <td style="font-weight:bold;text-align:center;">Truck Base Site Code</td>
                                     </tr>
                                     ${trsPerSite}
                                 </table>`);
                         });
 
-                            
+                        const summaryTotals = {
+                            "total": 0,
+                            "12:00 AM - 07:00 AM-number": 0,
+                            "12:00 AM - 07:00 AM-percent": 0,
+                            "7:01 AM - 9:00 AM-number": 0,
+                            "7:01 AM - 9:00 AM-percent": 0,
+                            "9:01 AM - 12:00 PM-number": 0,
+                            "9:01 AM - 12:00 PM-percent": 0,
+                            "12:01 PM - 3:00 PM-number": 0,
+                            "12:01 PM - 3:00 PM-percent": 0,
+                            "3:01 PM - 5:00 PM-number": 0,
+                            "3:01 PM - 5:00 PM-percent": 0,
+                            "5:01 PM - 11:59 PM-number": 0,
+                            "5:01 PM - 11:59 PM-percent": 0,
+                        };
 
                         // used for Summary Sheet
                         // sort object by geofence name (or key)
                         const sortedTimeDataPerSite = OBJECT.sortByKey(timeDataPerSite);
 
+                        const grayBackground = "background-color:#eee;";
                         var summaryTableHtml = "";
-                        Object.keys(sortedTimeDataPerSite).forEach((dc,i) => {
+                        Object.keys(sortedTimeDataPerSite).forEach(dc => {
                             var tdsSummary = "";
 
                             // loop data per period for this site
-                            Object.keys(sortedTimeDataPerSite[dc]).forEach(key => {
+                            Object.keys(sortedTimeDataPerSite[dc]).forEach((key,i) => {
                                 const eventsPerPeriod = sortedTimeDataPerSite[dc][key];
                                 const percent = GET.ROUND_OFF((eventsPerPeriod.length/totalVehicles[dc]||0)*100);
 
-                                tdsSummary += ` <td style="text-align:center;border: thin solid #6a6a6a;">${eventsPerPeriod.length||""}</td>
-                                                <td style="text-align:center;border: thin solid #6a6a6a;">${percent?percent+"%":""}</td>`;
+                                tdsSummary += ` <td style="text-align:center;width:70px;${((i+1)%2 != 0) ? grayBackground : ""}">${eventsPerPeriod.length||""}</td>
+                                                <td style="text-align:center;width:70px;${((i+1)%2 != 0) ? grayBackground : ""}">${percent?percent+"%":""}</td>`;
+
+                                summaryTotals[key+"-number"] += eventsPerPeriod.length||0;
+                                summaryTotals[key+"-percent"] += percent||0;
                             });
 
                             // add row per site (html)
                             summaryTableHtml += `<tr>
-                                                    <td style="border: thin solid #6a6a6a;">${dc}</td>
-                                                    <td style="border: thin solid #6a6a6a;">${totalVehicles[dc]||0}</td>
+                                                    <td style="">${dc}</td>
+                                                    <td style="text-align:center;">${totalVehicles[dc]||0}</td>
+                                                    <td style="width:5px;"></td>
                                                     ${tdsSummary}
                                                 </tr>`;
+                            summaryTotals["total"] += totalVehicles[dc]||0;
                         });
 
                         $(`body`).prepend(`
@@ -9325,29 +9345,81 @@ var REPORTS = {
                                 </tr>
                                 <tr><td style="border: none;"></td></tr>
                                 <tr>
-                                    <td style="font-weight:bold;text-align:right;border: thin solid #6a6a6a;"colspan=2>Period</td>
-                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;" colspan=2>12:00 AM to 7:00 AM</td>
-                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;" colspan=2>7:01 AM to 9:00 AM</td>
-                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;" colspan=2>9:01 AM to 12:00 PM</td>
-                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;" colspan=2>12:01 PM to 3:00 PM</td>
-                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;" colspan=2>3:01 PM to 5:00 PM</td>
-                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;" colspan=2>5:01 PM to 11:59 PM</td>
+                                    <td style="font-weight:bold;text-align:right;" colspan=2>Period</td>
+                                    <td style="font-weight:bold;text-align:right;"></td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}" colspan=2>12:00 AM to 7:00 AM</td>
+                                    <td style="font-weight:bold;text-align:center;" colspan=2>7:01 AM to 9:00 AM</td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}" colspan=2>9:01 AM to 12:00 PM</td>
+                                    <td style="font-weight:bold;text-align:center;" colspan=2>12:01 PM to 3:00 PM</td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}" colspan=2>3:01 PM to 5:00 PM</td>
+                                    <td style="font-weight:bold;text-align:center;" colspan=2>5:01 PM to 11:59 PM</td>
                                 </tr>
                                 <tr>
-                                    <td style="font-weight:bold;text-align:left;border: thin solid #6a6a6a;">DC</td>
-                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Total Trucks</td>
-                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Number</td>
-                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">%</td>
-                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Number</td>
-                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">%</td>
-                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Number</td>
-                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">%</td>
-                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Number</td>
-                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">%</td>
-                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Number</td>
-                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">%</td>
-                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">Number</td>
-                                    <td style="font-weight:bold;text-align:center;border: thin solid #6a6a6a;">%</td>
+                                    <td style="font-weight:bold;text-align:left;" rowspan=2></td>
+                                    <td style="font-weight:bold;text-align:center;">Total Trucks</td>
+                                    <td style="font-weight:bold;text-align:right;"></td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}">Number</td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}">%</td>
+                                    <td style="font-weight:bold;text-align:center;">Number</td>
+                                    <td style="font-weight:bold;text-align:center;">%</td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}">Number</td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}">%</td>
+                                    <td style="font-weight:bold;text-align:center;">Number</td>
+                                    <td style="font-weight:bold;text-align:center;">%</td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}">Number</td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}">%</td>
+                                    <td style="font-weight:bold;text-align:center;">Number</td>
+                                    <td style="font-weight:bold;text-align:center;">%</td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight:bold;text-align:center;"></td>
+                                    <td style="font-weight:bold;text-align:center;"></td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}"></td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}"></td>
+                                    <td style="font-weight:bold;text-align:center;"></td>
+                                    <td style="font-weight:bold;text-align:center;"></td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}"></td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}"></td>
+                                    <td style="font-weight:bold;text-align:center;"></td>
+                                    <td style="font-weight:bold;text-align:center;"></td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}"></td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}"></td>
+                                    <td style="font-weight:bold;text-align:center;"></td>
+                                    <td style="font-weight:bold;text-align:center;"></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight:bold;text-align:center;">TOTAL</td>
+                                    <td style="font-weight:bold;text-align:center;">${summaryTotals["total"]}</td>
+                                    <td style="font-weight:bold;text-align:center;"></td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}">${summaryTotals["12:00 AM - 07:00 AM-number"]}</td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}">${ GET.ROUND_OFF((summaryTotals["12:00 AM - 07:00 AM-number"]/summaryTotals["total"])*100) }%</td>
+                                    <td style="font-weight:bold;text-align:center;">${summaryTotals["7:01 AM - 9:00 AM-number"]}</td>
+                                    <td style="font-weight:bold;text-align:center;">${ GET.ROUND_OFF((summaryTotals["7:01 AM - 9:00 AM-number"]/summaryTotals["total"])*100) }%</td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}">${summaryTotals["9:01 AM - 12:00 PM-number"]}</td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}">${ GET.ROUND_OFF((summaryTotals["9:01 AM - 12:00 PM-number"]/summaryTotals["total"])*100) }%</td>
+                                    <td style="font-weight:bold;text-align:center;">${summaryTotals["12:01 PM - 3:00 PM-number"]}</td>
+                                    <td style="font-weight:bold;text-align:center;">${ GET.ROUND_OFF((summaryTotals["12:01 PM - 3:00 PM-number"]/summaryTotals["total"])*100) }%</td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}">${summaryTotals["3:01 PM - 5:00 PM-number"]}</td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}">${ GET.ROUND_OFF((summaryTotals["3:01 PM - 5:00 PM-number"]/summaryTotals["total"])*100) }%</td>
+                                    <td style="font-weight:bold;text-align:center;">${summaryTotals["5:01 PM - 11:59 PM-number"]}</td>
+                                    <td style="font-weight:bold;text-align:center;">${ GET.ROUND_OFF((summaryTotals["5:01 PM - 11:59 PM-number"]/summaryTotals["total"])*100) }%</td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight:bold;text-align:left;">DC</td>
+                                    <td style="font-weight:bold;text-align:center;"></td>
+                                    <td style="font-weight:bold;text-align:center;"></td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}"></td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}"></td>
+                                    <td style="font-weight:bold;text-align:center;"></td>
+                                    <td style="font-weight:bold;text-align:center;"></td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}"></td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}"></td>
+                                    <td style="font-weight:bold;text-align:center;"></td>
+                                    <td style="font-weight:bold;text-align:center;"></td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}"></td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}"></td>
+                                    <td style="font-weight:bold;text-align:center;"></td>
+                                    <td style="font-weight:bold;text-align:center;"></td>
                                 </tr>
                                 ${summaryTableHtml}
                             </table>`);
@@ -9953,16 +10025,6 @@ var REPORTS = {
                         df_dt_dest(title,"REPORT_MODAL_03",null,function(){
                             otdr_report(function(docs){
                                 REPORTS.UI.REPORTS.OTDR(title,docs,date_from,date_to);
-                                // $(`body`).append(REPORTS.UI.REPORTS.OTDR(title,docs,date_from));
-
-                                // var tableIds = [];
-                                // $(`[data-SheetName]`).each((i,el) => { tableIds.push(`#${$(el).attr("id")}`); });
-                                // GENERATE.TABLE_TO_EXCEL.MULTISHEET(tableIds.join(","), `${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY")}.xls`);
-                                // $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
-
-                                
-                                // GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY")}`);
-                                // $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
                             });
                         });
 
@@ -9980,7 +10042,7 @@ var REPORTS = {
                             $(this).val(formattedDate);
                             $(this).data('daterangepicker').setStartDate(formattedDate);
                             $(this).data('daterangepicker').setEndDate(formattedDate);
-                        });
+                        }).val(moment().format("MM/DD/YYYY"))
                     });
                     /**************** END REPORT LISTENER ****************/
                 };
