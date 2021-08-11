@@ -854,7 +854,7 @@ var LIMIT = 200,
                     otr: ["origin","destination","route","sn","plateNumber","trailer","palCap","haulerName","targetTransit","actualTimelapse","remarks1","remarks2","truckBasePlant"],
                     pbpa: true,
                     hwtr: true,
-                    ar: true,
+                    ar: "no_function",
                     tr: true,
                     vcr: true,
                     ular: {
@@ -868,7 +868,7 @@ var LIMIT = 200,
                     tableButtons: { 
                         buttons: ["create","refresh"], 
                         condition: [
-                            { roles: ["administrator","developer"], additionalButton: ["export"] }
+                            { roles: ["developer"], additionalButton: ["export"] }
                         ] 
                     },
                 }
@@ -984,7 +984,13 @@ var LIMIT = 200,
                     mtur: true,
                 },
                 users: {
-                    ignoreRolesWithString: ["t2","fleet"]
+                    ignoreRolesWithString: ["t2","fleet"],
+                    tableButtons: { 
+                        buttons: ["create","refresh"], 
+                        condition: [
+                            { roles: ["administrator","developer"], additionalButton: ["export"] }
+                        ] 
+                    },
                 }
             },
         },
@@ -1019,7 +1025,7 @@ var LIMIT = 200,
                     tableButtons: { 
                         buttons: ["create","refresh"], 
                         condition: [
-                            { roles: ["administrator","developer"], additionalButton: ["export"] }
+                            { roles: ["developer"], additionalButton: ["export"] }
                         ] 
                     },
                 }
@@ -1060,7 +1066,7 @@ var LIMIT = 200,
                     tableButtons: { 
                         buttons: ["create","refresh"], 
                         condition: [
-                            { roles: ["administrator","developer"], additionalButton: ["export"] }
+                            { roles: ["developer"], additionalButton: ["export"] }
                         ] 
                     },
                 }

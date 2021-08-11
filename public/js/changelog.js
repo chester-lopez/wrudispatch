@@ -1,4 +1,9 @@
 const changelogList = {
+    "2.56.117": {
+        date: "August 08, 2021",
+        feature: ["[Feature][Wilcon] Attendance Report"],
+        fix: ["[Fix][Wilcon] Users: Missing toolbar (exports function)"]
+    },
     "2.55.117": {
         date: "August 06, 2021",
         improved: ["[Adjustment][CokeT2] On Time Departure Report"]
