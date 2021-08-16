@@ -452,6 +452,7 @@ class Dispatch {
         this.incomplete_datetime = (["incomplete"].includes(obj.status)) ? DATETIME.FORMAT(getDateTime("incompleteByReturningToOrigin",obj,"last")) : "-";
         this.status = GET.STATUS(obj.status).html;
         this.statusText = GET.STATUS(obj.status).text;
+        this.statusCode = obj.status;
         this.scheduled_date = DATETIME.FORMAT(obj.scheduled_date,"MMM DD, YYYY");
         this.shift_schedule = obj.shift_schedule || "-";
         this.posted_by = posted_by;
@@ -2951,6 +2952,419 @@ var DE_DASHBOARD = {
 
             $(`#de_dashboard-badge`).html(DE_NOTIF_COUNT.length);
         }
+    }
+};
+const OTD_DASHBOARD = {
+    init: function(){
+        var _new_ = true;
+
+
+        // declare variables
+        var dt = null;
+        var areaChart = null;
+        const refreshTime = 180000; // 3 minutes
+        const filter = { timestamp: FILTER.DATERANGE() };
+        var formattedDate = moment().format('MM/DD/YYYY');
+
+        // paginationId is to know which data should be loaded. This is in case pagination() was called and 
+        // still loading the data at 30% then the user decided to change the date. This will load the data again.
+        // By checking the paginationId and
+        var paginationId = null;
+
+
+        function initializePageElements(){
+            // initialize datatable
+            dt = $('#summary-tbl').DataTable({
+                dom: 't',
+                paging: false,
+                order: [[ 0, "asc" ]],
+                scrollX: true,
+                scrollY: "calc(100vh - 340px)",
+                createdRow: function (row, data, dataIndex) {
+                    var _row = GENERATE.RANDOM(36);
+                    $(row).attr(`_row`, _row).css("cursor","pointer");
+
+                    // row double click listener
+                    $(document).on("dblclick",`#summary-tbl [_row="${_row}"]`,function(e) {
+                        e.preventDefault();
+
+                        var el = $(".more-info-container");
+
+                        if(el.length > 0){
+                            // remove old container/slider
+                            el.hide("slide", {direction:'right'},100, function(){ 
+                                el.remove();
+                            
+                                // add the new slider (wait for 100ms)
+                                slideMoreInfo(data[14],_row,data[0]);
+                                clearSelection();
+                            });
+                        } else {
+                            // add the new slider
+                            const obj = data[14] || { sortedEvents: [], totalVehicles: 0 };
+                            slideMoreInfo(obj,_row,data[0]);
+                            clearSelection();
+                        }
+                    });
+                },
+            });
+
+            // initialize datepicker
+            $(`#_date`).daterangepicker({
+                opens: 'left',
+                autoUpdateInput: false,
+                singleDatePicker:true,
+                autoApply: true,
+                locale: {
+                    format: 'MM/DD/YYYY'
+                }
+            }, function(start, end, label) { }).on('apply.daterangepicker', function(ev,picker){
+
+                // update the value of 'formattedDate'
+                formattedDate = moment(new Date(picker.startDate)).format('MM/DD/YYYY');
+
+                // update this element's values
+                $(this).val(formattedDate);
+                $(this).data('daterangepicker').setStartDate(formattedDate);
+                $(this).data('daterangepicker').setEndDate(formattedDate);
+
+                // update filter timestamp
+                filter.timestamp = FILTER.DATERANGE(formattedDate);
+
+                // load summary data based on the date selected by the user
+                loadSummaryData();
+                
+            }).val(moment().format("MM/DD/YYYY"));
+
+            // initialize area chart
+            // general config and options
+            var chartLabels = ['12:00 AM to 7:00 AM', '7:01 AM to 9:00 AM', '9:01 AM to 12:00 PM', '12:01 PM to 3:00 PM', '3:01 PM to 5:00 PM', '5:01 PM to 11:59 PM'];
+            var scalesOptions = {
+                xAxes: [
+                {
+                    gridLines:
+                    {
+                        display: false
+                    }
+                }],
+                yAxes: [
+                {
+                    gridLines:
+                    {
+                        color: '#eff3f6',
+                        drawBorder: false,
+                    },
+                }]
+            };
+            // area chart
+            var ctxAreaChart = document.getElementById("area-chart").getContext("2d");
+            areaChart = new Chart(ctxAreaChart,
+            {
+                type: 'line',
+                data:
+                {
+                    labels: chartLabels,
+                    datasets: [
+                    {
+                        data: [],
+                        label: 'Number',
+                        backgroundColor: 'rgba(2, 162, 73, 0.25)',
+                        borderColor: 'rgb(2, 162, 73)',
+                        borderWidth: 2,
+                    }, ],
+                },
+                options:
+                {
+                    responsive: true,
+                    scales: scalesOptions,
+                    elements:
+                    {
+                        point:
+                        {
+                            radius: 2,
+                        },
+                    },
+                    legend:
+                    {
+                        position: 'right'
+                    }
+                }
+            });
+            // end initialize area chart
+        }
+
+        // function that gets data from the database in batch. 
+        // will only call the callback function when ALL data is retreived
+        function pagination(x){
+            // set this functions paginationId as the last paginationId
+            const selfPaginationId = paginationId;
+
+            // display 'Loading...' in chart
+            $('#area-chart-loading').html("Loading... 0%");
+
+            // count total documents (filtered)
+            $.ajax({
+                url: x.countURL,
+                method: "GET",
+                timeout: 90000, // 1 minute and 30 seconds
+                headers: {
+                    "Authorization": SESSION_TOKEN
+                },
+                async: true
+            }).done(function (count) {
+                console.log("count",count);
+
+                var pb = new ProgressBar(count);
+                var docs = [];
+                var skip = 0;
+
+                function retrieveData(length){
+                    if(length == null || length == LIMIT){
+                        $.ajax({
+                            url: `${x.dataURL}/${skip}/${LIMIT}`,
+                            method: "GET",
+                            timeout: 90000, // 1 minute and 30 seconds
+                            headers: {
+                                "Authorization": SESSION_TOKEN
+                            },
+                            async: true
+                        }).done(function (_docs_) {
+                            if(!_docs_.error){
+                                length = _docs_.length;
+        
+                                if(_docs_.error){
+                                    toastr.error(_docs_.error.message);
+                                } else {
+                                    skip += length;
+                                    docs = docs.concat(_docs_);
+                                    var percent = pb.calculate();
+                                    
+                                    $('#area-chart-loading').html(`Loading... ${percent}%`);
+                                    
+                                    // check if pagination Ids are still the same. Do not continue if not the same
+                                    if(selfPaginationId == paginationId){
+                                        retrieveData(length);
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        $('#area-chart-loading').html(`Loading... 100%`);
+                        // check if pagination Ids are still the same. Do not continue if not the same
+                        if(selfPaginationId == paginationId){
+                            x.callback(docs);
+                        }
+                        if(!x.doNotRemoveTable){
+                            $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
+                        }
+                    }
+                }
+                retrieveData();
+            });
+        }
+
+        // draws the chart based on 'chartData' value passed
+        function updateAreaChart(chartData){
+            $('#area-chart-loading').hide();
+
+            var newDataset = {
+                data: chartData,
+                label: 'Number',
+                backgroundColor: 'rgba(2, 162, 73, 0.25)',
+                borderColor: 'rgb(2, 162, 73)',
+                borderWidth: 2,
+            };
+            areaChart.data.datasets.pop();
+            areaChart.data.datasets.push(newDataset);
+            areaChart.update();
+        }
+
+        // function that resets the value in the dashboard
+        function resetSummaryData(){
+            $('#export-container').html("");
+            $('#last-refresh').html("-");
+            $(`[summary]`).each((i,el) => {
+                ($(el).attr("summary").indexOf("percent") > -1) ? $(el).html("-%") : $(el).html(0);
+            });
+            updateAreaChart([]);
+            dt.clear().draw();
+        }
+
+        // load summary data
+        function loadSummaryData(){
+            // set paginationId.
+            paginationId = GENERATE.RANDOM(6);
+
+            // reset summary data and show 'Loading...'
+            resetSummaryData();
+            $('#area-chart-loading').show();
+            
+            // clear interval of loading data
+            clearInterval(INTERVALS.otd_dashboard);
+
+            // get data from db in batch
+            pagination({
+                countURL: `/api/events/${CLIENT.id}/${USER.username}/all/${JSON.stringify(filter)}/count`,
+                dataURL: `/api/events/${CLIENT.id}/${USER.username}/all/${JSON.stringify(filter)}`,
+                callback: function(docs){
+                    // sort data by vehicle and then time
+                    docs.sort(function (a, b) {
+                        return a.USER_NAME.localeCompare(b.USER_NAME) || new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+                    });
+                    console.log(docs);
+
+                    // add button and add event to button. Download data as Excel (originally in Reports page.)
+                    $('#export-container').html(`
+                        <div class="dt-buttons">
+                            <button class="dt-button buttons-excel buttons-html5" tabindex="0" aria-controls="summary-tbl" type="button" data-toggle="tooltip" title="Download OTD Report (.xls)">
+                                <span><i class="la la-file-download"></i></span>
+                            </button>
+                        </div>`);
+                    $(`.buttons-excel`).click(function(){
+                        REPORTS.UI.REPORTS.OTDR("On Time Departure",docs,formattedDate,formattedDate);
+                    });
+                    PAGE.TOOLTIP();
+
+                    // declare variables. 
+                    const processedDocs = REPORTS.UI.REPORTS.OTDR("",docs,formattedDate,formattedDate,true);
+                    const summaryTotals = processedDocs.summaryTotals;
+                    const summaryObject = processedDocs.summaryObject;
+                    const individualObject = processedDocs.individualObject;
+
+                    // update the total summary values
+                    Object.keys(summaryTotals).forEach(key => {
+                        $(`[summary="${key}"]`).html(summaryTotals[key]);
+                    });
+
+                    // update area chart
+                    updateAreaChart([
+                        summaryTotals["12:00 AM - 07:00 AM-number"],
+                        summaryTotals["7:01 AM - 9:00 AM-number"],
+                        summaryTotals["9:01 AM - 12:00 PM-number"],
+                        summaryTotals["12:01 PM - 3:00 PM-number"],
+                        summaryTotals["3:01 PM - 5:00 PM-number"],
+                        summaryTotals["5:01 PM - 11:59 PM-number"],
+                    ]);
+
+                    // update last refresh time
+                    $('#last-refresh').html(moment().format("MMM DD, YYYY, hh:mm A"));
+
+                    // add datatable rows
+                    const rows = [];
+                    Object.keys(summaryObject).forEach(dc => {
+                        rows.push([
+                            dc,
+                            summaryObject[dc]["totalVehicles"],
+                            summaryObject[dc]["12:00 AM - 07:00 AM-number"],
+                            summaryObject[dc]["12:00 AM - 07:00 AM-percent"],
+                            summaryObject[dc]["7:01 AM - 9:00 AM-number"],
+                            summaryObject[dc]["7:01 AM - 9:00 AM-percent"],
+                            summaryObject[dc]["9:01 AM - 12:00 PM-number"],
+                            summaryObject[dc]["9:01 AM - 12:00 PM-percent"],
+                            summaryObject[dc]["12:01 PM - 3:00 PM-number"],
+                            summaryObject[dc]["12:01 PM - 3:00 PM-percent"],
+                            summaryObject[dc]["3:01 PM - 5:00 PM-number"],
+                            summaryObject[dc]["3:01 PM - 5:00 PM-percent"],
+                            summaryObject[dc]["5:01 PM - 11:59 PM-number"],
+                            summaryObject[dc]["5:01 PM - 11:59 PM-percent"],
+                            individualObject[dc] //index 14
+                        ]);
+                    });
+                    dt.rows.add(rows).draw(false);
+                    
+
+                    // set interval to refresh summary data. Tip: comment out during development
+                    // only set interval if filter date is today
+                    if(moment().isSame( moment(formattedDate),'d')){
+                        INTERVALS.otd_dashboard = setInterval(function(){
+                            loadSummaryData();
+                        }, refreshTime); // 3 minutes
+                    }
+                }
+            });
+        }
+
+        // show the slider more info when summary row is double clicked
+        function slideMoreInfo(obj,_row,dc){
+            // declase variables (slider html)
+            const headerLeftHTML = `<h4 style="color: #151b26;margin: 6px 0 0px;">${dc}</h4>`;
+            const bodyTitleHTML = `<div style="color: #151b26;line-height: 21px;">
+                                        <div>Total Events: <b>${obj.sortedEvents.length||0}</b></div>
+                                        <div>Total Vehicles: <b>${obj.totalVehicles||0}</b></div>
+                                    </div>`;
+            const bodyContentHTML = `<table id="individual-tbl" class="display" style="width:100%">
+                                        <thead>
+                                            <tr>
+                                                <th>Date & Time</th>
+                                                <th>Duration</th>
+                                                <th>Vehicle</th>
+                                                <th>Status</th>
+                                                <th>Check Out</th>
+                                                <th>Check In</th>
+                                                <th>Truck Base Site</th>
+                                                <th>Equipt No</th>
+                                                <th>Check In Date & Time</th>
+                                                <th>Truck Base Site Code</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        </tbody>
+                                    </table>`;
+            // append to html
+            $(`.page-box.row`).append(SLIDER.MORE_INFO.view({_row, headerLeftHTML, headerRightButtons: null, bodyTitleHTML, bodyContentHTML}));
+            // slide the element
+            $(`.more-info-container`).toggle("slide", {direction:'right'},100);
+            // update max height
+            $(`.main-details,.log-details`).css({"max-height": $(`body`).innerHeight()-90, "overflow-y": "auto"});
+
+            
+            // initialize datatable
+            const iDt = $('#individual-tbl').DataTable({
+                dom: 't',
+                paging: false,
+                order: [[ 0, "asc" ]],
+                scrollX: true,
+                scrollY: "calc(100vh - 260px)",
+                columnDefs: [
+                    { targets: [0,8], type:"date" },
+                ]
+            });
+            
+            // add datatable rows
+            const rows = [];
+            obj.sortedEvents.forEach(val => {
+                rows.push([
+                    `${val["Date"]}, ${val["Time"]}`,
+                    val["Duration"],
+                    val["Vehicle"],
+                    val["Status"],
+                    val["Check Out"],
+                    val["Check In"],
+                    val["Truck Base Site"],
+                    val["Equipt No"],
+                    `${val["Check In Date"]}, ${val["Check In Time"]}`,
+                    val["Truck Base Site Code"],
+                ]);
+            });
+            iDt.rows.add(rows).draw(false);
+        }
+
+        
+
+        /******** TABLE CHECK ********/
+        TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
+            isFinishedLoading(["VEHICLES"], _new_, function(){
+                _new_ = false;
+                PAGE.DISPLAY();
+
+                initializePageElements();
+
+                // load summary data based on today's date
+                loadSummaryData();
+            });
+        }
+        TABLE.FINISH_LOADING.START_CHECK();
+        /******** END TABLE CHECK ********/
     }
 };
 var DISPATCH = {
@@ -7520,20 +7934,28 @@ var REPORTS = {
                         </table>`;
             },
             AR: function(docs,date_from,holidays){
-                var tablesHTML = "";
+                var overallTableHtml = "";
+                var individualTableHtml = "";
 
                 // declare date variables
                 const month = moment(date_from).format("MM");
                 const year = moment(date_from).format("YYYY");
                 const daysInMonth = moment(date_from).daysInMonth();
+                const ignoreWeekDay = 0; // sunday
 
-                
                 // function to check if target is in between two dates (start and finish)
                 function isSelectedMonth(target){
                     const start = moment(new Date(`${month}/01/${year}`)).startOf('month');
                     const finish = moment(new Date(`${month}/${daysInMonth}/${year}`)).endOf('month');
 
                     return target.isBetween(start, finish, 'months', '[]'); // all inclusive
+                }
+
+                // function to get how many specifid weekday there is in a month. Ex. There are 5 sundays in 08/01/2021
+                function getAmountOfWeekDaysInMonth(date, weekday) {
+                    date.date(1);
+                    var dif = (7 + (weekday - date.weekday())) % 7 + 1;
+                    return Math.floor((date.daysInMonth() - dif) / 7) + 1;
                 }
 
                 // function to check if date is a holiday
@@ -7548,6 +7970,13 @@ var REPORTS = {
                     return isHoliday;
                 }
 
+                // deduct sundays, holidays and rest days
+                var noOfDaysWithWork = daysInMonth - getAmountOfWeekDaysInMonth(moment(date_from),ignoreWeekDay);
+                const totalAttendanceStatus = {};
+
+                Object.keys(vehiclePersonnelCalendarOptions).forEach(key => {
+                    totalAttendanceStatus[key] = totalAttendanceStatus[key] || 0;
+                });
 
                 // formatted attendance sheet
                 const attendaceSheet = {};
@@ -7555,58 +7984,116 @@ var REPORTS = {
                 for(var i = 1; i < daysInMonth+1; i++){
                     // check if date is a holiday
                     if(isDateHoliday(moment(`${month}/${i}/${year}`))){
+                        // deduct holidays
+                        noOfDaysWithWork--;
+
                         attendaceSheet[moment(`${month}/${i}/${year}`).format("MM/DD/YYYY")] = `<td style="border: thin 1px #ddd;color: #0D0D0D;">Holiday</td>`;
                     } else {
                         attendaceSheet[moment(`${month}/${i}/${year}`).format("MM/DD/YYYY")] = `<td style="border: thin 1px #ddd;color: #6f9f34;">Present</td>`;
                     }
                 }
 
+                // used for checking to avoid duplicate sheet names (there records with the same personnel name)
+                const listOfPersonnel = [];
+
                 // loop through each personnel
                 docs.forEach((val,i) => {
-                    // clone 'attendaceSheet'
-                    const personnelAttendanceSheet = JSON.parse(JSON.stringify(attendaceSheet));
+                    // if array does not include personnel name yet
+                    if(!listOfPersonnel.includes(val.name)){
+                        listOfPersonnel.push(val.name);
 
-                    // loop through each personnel's calendar info (restday,absent,...)
-                    Object.keys((val.dates||{})).forEach(key => {
-                        const dates = val.dates[key] || [];
-                        dates.forEach(date => {
-                            // check if date is the selected month
-                            if(isSelectedMonth(moment(date))){
-                                // update the corresponding attendance status of personnel
-                                const dayInfo = vehiclePersonnelCalendarOptions[key];
-                                personnelAttendanceSheet[moment(date).format("MM/DD/YYYY")] = `<td style="border: thin 1px #ddd;color: ${dayInfo.hex};">${dayInfo.label}</td>`;
-                            }
+                        // clone 'attendaceSheet'
+                        const personnelAttendanceSheet = JSON.parse(JSON.stringify(attendaceSheet));
+    
+                        // loop through each personnel's calendar info (restday,absent,...)
+                        Object.keys((val.dates||{})).forEach(key => {
+                            const dates = val.dates[key] || [];
+                            dates.forEach(date => {
+                                // check if date is the selected month
+                                if(isSelectedMonth(moment(date))){
+                                    // update the corresponding attendance status of personnel
+                                    const dayInfo = vehiclePersonnelCalendarOptions[key];
+                                    personnelAttendanceSheet[moment(date).format("MM/DD/YYYY")] = `<td style="border: thin 1px #ddd;color: ${dayInfo.hex};">${dayInfo.label}</td>`;
+
+                                    // save attendance status
+                                    totalAttendanceStatus[key] = totalAttendanceStatus[key] || 0;
+                                    totalAttendanceStatus[key] ++;
+                                }
+                            });
                         });
-                    });
-
-                    var personnelHtml = "";
-                    // loop through the updated attendance sheet of personnel and add tr (html)
-                    Object.keys(personnelAttendanceSheet).forEach(key => {
-                        personnelHtml += `
-                            <tr>
-                                <td style="border: thin 1px #ddd;">${key}</td>
-                                <td style="border: thin 1px #ddd;">${val.occupation||""}</td>
-                                ${personnelAttendanceSheet[key]}
-                            </tr>`;
-                    });
-
-                    // add table as sheet
-                    tablesHTML += `
-                        <table id="report-hidden-${i}" data-SheetName="${val.name}" border="1" style="border-collapse: collapse;opacity:0;">
-                            <tbody>
-                                <tr> <td style="text-align:left;" colspan=3>${val.name}</td> </tr>
-                                <tr> <td style="text-align:left;" colspan=3></td> </tr>
-                                <tr> 
-                                    <td style="font-weight:bold;border: thin 1px #ddd;">Date</td>
-                                    <td style="font-weight:bold;border: thin 1px #ddd;">Position</td>
-                                    <td style="font-weight:bold;border: thin 1px #ddd;">Status</td>
-                                </tr>
-                                ${personnelHtml}
-                            </tbody>
-                        </table>`;
+    
+                        var personnelHtml = "";
+                        // loop through the updated attendance sheet of personnel and add tr (html)
+                        Object.keys(personnelAttendanceSheet).forEach(key => {
+                            personnelHtml += `
+                                <tr>
+                                    <td style="border: thin 1px #ddd;">${key}</td>
+                                    <td style="border: thin 1px #ddd;">${val.occupation||""}</td>
+                                    ${personnelAttendanceSheet[key]}
+                                </tr>`;
+                        });
+    
+                        // add table as sheet
+                        individualTableHtml += `
+                            <table id="report-hidden-${i}" data-SheetName="${val.name}" border="1" style="border-collapse: collapse;opacity:0;">
+                                <tbody>
+                                    <tr> <td style="text-align:left;" colspan=3>${val.name}</td> </tr>
+                                    <tr> <td style="text-align:left;" colspan=3></td> </tr>
+                                    <tr> 
+                                        <td style="font-weight:bold;border: thin 1px #ddd;">Date</td>
+                                        <td style="font-weight:bold;border: thin 1px #ddd;">Position</td>
+                                        <td style="font-weight:bold;border: thin 1px #ddd;">Status</td>
+                                    </tr>
+                                    ${personnelHtml}
+                                </tbody>
+                            </table>`;
+                    }
                 });
 
-                return tablesHTML;
+                // Formula: (Days in a month - sundays/holidays - rest days) * number or personnel = 100%
+                const totalNoOfDaysWithWork = (noOfDaysWithWork * listOfPersonnel.length) - totalAttendanceStatus["rest_days"]||0;
+                var totalPresentDays = totalNoOfDaysWithWork;
+
+
+                var attendanceStatusHtml = "";
+                Object.keys(totalAttendanceStatus).forEach(key => {
+                    const dayInfo = vehiclePersonnelCalendarOptions[key];
+                    attendanceStatusHtml += `
+                        <tr> 
+                            <td style="font-weight:bold;text-align:center;">${(dayInfo.label||"").toUpperCase()}</td>
+                            <td style="font-weight:bold;text-align:center;">${totalAttendanceStatus[key]||0}</td>
+                        </tr>`;
+
+                    totalPresentDays -= (totalAttendanceStatus[key]||0);
+                });
+                
+                const attendancePercent = GET.ROUND_OFF((totalPresentDays/totalNoOfDaysWithWork) * 100);
+
+                overallTableHtml += `
+                    <table id="report-hidden" data-SheetName="Overall" border="1" style="border-collapse: collapse;opacity:0;">
+                        <tbody>
+                            <tr> <td style="text-align:center;"></td> </tr>
+                            <tr> <td style="text-align:center;"></td> </tr>
+                            <tr> <td style="text-align:center;"></td> </tr>
+                            <tr> 
+                                <td style="font-weight:bold;text-align:center;">NO. OF DAYS WITH WORK / MONTH</td>
+                                <td style="font-weight:bold;text-align:center;">${totalNoOfDaysWithWork}</td>
+                            </tr>
+                            <tr> 
+                                <td style="font-weight:bold;text-align:center;">PRESENT</td>
+                                <td style="font-weight:bold;text-align:center;">${totalPresentDays}</td>
+                            </tr>
+                            <tr> <td style="text-align:center;"></td> </tr>
+                            <tr> 
+                                <td style="font-weight:bold;text-align:center;">ATTENDANCE %</td>
+                                <td style="font-weight:bold;text-align:center;font-size:15px;">${attendancePercent}%</td>
+                            </tr>
+                            <tr> <td style="text-align:center;"></td> </tr>
+                            ${attendanceStatusHtml}
+                        </tbody>
+                    </table>`;
+
+                return overallTableHtml + individualTableHtml;
             },
             TR: function(title,location,_date){
                 var empty = "",
@@ -7982,19 +8469,20 @@ var REPORTS = {
                     var data = new Dispatch(val);
                     var comments = (data.comments == "-") ? "" : data.comments;
 
-                    console.log("data",data);
                     var timeIn = data.complete_datetime != "-" ? data.complete_datetime : data.incomplete_datetime;
 
+                    const extraStyle = data.statusCode == "incomplete" ? "color: red;" : "";
+
                     rows += `<tr>
-                                <td style="${tblBodyStyle}">${data.truck_number}</td>
-                                <td style="${tblBodyStyle}">${data.destination}</td>
-                                <td style="${tblBodyStyle}">${data.shift_schedule}</td>
-                                <td style="${tblBodyStyle}">${data.departure_date}</td>
-                                <td style="${tblBodyStyle}">${timeIn}</td>
-                                <td style="${tblBodyStyle}">${(data.driver||"").toUpperCase()}</td>
-                                <td style="${tblBodyStyle}">${(data.checker||"").toUpperCase()}</td>
-                                <td style="${tblBodyStyle}">${(data.helper||"").toUpperCase()}</td>
-                                <td style="${tblBodyStyle}">${(comments||"").toUpperCase()}</td>
+                                <td style="${tblBodyStyle}${extraStyle}">${data.truck_number}</td>
+                                <td style="${tblBodyStyle}${extraStyle}">${data.destination}</td>
+                                <td style="${tblBodyStyle}${extraStyle}">${data.shift_schedule}</td>
+                                <td style="${tblBodyStyle}${extraStyle}">${data.departure_date}</td>
+                                <td style="${tblBodyStyle}${extraStyle}">${timeIn}</td>
+                                <td style="${tblBodyStyle}${extraStyle}">${(data.driver||"").toUpperCase()}</td>
+                                <td style="${tblBodyStyle}${extraStyle}">${(data.checker||"").toUpperCase()}</td>
+                                <td style="${tblBodyStyle}${extraStyle}">${(data.helper||"").toUpperCase()}</td>
+                                <td style="${tblBodyStyle}${extraStyle}">${(comments||"").toUpperCase()}</td>
                             </tr>`;
                 });
                 var dateFrom = (moment(new Date(date_from)).format("MMMM DD, YYYY")).toUpperCase();
@@ -8033,7 +8521,6 @@ var REPORTS = {
                 function getAmountOfWeekDaysInMonth(date, weekday) {
                     date.date(1);
                     var dif = (7 + (weekday - date.weekday())) % 7 + 1;
-                    // console.log("weekday: " + weekday + ", FirstOfMonth: " + date.weekday() + ", dif: " + dif);
                     return Math.floor((date.daysInMonth() - dif) / 7) + 1;
                 }
                 function getHolidaysOfThisMonth(date){
@@ -8102,7 +8589,7 @@ var REPORTS = {
                 var aveDataTotalChecker = [];
                 var aveDataTotalHelper = [];
 
-                var tablesHTML = "";
+                var individualTableHtml = "";
 
                 var dailyVehicleRows = {};
                 var dailyChassisRows = {};
@@ -8449,7 +8936,7 @@ var REPORTS = {
                         return tempArr;
                     }
                     
-                    tablesHTML += `<table id="report-hidden-${i}" data-SheetName="${dateMoment.format("MMM DD")}" border="1" style="border-collapse: collapse;opacity:0;">
+                    individualTableHtml += `<table id="report-hidden-${i}" data-SheetName="${dateMoment.format("MMM DD")}" border="1" style="border-collapse: collapse;opacity:0;">
                                         <tbody>
                                             <tr> <td style="${excelHeaderStyle}text-align:left;${bgColor}" colspan=5><b>Date: ${dateMoment.format("MMM DD, YYYY (dddd)")}${holidayText}</b></td> </tr>
                                             <tr> <td style="${excelHeaderStyle}text-align:left;" colspan=5><b>${title}</b></td> </tr>
@@ -8612,7 +9099,7 @@ var REPORTS = {
                                 <tr> <td style="${excelHeaderStyle}padding-left:25px;" colspan=5>Average Monthly Helper Utilization: <b>${aveMonthlyHelperUtilization}%</b></td> </tr>-->
                             </tbody>
                         </table>
-                        ${tablesHTML}`;
+                        ${individualTableHtml}`;
             },
             CI_CO_R: function(title,docs,date_from,date_to){
                 var lastGeofence,
@@ -8859,11 +9346,38 @@ var REPORTS = {
                     }
                 }
             },
-            OTDR: function(title,docs,date_from,date_to){
+            OTDR: function(title,docs,date_from,date_to,notDownload){
+
+                // Note:
+                // Sample scenario: If TruckA departed SiteA 4 times and TruckB departed SiteB 2 times
+                // Total Trucks = 2; // Unique vehicles (unique means no duplicates. 1 truck can have multiple events)
+                // Number = 6; // total number of events
+                // Percent = 33.33%; // = Number/Total Trucks
+
+                // Also, Total Trucks is based on 'Site'
 
                 // variable declation
                 var totalEventsPerSite = docs.length;
                 var extendSearchCount = 0;
+
+
+                const summaryTotals = {
+                    "total": (LIST['vehicles']||[]).length,
+                    "12:00 AM - 07:00 AM-number": 0,
+                    "12:00 AM - 07:00 AM-percent": 0,
+                    "7:01 AM - 9:00 AM-number": 0,
+                    "7:01 AM - 9:00 AM-percent": 0,
+                    "9:01 AM - 12:00 PM-number": 0,
+                    "9:01 AM - 12:00 PM-percent": 0,
+                    "12:01 PM - 3:00 PM-number": 0,
+                    "12:01 PM - 3:00 PM-percent": 0,
+                    "3:01 PM - 5:00 PM-number": 0,
+                    "3:01 PM - 5:00 PM-percent": 0,
+                    "5:01 PM - 11:59 PM-number": 0,
+                    "5:01 PM - 11:59 PM-percent": 0,
+                };
+                const summaryObject = {};
+                const individualObject = {};
 
                 // 'lastTimestamp' and 'lastGeofence' is used to save timestamp and geofence of previous event
                 var lastTimestamp;
@@ -8874,6 +9388,22 @@ var REPORTS = {
                 const date = moment(new Date(date_from)).format("MM/DD/YYYY");
                 const timeDataPerSite = {};
                 const eventsPerSite = {};
+                const grayBackground = "background-color:#eee;";
+
+
+                (LIST["vehicles"]||[]).forEach(val => {
+                    if(val["Site"]){
+                        timeDataPerSite[val["Site"]] = timeDataPerSite[val["Site"]] || {
+                            "12:00 AM - 07:00 AM": [],
+                            "7:01 AM - 9:00 AM": [],
+                            "9:01 AM - 12:00 PM": [],
+                            "12:01 PM - 3:00 PM": [],
+                            "3:01 PM - 5:00 PM": [],
+                            "5:01 PM - 11:59 PM": [],
+                        };
+                    }
+                });
+
 
                 // function to check if target is in between two dates (start and finish)
                 function isBetween(target,start,finish){
@@ -8891,11 +9421,10 @@ var REPORTS = {
                     var _next = docs[i+1];
                     var timestamp = lastTimestamp || val.timestamp;
                     var startAddress = val.GEOFENCE_NAME;
-                    var endAddress = (_next && _next.USER_NAME == val.USER_NAME) ? _next.GEOFENCE_NAME : null;
                     var sameCurrentAndNextVehicle = (_next && _next.USER_NAME == val.USER_NAME);
                     var duration = (val.timestamp) ? Math.abs(new Date(timestamp).getTime() - new Date(val.timestamp).getTime()) : 0;
                         
-                    // console.log(val.USER_NAME,startAddress,endAddress,val.stage,lastTimestamp,duration);
+                    // console.log(val.USER_NAME,startAddress,val.stage,lastTimestamp,duration);
 
                     function processEvent(){
 
@@ -8989,8 +9518,8 @@ var REPORTS = {
 
                             const sortedEvents = ARRAY.OBJECT.sort(sortedEventsPerSite[dc],"timestamp",{ sortType: "asc" });
 
-                            var totalEvents = sortedEvents.length;
-                            var totalVehicles = [];
+                            const totalEvents = sortedEvents.length;
+                            const totalVehicles = [];
 
                             var trsPerSite = "";
 
@@ -9000,6 +9529,7 @@ var REPORTS = {
                             var lastPeriod = null;
 
 
+                            // loop through the sorted events
                             sortedEvents.forEach(val => {
                                 
                                 // save list of vehicles per site per period
@@ -9077,6 +9607,10 @@ var REPORTS = {
                                 // total unique vehicles per site
                                 (totalVehicles.includes(val["Vehicle"])) ? null : totalVehicles.push(val["Vehicle"]);
                             });
+                            individualObject[dc] = {
+                                totalVehicles: totalVehicles.length,
+                                sortedEvents
+                            };
 
                             // append to body the table/sheet per site
                             $('body').append(`
@@ -9121,41 +9655,35 @@ var REPORTS = {
                                 </table>`);
                         });
 
-                        const summaryTotals = {
-                            "total": 0,
-                            "12:00 AM - 07:00 AM-number": 0,
-                            "12:00 AM - 07:00 AM-percent": 0,
-                            "7:01 AM - 9:00 AM-number": 0,
-                            "7:01 AM - 9:00 AM-percent": 0,
-                            "9:01 AM - 12:00 PM-number": 0,
-                            "9:01 AM - 12:00 PM-percent": 0,
-                            "12:01 PM - 3:00 PM-number": 0,
-                            "12:01 PM - 3:00 PM-percent": 0,
-                            "3:01 PM - 5:00 PM-number": 0,
-                            "3:01 PM - 5:00 PM-percent": 0,
-                            "5:01 PM - 11:59 PM-number": 0,
-                            "5:01 PM - 11:59 PM-percent": 0,
-                        };
-
                         // used for Summary Sheet
                         // sort object by geofence name (or key)
                         const sortedTimeDataPerSite = OBJECT.sortByKey(timeDataPerSite);
 
-                        const grayBackground = "background-color:#eee;";
+                        console.log("sortedTimeDataPerSite",sortedTimeDataPerSite);
+
                         var summaryTableHtml = "";
                         Object.keys(sortedTimeDataPerSite).forEach(dc => {
                             var tdsSummary = "";
 
+                            // set default value of this Site/DC = empty object
+                            summaryObject[dc] = summaryObject[dc] || {};
+
                             // loop data per period for this site
                             Object.keys(sortedTimeDataPerSite[dc]).forEach((key,i) => {
+                                // get events per site/dc per period
                                 const eventsPerPeriod = sortedTimeDataPerSite[dc][key];
+                                // calculate percentage
                                 const percent = GET.ROUND_OFF((eventsPerPeriod.length/totalVehicles[dc]||0)*100);
 
                                 tdsSummary += ` <td style="text-align:center;width:70px;${((i+1)%2 != 0) ? grayBackground : ""}">${eventsPerPeriod.length||""}</td>
                                                 <td style="text-align:center;width:70px;${((i+1)%2 != 0) ? grayBackground : ""}">${percent?percent+"%":""}</td>`;
 
+                                // save PERIOD-number to 'summaryTotals'
                                 summaryTotals[key+"-number"] += eventsPerPeriod.length||0;
-                                summaryTotals[key+"-percent"] += percent||0;
+
+                                // save PERIOD-number and PERIOD-percent per Site/DC to 'summaryObject'
+                                summaryObject[dc][key+"-number"] = eventsPerPeriod.length||0;
+                                summaryObject[dc][key+"-percent"] = (percent||0)+"%";
                             });
 
                             // add row per site (html)
@@ -9165,9 +9693,27 @@ var REPORTS = {
                                                     <td style="width:5px;"></td>
                                                     ${tdsSummary}
                                                 </tr>`;
-                            summaryTotals["total"] += totalVehicles[dc]||0;
+
+                            // save totalVehicles per Site/DC to 'summaryObject'
+                            summaryObject[dc]["totalVehicles"] = totalVehicles[dc]||0;
                         });
 
+                        // calculate percent per period
+                        // the reason for calculating them at the end is for us to already have the total Number
+                        Object.keys(summaryTotals).forEach(key => {
+                            // if key has a substring of "-number"
+                            if(key.indexOf("-number") > -1){
+                                // get the main key (period)
+                                const mainKey = key.replace("-number","");
+                                // calculate percentage = ( Number / Total Trucks ) * 100
+                                const percent = (summaryTotals[key]/summaryTotals["total"])*100;
+
+                                // save each percent per period to 'summaryTotals'
+                                summaryTotals[mainKey+"-percent"] = GET.ROUND_OFF(percent) + "%";
+                            }
+                        });
+
+                        // append Summary Table
                         $(`body`).prepend(`
                             <table id="report-hidden" data-SheetName="Summary" border="1" style="border-collapse: collapse;opacity:0;">
                                 <tr>
@@ -9228,17 +9774,17 @@ var REPORTS = {
                                     <td style="font-weight:bold;text-align:center;">${summaryTotals["total"]}</td>
                                     <td style="font-weight:bold;text-align:center;"></td>
                                     <td style="font-weight:bold;text-align:center;${grayBackground}">${summaryTotals["12:00 AM - 07:00 AM-number"]}</td>
-                                    <td style="font-weight:bold;text-align:center;${grayBackground}">${ GET.ROUND_OFF((summaryTotals["12:00 AM - 07:00 AM-number"]/summaryTotals["total"])*100) }%</td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}">${summaryTotals["12:00 AM - 07:00 AM-percent"]}</td>
                                     <td style="font-weight:bold;text-align:center;">${summaryTotals["7:01 AM - 9:00 AM-number"]}</td>
-                                    <td style="font-weight:bold;text-align:center;">${ GET.ROUND_OFF((summaryTotals["7:01 AM - 9:00 AM-number"]/summaryTotals["total"])*100) }%</td>
+                                    <td style="font-weight:bold;text-align:center;">${summaryTotals["7:01 AM - 9:00 AM-percent"]}</td>
                                     <td style="font-weight:bold;text-align:center;${grayBackground}">${summaryTotals["9:01 AM - 12:00 PM-number"]}</td>
-                                    <td style="font-weight:bold;text-align:center;${grayBackground}">${ GET.ROUND_OFF((summaryTotals["9:01 AM - 12:00 PM-number"]/summaryTotals["total"])*100) }%</td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}">${summaryTotals["9:01 AM - 12:00 PM-percent"]}</td>
                                     <td style="font-weight:bold;text-align:center;">${summaryTotals["12:01 PM - 3:00 PM-number"]}</td>
-                                    <td style="font-weight:bold;text-align:center;">${ GET.ROUND_OFF((summaryTotals["12:01 PM - 3:00 PM-number"]/summaryTotals["total"])*100) }%</td>
+                                    <td style="font-weight:bold;text-align:center;">${summaryTotals["12:01 PM - 3:00 PM-percent"]}</td>
                                     <td style="font-weight:bold;text-align:center;${grayBackground}">${summaryTotals["3:01 PM - 5:00 PM-number"]}</td>
-                                    <td style="font-weight:bold;text-align:center;${grayBackground}">${ GET.ROUND_OFF((summaryTotals["3:01 PM - 5:00 PM-number"]/summaryTotals["total"])*100) }%</td>
+                                    <td style="font-weight:bold;text-align:center;${grayBackground}">${summaryTotals["3:01 PM - 5:00 PM-percent"]}</td>
                                     <td style="font-weight:bold;text-align:center;">${summaryTotals["5:01 PM - 11:59 PM-number"]}</td>
-                                    <td style="font-weight:bold;text-align:center;">${ GET.ROUND_OFF((summaryTotals["5:01 PM - 11:59 PM-number"]/summaryTotals["total"])*100) }%</td>
+                                    <td style="font-weight:bold;text-align:center;">${summaryTotals["5:01 PM - 11:59 PM-percent"]}</td>
                                 </tr>
                                 <tr>
                                     <td style="font-weight:bold;text-align:left;">DC</td>
@@ -9259,14 +9805,25 @@ var REPORTS = {
                                 </tr>
                                 ${summaryTableHtml}
                             </table>`);
-                                        
-                        // loop each table with attribute '[data-SheetName]'.
-                        var tableIds = [];
-                        $(`[data-SheetName]`).each((i,el) => { tableIds.push(`#${$(el).attr("id")}`); });
-                        GENERATE.TABLE_TO_EXCEL.MULTISHEET(tableIds.join(","), `${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY")}.xls`);
+                                 
+                        // if 'notDownload' is null or undefined, it means it's for the Report
+                        // else it's for Dashboard
+                        if(notDownload !== true){
+                            // loop each table with attribute '[data-SheetName]'.
+                            var tableIds = [];
+                            $(`[data-SheetName]`).each((i,el) => { tableIds.push(`#${$(el).attr("id")}`); });
+                            GENERATE.TABLE_TO_EXCEL.MULTISHEET(tableIds.join(","), `${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY")}.xls`);
+                        }
+                        // remove table anyway
                         $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
                     }
                 }
+
+                return {
+                    summaryTotals,
+                    summaryObject,
+                    individualObject
+                };
             },
         }
     }, 
@@ -9793,6 +10350,7 @@ var REPORTS = {
                                             });
                                             
                                             saveAs(blob, `${fileName}.ods`);
+                                            $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
                                         }
                                         doExcel1();
                                         // end for OpenOffice
@@ -9932,6 +10490,7 @@ var REPORTS = {
                                         });
                                         
                                         saveAs(blob, `${fileName}.ods`);
+                                        $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
                                     }
                                     doExcel1();
                                     // end for OpenOffice
@@ -9989,7 +10548,7 @@ var REPORTS = {
                             $(this).val(formattedDate);
                             $(this).data('daterangepicker').setStartDate(formattedDate);
                             $(this).data('daterangepicker').setEndDate(formattedDate);
-                        }).val(moment().format("MM/DD/YYYY"))
+                        }).val(moment().format("MM/DD/YYYY"));
                     });
                     /**************** END REPORT LISTENER ****************/
                 };
@@ -14709,6 +15268,7 @@ var PAGE = {
 
         TABLE.FINISH_LOADING.CHECK = null;
 
+        Object.keys(INTERVALS).forEach(key => { clearInterval(INTERVALS[key]); });
         clearInterval(DE_CHECKDUPS);
 
         // set so that at 12 midnight, it will change DEFAULT_DATE
@@ -14831,6 +15391,16 @@ var PAGE = {
                 display: function() { return views.de_dashboard(); },
                 function: function() { DE_DASHBOARD.FUNCTION.init() },
                 notification: true,
+                buttons: {
+                    table:["column"]
+                },
+            },
+            otd_dashboard: {
+                title: "Dashboard",
+                name: "otd_dashboard",
+                icon: "la la-chart-line",
+                display: function() { return views.otd_dashboard(); },
+                function: function() { OTD_DASHBOARD.init() },
                 buttons: {
                     table:["column"]
                 },
@@ -15473,6 +16043,174 @@ var SLIDER = {
                     <div class="p-3" style="border-top: 1px solid #eee;"></div>
                 </div>`;
     },
+    MORE_INFO: {
+        view: function(x){
+            // delete existing more-info-container's
+            $(`.more-info-container`).each((i,el) => {
+                $(el).hide("slide", {direction:'right'},100, function(){
+                    $(el).remove();
+                });
+            });
+
+            var headerRightHTML = `<i id="close-btn" class="custom-btn-03 la la-times ml-2" data-toggle="tooltip" data-original-title="Close" data-placement="bottom"></i>`;
+            (x.headerRightButtons||[]).forEach(val => {
+                headerRightHTML += `<i id="${val.id}" class="custom-btn-03 la ${val.icon} ml-2" data-toggle="tooltip" data-original-title="${val.title}" data-placement="bottom"></i>`;
+            });
+
+            return `<div id="${x._row||""}container" class="more-info-container slider-container" style="display:none;width: 70%;">
+                        <div class="status-details col-sm-12" style="padding: 10px 15px !important;border-top: aliceblue;border-bottom: 1px solid #eee;">
+                            <div class="float-left">
+                                <div class="main-details-header">${x.headerLeftHTML||""}</div>
+                                <div class="log-details-header" style="display:none;"><span style="font-size: 20px;">Logs</span></div>
+                            </div>
+                            <div class="header-right-button float-right">${headerRightHTML||""}</div>
+                        </div>
+                        <div style="border-top: 1px solid #eee;">
+                            <div class="main-details col-sm-12" style="padding: 15px 0px 10px 20px !important;overflow-y: auto;">
+                                ${x.bodyTitleHTML || ""}
+                                ${x.bodyContentHTML || ""}
+                            </div>
+                            <div class="log-details col-sm-12" style="padding: 15px 0px 10px 20px !important;overflow-y: auto;display:none;">
+                                <div id="history-logs"></div>
+                            </div>
+                        </div>
+                    </div>`;
+        },
+        buttons: function(goto,options){
+            options = options || {};
+            var status = options.status,
+                loadView = options.loadView || [],
+                username = options.username,
+                deleteArr = options.deleteArr || [],
+                permission = PERMISSION[goto] || {},
+                buttons = [],
+                buttonDetails = {
+                    print: {
+                        permission: "read",
+                        icon: "la-print",
+                        title: "Print",
+                        id: "print-btn"
+                    },
+                    logs: {
+                        permission: "read",
+                        icon: "la-history",
+                        title: "Logs",
+                        id: "logs-btn"
+                    },
+                    delete: {
+                        permission: "delete",
+                        icon: "la-trash",
+                        title: "Delete",
+                        id: "delete-btn"
+                    },
+                    edit: {
+                        permission: "update",
+                        icon: "la-edit",
+                        title: "Edit",
+                        id: "edit-btn"
+                    },
+                },
+                permissionValid = function(type){
+                    console.log("permission[type]",permission[type],username);
+                    var valid = false;
+                    if(permission[type] == "all" || (permission[type] == "self" && username == USER.username)){
+                        valid = true;
+                    }
+                    return valid;
+                };
+            ((PAGE_FUNCTIONALITIES[goto].buttons||{}).modalButtons||[]).forEach(val => {
+                var button = buttonDetails[val];
+                if(button){
+                    function shouldDelete(){
+                        var delete_ = false;
+                        deleteArr.forEach(val_ => {
+                            if(val_.button == val && val_.byPassCondition){
+                                delete_ = true;
+                            } else {
+                                if(val_.button == val && (val_.status||[]).includes(status)){
+                                    delete_ = true;
+                                }
+                            }
+                        });
+                        return delete_;
+                    }
+                    if(permissionValid(button.permission) && !shouldDelete()) {
+                        (loadView.includes(val)) ? button.icon = "la-spin la-spinner" : null;
+                        buttons.push(button);
+                    }
+                }
+            });
+    
+            return { buttons };
+        },
+        listeners: function(x){
+            var table_id = x.table_id,
+                _row = x._row,
+                _id = x._id,
+                urlPath = x.urlPath,
+                deleteURL = x.deleteURL || `/api/${urlPath}/${CLIENT.id}/${USER.username}/${_id}`,
+                editCallback = x.editCallback || function(){
+                    var obj = LIST[urlPath].find(y => y._id.toString() == _id.toString());
+                    x.initializeModal({
+                        url: `/api/${urlPath}/${CLIENT.id}/${USER.username}/${_id}`,
+                        method: "put",
+                        obj
+                    });
+                };
+            $(`#${_row}container #edit-btn`).click(function(e){
+                e.stopImmediatePropagation();
+                editCallback();
+            });
+            $(`#${_row}container #delete-btn`).click(function(e){
+                MODAL.CONFIRMATION({
+                    confirmCloseCondition: true,
+                    content: x.deleteModalContent,
+                    confirmCallback: function(){
+                        $.ajax({ 
+                            url: deleteURL, 
+                            method: "delete", 
+                            timeout: 90000, 
+                            headers: {
+                                "Authorization": SESSION_TOKEN
+                            },
+                            async: true
+                        }).done(function (docs) {
+                            if(docs.ok == 1){
+                                $(`#confirm-modal,#${_row}container`).remove();
+                                (table_id) ? $(table_id).DataTable().row(`[_row="${_row}"]`).remove().draw(false) : null;
+                                TOASTR.DELETEDSUCCESSFULLY();
+                            } else {
+                                TOASTR.UNAUTHORIZED(docs);
+                            }
+                        }).fail(function(error){
+                            console.log("Error:",error);
+                        });
+                    }
+                });
+            });
+            $(`#${_row}container #logs-btn`).click(function(e){
+                e.stopImmediatePropagation();
+                if($(`.main-details,.main-details-header`).is(":hidden")){ // show main details
+                    $(this).removeClass("active");
+                    $(`.main-details,.main-details-header`).show();
+                    $(`.log-details,.log-details-header`).hide();
+                    $(`.header-right-button i`).each((i,el) => { $(el).show(); });
+                } else { // show logs
+                    var obj = LIST[urlPath].find(x => x._id == _id) || {};
+                    $(`#history-logs`).html(HISTORY.view(obj.history,LIST["users"]));
+
+                    $(this).addClass("active");
+                    $(`.main-details,.main-details-header`).hide();
+                    $(`.log-details,.log-details-header`).show();
+                    $(`.header-right-button i`).each((i,el) => {
+                        if(!["logs-btn","close-btn"].includes($(el).attr("id"))){
+                            $(el).hide();
+                        }
+                    });
+                }
+            });
+        }
+    }
 };
 var MODAL = {
     CONFIRMATION: function(data){
@@ -17161,6 +17899,102 @@ const views = new function(){
                             </div>
                         </div>
                         <!-- END OVER TRANSIT -->
+                    </div>`;
+        },
+        otd_dashboard: function(){
+            return `<div id="dashboard-page" class="page-box row">
+                        <div class="col-sm-12" style="height: 66px;">
+                            <span style="font-size: 30px;font-family: Montserrat;" class="font-lighter mt-2 d-inline-block">
+                                <span class="text-success" style="font-weight: 500;">On Time Departure</span> Dashboard
+                            </span>
+                            <span class="float-right" style="max-width:420px;margin-top: 17px;">
+                                <span id="export-container" class="normal-button d-inline-block"></span>
+                                <span class="d-inline-block">
+                                    <div class="input-group" style="max-width: 250px;">
+                                        <span class="input-group-addon"><i id="icon-date" class="la la-calendar"></i></span>
+                                        <input id="_date" class="form-control" type="text" readonly>
+                                    </div>
+                                </span>
+                            </span>
+                            <div class="text-muted">Last Refresh: <span id="last-refresh">-</span></div>
+                        </div>
+                        <div class="col-sm-12">
+                            <div class="col-sm-12 p-0">
+                                <ul style="list-style: none;padding: 0;display: table;width: 100%;table-layout: fixed;margin-bottom: -1px;">
+                                    <li style="border: 1px solid #d1d6e6;padding: 10px;display: table-cell;">
+                                        <span style="font-size: 10px;display: block;color: #919191;">Total Trucks</span>
+                                        <span style="font-size: 32px;display: block;font-weight: bold;" summary="total">0</span>
+                                    </li>
+                                    <li style="border: 1px solid #d1d6e6;padding: 10px;display: table-cell;">
+                                        <span style="font-size: 10px;display: block;color: #919191;">12:00 AM to 7:00 AM</span>
+                                        <span style="font-size: 20px;display: block;font-weight: bold;" summary="12:00 AM - 07:00 AM-number">0</span>
+                                        <span style="font-size: 12px;color: #02a249;" summary="12:00 AM - 07:00 AM-percent">-%</span>
+                                    </li>
+                                    <li style="border: 1px solid #d1d6e6;padding: 10px;display: table-cell;">
+                                        <span style="font-size: 10px;display: block;color: #919191;">7:01 AM to 9:00 AM</span>
+                                        <span style="font-size: 20px;display: block;font-weight: bold;" summary="7:01 AM - 9:00 AM-number">0</span>
+                                        <span style="font-size: 12px;color: #02a249;" summary="7:01 AM - 9:00 AM-percent">-%</span>
+                                    </li>
+                                    <li style="border: 1px solid #d1d6e6;padding: 10px;display: table-cell;">
+                                        <span style="font-size: 10px;display: block;color: #919191;">9:01 AM to 12:00 PM</span>
+                                        <span style="font-size: 20px;display: block;font-weight: bold;" summary="9:01 AM - 12:00 PM-number">0</span>
+                                        <span style="font-size: 12px;color: #02a249;" summary="9:01 AM - 12:00 PM-percent">-%</span>
+                                    </li>
+                                    <li style="border: 1px solid #d1d6e6;padding: 10px;display: table-cell;">
+                                        <span style="font-size: 10px;display: block;color: #919191;">12:01 PM to 3:00 PM</span>
+                                        <span style="font-size: 20px;display: block;font-weight: bold;" summary="12:01 PM - 3:00 PM-number">0</span>
+                                        <span style="font-size: 12px;color: #02a249;" summary="12:01 PM - 3:00 PM-percent">-%</span>
+                                    </li>
+                                    <li style="border: 1px solid #d1d6e6;padding: 10px;display: table-cell;">
+                                        <span style="font-size: 10px;display: block;color: #919191;">3:01 PM to 5:00 PM</span>
+                                        <span style="font-size: 20px;display: block;font-weight: bold;" summary="3:01 PM - 5:00 PM-number">0</span>
+                                        <span style="font-size: 12px;color: #02a249;" summary="3:01 PM - 5:00 PM-percent">-%</span>
+                                    </li>
+                                    <li style="border: 1px solid #d1d6e6;padding: 10px;display: table-cell;">
+                                        <span style="font-size: 10px;display: block;color: #919191;">5:01 PM to 11:59 PM</span>
+                                        <span style="font-size: 20px;display: block;font-weight: bold;" summary="5:01 PM - 11:59 PM-number">0</span>
+                                        <span style="font-size: 12px;color: #02a249;" summary="5:01 PM - 11:59 PM-percent">-%</span>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-sm-12 p-0 mb-3" style="border: 1px solid #d1d6e6;">
+                                <div id="area-chart-loading" style="position: absolute;text-align: center;width: 100%;height: 100%;padding-top: 100px;background-color: #0d0d0d17;">Loading...</div>
+                                <canvas id="area-chart" height="100" style="padding:20px 0px;"></canvas>
+                            </div>
+                            <div class="col-sm-12 p-0">
+                                <table id="summary-tbl" class="display" style="width:100%">
+                                    <thead>
+                                        <tr>
+                                            <th colspan="2">Period</th>
+                                            <th colspan="2">12:00 AM to 7:00 AM</th>
+                                            <th colspan="2">7:01 AM to 9:00 AM</th>
+                                            <th colspan="2">9:01 AM to 12:00 PM</th>
+                                            <th colspan="2">12:01 PM to 3:00 PM</th>
+                                            <th colspan="2">3:01 PM to 5:00 PM</th>
+                                            <th colspan="2">5:01 PM to 11:59 PM</th>
+                                        </tr>
+                                        <tr>
+                                            <th>DC</th>
+                                            <th>Total Trucks</th>
+                                            <th>Number</th>
+                                            <th>%</th>
+                                            <th>Number</th>
+                                            <th>%</th>
+                                            <th>Number</th>
+                                            <th>%</th>
+                                            <th>Number</th>
+                                            <th>%</th>
+                                            <th>Number</th>
+                                            <th>%</th>
+                                            <th>Number</th>
+                                            <th>%</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>`;
         },
         dispatch: function(){

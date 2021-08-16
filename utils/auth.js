@@ -670,6 +670,12 @@ var LIMIT = 200,
         
         // Coke T2
         user_t2: {
+            otd_dashboard: {
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
             events_sn: {
                 read: "all",
                 create: "none",
@@ -696,6 +702,12 @@ var LIMIT = 200,
             },
         },
         developer_t2: {
+            otd_dashboard: {
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
             events_sn: {
                 read: "all",
                 create: "none",
