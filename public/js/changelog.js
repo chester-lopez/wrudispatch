@@ -1,4 +1,10 @@
 const changelogList = {
+    "2.57.117": {
+        date: "August 16, 2021",
+        feature: ["[Feature][CokeT2] On Time Departure Dashboard"],
+        improved: ["[Adjustment][Wilcon] Scheduled Entries Report: Mark incomplete entries with red text",
+                   "[Adjustment][Wilcon] Attendance Report: Overall formula"]
+    },
     "2.56.117": {
         date: "August 08, 2021",
         feature: ["[Feature][Wilcon] Attendance Report"],

@@ -1164,6 +1164,12 @@ var PAGE_SETUP = function(){
             $(el).hide("slide", {direction:'right'},100);
         });
     });
+    $("body").on('click', `.more-info-container #close-btn`,function(e){
+        var el = $(this).parents(".more-info-container");
+        el.hide("slide", {direction:'right'},100, function(){
+            el.remove();
+        });
+    });
 
 
     /** (x) button **/
@@ -1366,4 +1372,14 @@ function exportTableToExcel(filename) {
     });
     // return sheet file
     return saveAs(blob, `${filename}.xlsx`);
+}
+function clearSelection() {
+    var sel ;
+    if(document.selection && document.selection.empty){
+      document.selection.empty() ;
+    } else if(window.getSelection) {
+      sel=window.getSelection();
+      if(sel && sel.removeAllRanges)
+        sel.removeAllRanges() ;
+    }
 }
