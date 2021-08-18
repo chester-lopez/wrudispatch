@@ -3714,9 +3714,9 @@ var DISPATCH = {
                             _destination_id = $(`#_destination_id`).val(),
                             ___origin_id = [];
                         console.log("_departure_date",_departure_date,_posting_date);
-                        (!_departure_date.isEmpty()) ? filter["departure_date"] = FILTER.DATERANGE(_departure_date,true,true) : null;
-                        (!_posting_date.isEmpty()) ? filter["posting_date"] = FILTER.DATERANGE(_posting_date,true,true) : null; 
-                        (!_scheduled_date.isEmpty()) ? filter["scheduled_date"] = FILTER.DATERANGE(_scheduled_date,true,true) : null; 
+                        (!_departure_date.isEmpty()) ? filter["departure_date"] = FILTER.DATERANGE(_departure_date) : null;
+                        (!_posting_date.isEmpty()) ? filter["posting_date"] = FILTER.DATERANGE(_posting_date) : null; 
+                        (!_scheduled_date.isEmpty()) ? filter["scheduled_date"] = FILTER.DATERANGE(_scheduled_date) : null; 
                         (!_origin_id.isEmpty() && _origin_id != "all") ? filter["origin_id"] = _origin_id : null; 
                         (!_destination_id.isEmpty() && _destination_id != "all") ? filter["destination_id"] = _destination_id : null; 
                         (_status != "all") ? filter["status"] = _status : null;
@@ -3768,7 +3768,7 @@ var DISPATCH = {
                         console.log("clone_posting_date",clone_posting_date);
                         
                         GET.AJAX({
-                            url: `/api/dispatch/${CLIENT.id}/${USER.username}/clone/${JSON.stringify({posting_date: FILTER.DATERANGE(clone_posting_date,true,true)})}`,
+                            url: `/api/dispatch/${CLIENT.id}/${USER.username}/clone/${JSON.stringify({posting_date: FILTER.DATERANGE(clone_posting_date)})}`,
                             method: "GET",
                             headers: {
                                 "Content-Type": "application/json; charset=utf-8",
@@ -6826,8 +6826,8 @@ var DISPATCH = {
                         var _posting_date = $(`#_posting_date`).val() || "",
                             _timestamp = (_posting_date) ? $(`#_timestamp`).val() : ( $(`#_timestamp`).val() || DEFAULT_DATE);
 
-                        (!_timestamp.isEmpty()) ? filter["timestamp"] = FILTER.DATERANGE(_timestamp,true,true) : null;
-                        (!_posting_date.isEmpty()) ? filter["posting_date"] = FILTER.DATERANGE(_posting_date,true,true) : null; 
+                        (!_timestamp.isEmpty()) ? filter["timestamp"] = FILTER.DATERANGE(_timestamp) : null;
+                        (!_posting_date.isEmpty()) ? filter["posting_date"] = FILTER.DATERANGE(_posting_date) : null; 
 
                         if(FILTER.STATUS != "reset") {} 
                         else {
@@ -10135,7 +10135,7 @@ var REPORTS = {
                         vcr_report = function(callback){
                             var daterange = $(`#daterange`).val(),
                                 filter = {
-                                    timestamp: FILTER.DATERANGE(daterange,true,true),
+                                    timestamp: FILTER.DATERANGE(daterange),
                                 };
                             date_from = filter.timestamp.$gte;
                             date_to = filter.timestamp.$lt;
@@ -10153,7 +10153,7 @@ var REPORTS = {
                         },
                         ular_report = function(callback){
                             var daterange = $(`#daterange`).val(),
-                                filteredDaterange = FILTER.DATERANGE(daterange,true,true),
+                                filteredDaterange = FILTER.DATERANGE(daterange),
                                 filter = {
                                     $or: [
                                         {login_date: filteredDaterange},
@@ -10176,7 +10176,7 @@ var REPORTS = {
                         },
                         desr_report = function(callback){
                             var daterange = $(`#daterange`).val(),
-                                filteredDaterange = FILTER.DATERANGE(daterange,true,true),
+                                filteredDaterange = FILTER.DATERANGE(daterange),
                                 filter = { posting_date: filteredDaterange };
                                 
                             date_from = filteredDaterange.$gte;
@@ -10265,7 +10265,7 @@ var REPORTS = {
                         ci_co_r_report = function(callback){
                             var daterange = $(`#daterange`).val(),
                                 filter = {
-                                    timestamp: FILTER.DATERANGE(daterange,true,true),
+                                    timestamp: FILTER.DATERANGE(daterange),
                                 };
                             date_from = filter.timestamp.$gte;
                             date_to = filter.timestamp.$lt;
@@ -15873,10 +15873,15 @@ var FILTER = {
         // convertTZ(_date,"Asia/Manila")
         return new Date((typeof date === "string" ? new Date(date) : date).toLocaleString("en-US", {timeZone: tzString}));
     },
-    DATERANGE: function(__date=DATETIME.FORMAT(new Date(),"MM/DD/YYYY"),hasTime0,hasTime1){
+    DATERANGE: function(__date=DATETIME.FORMAT(new Date(),"MM/DD/YYYY")){
         var _date = __date.split(" - "),
             _date1 = new Date(_date[0]),
-            _date2 = (_date[1]) ? new Date(_date[1]) : new Date(_date[0]);
+            _date2 = (_date[1]) ? new Date(_date[1]) : new Date(_date[0]),
+            hasTime0 = false,
+            hasTime1 = false;
+
+        ((__date[0]||"").indexOf(":") > -1) ? hasTime0 = true : null;
+        ((__date[1]||"").indexOf(":") > -1) ? hasTime1 = true : null;
             
         _date1 = moment(_date1).startOf('minute');
         _date2 = moment(_date2).endOf('minute');

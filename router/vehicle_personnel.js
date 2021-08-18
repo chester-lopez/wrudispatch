@@ -29,6 +29,61 @@ router.get('/:dbName/:username/all/:filter/:skip/:limit', (req,res,next)=>{
     });
 });
 
+// get all with shipments
+router.get('/:dbName/:username/all/withShipments/:filter/:skip/:limit', (req,res,next)=>{
+    const dbName = req.params.dbName;
+    const filter = JSON.parse(req.params.filter);
+    const skip = Number(req.params.skip);
+    const limit = Number(req.params.limit);
+    const query = db.getCollection(dbName,collection).aggregate([
+        {
+            $lookup: {
+                from: "dispatch",
+                let: {
+                    personnelId: "$_id"
+                },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $or: [
+                                    {  $eq: [  "$driver_id",  "$$personnelId"  ]  },
+                                    {  $eq: [  "$checker_id",  "$$personnelId"  ]  },
+                                    {  $eq: [  "$helper_id",  "$$personnelId"  ]  },
+                                ]
+                            },
+                            scheduled_date: filter.scheduled_date
+                        }
+                    }
+                    ],
+                    as: "dispatchDetails",
+            }
+        },
+        {
+            $project: {
+                "_id": 1,
+                "name": 1,
+                "occupation": 1,
+                "vehicle_id": 1,
+                "dates": 1,
+                "dispatchDetails._id": 1,
+                "dispatchDetails.scheduled_date": 1,
+            }
+        },
+    ]).skip(skip).limit(limit);
+
+    query.toArray((err,docs)=>{
+        if(err) next(_ERROR_.INTERNAL_SERVER(err));
+        else {
+            if(docs.length < auth.LIMIT){
+                console.log(`CLOSE {${collection}} @`,docs.length);
+                query.close();
+            }
+            res.json(docs);
+        }
+    });
+});
+
 // get count
 router.get('/:dbName/:username/all/:filter/count', (req,res,next)=>{
     const dbName = req.params.dbName;

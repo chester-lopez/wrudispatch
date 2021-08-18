@@ -1,4 +1,9 @@
 const changelogList = {
+    "2.57.118": {
+        date: "August 17, 2021",
+        improved: ["[Adjustment][Coke] Dispatch Entry Summary Report: Delay columns",
+                   "[Adjustment][Wilcon] Attendance Report: add 'Present' only when there's an assigned shipment to personnel"]
+    },
     "2.57.117": {
         date: "August 16, 2021",
         feature: ["[Feature][CokeT2] On Time Departure Dashboard"],
