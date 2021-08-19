@@ -7935,7 +7935,7 @@ var REPORTS = {
             },
             AR: function(docs,date_from,holidays){
                 var overallTableHtml = "";
-                var individualTableHtml = "";
+                var personnelTableHtml = "";
 
                 // declare date variables
                 const month = moment(date_from).format("MM");
@@ -7971,38 +7971,50 @@ var REPORTS = {
                 }
 
                 // deduct sundays, holidays and rest days
-                var noOfDaysWithWork = daysInMonth - getAmountOfWeekDaysInMonth(moment(date_from),ignoreWeekDay);
-                const totalAttendanceStatus = {};
+                var noOfDaysWithWork = daysInMonth;
 
-                Object.keys(vehiclePersonnelCalendarOptions).forEach(key => {
-                    totalAttendanceStatus[key] = totalAttendanceStatus[key] || 0;
-                });
+                // fill in the attendance status even if value is 0
+                const overallAttendanceStatus = {};
+                Object.keys(vehiclePersonnelCalendarOptions).forEach(key => { overallAttendanceStatus[key] = overallAttendanceStatus[key] || 0; });
 
                 // formatted attendance sheet
                 const attendaceSheet = {};
                 // set values for all days in month as 'Present' (clone later)
                 for(var i = 1; i < daysInMonth+1; i++){
+                    const momentDate = moment(`${month}/${i}/${year}`);
                     // check if date is a holiday
-                    if(isDateHoliday(moment(`${month}/${i}/${year}`))){
+                    if(isDateHoliday(momentDate)){
                         // deduct holidays
                         noOfDaysWithWork--;
 
-                        attendaceSheet[moment(`${month}/${i}/${year}`).format("MM/DD/YYYY")] = `<td style="border: thin 1px #ddd;color: #0D0D0D;">Holiday</td>`;
+                        attendaceSheet[momentDate.format("MM/DD/YYYY")] = `<td style="border: thin 1px #ddd;color: #0D0D0D;">Holiday</td>`;
+                    } else if(momentDate.day() == ignoreWeekDay){
+                        // deduct sundays
+                        noOfDaysWithWork--;
+
+                        attendaceSheet[momentDate.format("MM/DD/YYYY")] = `<td style="border: thin 1px #ddd;color: #0D0D0D;">Sunday</td>`;
                     } else {
-                        attendaceSheet[moment(`${month}/${i}/${year}`).format("MM/DD/YYYY")] = `<td style="border: thin 1px #ddd;"></td>`;
+                        attendaceSheet[momentDate.format("MM/DD/YYYY")] = `<td style="border: thin 1px #ddd;"></td>`;
                     }
                 }
 
                 // used for checking to avoid duplicate sheet names (there records with the same personnel name)
                 const listOfPersonnel = [];
                 // total present is the total number of 'Present' status in attendance sheet for all personnel
-                var totalPresentDays = 0;
+                var totalOverallPresentDays = 0;
 
                 // loop through each personnel
                 docs.forEach((val,i) => {
                     // if array does not include personnel name yet
                     if(!listOfPersonnel.includes(val.name)){
                         listOfPersonnel.push(val.name);
+
+                        // total present is the total number of 'Present' status in attendance sheet PER personnel
+                        var totalPresentDays = 0;
+
+                        // fill in the attendance status even if value is 0
+                        const personnelAttendanceStatus = {};
+                        Object.keys(vehiclePersonnelCalendarOptions).forEach(key => { personnelAttendanceStatus[key] = personnelAttendanceStatus[key] || 0; });
 
                         // clone 'attendaceSheet'
                         const personnelAttendanceSheet = JSON.parse(JSON.stringify(attendaceSheet));
@@ -8014,6 +8026,8 @@ var REPORTS = {
                             // increase total Present days
                             totalPresentDays++;
                         });
+
+                        totalOverallPresentDays+= totalPresentDays;
                         
     
                         // loop through each personnel's calendar info (restday,absent,...)
@@ -8027,10 +8041,16 @@ var REPORTS = {
                                     personnelAttendanceSheet[moment(date).format("MM/DD/YYYY")] = `<td style="border: thin 1px #ddd;color: ${dayInfo.hex};">${dayInfo.label}</td>`;
 
                                     // save attendance status
-                                    totalAttendanceStatus[key] = totalAttendanceStatus[key] || 0;
-                                    totalAttendanceStatus[key] ++;
+                                    personnelAttendanceStatus[key] = personnelAttendanceStatus[key] || 0;
+                                    personnelAttendanceStatus[key] ++;
                                 }
                             });
+                        });
+
+                        // save attendance status (overall)
+                        Object.keys(personnelAttendanceStatus).forEach(key => {
+                            overallAttendanceStatus[key] = overallAttendanceStatus[key] || 0;
+                            overallAttendanceStatus[key] += personnelAttendanceStatus[key];
                         });
     
                         var personnelHtml = "";
@@ -8038,14 +8058,30 @@ var REPORTS = {
                         Object.keys(personnelAttendanceSheet).forEach(key => {
                             personnelHtml += `
                                 <tr>
-                                    <td style="border: thin 1px #ddd;">${key}</td>
+                                    <td style="border: thin 1px #ddd;mso-number-format:'\@';">${key}</td>
                                     <td style="border: thin 1px #ddd;">${val.occupation||""}</td>
                                     ${personnelAttendanceSheet[key]}
                                 </tr>`;
                         });
+
+                        // Formula: (Days in a month - sundays/holidays - rest days) * number or personnel = 100%
+                        const totalNoOfDaysWithWork = noOfDaysWithWork - personnelAttendanceStatus["rest_days"]||0;
+                
+                        var attendanceStatusHtml = "";
+                        Object.keys(personnelAttendanceStatus).forEach(key => {
+                            const dayInfo = vehiclePersonnelCalendarOptions[key];
+                            attendanceStatusHtml += `
+                                <tr> 
+                                    <td style="font-weight:bold;text-align:center;" colspan=3>${(dayInfo.label||"").toUpperCase()}</td>
+                                    <td style="font-weight:bold;text-align:center;">${personnelAttendanceStatus[key]||0}</td>
+                                </tr>`;
+                        });
+                        
+                        // calcualte total attendance percentage
+                        const totalAttendancePercent = GET.ROUND_OFF((totalPresentDays/totalNoOfDaysWithWork) * 100);
     
                         // add table as sheet
-                        individualTableHtml += `
+                        personnelTableHtml += `
                             <table id="report-hidden-${i}" data-SheetName="${val.name}" border="1" style="border-collapse: collapse;opacity:0;">
                                 <tbody>
                                     <tr> <td style="text-align:left;" colspan=3>${val.name}</td> </tr>
@@ -8056,26 +8092,44 @@ var REPORTS = {
                                         <td style="font-weight:bold;border: thin 1px #ddd;">Status</td>
                                     </tr>
                                     ${personnelHtml}
+                                    <tr> <td style="text-align:center;" colspan=3></td> </tr>
+                                    <tr> <td style="text-align:center;" colspan=3></td> </tr>
+                                    <tr> <td style="text-align:center;" colspan=3></td> </tr>
+                                    <tr> 
+                                        <td style="font-weight:bold;text-align:center;" colspan=3>NO. OF DAYS WITH WORK / MONTH</td>
+                                        <td style="font-weight:bold;text-align:center;">${totalNoOfDaysWithWork}</td>
+                                    </tr>
+                                    <tr> 
+                                        <td style="font-weight:bold;text-align:center;" colspan=3>PRESENT</td>
+                                        <td style="font-weight:bold;text-align:center;">${totalPresentDays}</td>
+                                    </tr>
+                                    <tr> <td style="text-align:center;" colspan=3></td> </tr>
+                                    <tr> 
+                                        <td style="font-weight:bold;text-align:center;" colspan=3>ATTENDANCE %</td>
+                                        <td style="font-weight:bold;text-align:center;font-size:15px;">${totalAttendancePercent||0}%</td>
+                                    </tr>
+                                    <tr> <td style="text-align:center;" colspan=3></td> </tr>
+                                    ${attendanceStatusHtml}
                                 </tbody>
                             </table>`;
                     }
                 });
 
                 // Formula: (Days in a month - sundays/holidays - rest days) * number or personnel = 100%
-                const totalNoOfDaysWithWork = (noOfDaysWithWork * listOfPersonnel.length) - totalAttendanceStatus["rest_days"]||0;
+                const totalOverallNoOfDaysWithWork = (noOfDaysWithWork * listOfPersonnel.length) - overallAttendanceStatus["rest_days"]||0;
 
-                var attendanceStatusHtml = "";
-                Object.keys(totalAttendanceStatus).forEach(key => {
+                var overallAttendanceStatusHtml = "";
+                Object.keys(overallAttendanceStatus).forEach(key => {
                     const dayInfo = vehiclePersonnelCalendarOptions[key];
-                    attendanceStatusHtml += `
+                    overallAttendanceStatusHtml += `
                         <tr> 
                             <td style="font-weight:bold;text-align:center;">${(dayInfo.label||"").toUpperCase()}</td>
-                            <td style="font-weight:bold;text-align:center;">${totalAttendanceStatus[key]||0}</td>
+                            <td style="font-weight:bold;text-align:center;">${overallAttendanceStatus[key]||0}</td>
                         </tr>`;
                 });
                 
                 // calcualte total attendance percentage
-                const attendancePercent = GET.ROUND_OFF((totalPresentDays/totalNoOfDaysWithWork) * 100);
+                const totalOverallAttendancePercent = GET.ROUND_OFF((totalOverallPresentDays/totalOverallNoOfDaysWithWork) * 100);
 
                 overallTableHtml += `
                     <table id="report-hidden" data-SheetName="Overall" border="1" style="border-collapse: collapse;opacity:0;">
@@ -8085,23 +8139,23 @@ var REPORTS = {
                             <tr> <td style="text-align:center;"></td> </tr>
                             <tr> 
                                 <td style="font-weight:bold;text-align:center;">NO. OF DAYS WITH WORK / MONTH</td>
-                                <td style="font-weight:bold;text-align:center;">${totalNoOfDaysWithWork}</td>
+                                <td style="font-weight:bold;text-align:center;">${totalOverallNoOfDaysWithWork}</td>
                             </tr>
                             <tr> 
                                 <td style="font-weight:bold;text-align:center;">PRESENT</td>
-                                <td style="font-weight:bold;text-align:center;">${totalPresentDays}</td>
+                                <td style="font-weight:bold;text-align:center;">${totalOverallPresentDays}</td>
                             </tr>
                             <tr> <td style="text-align:center;"></td> </tr>
                             <tr> 
                                 <td style="font-weight:bold;text-align:center;">ATTENDANCE %</td>
-                                <td style="font-weight:bold;text-align:center;font-size:15px;">${attendancePercent}%</td>
+                                <td style="font-weight:bold;text-align:center;font-size:15px;">${totalOverallAttendancePercent||0}%</td>
                             </tr>
                             <tr> <td style="text-align:center;"></td> </tr>
-                            ${attendanceStatusHtml}
+                            ${overallAttendanceStatusHtml}
                         </tbody>
                     </table>`;
 
-                return overallTableHtml + individualTableHtml;
+                return overallTableHtml + personnelTableHtml;
             },
             TR: function(title,location,_date){
                 var empty = "",
@@ -10391,7 +10445,6 @@ var REPORTS = {
                                         function doExcel1 () {
                                             var blob,
                                                 wb = {SheetNames:[], Sheets:{}};
-                                            // console.log("$(`[data-SheetName]`)",$(`[data-SheetName]`));
                                             $(`[data-SheetName]`).each((i,el) => { 
                                                 var sheetname = $(`#${$(el).attr("id")}`).attr("data-SheetName");
                                                 var ws1 = XLSX.utils.table_to_sheet(el, {raw:true});
@@ -14109,7 +14162,7 @@ var FUEL_REFILL = {
                     if(userId){
                         // import to main
                         $.ajax({
-                            url: `https://coca-cola.server93.com/comGpsGate/api/v.1/applications/${CLIENT.appId}/users/${userId}/fuelconsumption`,
+                            url: `https://${CLIENT.ggsURL}/comGpsGate/api/v.1/applications/${CLIENT.appId}/users/${userId}/fuelconsumption`,
                             method: "post", 
                             timeout: 90000 ,
                             headers: {
@@ -15873,10 +15926,15 @@ var FILTER = {
         // convertTZ(_date,"Asia/Manila")
         return new Date((typeof date === "string" ? new Date(date) : date).toLocaleString("en-US", {timeZone: tzString}));
     },
-    DATERANGE: function(__date=DATETIME.FORMAT(new Date(),"MM/DD/YYYY"),hasTime0,hasTime1){
+    DATERANGE: function(__date=DATETIME.FORMAT(new Date(),"MM/DD/YYYY")){
         var _date = __date.split(" - "),
             _date1 = new Date(_date[0]),
-            _date2 = (_date[1]) ? new Date(_date[1]) : new Date(_date[0]);
+            _date2 = (_date[1]) ? new Date(_date[1]) : new Date(_date[0]),
+            hasTime0 = false,
+            hasTime1 = false;
+
+        ((__date[0]||"").indexOf(":") > -1) ? hasTime0 = true : null;
+        ((__date[1]||"").indexOf(":") > -1) ? hasTime1 = true : null;
             
         _date1 = moment(_date1).startOf('minute');
         _date2 = moment(_date2).endOf('minute');
