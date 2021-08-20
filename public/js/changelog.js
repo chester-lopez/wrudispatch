@@ -1,4 +1,8 @@
 const changelogList = {
+    "2.57.119": {
+        date: "August 20, 2021",
+        improved: ["[Adjustment][Wilcon] Attendance Report: percentages in each personnel sheet"]
+    },
     "2.57.118": {
         date: "August 17, 2021",
         improved: ["[Adjustment][Coke] Dispatch Entry Summary Report: Delay columns",
