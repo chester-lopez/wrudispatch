@@ -1,23 +1,11 @@
 const fs = require('fs');
 const {Storage} = require('@google-cloud/storage');
-const location = 'ASIA'; // https://cloud.google.com/storage/docs/locations#location-mr
-const storageClass = "standard"; // https://googleapis.dev/java/google-cloud-storage/latest/com/google/cloud/storage/StorageClass.html#STANDARD
 
 var storage = null,
     bucket = null,
     bucketName = null,
     dir = "/tmp";
-    
-async function createBucketWithStorageClassAndLocation() {
-    // For default values see: https://cloud.google.com/storage/docs/locations and
-    // https://cloud.google.com/storage/docs/storage-classes
-    const [bucket] = await storage.createBucket(bucketName, {
-        location,
-        [storageClass]: true,
-    });
 
-    console.log(`${bucket.name} created with ${storageClass} class in ${location}`);
-}
 const initialize = () => {
     storage = new Storage({
         credentials: {
@@ -121,7 +109,7 @@ const _storage_ = {
     }
 };
 const _attachments_ = {
-    filter: (_id,userInput,type,customKey) => {
+    filter: (_id,userInput,type,customKey="attachments") => {
         var unset_obj = {};
         var attachments = [];
         if(type == "object"){
@@ -133,8 +121,6 @@ const _attachments_ = {
                         var storageFilename = val.storageFilename.replace(/<INSERT_ID_HERE>/g,encodeURI(_id));
                         userInput[customKey][key][i].storageFilename = storageFilename;
                         userInput[customKey][key][i].url += storageFilename;
-
-                        console.log(key,userInput[customKey][key][i].url);
         
                         attachments.push({
                             base64: val.base64,
@@ -149,22 +135,22 @@ const _attachments_ = {
                 unset_obj[customKey] = "";
             }
         } else {
-            if(userInput.attachments && userInput.attachments.length > 0){
-                userInput.attachments.forEach(function(val,i){
-                    var storageFilename = userInput.attachments[i].storageFilename.replace(/<INSERT_ID_HERE>/g,encodeURI(_id));
-                    userInput.attachments[i].storageFilename = storageFilename;
-                    userInput.attachments[i].url += storageFilename;
+            if(userInput[customKey] && userInput[customKey].length > 0){
+                userInput[customKey].forEach(function(val,i){
+                    var storageFilename = userInput[customKey][i].storageFilename.replace(/<INSERT_ID_HERE>/g,encodeURI(_id));
+                    userInput[customKey][i].storageFilename = storageFilename;
+                    userInput[customKey][i].url += storageFilename;
     
                     attachments.push({
                         base64: val.base64,
                         storageFilename,
                     });
     
-                    delete userInput.attachments[i].base64;
+                    delete userInput[customKey][i].base64;
                 });
             } else {
-                delete userInput.attachments;
-                unset_obj["attachments"] = "";
+                delete userInput[customKey];
+                unset_obj[customKey] = "";
             }
         }
         
@@ -172,23 +158,11 @@ const _attachments_ = {
     },
     add: (attachments) => {
         return new Promise((resolve,reject) => {
-            function uploadToBucket(){
-                _storage_.upload(attachments).then(() => {
-                    resolve();
-                }).catch(error => {
-                    console.log("Error Uploading1: ",JSON.stringify(error));
-                    reject();
-                });
-            }
-            createBucketWithStorageClassAndLocation().then(() => {
-                uploadToBucket();
+            _storage_.upload(attachments).then(() => {
+                resolve();
             }).catch(error => {
-                if(error.code == 409){
-                    uploadToBucket();
-                } else {
-                    console.log("Error Creating Bucket: ",JSON.stringify(error));
-                    reject();
-                }
+                console.log("Error Uploading1: ",JSON.stringify(error));
+                reject();
             });
         });
     },

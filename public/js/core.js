@@ -507,6 +507,30 @@ const CUSTOM = {
                     case "last2Locations":
                         arr.push({ data: "Last 2 Locations", title: "Last 2 Locations", className: "notExport", visible: true });
                         break;
+                    case "body_type":
+                        arr.push({ data: "Body Type", title: "Body Type", visible: false });
+                        break;
+                    case "year_model":
+                        arr.push({ data: "Year Model", title: "Year Model", visible: false });
+                        break;
+                    case "registration_month":
+                        arr.push({ data: "Registration Month", title: "Registration Month", visible: false });
+                        break;
+                    case "registration_status":
+                        arr.push({ data: "Registration Status", title: "Registration Status", visible: false });
+                        break;
+                    case "case_number":
+                        arr.push({ data: "Case Number", title: "Case Number", visible: false });
+                        break;
+                    case "ltfrb_status":
+                        arr.push({ data: "LTFRB Status", title: "LTFRB Status", visible: false });
+                        break;
+                    case "issued_date":
+                        arr.push({ data: "Issued Date", title: "Issued Date", visible: false });
+                        break;
+                    case "expiry_date":
+                        arr.push({ data: "Expiry Date", title: "Expiry Date", visible: false });
+                        break;
                     case "action":
                         arr.push({ data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true });
                         break;

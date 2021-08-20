@@ -13110,12 +13110,19 @@ var VEHICLES = {
                 actions:{
                     refresh: function(){ table.countRows(); },
                     filter: function(){
+                        $(`#cv-container`).hide("slide", {direction:'right'},100);
+                        $(`#export-container`).hide("slide", {direction:'right'},100);
                         $(`#filter-container`).toggle("slide", {direction:'right'},100);
                     },
                     export: function(){
                         $(`#filter-container`).hide("slide", {direction:'right'},100);
                         $(`#cv-container`).hide("slide", {direction:'right'},100);
                         $(`#export-container`).toggle("slide", {direction:'right'},100);
+                    },
+                    column: function(){
+                        $(`#filter-container`).hide("slide", {direction:'right'},100);
+                        $(`#export-container`).hide("slide", {direction:'right'},100);
+                        $(`#cv-container`).toggle("slide", {direction:'right'},100);
                     },
                     data_maintenance: function(){
                         var ID = CLIENT.id;
@@ -13177,7 +13184,15 @@ var VEHICLES = {
                     'Fuel Capacity': obj["Fuel Capacity"] || "-",
                     'Truck Model': obj["Truck Model"] || "-",
                     'Section': section || "-",
-                    'Company':company || "-",
+                    'Company': company || "-",
+                    'Body Type': obj.body_type || "-",
+                    'Year Model': obj.year_model || "-",
+                    'Registration Month': obj.registration_month || "-",
+                    'Registration Status': obj.registration_status || "-",
+                    'Case Number': obj.case_number || "-",
+                    'LTFRB Status': obj.ltfrb_status || "-",
+                    'Issued Date': DATETIME.FORMAT(obj.issued_date,"MMM DD, YYYY"),
+                    'Expiry Date': DATETIME.FORMAT(obj.expiry_date,"MMM DD, YYYY"),
                     'Availability': obj.Availability||"Available",
                     'Last 2 Locations': lastLocHTML || "-",
                     'Action': action.buttons,
@@ -13190,71 +13205,197 @@ var VEHICLES = {
                         // LOAD SELECT 2 OPTIONS FOR: ORIGIN,DESTINATION,VEHICLES
                         getSelect2Options();
 
-                        var obj = LIST[self.urlPath].find(x => x._id == _id);
-                        var title = `Edit Vehicle Details`,
-                            modalElements = function(){
-                                var arr = [];
-                                clientCustom.modalFields.vehicles.forEach(val => {
-                                    switch (val) {
-                                        case "Trailer":
-                                            arr.push({title:"Trailer",id:"Trailer",type:"select2",attr:"blankStringIfEmpty"});
-                                            break;
-                                        case "truck_type":
-                                            arr.push({ title:"Truck Type", id:"truck_type", type:"text", value: obj.truck_type||""});
-                                            break;
-                                        case "section_id":
-                                            arr.push({ title:"Section", id:"section_id", type:"select2"});
-                                            break;
-                                        case "company_id":
-                                            arr.push({title:"Company",id:"company_id",type:"select2"});
-                                            break;
-                                        case "Availability":
-                                            arr.push({title:"Availability",id:"Availability",type:"select",value:obj.Availability,options:VEHICLES.STATUS,noDefault:true});
-                                            break;
-                                        case "desc":
-                                            arr.push({title:"Description",id:"desc",type:"textarea",disabled:true,notInclude:true});
-                                            break;
-                                        default:
-                                            break;
-                                    }
+                        var obj = LIST[self.urlPath].find(x => x._id == _id) || {};
+
+                        if(clientCustom.modalFields.vehicles == "custom"){
+                            if(CLIENT.id == "wilcon"){
+                                $(`body`).append(modalViews.vehicles.create[CLIENT.id](obj));
+                                // adjust modal height
+                                $('.modal-body-content').css('height',($('body').innerHeight()-200)+'px');
+
+                                $(`#section_id`).html(G_SELECT2["form-vehicles_section"]).select2().val(obj.section_id || "").trigger("change");
+                                $(`#company_id`).html(G_SELECT2["form-vehicles_company"]).select2().val(obj.company_id || "").trigger("change");
+
+                                /*********** DATES ***********/
+                                // Issued Date & Expiry Date
+                                $(`#issued_date,#expiry_date`).datepicker({
+                                    maxViewMode: 2,
+                                    autoclose: true,
+                                    todayHighlight: true,
+                                    format: "mm/dd/yyyy",
+                                }).on("changeDate",function (e) {}).attr("onkeydown","event.preventDefault()");
+                    
+                                (obj.issued_date) ? $(`#issued_date`).datepicker("setDate",new Date(obj.issued_date)) : null;
+                                (obj.expiry_date) ? $(`#expiry_date`).datepicker("setDate",new Date(obj.expiry_date)) : null;
+
+                                // Registration Month
+                                $(`#registration_month`).datepicker({
+                                    minViewMode: 1,
+                                    autoclose: true,
+                                    todayHighlight: true,
+                                    format: "MM",
+                                }).on("changeDate",function (e) {}).attr("onkeydown","event.preventDefault()");
+                                (obj.registration_month) ? $(`#registration_month`).datepicker("setDate",new Date(`${obj.registration_month} 1, 2021`)) : null;
+
+                                // Year Model
+                                $(`#year_model`).datepicker({
+                                    minViewMode: 2,
+                                    autoclose: true,
+                                    todayHighlight: true,
+                                    format: "yyyy",
+                                }).on("changeDate",function (e) {}).attr("onkeydown","event.preventDefault()");
+                                (obj.year_model) ? $(`#year_model`).datepicker("setDate",new Date(obj.year_model)) : null;
+                                /*********** END DATES ***********/
+
+                                ATTACHMENTSV2.initialize("#lto-attachments","#lto_attachments");
+                                ATTACHMENTSV2.initialize("#ltfrb-attachments","#ltfrb_attachments");
+
+                                ATTACHMENTSV2.set("#lto_attachments",obj.lto_attachments);
+                                ATTACHMENTSV2.set("#ltfrb_attachments",obj.ltfrb_attachments);
+
+                                $(`#submit`).click(function(){
+                                    $(`#submit`).html('<i class="la la-spin la-spinner"></i> Submit').attr("disabled",true);
+
+                                    var body = {
+                                        truck_type: $(`#truck_type`).val(),
+                                        body_type: $(`#body_type`).val(),
+                                        year_model: $(`#year_model`).val(),
+                                        section_id: $(`#section_id`).val(),
+                                        company_id: $(`#company_id`).val(),
+                                        registration_month: $(`#registration_month`).val(),
+                                        registration_status: $(`#registration_status`).val(),
+                                        case_number: $(`#case_number`).val(),
+                                        ltfrb_status: $(`#ltfrb_status`).val(),
+                                        issued_date: $(`#issued_date`).val(),
+                                        expiry_date: $(`#expiry_date`).val(),
+                                        lto_attachments: ATTACHMENTSV2.get("#lto_attachments",CLIENT.dsName),
+                                        ltfrb_attachments: ATTACHMENTSV2.get("#ltfrb_attachments",CLIENT.dsName),
+                                    },
+                                    historyOptions = {
+                                        excludeKeys: ["history"],
+                                        fields: [
+                                            {
+                                                key: "section_id",
+                                                customTitle: "Section",
+                                                dataExtended: true,
+                                                data: LIST["vehicles_section"],
+                                                dataCompareKey: "_id",
+                                                dataValueKey: "section"
+                                            },
+                                            {
+                                                key: "company_id",
+                                                customTitle: "Company",
+                                                dataExtended: true,
+                                                data: LIST["vehicles_company"],
+                                                dataCompareKey: "_id",
+                                                dataValueKey: "company"
+                                            },
+                                            {
+                                                key: "ltfrb_status",
+                                                customTitle: "LTFRB Status"
+                                            },
+                                            {
+                                                key: "lto_attachments",
+                                                customTitle: "LTO Attachments",
+                                                type: "attachments"
+                                            },
+                                            {
+                                                key: "ltfrb_attachments",
+                                                customTitle: "LTFRB Attachments",
+                                                type: "attachments"
+                                            },
+                                        ]
+                                    };
+
+                                    body = HISTORY.check(obj,body,USER.username,historyOptions);
+                                    console.log("body",body);
+                                    $.ajax({
+                                        url: `/api/${table.urlPath}/${CLIENT.id}/${USER.username}/${_id}`,
+                                        method: "put",
+                                        timeout: 90000, // 1 minute and 30 seconds
+                                        headers: {
+                                            "Content-Type": "application/json; charset=utf-8",
+                                            "Authorization": SESSION_TOKEN
+                                        },
+                                        async: true,
+                                        data: JSON.stringify(body)
+                                    }).done(function (result) {
+                                        TOASTR.UPDATEDSUCCESSFULLY();
+                                        $(`#overlay`).remove();
+                                    }).fail(function(error) {
+                                        console.log("Error",error);
+                                        $('#modal-error').html(ALERT.HTML.ERROR("An error has occured. Please try again.",true));
+                                        $("html, body,.modal-body-content").animate({ scrollTop: 0 }, "fast");
+                                        $(`#submit`).html('Submit').attr("disabled",false);
+                                    });
                                 });
-                                return arr;
-                            };
-                        $(`body`).append(MODAL.CREATE.BASIC({title, el: modalElements()}));
-                        $(`#Availability`).change(function(){
-                            var option = VEHICLES.STATUS.find(x => x.id == $(this).val()) || {desc:""};
-                            $(`#desc`).val(option.desc);
-                        }).trigger("change");
-
-                        $(`#Trailer`).html(G_SELECT2["form-trailers"]).select2({
-                            matcher: matcher,
-                            templateResult: formatCustom
-                        }).val(obj["Trailer"] || "").trigger("change");
-                        
-                        $(`#section_id`).html(G_SELECT2["form-vehicles_section"]).select2().val(obj.section_id || "").trigger("change");
-                        $(`#company_id`).html(G_SELECT2["form-vehicles_company"]).select2().val(obj.company_id || "").trigger("change");
-
-                        var ggsUpdate = {
-                            object: [],
-                            ggsURL:`https://${CLIENT.ggsURL}/comGpsGate/api/v.1/batch/applications/${CLIENT.appId}/users/${_id}/customfields`
-                        };
-                        clientCustom.modalFields.vehicles.forEach(val => {
-                            switch (val) {
-                                case "Trailer":
-                                    ggsUpdate.object.push({name:"Trailer",el:"#Trailer option:selected"});
-                                    break;
-                                case "Availability":
-                                    ggsUpdate.object.push({name:"Availability",el:"#Availability option:selected"});
-                                    break;
-                                default:
-                                    break;
                             }
-                        });
-
-                        MODAL.SUBMIT({
-                            method:"PUT",
-                            url:`/api/${self.urlPath}/${CLIENT.id}/${USER.username}/${_id}`,
-                        },ggsUpdate);
+                        } else {
+                            var title = `Edit Vehicle Details`,
+                                modalElements = function(){
+                                    var arr = [];
+                                    clientCustom.modalFields.vehicles.forEach(val => {
+                                        switch (val) {
+                                            case "Trailer":
+                                                arr.push({title:"Trailer",id:"Trailer",type:"select2",attr:"blankStringIfEmpty"});
+                                                break;
+                                            case "truck_type":
+                                                arr.push({ title:"Truck Type", id:"truck_type", type:"text", value: obj.truck_type||""});
+                                                break;
+                                            case "section_id":
+                                                arr.push({ title:"Section", id:"section_id", type:"select2"});
+                                                break;
+                                            case "company_id":
+                                                arr.push({title:"Company",id:"company_id",type:"select2"});
+                                                break;
+                                            case "Availability":
+                                                arr.push({title:"Availability",id:"Availability",type:"select",value:obj.Availability,options:VEHICLES.STATUS,noDefault:true});
+                                                break;
+                                            case "desc":
+                                                arr.push({title:"Description",id:"desc",type:"textarea",disabled:true,notInclude:true});
+                                                break;
+                                            default:
+                                                break;
+                                        }
+                                    });
+                                    return arr;
+                                };
+                            $(`body`).append(MODAL.CREATE.BASIC({title, el: modalElements()}));
+                            $(`#Availability`).change(function(){
+                                var option = VEHICLES.STATUS.find(x => x.id == $(this).val()) || {desc:""};
+                                $(`#desc`).val(option.desc);
+                            }).trigger("change");
+    
+                            $(`#Trailer`).html(G_SELECT2["form-trailers"]).select2({
+                                matcher: matcher,
+                                templateResult: formatCustom
+                            }).val(obj["Trailer"] || "").trigger("change");
+                            
+                            $(`#section_id`).html(G_SELECT2["form-vehicles_section"]).select2().val(obj.section_id || "").trigger("change");
+                            $(`#company_id`).html(G_SELECT2["form-vehicles_company"]).select2().val(obj.company_id || "").trigger("change");
+    
+                            var ggsUpdate = {
+                                object: [],
+                                ggsURL:`https://${CLIENT.ggsURL}/comGpsGate/api/v.1/batch/applications/${CLIENT.appId}/users/${_id}/customfields`
+                            };
+                            clientCustom.modalFields.vehicles.forEach(val => {
+                                switch (val) {
+                                    case "Trailer":
+                                        ggsUpdate.object.push({name:"Trailer",el:"#Trailer option:selected"});
+                                        break;
+                                    case "Availability":
+                                        ggsUpdate.object.push({name:"Availability",el:"#Availability option:selected"});
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            });
+    
+                            MODAL.SUBMIT({
+                                method:"PUT",
+                                url:`/api/${self.urlPath}/${CLIENT.id}/${USER.username}/${_id}`,
+                            },ggsUpdate);
+                        }
                     },
                     additionalListeners: function(){
                         $(self.id).on('click', `[_row="${_row}"] [view],[_row="${_row}"] + tr.child [view]`,function(e){
@@ -13286,6 +13427,24 @@ var VEHICLES = {
                 } catch(error){ }
 
                 
+                $(`.page-box`).append(SLIDER.COLUMN_VISIBILITY(CUSTOM.COLUMN[urlPath]())); 
+                $('span.toggle-vis').on( 'click', function (e) {
+                    var index = $(this).attr('data-column'),
+                        column = table.dt.column(index);
+
+                    column.visible( ! column.visible() );
+                    CUSTOM.COLUMN[urlPath]()[index].visible = column.visible();
+                    CUSTOM.COLUMN[urlPath]()[index].bVisible = column.visible();
+                    $(table.id).attr("style","");
+
+                    $(`${table.id} thead tr th`).each((i,el) => {
+                        if(!$(el).is(":visible")){
+                            $(`${table.id} tr:not(.child)`).each((i1,el1) => {
+                                $(el1).find("td").eq(i).hide();
+                            });
+                        }
+                    });
+                });
                     
                 $(`.page-box`).append(SLIDER.EXPORT()); 
                 TABLE.TOOLBAR(self.dt);
@@ -18700,6 +18859,119 @@ const modalViews = new function(){
                                 </div>
                             </div>
                         </div>`;
+            },
+            create: {
+                wilcon: function(obj){
+                    const modalTitle = "Edit Details";
+            
+                    return `<div id="overlay" class="swal2-container swal2-fade swal2-shown" style="overflow-y: auto;">
+                                <div id="modal" class="modal" role="dialog" aria-labelledby="myLargeModalLabel">
+                                    <div role="document" class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header pb-2">
+                                                <button type="button" class="close" id="close" aria-hidden="true">×</button>
+                                                <h4 class="modal-title" id="myModalLabel2">${modalTitle}</h4>
+                                            </div>
+                                            <div class="modal-body row pt-2">
+                                                <div class="modal-body-content col-sm-12 p-0 pb-2 pt-2" style="overflow: auto;">
+                                                    <div class="col-sm-12"><div id="modal-error"></div></div>
+                                                    <div>
+                                                        <div class="col-sm-12 mb-2">
+                                                            <h5 class="mt-0">Truck Details</h5>
+                                                            <div><span class="font-normal">Vehicle Name: </span>${obj.name||"-"}</div>
+                                                            <div><span class="font-normal">Plate Number: </span>${obj["Plate Number"]||"-"}</div>
+                                                            <div><span class="font-normal">Truck Number: </span>${obj["Truck Number"]||"-"}</div>
+                                                        </div>
+                                                        <div class="col-sm-4">
+                                                            <div class="font-normal mt-1">Truck Type:</div>
+                                                            <input type="text" id="truck_type" class="form-control" autocomplete="off" value="${obj.truck_type||""}">
+                                                        </div>
+                                                        <div class="col-sm-4">
+                                                            <div class="font-normal mt-1">Body Type:</div>
+                                                            <input type="text" id="body_type" class="form-control" autocomplete="off" value="${obj.body_type||""}">
+                                                        </div>
+                                                        <div class="col-sm-4">
+                                                            <div class="font-normal mt-1">Year Model:</div>
+                                                            <div class="input-group">
+                                                                <span class="input-group-addon"><i id="icon-date" class="la la-calendar"></i></span>
+                                                                <input id="year_model" type="text" class="form-control ui-autocomplete-input" placeholder="Select a year" autocomplete="off" onkeydown="event.preventDefault()">
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-sm-4">
+                                                            <div class="font-normal mt-1">Section:</div>
+                                                            <select id="section_id" class="select-multiple-basic" style="width:100%;" required=true></select>
+                                                        </div>
+                                                        <div class="col-sm-4">
+                                                            <div class="font-normal mt-1">Company:</div>
+                                                            <select id="company_id" class="select-multiple-basic" style="width:100%;" required=true></select>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <div class="col-sm-12 mb-2 mt-4">
+                                                            <h5>LTO Registration</h5>
+                                                        </div>
+                                                        <div class="col-sm-4">
+                                                            <div class="font-normal mt-1">Registration Month:</div>
+                                                            <div class="input-group">
+                                                                <span class="input-group-addon"><i id="icon-date" class="la la-calendar"></i></span>
+                                                                <input id="registration_month" type="text" class="form-control ui-autocomplete-input" placeholder="Select a month" autocomplete="off" onkeydown="event.preventDefault()">
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-sm-4">
+                                                            <div class="font-normal mt-1">Registration Status:</div>
+                                                            <input type="text" id="registration_status" class="form-control" autocomplete="off" value="${obj.registration_status||""}">
+                                                        </div>
+                                                        <div class="col-sm-4">
+                                                            <div class="font-normal mt-1">Attachments:</div>
+                                                            <div id="lto-attachments"></div>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <div class="col-sm-12 mb-2 mt-4">
+                                                            <h5>LTFRB Franchise Details</h5>
+                                                        </div>
+                                                        <div class="col-sm-8 p-0">
+                                                            <div class="col-sm-6">
+                                                                <div class="font-normal mt-1">Case Number:</div>
+                                                                <input type="text" id="case_number" class="form-control" autocomplete="off" value="${obj.case_number||""}">
+                                                            </div>
+                                                            <div class="col-sm-6">
+                                                                <div class="font-normal mt-1">Status:</div>
+                                                                <input type="text" id="ltfrb_status" class="form-control" autocomplete="off" value="${obj.ltfrb_status||""}">
+                                                            </div>
+                                                            <div class="col-sm-6">
+                                                                <div class="font-normal mt-1">Issued Date:</div>
+                                                                <div class="input-group">
+                                                                    <span class="input-group-addon"><i id="icon-date" class="la la-calendar"></i></span>
+                                                                    <input id="issued_date" type="text" class="form-control ui-autocomplete-input" placeholder="Select a date" autocomplete="off" onkeydown="event.preventDefault()">
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-sm-6">
+                                                                <div class="font-normal mt-1">Expiry Date:</div>
+                                                                <div class="input-group">
+                                                                    <span class="input-group-addon"><i id="icon-date" class="la la-calendar"></i></span>
+                                                                    <input id="expiry_date" type="text" class="form-control ui-autocomplete-input" placeholder="Select a date" autocomplete="off" onkeydown="event.preventDefault()">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-sm-4">
+                                                            <div class="font-normal mt-1">Attachments:</div>
+                                                            <div id="ltfrb-attachments"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-12 p-0">
+                                                    <div style="border-top: 1px solid #eee;" class="col-sm-12 mt-2 pt-3"> 
+                                                        <button id="submit" type="button" class="btn btn-primary float-right">Submit</button>
+                                                        <button id="cancel" type="button" class="btn btn-default float-right mr-2">Cancel</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>`;
+                }
             }
         },
         vehicle_personnel: {

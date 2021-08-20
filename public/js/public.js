@@ -801,6 +801,129 @@ var ATTACHMENTS = {
         });
     }
 };
+const ATTACHMENTSV2 = {
+    initialize: function(divId="#attachments-container",elId="#attachments",noAction){
+        $(divId).html(`
+            <input type="file" id="${elId.replace("#","")}" style="width: 70px;">
+            <div id="${elId.replace("#","")}-list" style="border-top: 1px solid #eee;margin-top: 10px;padding-top: 8px;"></div>`);
+
+        /******** ATTACHMENT ********/
+        $(elId).on("change", function(){
+            var file = this.files[0];
+
+            if(file.size/1024/1024 > 1){
+                toastr.warning("Upto 1mb per attachment only.");
+            } else {
+                function getBase64(file) {
+                    var reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = function () {
+                        file.base64 = reader.result;
+                        ATTACHMENTSV2.add_attachment(elId,file,noAction);
+                    };
+                    reader.onerror = function (error) {
+                        toastr.error("Unable to upload file");
+                        console.log('Error: ', error);
+                    };
+                 }
+                getBase64(file); // prints the base64 string
+            }
+        });
+        /******** END ATTACHMENT ********/
+    },
+    add_attachment: function(elId="#attachments",file,noAction){
+        var _row = ATTACHMENTSV2.add_table_row(elId,file,noAction);
+        $(`[_row="${_row}"] [delete-attachment]`).click(function(){
+            $(this).parent().remove();	
+            // if($('#tbl-attachment > tbody > tr').length > 0){
+            //     $('#tbl-attachment > tbody > tr').each(function(index, tr) {
+            //         $(tr).children().eq(0).html(index+1);
+            //     });
+            // }
+        });
+    },
+    add_table_row: function(elId="#attachments",file,noAction){
+        var fileExtension = {
+            image: {
+                ext: ["png","jpg","jpeg","gif"],
+                icon: "la la-file-image-o"
+            },
+            pdf: {
+                ext: ["pdf"],
+                icon: "la la-file-pdf-o"
+            },
+            excel: {
+                ext: ["xls","xlsx"],
+                icon: "la la-file-excel-o"
+            },
+            word: {
+                ext: ["doc","docx"],
+                icon: "la la-file-word-o"
+            },
+            ppt: {
+                ext: ["ppt"],
+                icon: "la la-file-powerpoint-o"
+            },
+            archive: {
+                ext: ["zip","rar"],
+                icon: "la la-file-archive-o"
+            },
+        },
+        filename = file.filename || file.name,
+        ext = filename.split('.').pop().toLowerCase(),
+        icon = "la la-file-o";
+
+        for (var key in fileExtension) {
+            if ($.inArray(ext, fileExtension[key].ext) > -1){
+                icon = fileExtension[key].icon;
+            }
+        }
+        var _row = GENERATE.RANDOM(36),
+            new_row = `
+                <div _row="${_row}" style="padding: 2px 5px;margin-bottom: 2px;">
+                    <span style="max-width: 80%;overflow: clip;white-space: nowrap;text-overflow: ellipsis;display: inline-block;">
+                        <i class="${icon}" style="color: green;"></i>
+                        <span style="margin-left: 4px;"><a data-file target="_blank" href="${file.base64 || file.url}">${filename}</a></span>
+                    </span>
+                    ${(noAction===true)?"":`<i delete-attachment class="la la-close hover-dark" style="margin-left: 15px;font-size: 13px;padding: 0 4px;"></i>`}
+                </div>
+            `;
+        $(`${elId}-list`).append(new_row);
+        return _row;
+    },
+    get: function(elId="#attachments",dsName){
+        const listEl = $(elId+"-list").find('[_row]');
+        
+        var attachments = [];
+        var allStorageFilenames = [];
+        if(listEl.length > 0){
+            listEl.each(function (i, el) {
+                var dataFile = $(this).find('[data-file]'),
+                    filename = dataFile.text(),
+                    href = dataFile.attr("href"),
+                    base64_encoded = href.split(',')[1],
+                    storageFilename = (base64_encoded) ? `attachments/<INSERT_ID_HERE>/${filename}` : href.substring(href.indexOf('attachments'));
+                    console.log("dataFile",dataFile)
+                
+                if(!allStorageFilenames.includes(storageFilename)){
+                    allStorageFilenames.push(storageFilename);
+                    attachments.push({ 
+                        base64: href, 
+                        filename, 
+                        storageFilename,
+                        url: `https://storage.googleapis.com/${dsName}/`
+                    });
+                }  
+            });
+        }
+        return attachments;
+    },
+    set: function(elId="#attachments",attachments,noAction){
+        $.each(attachments, function(i,val){
+            ATTACHMENTSV2.add_attachment(elId,val,noAction);
+        });
+    }
+};
 const HISTORY = {
     fromTo: function(title,from,to,type){
         from = (from || "").toString().replace(/undefined/g,"");
