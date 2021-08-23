@@ -936,14 +936,14 @@ var LIMIT = 200,
                         subtextAdmin: ["plate_number","truck_number"],
                     },
                     tableButtons: { 
-                        buttons: ["refresh","filter","export"], 
+                        buttons: ["refresh","column","filter","export"], 
                         condition: [
                             { roles: ["administrator","developer"], additionalButton: ["data_maintenance"] }
                         ] 
                     },
-                    columns: ["name","plateNumber","truckNumber","truckType","section_id","company_id","last2Locations","action"],
+                    columns: ["name","plateNumber","truckNumber","truckType","section_id","company_id","body_type","year_model","registration_month","registration_status","case_number","ltfrb_status","issued_date","expiry_date","last2Locations","action"],
                     columnOrder: [[ 0, "asc" ]],
-                    modalFields: ["truck_type","section_id","company_id"]
+                    modalFields: "custom"
                 },
                 vehicle_personnel: {
                     tableButtons: { 
