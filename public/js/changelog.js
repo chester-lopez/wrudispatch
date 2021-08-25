@@ -1,4 +1,8 @@
 const changelogList = {
+    "2.57.122": {
+        date: "August 25, 2021",
+        improved: ["[Adjustment][Wilcon] Vehicles: No editing, just viewing (Editing will be done in Maintenance)"]
+    },
     "2.57.121": {
         date: "August 25, 2021",
         fix: ["[Fix] Time in datetime pickers not working."]
