@@ -16092,8 +16092,8 @@ var FILTER = {
             hasTime0 = false,
             hasTime1 = false;
 
-        ((__date[0]||"").indexOf(":") > -1) ? hasTime0 = true : null;
-        ((__date[1]||"").indexOf(":") > -1) ? hasTime1 = true : null;
+        ((_date[0]||"").indexOf(":") > -1) ? hasTime0 = true : null;
+        ((_date[1]||"").indexOf(":") > -1) ? hasTime1 = true : null;
             
         _date1 = moment(_date1).startOf('minute');
         _date2 = moment(_date2).endOf('minute');
