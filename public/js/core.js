@@ -908,6 +908,7 @@ const WEBSOCKET = {
                 // rowButtons
                 clientCustom.rowButtons.dispatch = setValue("custom.dispatch.rowButtons", { buttons: [] });
                 clientCustom.rowButtons.clusters = setValue("custom.clusters.rowButtons", { buttons: [] });
+                clientCustom.rowButtons.vehicles = setValue("custom.vehicles.rowButtons", { buttons: [] });
             }
 
             SOCKET = io();

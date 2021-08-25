@@ -13397,26 +13397,6 @@ var VEHICLES = {
                             },ggsUpdate);
                         }
                     },
-                    additionalListeners: function(){
-                        $(self.id).on('click', `[_row="${_row}"] [view],[_row="${_row}"] + tr.child [view]`,function(e){
-                            e.stopImmediatePropagation();
-                            var vehicleName = (getVehicle(_id) || {}).name;
-                            var obj = getVehicleHistory(_id) || {};
-                            $(`body`).append(modalViews.vehicles.location_history({title:`Location History for ${vehicleName}`,location:obj.location}));
-                            var vehicleTblIds = () => { var arr = []; [0,1,2,3,4].forEach(val => { arr.push(`#vehicleLocation${val}`); });  return arr.join(",");};
-                            $(vehicleTblIds()).DataTable({
-                                scrollY: "200px",
-                                order: [[ 0, "desc" ]],
-                                paging: false,
-                                dom: 't',
-                                columns: TABLE.COL_ROW([
-                                    {data: "Date", title: "Date", type:"date", visible: true},
-                                    {data: "Rule Name", title: "Rule Name", visible: true},
-                                ]).column
-                            } );
-                        });
-                    
-                    }
                 });
             };
             table.filterListener = function(){
@@ -15603,9 +15583,7 @@ var PAGE = {
         });
     },
     SET_FUNCTIONALITIES: function(){
-        var permission = PERMISSION["dispatch"] || {},
-            vehicleBtn = (USER.role == "developer") ? ["edit","view"] : ["edit"],
-            notificationsTblBtn = (clientCustom.allowExportTable.notifications) ? ["refresh","filter","export"] : ["refresh","filter"],
+        var notificationsTblBtn = (clientCustom.allowExportTable.notifications) ? ["refresh","filter","export"] : ["refresh","filter"],
             dispatchTblBtn = (ENVIRONMENT == "development") ? ["create","import","refresh","column","export","filter","clone"] : ["create","import","refresh","column","export","filter"];
         
         function getClientTableButtons(key){
@@ -15760,7 +15738,7 @@ var PAGE = {
                 },
                 buttons: {
                     table: getClientTableButtons("vehicles"),
-                    row: vehicleBtn
+                    row: getRowButtons("vehicles") 
                 }
             },
             fuel_refill: {
@@ -16679,6 +16657,25 @@ var MODAL = {
                     </div>`;
         },
     },
+    TABLEVIEW: function(){
+        var tr = `width: 50%;float: left !important;padding-bottom: 2px;`;
+        var tdFirst = `style="width: 200px;font-weight: bold;vertical-align:top;"`;
+        return {
+            tr,
+            tdFirst,
+            empty:  `<tr style="${tr}">
+                        <td ${tdFirst}>&nbsp;</td>
+                        <td>&nbsp;</td>
+                    </tr>`,
+            getTr: (key,value,color="",attr="",customTr,customtdFirst) => {
+                return `<tr style="${customTr||tr} ${color}">
+                            <td ${customtdFirst||tdFirst}>${key}</td>
+                            <td ${attr}>${(value?`: ${value}`:": -")}</td>
+                        </tr>`
+            }
+                
+        };
+    },
     SUBMIT: function(x,options,additionalValues){
         $(`#submit`).click(function(){
             $(`#modal-error`).hide();
@@ -17146,6 +17143,18 @@ var TABLE = {
                     obj
                 });
             };
+        $(table_id).on('click', `[_row="${_row}"] [view],[_row="${_row}"] + tr.child [view]`,function(e){
+            e.stopImmediatePropagation();
+            if(typeof modalViews[urlPath].view == 'function') $(`body`).append(modalViews[urlPath].view(_id));
+            else $(`body`).append(modalViews[urlPath].view[CLIENT.id](_id));
+            
+            $(`.main-details,.log-details`).css({"max-height": $(`body`).innerHeight()-200, "overflow-y": "auto"});
+            var innerHeight = $(`.main-parent-details`).innerHeight() || $(`.main-details`).innerHeight()-44;
+            $(`#history-logs`).css("height",innerHeight);
+            $("html, body,#modal").animate({ scrollTop: 0 }, "fast");
+
+            if (typeof x.viewCallback === 'function') { x.viewCallback(); }
+        });
         $(table_id).on('click', `[_row="${_row}"] [edit],[_row="${_row}"] + tr.child [edit]`,function(e){
             e.stopImmediatePropagation();
             editCallback();
@@ -17159,13 +17168,12 @@ var TABLE = {
                     $.ajax({ 
                         url: deleteURL, 
                         method: "DELETE", 
-                        timeout: 90000 ,
+                        timeout: 90000,
                         headers: {
                             "Authorization": SESSION_TOKEN
                         },
                         async: true
                     }).done(function (docs) {
-                        // console.log("docs2222",docs)
                         if(docs.ok == 1){
                             $(`#confirm-modal`).remove();
                             $(table_id).DataTable().row(`[_row="${_row}"]`).remove().draw(false);
@@ -18774,12 +18782,116 @@ const views = new function(){
 const modalViews = new function(){
     return {
         vehicles: {
-            location_history: function(x){
-                x.location = x.location || [];
+            view: {
+                coket1: function(_id){
+                    var obj = getVehicle(_id) || {};
+            
+                    return `<div id="overlay" class="swal2-container swal2-fade swal2-shown" style="overflow-y: auto;z-index:999999 !important;">
+                                    <div id="modal" class="modal" role="dialog" aria-labelledby="myLargeModalLabel">
+                                        <div role="document" class="modal-dialog modal-lg" style="margin:20px auto;width:90%;">
+                                            <div class="modal-content">
+                                                <div class="modal-header pb-2">
+                                                    <button type="button" class="close" id="close" aria-hidden="true">×</button>
+                                                    <div id="title-container" class="float-left">
+                                                        <h4 class="modal-title" id="myModalLabel2"><b>Vehicles</b></h4>
+                                                        <div>Full Details</div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-body row pl-0 pt-0 pb-0">
+                                                    <div class="main-details col-sm-8" style="padding: 15px 0px 10px 30px !important;min-height:350px;">
+                                                        <h5 class="mt-0">Truck Details</h5>
+                                                        <table style="width: 100%;">
+                                                            <tbody>
+                                                                ${MODAL.TABLEVIEW().getTr("Vehicle Name",obj.name || "-")} 
+                                                                ${MODAL.TABLEVIEW().getTr("Trailer",obj["Trailer"]||"-")}
+                                                                ${MODAL.TABLEVIEW().getTr("Equipment Number",obj["Equipment Number"]||"-")}
+                                                                ${MODAL.TABLEVIEW().getTr("Conduction Number",obj["Tractor Conduction"]||"-")}
+                                                                ${MODAL.TABLEVIEW().getTr("Site",obj["Site"]||"-")}
+                                                                ${MODAL.TABLEVIEW().getTr("Availability",obj["Availability"]||"-")}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                    <div class="history-details col-sm-4" style="overflow-y: auto;padding: 0px !important;border-left:1px solid #eee;">
+                                                        <h5 style="border-bottom:1px solid #eee;" class="pl-2 pb-2 border-bottom">Location Logs</h5>
+                                                        <div id="history-logs" class="pl-2 pr-2" style="width: 100%; overflow: auto;white-space: nowrap;">${modalViews.vehicles.location_history(_id)}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>`;
+                },
+                wilcon: function(_id){
+                    const modalWidth = USER.role == "developer" ? "width:90%;" : "";
+                    const mainModalBodyWidth = USER.role == "developer" ? "col-sm-8" : "col-sm-12";
+                    const locationLogs = USER.role == "developer" ? `
+                                            <div class="history-details col-sm-4" style="overflow-y: auto;padding: 0px !important;border-left:1px solid #eee;">
+                                                <h5 style="border-bottom:1px solid #eee;" class="pl-2 pb-2 border-bottom">Location Logs</h5>
+                                                <div id="history-logs" class="pl-2 pr-2" style="width: 100%; overflow: auto;white-space: nowrap;">${modalViews.vehicles.location_history(_id)}</div>
+                                            </div>` : "";
+                    var obj = getVehicle(_id) || {};
+            
+                    var section = (LIST["vehicles_section"]) ? (getVehiclesSection(obj.section_id) || {}).section : `<small class="font-italic text-muted">loading...</small>`;
+                    var company = (LIST["vehicles_company"]) ? (getVehiclesCompany(obj.company_id) || {}).company : `<small class="font-italic text-muted">loading...</small>`;
+            
+                    return `<div id="overlay" class="swal2-container swal2-fade swal2-shown" style="overflow-y: auto;z-index:999999 !important;">
+                                    <div id="modal" class="modal" role="dialog" aria-labelledby="myLargeModalLabel">
+                                        <div role="document" class="modal-dialog modal-lg" style="margin:20px auto;${modalWidth}">
+                                            <div class="modal-content">
+                                                <div class="modal-header pb-2">
+                                                    <button type="button" class="close" id="close" aria-hidden="true">×</button>
+                                                    <div id="title-container" class="float-left">
+                                                        <h4 class="modal-title" id="myModalLabel2"><b>Vehicles</b></h4>
+                                                        <div>Full Details</div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-body row pl-0 pt-0 pb-0">
+                                                    <div class="main-details ${mainModalBodyWidth}" style="padding: 15px 0px 10px 30px !important;min-height:350px;">
+                                                        <h5 class="mt-0">Truck Details</h5>
+                                                        <table style="width: 100%;">
+                                                            <tbody>
+                                                                ${MODAL.TABLEVIEW().getTr("Vehicle Name",obj.name || "-")} 
+                                                                ${MODAL.TABLEVIEW().getTr("Plate Number",obj["Plate Number"]||"-")}
+                                                                ${MODAL.TABLEVIEW().getTr("Truck Number",obj["Truck Number"]||"-")}
+                                                                ${MODAL.TABLEVIEW().getTr("Truck Type",obj.truck_type||"-")}
+                                                                ${MODAL.TABLEVIEW().getTr("Body Type",obj.body_type||"-")}
+                                                                ${MODAL.TABLEVIEW().getTr("Year Model",obj.year_model||"-")}
+                                                                ${MODAL.TABLEVIEW().getTr("Section",section || "-")}
+                                                                ${MODAL.TABLEVIEW().getTr("Company",company || "-")}
+                                                            </tbody>
+                                                        </table>
+                                                        <h5 class="mt-4 col-sm-12 p-0">LTO Registration</h5>
+                                                        <table style="width: 100%;">
+                                                            <tbody>
+                                                                ${MODAL.TABLEVIEW().getTr("Registration Month",obj.registration_month || "-")} 
+                                                                ${MODAL.TABLEVIEW().getTr("Registration Status",obj.registration_status||"-")}
+                                                            </tbody>
+                                                        </table>
+                                                        <h5 class="mt-4 col-sm-12 p-0">LTFRB Registration</h5>
+                                                        <table style="width: 100%;">
+                                                            <tbody>
+                                                                ${MODAL.TABLEVIEW().getTr("Case Number",obj.case_number || "-")} 
+                                                                ${MODAL.TABLEVIEW().getTr("Status",obj.ltfrb_status||"-")}
+                                                                ${MODAL.TABLEVIEW().getTr("Issued Date",DATETIME.FORMAT(obj.issued_date,"MMM DD, YYYY"))}
+                                                                ${MODAL.TABLEVIEW().getTr("Expiry Date",DATETIME.FORMAT(obj.expiry_date,"MMM DD, YYYY"))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                    ${locationLogs}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>`;
+                }
+            },
+            location_history: function(_id){
+                var obj = getVehicleHistory(_id) || {};
+                var loc = obj.location || [];
                 var modalBody = "",  
                     locationTbl = function(id,short_name,tr,_class){
                         _class = _class || "";
-                        modalBody += `<div class="col-sm-12 ${_class}">
+                        modalBody += `<div class="col-sm-12 p-0 ${_class}">
                                         <span class="font-14 font-normal">${short_name}</span>
                                         <table id="${id}" class="table " style="width:100%;">
                                             <thead></thead>
@@ -18789,29 +18901,17 @@ const modalViews = new function(){
                                         </table>
                                     </div>`;
                     };
-                for(var i = x.location.length-1; i >= 0; i--){
+                for(var i = loc.length-1; i >= 0; i--){
                     var trs = "";
-                    x.location[i].events.forEach(val => {
+                    loc[i].events.forEach(val => {
                         trs += `<tr>
                                     <td style="border:none;">${DATETIME.FORMAT(new Date(val.timestamp),"MMM D, YYYY, h:mm:ss A")}</td>
                                     <td>${val.RULE_NAME} (<span class="${((val.stage=="start")?"text-success":"text-danger")}">${val.stage}</span>)</td>
                                 </tr>`
                     });
-                    locationTbl(`vehicleLocation${i}`,`${x.location[i].short_name} (${i+1})`,trs);
+                    locationTbl(`vehicleLocation${i}`,`${loc[i].short_name} (${i+1})`,trs);
                 }
-                return `<div id="overlay" class="swal2-container swal2-fade swal2-shown" style="overflow-y: auto;">
-                            <div id="modal" class="modal" role="dialog" aria-labelledby="myLargeModalLabel">
-                                <div role="document" class="modal-dialog">
-                                    <div class="modal-content" style="height: 100%;">
-                                        <div class="modal-header pb-2">
-                                            <button type="button" class="close" id="close" aria-hidden="true">×</button>
-                                            <h4 class="modal-title" id="myModalLabel2">${x.title}</h4>
-                                        </div>
-                                        <div class="modal-body row pt-2" style="height: calc(100% - 70px);">${modalBody}</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>`;
+                return modalBody;
             },
             data_maintenance: function(){
                 return `<div id="overlay" class="swal2-container swal2-fade swal2-shown" style="overflow-y: auto;">
