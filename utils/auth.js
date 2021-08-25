@@ -509,7 +509,7 @@ var LIMIT = 200,
             vehicles:{
                 read: "all",
                 create: "none",
-                update: "all",
+                update: "none",
                 delete: "none",
             },
             vehicle_personnel:{
@@ -614,7 +614,7 @@ var LIMIT = 200,
             vehicles:{
                 read: "all",
                 create: "none",
-                update: "all",
+                update: "none",
                 delete: "none",
             },
             vehicle_personnel:{
@@ -943,7 +943,7 @@ var LIMIT = 200,
                     },
                     columns: ["name","plateNumber","truckNumber","truckType","section_id","company_id","body_type","year_model","registration_month","registration_status","case_number","ltfrb_status","issued_date","expiry_date","last2Locations","action"],
                     columnOrder: [[ 0, "asc" ]],
-                    modalFields: "custom"
+                    // modalFields: "custom"
                 },
                 vehicle_personnel: {
                     tableButtons: { 
