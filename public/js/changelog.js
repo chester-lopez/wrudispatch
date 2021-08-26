@@ -1,4 +1,8 @@
 const changelogList = {
+    "2.57.123": {
+        date: "August 26, 2021",
+        fix: ["[Fix] Dispatch Entries View button"]
+    },
     "2.57.122": {
         date: "August 25, 2021",
         improved: ["[Adjustment][Wilcon] Vehicles: No editing, just viewing (Editing will be done in Maintenance)"]

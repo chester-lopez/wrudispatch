@@ -2023,11 +2023,11 @@ var DASHBOARD = {
                                     
                                     TABLE.ROW_LISTENER({table_id: modal_parent_id,_row,urlPath:urlPath,_id,
                                         additionalListeners: function(){
-                                            $(modal_parent_id).on('click', `[_row="${_row}"] [view],[_row="${_row}"] + tr.child [view]`,function(e){
-                                                e.stopImmediatePropagation();
-                                                $(`body`).append(modalViews.dispatch.fullView(_id));
-                                                $("html, body,#modal").animate({ scrollTop: 0 }, "fast");
-                                            });
+                                            // $(modal_parent_id).on('click', `[_row="${_row}"] [view],[_row="${_row}"] + tr.child [view]`,function(e){
+                                            //     e.stopImmediatePropagation();
+                                            //     $(`body`).append(modalViews.dispatch.view(_id));
+                                            //     $("html, body,#modal").animate({ scrollTop: 0 }, "fast");
+                                            // });
                                         }
                                     });
                                 },
@@ -3523,11 +3523,11 @@ var DISPATCH = {
                                             $("html, body,#modal").animate({ scrollTop: 0 }, "fast");
                                         },
                                         additionalListeners: function(){
-                                            $(table_id).on('click', `[_row="${_row}"] [view],[_row="${_row}"] + tr.child [view]`,function(e){
-                                                e.stopImmediatePropagation();
-                                                $(`body`).append(modalViews.dispatch.fullView(data._id));
-                                                $("html, body,#modal").animate({ scrollTop: 0 }, "fast");
-                                            });
+                                            // $(table_id).on('click', `[_row="${_row}"] [view],[_row="${_row}"] + tr.child [view]`,function(e){
+                                            //     e.stopImmediatePropagation();
+                                            //     $(`body`).append(modalViews.dispatch.view(data._id));
+                                            //     $("html, body,#modal").animate({ scrollTop: 0 }, "fast");
+                                            // });
                                             $(table_id).on('click', `[_row="${_row}"] [statusUpdate],[_row="${_row}"] + tr.child [statusUpdate]`,function(e){
                                                 e.stopImmediatePropagation();
 
@@ -6702,11 +6702,11 @@ var DISPATCH = {
                                     
                                     TABLE.ROW_LISTENER({table_id,_row,urlPath:urlPath,_id,
                                         additionalListeners: function(){
-                                            $(table_id).on('click', `[_row="${_row}"] [view],[_row="${_row}"] + tr.child [view]`,function(e){
-                                                e.stopImmediatePropagation();
-                                                $(`body`).append(modalViews.dispatch.fullView(data._id));
-                                                $("html, body,#modal").animate({ scrollTop: 0 }, "fast");
-                                            });
+                                            // $(table_id).on('click', `[_row="${_row}"] [view],[_row="${_row}"] + tr.child [view]`,function(e){
+                                            //     e.stopImmediatePropagation();
+                                            //     $(`body`).append(modalViews.dispatch.view(data._id));
+                                            //     $("html, body,#modal").animate({ scrollTop: 0 }, "fast");
+                                            // });
                                         }
                                     });
                                 },
@@ -10920,7 +10920,7 @@ var NOTIFICATIONS = {
                                                 });
 
                                                 $(`#${_id}-view`).click(function(){
-                                                    $(`body`).append(modalViews.dispatch.fullView(_id));
+                                                    $(`body`).append(modalViews.dispatch.view(_id));
                                                     $("html, body,#modal").animate({ scrollTop: 0 }, "fast");
                                                 });
                                             });
@@ -19441,7 +19441,7 @@ const modalViews = new function(){
                             </div>
                         </div>`;
             },
-            fullView: function(_id){
+            view: function(_id){
                 LIST["dispatch"] = LIST["dispatch"] || [];
                 var id_index = LIST["dispatch"].findIndex(x => x._id == _id);
                 var obj = LIST["dispatch"][id_index];
