@@ -509,7 +509,7 @@ var LIMIT = 200,
             vehicles:{
                 read: "all",
                 create: "none",
-                update: "all",
+                update: "none",
                 delete: "none",
             },
             vehicle_personnel:{
@@ -614,7 +614,7 @@ var LIMIT = 200,
             vehicles:{
                 read: "all",
                 create: "none",
-                update: "all",
+                update: "none",
                 delete: "none",
             },
             vehicle_personnel:{
@@ -670,22 +670,197 @@ var LIMIT = 200,
         
         // Coke T2
         user_t2: {
+            dashboard:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            de_dashboard:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            dispatch:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            reports:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            notifications:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+        },
+        dispatcher_t2: {
+            dashboard:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            de_dashboard:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            dispatch:{
+                read: "all",
+                create: "self",
+                update: "self",
+                delete: "self"
+            },
+            reports:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            notifications:{
+                read: "all",
+                create: "none",
+                update: "self",
+                delete: "none"
+            },
+        },
+        management_t2: {
             otd_dashboard: {
                 read: "all",
                 create: "none",
                 update: "none",
                 delete: "none"
             },
-            events_sn: {
+            dashboard:{
                 read: "all",
                 create: "none",
                 update: "none",
+                delete: "none"
+            },
+            de_dashboard:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            dispatch:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            customers: {
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            reports:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            notifications:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            users:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none",
+            },
+            vehicles:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none",
+            },
+            trailers:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none",
+            },
+            regions:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none",
+            },
+            clusters:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none",
+            },
+            geofences:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none",
+            },
+            routes:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none",
+            },
+        },
+        administrator_t2: {
+            otd_dashboard: {
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            dashboard:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            de_dashboard:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            dispatch:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all",
+                // adminButton: "all"
+            },
+            customers: {
+                read: "all",
+                create: "all",
+                update: "all",
                 delete: "all"
             },
             reports:{
                 read: "all",
                 create: "none",
                 update: "none",
+                delete: "none"
+            },
+            notifications:{
+                read: "all",
+                create: "none",
+                update: "all",
                 delete: "none"
             },
             users:{
@@ -699,6 +874,36 @@ var LIMIT = 200,
                 create: "none",
                 update: "all",
                 delete: "none",
+            },
+            trailers:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all",
+            },
+            regions:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all",
+            },
+            clusters:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all",
+            },
+            geofences:{
+                read: "all",
+                create: "none",
+                update: "all",
+                delete: "none",
+            },
+            routes:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all",
             },
         },
         developer_t2: {
@@ -708,10 +913,36 @@ var LIMIT = 200,
                 update: "none",
                 delete: "none"
             },
-            events_sn: {
+            dashboard:{
                 read: "all",
                 create: "none",
                 update: "none",
+                delete: "none"
+            },
+            de_dashboard:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            dispatch:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all",
+                // adminButton: "all"
+            },
+            dispatch_deleted:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all",
+                // adminButton: "all"
+            },
+            customers: {
+                read: "all",
+                create: "all",
+                update: "all",
                 delete: "all"
             },
             reports:{
@@ -719,6 +950,18 @@ var LIMIT = 200,
                 create: "none",
                 update: "none",
                 delete: "none"
+            },
+            notifications:{
+                read: "all",
+                create: "none",
+                update: "all",
+                delete: "all"
+            },
+            events_sn: {
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "all"
             },
             users:{
                 read: "all",
@@ -731,6 +974,36 @@ var LIMIT = 200,
                 create: "none",
                 update: "all",
                 delete: "none",
+            },
+            trailers:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all",
+            },
+            regions:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all",
+            },
+            clusters:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all",
+            },
+            geofences:{
+                read: "all",
+                create: "none",
+                update: "all",
+                delete: "all",
+            },
+            routes:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all",
             },
             all_events: {
                 read: "all",
@@ -744,6 +1017,12 @@ var LIMIT = 200,
                 update: "none",
                 delete: "none",
             },
+            // help:{
+            //     read: "all",
+            //     create: "all",
+            //     update: "all",
+            //     delete: "self",
+            // },
         },
         // end Coke T2
         
@@ -821,8 +1100,10 @@ var LIMIT = 200,
                 },
                 dispatch: {
                     editableTrailer: true,
+                    columnOrder: [[ 1, "desc" ]],
+                    completeStatusList: ["plan","assigned","queueingAtOrigin","processingAtOrigin","idlingAtOrigin","in_transit","complete","incomplete"],
                     previousCheckIns: {
-                        status: ["queueingAtOrigin","processingAtOrigin","idlingAtOrigin","in_transit"],
+                        status: ["queueingAtOrigin","processingAtOrigin","idlingAtOrigin","in_transit","incomplete"],
                         roles: ["administrator","developer"]
                     },
                     columns: {
@@ -833,7 +1114,9 @@ var LIMIT = 200,
                     rowButtons: { 
                         buttons: ["statusUpdate","view","edit","delete"],
                     },
-                    
+                    create: {
+                        requiredFields: ["shipment_number","route","vehicle_id","trailer"],
+                    }
                 },
                 vehicles: {
                     gSelect2: {
@@ -845,6 +1128,12 @@ var LIMIT = 200,
                     modalFields: ["Trailer","Availability","desc",],
                     tableButtons: { 
                         buttons: ["refresh","filter","export"]
+                    },
+                    rowButtons: { 
+                        buttons: ["edit"],
+                        condition: [
+                            { roles: ["developer"], additionalButton: ["view"] }
+                        ] 
                     },
                 },
                 routes: {
@@ -910,12 +1199,13 @@ var LIMIT = 200,
                     exportTable: true
                 },
                 dispatch: {
-                    editableChassis: true,
                     autoGeneratedId: true,
                     roundtrip: true,
                     scheduled: true,
+                    columnOrder: [[ 0, "desc" ]],
+                    completeStatusList: ["plan","assigned","processingAtOrigin","in_transit","onSite","returning","complete","incomplete"],
                     // statusWhenTruckEnteredOrigin: "processingAtOrigin", // SHOULD CHANGE WHEN IN PROCESSSING NA TALAGA
-                    statusWhenTruckEnteredOrigin: "assigned",
+                    // statusWhenTruckEnteredOrigin: "assigned",
                     rowButtons: { 
                         buttons: ["statusUpdate","view","edit","delete"],
                         condition: [
@@ -928,6 +1218,9 @@ var LIMIT = 200,
                         visible: ["_id","departureDate","origin","destination","vehicle","driver","checker","status","postedBy","lateEntry","action"],
                         hiddenInCustomVisibilityOptions: ["_departureDate_","_departureTime_","plateNumber","truckNumber"],
                         notExport: ["departureDate","vehicle","action"]
+                    },
+                    create: {
+                        requiredFields: ["ticket_number","scheduled_date","shift_schedule","route","vehicle_id","driver_id"],
                     }
                 },
                 vehicles: {
@@ -941,9 +1234,15 @@ var LIMIT = 200,
                             { roles: ["administrator","developer"], additionalButton: ["data_maintenance"] }
                         ] 
                     },
+                    rowButtons: { 
+                        buttons: ["edit"],
+                        condition: [
+                            { roles: ["administrator","developer"], additionalButton: ["view"] }
+                        ] 
+                    },
                     columns: ["name","plateNumber","truckNumber","truckType","section_id","company_id","body_type","year_model","registration_month","registration_status","case_number","ltfrb_status","issued_date","expiry_date","last2Locations","action"],
                     columnOrder: [[ 0, "asc" ]],
-                    modalFields: "custom"
+                    // modalFields: "custom"
                 },
                 vehicle_personnel: {
                     tableButtons: { 
@@ -1015,7 +1314,7 @@ var LIMIT = 200,
             allowDownloadFromOtherDB: "CokeT1",
             type: 2,
             tabCloseAutoLogout: true,
-            loadInBackground: ["VEHICLES","USERS","SESSIONS"],
+            loadInBackground: ["VEHICLES","REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","USERS","VEHICLES_HISTORY","NOTIFICATIONS","SESSIONS","CUSTOMERS"],
             allowRolesToViewAs: {
                 developer: ["developer","administrator","management","dispatcher","user"],
             },
@@ -1023,13 +1322,69 @@ var LIMIT = 200,
                 developer: ["developer","administrator","management","dispatcher","user"],
             },
             custom: {
+                dashboard: {
+                    calendarView: ["day"],
+                    visibleStatus: ["in_transit","total_shipment","incomplete","assigned","queueingAtOrigin","processingAtOrigin","complete"]
+                },
+                dispatch: {
+                    editableTrailer: true,
+                    columnOrder: [[ 10, "desc" ]],
+                    completeStatusList: ["plan","assigned","dispatched","onDelivery","complete","incomplete"],
+                    previousCheckIns: {
+                        status: ["queueingAtOrigin","processingAtOrigin","idlingAtOrigin","in_transit"],
+                        roles: ["administrator","developer"]
+                    },
+                    columns: {
+                        list: ["_id","origin_id","truckName","supportUnit","shipmentType","deliverySequence","mdsdUsage","comments","status","postedBy","postingDate","action"],
+                        visible: ["_id","origin_id","truckName","supportUnit","shipmentType","deliverySequence","mdsdUsage","status","postedBy","postingDate","action"],
+                        notExport: ["action"]
+                    },
+                    rowButtons: { 
+                        buttons: ["statusUpdate","view","edit","delete"],
+                    },
+                    create: {
+                        requiredFields: ["shipment_number","origin_id","customers","vehicle_id","support_unit","shipment_type","delivery_sequence","mdsd_usage"],
+                    },
+                },
                 vehicles: {
-                    columns: ["name","trailer","equipmentNumber","site","availability"],
+                    columns: ["name","trailer","equipmentNumber","site","availability","last2Locations","action"],
                     tableButtons: { 
                         buttons: ["refresh","filter","export"]
                     },
+                    rowButtons: { 
+                        buttons: [],
+                        condition: [
+                            { roles: ["developer"], additionalButton: ["view"] }
+                        ] 
+                    },
+                },
+                routes: {
+                    originDestinationSeparator: ""
+                },
+                clusters: {
+                    modalFields: ["cluster","region_id"],
+                    columns: ["cluster","region","geofences","esq1_lq","esq1_oc","esq1_ot","esq2_lq","esq2_oc","esq2_ot","esq3_lq","esq3_oc","esq3_ot","action"],
+                    rowButtons: { 
+                        buttons: ["edit","delete"],
+                    },
+                },
+                notifications: {
+                    columns: ["shipmentNumber","delayType","escalation","timelapse","site","status","dateTime","sentTo","action"],
                 },
                 reports: {
+                    dvr: true,
+                    cicor: ["destination","origin","route","sn","plateNumber","trailer","palCap","haulerName","targetCico","actualTimelapse","remarks1","remarks2","truckBasePlant"],
+                    otr: ["origin","destination","route","sn","plateNumber","trailer","palCap","haulerName","targetTransit","actualTimelapse","remarks1","remarks2","truckBasePlant"],
+                    pbpa: true,
+                    hwtr: true,
+                    ar: "no_function",
+                    tr: true,
+                    vcr: true,
+                    ular: {
+                        roles: ["administrator","developer"]
+                    },
+                    
+                    desr: true,
                     otdr: true
                 },
                 users: {

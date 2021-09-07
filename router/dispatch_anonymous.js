@@ -2362,4 +2362,127 @@ router.get('/test/fix/events/:from/:to', (req,res,next)=>{
     });
     /**************** END OTHER COLLECTIONS */
 });
+
+// import geofence from another db
+router.get('/test/import/geofence', (req,res,next)=>{
+    const from = Number(req.params.from);
+    const to = Number(req.params.to);
+
+    // PRODUCTION
+    const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    // DEVELOPMENT
+    // const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+    var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
+    
+    var dbName = "wd-coket2";
+    
+    MongoClient.connect(url, mongoOptions, (err,client) => {
+        if(err){
+            console.log("ERROR1",err);
+        } else {
+            const childPromise = [];
+            client.db("wd-coket1").collection("geofences").find({}).toArray().then(docs => {
+                docs.forEach(val => {
+                    const set = {
+                        // geofence_id: val.geofence_id,
+                        cico: val.cico,
+                        code: val.code,
+                        site_name: val.site_name,
+                    };
+                    try { set.region_id = db.getPrimaryKey(val.region_id); } catch(eror) {}
+                    try { set.cluster_id = db.getPrimaryKey(val.cluster_id); } catch(eror) {}
+                    
+                    childPromise.push( client.db(dbName).collection("geofences").updateOne(
+                        { short_name: val.short_name }, 
+                        { 
+                            $set: set
+                        },
+                        // { upsert: true }
+                    ) );
+                });
+                if(childPromise.length > 0){
+                    console.log("Start Promise",childPromise.length);
+                    Promise.all(childPromise).then(result => {
+                        client.close();
+    
+                        res.json({ok:1,length:childPromise.length});
+                    });
+                } else {
+                    client.close();
+                    res.json({ok:1,length:childPromise.length});
+                }
+            });
+        }
+    });
+    /**************** END OTHER COLLECTIONS */
+});
+
+// delete geofences
+router.get('/test/delete/geofence', (req,res,next)=>{
+    // PRODUCTION
+    const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    // DEVELOPMENT
+    // const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+    var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
+    
+    var dbName = "wd-coket2";
+    
+    MongoClient.connect(url, mongoOptions, (err,client) => {
+        if(err){
+            console.log("ERROR1",err);
+        } else {
+            client.db(dbName).collection("geofences").deleteMany({}).then(result => {
+                client.close();
+                res.json({ok:1});
+            }).catch(error => {
+                client.close();
+                res.json({error});
+            });
+        }
+    });
+    /**************** END OTHER COLLECTIONS */
+});
+
+// import regions & clusters from another db
+router.get('/test/import/regionsClusters', (req,res,next)=>{
+    const from = Number(req.params.from);
+    const to = Number(req.params.to);
+
+    // PRODUCTION
+    const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    // DEVELOPMENT
+    // const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+    var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
+    
+    var dbName = "wd-coket2";
+    
+    MongoClient.connect(url, mongoOptions, (err,client) => {
+        if(err){
+            console.log("ERROR1",err);
+        } else {
+            const childPromise = [];
+            client.db("wd-coket1").collection("regions").find({}).toArray().then(docs => {
+                childPromise.push( client.db(dbName).collection("regions").insertMany(docs));
+
+                client.db("wd-coket1").collection("clusters").find({}).toArray().then(docs => {
+                    childPromise.push( client.db(dbName).collection("clusters").insertMany(docs));
+
+                    if(childPromise.length > 0){
+                        console.log("Start Promise",childPromise.length);
+                        Promise.all(childPromise).then(result => {
+                            client.close();
+        
+                            res.json({ok:1,length:childPromise.length});
+                        });
+                    } else {
+                        client.close();
+                        res.json({ok:1,length:childPromise.length});
+                    }
+                });
+            });
+        }
+    });
+    /**************** END OTHER COLLECTIONS */
+});
+
 module.exports = router;

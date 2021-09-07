@@ -1,4 +1,16 @@
 const changelogList = {
+    "2.57.123": {
+        date: "August 26, 2021",
+        improved: ["[Adjustment] Dispatch Entries View button"]
+    },
+    "2.57.122": {
+        date: "August 25, 2021",
+        improved: ["[Adjustment][Wilcon] Vehicles: No editing, just viewing (Editing will be done in Maintenance)"]
+    },
+    "2.57.121": {
+        date: "August 25, 2021",
+        fix: ["[Fix] Time in datetime pickers not working."]
+    },
     "2.57.120": {
         date: "August 23, 2021",
         improved: ["[Update][Wilcon][WD] Truck Masterlist; Only columns 'Plate number/MV file' to 'Branch/department'; This also means we'll remove attachments from the vehicle page; This is only to update existing WRU tracked vehicles. if a vehicle is not in the WRU database, but in the masterlist, then disregard"]

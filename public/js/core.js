@@ -4,6 +4,7 @@ const authorizationLevel  = {
     administrator: () => { return ["administrator","developer"].includes(USER.role); },
 };
 const ENVIRONMENT = $(`#ENVIRONMENT`).text() || "development";
+const SHIPMENT_CHECK_STATUS_URLPATH = (ENVIRONMENT == "development") ? 'shipmentStatusxDev' : 'shipmentStatus';
 const CUSTOM = {
     COLUMN:{
         settings: [
@@ -120,6 +121,9 @@ const CUSTOM = {
                         case "origin":
                             arr.push(objectOptions(val,{ data: "Origin", title: "Origin", visible: true }));
                             break;
+                        case "origin_id":
+                            arr.push(objectOptions(val,{ data: "Origin", title: "Origin", visible: true }));
+                            break;
                         case "route":
                             arr.push(objectOptions(val,{ data: "Route", title: "Route", visible: true }));
                             break;
@@ -140,6 +144,9 @@ const CUSTOM = {
                             break;
                         case "vehicle":
                             arr.push(objectOptions(val,{ data: "Vehicle", title: "Vehicle", visible: true }));
+                            break;
+                        case "truckName":
+                            arr.push(objectOptions(val,{ data: "Vehicle", title: "Truck Plate Number", visible: true }));
                             break;
                         case "chassis":
                             arr.push(objectOptions(val,{ data: "Chassis", title: "Chassis", visible: false }));
@@ -167,6 +174,18 @@ const CUSTOM = {
                             break;
                         case "helper":
                             arr.push(objectOptions(val,{ data: "Helper", title: "Helper", visible: true }));
+                            break;
+                        case "supportUnit":
+                            arr.push(objectOptions(val,{ data: "Support Unit", title: "Support Unit", visible: true }));
+                            break;
+                        case "shipmentType":
+                            arr.push(objectOptions(val,{ data: "Shipment Type", title: "Shipment Type", visible: true }));
+                            break;
+                        case "deliverySequence":
+                            arr.push(objectOptions(val,{ data: "Delivery Sequence", title: "Delivery Sequence", visible: true }));
+                            break;
+                        case "mdsdUsage":
+                            arr.push(objectOptions(val,{ data: "MDSD Usage", title: "MDSD Usage", visible: true }));
                             break;
                         case "comments":
                             arr.push(objectOptions(val,{ data: "Comments", title: "Comments", visible: true }));
@@ -574,42 +593,53 @@ const CUSTOM = {
             { data: "Company", title: "Company", visible: true },
             { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
         ],
+        customers: [
+            { data: "_id", title: "Customer Number", visible: true },
+            { data: "Customer", title: "Customer", visible: true },
+            { data: "Region", title: "Region", visible: true },
+            { data: "Cluster", title: "Cluster", visible: true },
+            { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
+        ],
     },
     FORM: {
-        dispatch: function(){
-            return [
-                {id:"#shipment_number",key:"_id",inputType:"val",readonly:true,regex:/^\d{8}$/},
-                {id:"#ticket_number",key:"ticket_number",inputType:"val",remove:true,parent:".col-sm-4"},
-                {id:"#scheduled_date",key:"scheduled_date",inputType:"val",remove:true,parent:".col-sm-4"},
-                {id:"#shift_schedule",key:"shift_schedule",inputType:"val",remove:true,parent:".col-sm-4"},
-                {id:"#origin",key:"origin_id",inputType:"val",required:true},
-                {id:"#route",key:"route",inputType:"val",readonly:true,required:true,trigger:"change",dataType:"select"},
-                {id:"#trailer",key:"trailer",inputType:"val",trigger:"change",required:true,dataType:"select"}, // should be before vehilce
-                {id:"#vehicle",key:"vehicle_id",inputType:"val",trigger:"change",required:true,dataType:"select",typeOf:"number"},
-                {id:"#chassis",key:"chassis",inputType:"val",remove:true,parent:".col-sm-3"},
-                {id:"#driver_id",key:"driver_id",inputType:"val",remove:true,parent:".col-sm-12"},
-                {id:"#checker_id",key:"checker_id",inputType:"val",remove:true,parent:".col-sm-12"},
-                {id:"#helper_id",key:"helper_id",inputType:"val",remove:true,parent:".col-sm-12"},
-                {id:"#comments",key:"comments",inputType:"val"},
-                // {id:"#xxxxxxx",id:"xxxxxxx"},
-            ];
-        },
-        dispatch_mod2: function(){
-            return [
-                {id:"#shipment_number",key:"_id",inputType:"val",readonly:true,regex:/^\d{8}$/},
-                {id:"#ticket_number",key:"ticket_number",inputType:"val",required:true},
-                {id:"#scheduled_date",key:"scheduled_date",inputType:"val",required:true,dataType:"date"},
-                {id:"#shift_schedule",key:"shift_schedule",inputType:"val",trigger:"change",dataType:"select"},
-                {id:"#origin",key:"origin_id",inputType:"val",required:true},
-                {id:"#route",key:"route",inputType:"val",readonly:true,required:true,trigger:"change",dataType:"select"},
-                {id:"#trailer",key:"trailer",inputType:"val",trigger:"change",required:true,dataType:"select"}, // shohul be  before cehicle
-                {id:"#vehicle",key:"vehicle_id",inputType:"val",trigger:"change",required:true,dataType:"select",typeOf:"number"},
-                {id:"#chassis",key:"chassis",inputType:"val",trigger:"change",required:true,dataType:"select"},
-                {id:"#driver_id",key:"driver_id",inputType:"val",trigger:"change",required:true,dataType:"select"},
-                {id:"#checker_id",key:"checker_id",inputType:"val",trigger:"change",required:true,dataType:"select"},
-                {id:"#helper_id",key:"helper_id",inputType:"val",trigger:"change",required:true,dataType:"select"},
-                {id:"#comments",key:"comments",inputType:"val"},
-            ];
+        dispatch: {
+            coket1: function(){
+                return [
+                    {id:"#shipment_number",key:"_id",inputType:"val",readonly:true,regex:/^\d{8}$/},
+                    {id:"#route",key:"route",inputType:"val",readonly:true,required:true,trigger:"change",dataType:"select"},
+                    {id:"#trailer",key:"trailer",inputType:"val",trigger:"change",required:true,dataType:"select"}, // should be before vehilce
+                    {id:"#vehicle_id",key:"vehicle_id",inputType:"val",trigger:"change",required:true,dataType:"select",typeOf:"number"},
+                    {id:"#comments",key:"comments",inputType:"val"},
+                ];
+            },
+            coket2: function(){
+                return [
+                    {id:"#shipment_number",key:"_id",inputType:"val",readonly:true,regex:/^\d{8}$/},
+                    {id:"#origin_id",key:"origin_id",inputType:"val",required:true,trigger:"change",dataType:"select"},
+                    {id:"#customers",key:"customers",inputType:"val",required:true,trigger:"change",dataType:"select"},
+                    {id:"#vehicle_id",key:"vehicle_id",inputType:"val",trigger:"change",required:true,dataType:"select",typeOf:"number"},
+                    {id:"support_unit",key:"support_unit",inputType:"val",required:true,dataType:"radiobutton"},
+                    {id:"shipment_type",key:"shipment_type",inputType:"val",required:true,dataType:"radiobutton"},
+                    {id:"delivery_sequence",key:"delivery_sequence",inputType:"val",required:true,dataType:"radiobutton"},
+                    {id:"mdsd_usage",key:"mdsd_usage",inputType:"val",required:true,dataType:"radiobutton"},
+                    {id:"#comments",key:"comments",inputType:"val"},
+                ];
+            },
+            wilcon: function(){
+                return [
+                    {id:"#ticket_number",key:"ticket_number",inputType:"val",required:true},
+                    {id:"#scheduled_date",key:"scheduled_date",inputType:"val",required:true,dataType:"date"},
+                    {id:"#shift_schedule",key:"shift_schedule",inputType:"val",trigger:"change",dataType:"select"},
+                    {id:"#route",key:"route",inputType:"val",readonly:true,required:true,trigger:"change",dataType:"select"},
+                    {id:"#trailer",key:"trailer",inputType:"val",trigger:"change",required:true,dataType:"select"}, // shohul be  before cehicle
+                    {id:"#vehicle_id",key:"vehicle_id",inputType:"val",trigger:"change",required:true,dataType:"select",typeOf:"number"},
+                    {id:"#chassis",key:"chassis",inputType:"val",trigger:"change",required:true,dataType:"select"},
+                    {id:"#driver_id",key:"driver_id",inputType:"val",trigger:"change",required:true,dataType:"select"},
+                    {id:"#checker_id",key:"checker_id",inputType:"val",trigger:"change",required:true,dataType:"select"},
+                    {id:"#helper_id",key:"helper_id",inputType:"val",trigger:"change",required:true,dataType:"select"},
+                    {id:"#comments",key:"comments",inputType:"val"},
+                ];
+            }
         },
     },
     IMPORT_TEMPLATE: {
@@ -843,7 +873,10 @@ const WEBSOCKET = {
                     return value || defaultValue;
                 };
 
+                clientCustom.statusAllowedEditable = {};
+                clientCustom.completeStatusList = {};
                 clientCustom.allowExportTable = {};
+                clientCustom.requiredFields = {};
                 clientCustom.calendarView = {};
                 clientCustom.tableButtons = {};
                 clientCustom.columnOrder = {};
@@ -883,7 +916,7 @@ const WEBSOCKET = {
                 clientCustom.allowExportTable.notifications = setValue("custom.notifications.allowExportTable", false);
                 
                 // dispatch
-                clientCustom.statusWhenTruckEnteredOrigin = setValue("custom.dispatch.statusWhenTruckEnteredOrigin", "assigned");
+                // clientCustom.statusWhenTruckEnteredOrigin = setValue("custom.dispatch.statusWhenTruckEnteredOrigin", "assigned");
                 clientCustom.previousCheckIns = setValue("custom.dispatch.previousCheckIns", { status: [], roles: [] });
                 clientCustom.originDestinationSeparator = setValue("custom.dispatch.originDestinationSeparator", "");
                 clientCustom.editableTrailer = setValue("custom.dispatch.editableTrailer", false);
@@ -897,6 +930,7 @@ const WEBSOCKET = {
                 clientCustom.modalFields.clusters = setValue("custom.clusters.modalFields", []);
 
                 // columnOrder
+                clientCustom.columnOrder.dispatch = setValue("custom.dispatch.columnOrder", [[ 0, "asc" ]]);
                 clientCustom.columnOrder.vehicles = setValue("custom.vehicles.columnOrder", [[ 0, "asc" ]]);
                 
                 // tableButtons
@@ -908,6 +942,13 @@ const WEBSOCKET = {
                 // rowButtons
                 clientCustom.rowButtons.dispatch = setValue("custom.dispatch.rowButtons", { buttons: [] });
                 clientCustom.rowButtons.clusters = setValue("custom.clusters.rowButtons", { buttons: [] });
+                clientCustom.rowButtons.vehicles = setValue("custom.vehicles.rowButtons", { buttons: [] });
+
+                // requiredFields
+                clientCustom.requiredFields.dispatch = setValue("custom.dispatch.create.requiredFields", []);
+
+                // completeStatusList
+                clientCustom.completeStatusList.dispatch = setValue("custom.dispatch.completeStatusList", []);
             }
 
             SOCKET = io();

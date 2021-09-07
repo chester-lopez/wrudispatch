@@ -391,6 +391,7 @@ router.post('/:dbName/:username', (req,res,next)=>{
     function insertDocument(){
         
         userInput.posting_date = new Date().toISOString();
+        userInput.username = username;
 
         
         (userInput.driver_id) ? userInput.driver_id = db.getPrimaryKey(userInput.driver_id) : null;
@@ -456,9 +457,7 @@ router.put('/:dbName/:username/:_id', (req,res,next)=>{
     
     defaultFilter.check(filter).then(() => {
         var userInput = req.body,
-            type = userInput.type,
             selectedCheckIn = userInput.selectedCheckIn,
-            transit_time = userInput.transit_time,
             vehicleChanged = userInput.vehicleChanged,
             unset_obj = {},
             update_obj = {};
@@ -469,6 +468,7 @@ router.put('/:dbName/:username/:_id', (req,res,next)=>{
         delete userInput.vehicleChanged;
         delete userInput.selectedCheckIn;
 
+        delete userInput._id;
         delete userInput.username;
 
         (userInput.driver_id) ? userInput.driver_id = db.getPrimaryKey(userInput.driver_id) : null;
@@ -479,47 +479,11 @@ router.put('/:dbName/:username/:_id', (req,res,next)=>{
         (userInput.destination && userInput.destination[0] && userInput.destination[0].location_id) ? userInput.destination[0].location_id = db.getPrimaryKey(userInput.destination[0].location_id) : null;
         
         var fa = storage._attachments_.filter(`${encrypted}/${_id}`,userInput),
-        // var fa = filterAttachments(userInput,unset_obj),
             attachments = fa.attachments;
-        if(type != "statusUpdate") {
-            userInput = fa.userInput;
-            unset_obj = fa.unset_obj;
-        }
 
-        if(type == "statusUpdate"){
-            var history = `Status manually updated to <status>${userInput.status}</status> by <username>${username}</username>.`;
-            if(userInput.i_c_reason){
-                history += `<div class="pt-2">Reason for updating status from Incomplete to Complete: <b>${userInput.i_c_reason}</b></div>`;
-            }
-            userInput[`history.${new Date().getTime()}`] = history;
+        userInput = fa.userInput;
+        unset_obj = fa.unset_obj;
 
-            delete userInput.i_c_reason;
-
-            if(["queueingAtOrigin","processingAtOrigin","idlingAtOrigin","in_transit","onSite","returning","complete","incomplete"].includes(userInput.status)){
-                userInput[`events_captured.${new Date().getTime()}`] = userInput.status;
-            }
-            unset_obj["escalation1"] = "";
-            unset_obj["escalation2"] = "";
-            unset_obj["escalation3"] = "";
-
-            if(["plan","assigned","queueingAtOrigin","processingAtOrigin","idlingAtOrigin"].includes(userInput.status)){
-                unset_obj[`departure_date`] = "";
-                unset_obj[`destination.0.etd`] = "";
-                unset_obj[`destination.0.eta`] = "";
-            } else if(["in_transit"].includes(userInput.status)){
-                var date = new Date(),
-                    transit_time = HH_MM(Number(transit_time)),
-                    hours = transit_time.hour,
-                    minutes = transit_time.minute;
-                userInput[`departure_date`] = date.toISOString();
-                userInput[`destination.0.etd`] = date.toISOString();
-                
-                (hours)?date.setHours(date.getHours() + Number(hours)):null;
-                (minutes)?date.setMinutes(date.getMinutes() + Number(minutes)):null;
-                
-                userInput[`destination.0.eta`] = date.toISOString();
-            }
-        }
         update_obj["$set"] = userInput;
         (Object.keys(unset_obj).length > 0) ? update_obj["$unset"] = unset_obj : null; 
 
@@ -540,19 +504,79 @@ router.put('/:dbName/:username/:_id', (req,res,next)=>{
             db.getCollection(dbName,collection).findOneAndUpdate(filter,update_obj,{returnOriginal: false},(err,docs)=>{
                 if(err) next(_ERROR_.INTERNAL_SERVER(err));
                 else {
-                    if(type != "statusUpdate") {
-                        storage._attachments_.update(`${encrypted}/${_id}`,attachments).then(() => {
-                            res.json(docs);
-                        }).catch(error => {
-                            console.log("Error Uploading: ",JSON.stringify(error));
-                            res.json(docs);
-                        });
-                    } else {
+                    storage._attachments_.update(`${encrypted}/${_id}`,attachments).then(() => {
                         res.json(docs);
-                    }
+                    }).catch(error => {
+                        console.log("Error Uploading: ",JSON.stringify(error));
+                        res.json(docs);
+                    });
                 }
             });
         }
+    });
+});
+
+// update status
+router.put('/:dbName/:username/status/:_id', (req,res,next)=>{
+    const dbName = req.params.dbName;
+    const _id = req.params._id;
+    const username = req.params.username;
+    const filter = {_id}; // NEVER LEAVE EMPTY! Will affect all
+    
+    defaultFilter.check(filter).then(() => {
+        var userInput = req.body,
+            transit_time = userInput.transit_time,
+            unset_obj = {},
+            set_obj = {},
+            update_obj = {};
+
+        var history = `Status manually updated to <status>${userInput.status}</status> by <username>${username}</username>.`;
+        if(userInput.i_c_reason){
+            history += `<div class="pt-2">Reason for updating status from Incomplete to ${userInput.statusText}: <b>${userInput.i_c_reason}</b></div>`;
+        }
+        set_obj[`history.${new Date().getTime()}`] = history;
+
+        delete userInput.i_c_reason;
+
+        if(["dispatched","queueingAtOrigin","processingAtOrigin","idlingAtOrigin","in_transit","onDelivery","onSite","returning","complete","incomplete"].includes(userInput.status)){
+            set_obj[`events_captured.${new Date().getTime()}`] = userInput.status;
+        }
+        unset_obj["escalation1"] = "";
+        unset_obj["escalation2"] = "";
+        unset_obj["escalation3"] = "";
+
+        if(["plan","assigned","dispatched","queueingAtOrigin","processingAtOrigin","idlingAtOrigin"].includes(userInput.status)){
+            unset_obj[`departure_date`] = "";
+            unset_obj[`destination.0.etd`] = "";
+            unset_obj[`destination.0.eta`] = "";
+        } else if(["in_transit","onDelivery"].includes(userInput.status)){
+            var date = new Date();
+            set_obj[`departure_date`] = date.toISOString();
+
+            if(transit_time){
+                var transit_time = HH_MM(Number(transit_time));
+                var hours = transit_time.hour;
+                var minutes = transit_time.minute;
+
+                set_obj[`destination.0.etd`] = date.toISOString();
+            
+                (hours)?date.setHours(date.getHours() + Number(hours)):null;
+                (minutes)?date.setMinutes(date.getMinutes() + Number(minutes)):null;
+                
+                set_obj[`destination.0.eta`] = date.toISOString();
+            }
+        }
+        set_obj["status"] = userInput.status;
+
+        update_obj["$set"] = set_obj;
+        (Object.keys(unset_obj).length > 0) ? update_obj["$unset"] = unset_obj : null; 
+
+        db.getCollection(dbName,collection).findOneAndUpdate(filter,update_obj,{returnOriginal: false},(err,docs)=>{
+            if(err) next(_ERROR_.INTERNAL_SERVER(err));
+            else {
+                res.json(docs);
+            }
+        });
     });
 });
 
