@@ -3899,6 +3899,7 @@ var DISPATCH = {
             LIST["dispatch"] = LIST["dispatch"] || [];
 
             var _id = __data._id,
+                __type = __data.type,
                 __escalation = Number(__data.escalation), 
                 __status = "",
                 __tempStat = null,
@@ -3925,16 +3926,32 @@ var DISPATCH = {
                     }
                 },
                 disableFields = function(status){
-                    if(["in_transit"].includes(status)){
-                        if(authorizationLevel .administrator()){} 
-                        else {
-                            $(`#modal input,#modal textarea,#modal select`).attr("disabled",true);
-                            $(`#new-destination`).remove();
-                            $(`#comments,#new-file`).attr("disabled",false);
+                    if(__type || status){
+                        if(__type == "delay") {
+                            $(`#submit`).html("Submit");
+                            $(`#modal input,#modal textarea,#modal select`).attr("disabled",true); // always put before escalation
+                            $(`#new-attachment,#new-destination`).remove();
                             $(`#modal table > tbody > tr > td input:disabled`).parents("tr").css("background-color","#eee");
+                        } else if(__type == "view") {
+                            $(`#modal input,#modal textarea,#modal select`).attr("disabled",true);
+                            $(`#submit`).remove();
+                            $(`#new-attachment,#new-destination`).remove();
+                            $(`#modal table > tbody > tr > td input:disabled`).parents("tr").css("background-color","#eee");
+                        } else if(["in_transit"].includes(status)){
+                            if(authorizationLevel .administrator()){} 
+                            else {
+                                $(`#modal input,#modal textarea,#modal select`).attr("disabled",true);
+                                $(`#new-destination`).remove();
+                                $(`#comments,#new-file`).attr("disabled",false);
+                                $(`#modal table > tbody > tr > td input:disabled`).parents("tr").css("background-color","#eee");
+                            }
                         }
                     }
-                };
+                },
+                isStatusIncomplete = function(){
+                    // check if original status is INCOMPLETE
+                    return (__originalObj && __originalObj.status == "incomplete");
+                }
 
             initializeElements();
             
@@ -3972,7 +3989,7 @@ var DISPATCH = {
                                 if(!shipment_number || !regex.test(shipment_number)) isComplete = false;
                             }
                             
-                            if(isComplete){
+                            if(!["view","delay"].includes(__type) && isComplete){
                                 vehicleDoneLoading = false;
 
                                 __tempStat = null;
@@ -4781,6 +4798,14 @@ var DISPATCH = {
                         DESTINATION_ID = destination._id;
                         $(`#origin`).val(`${origin.short_name} (${origin.site_name || "-"})`);
                         $(`[location]`).val(`${destination.short_name} (${destination.site_name || "-"})`);
+                    } else {
+                        if(__type != "view") {
+                            // $(`#route`).val("").change();
+                            $(`#origin,[location]`).val("");
+                            ORIGIN_ID = "";
+                            DESTINATION_ID = "";
+                            // toastr.warning("The route you have selected is not defined in the database.");
+                        }
                     }
                     route_and_transitTime(null,route);
                     previousCheckIns();
@@ -4840,6 +4865,17 @@ var DISPATCH = {
                         $(`#loading-text`).remove();
                         $(`.main-content .clearfix`).css({"pointer-events": ""});
 
+                        if(["complete","incomplete"].includes(obj.status)){
+                            if(isStatusIncomplete() && authorizationLevel .administrator()) {
+                                $(`#error`).html(`<div class="alert alert-danger alert-dismissible mb-1 role="alert">
+                                                    <i class="la la-times-circle"></i> The status of this entry is <b>INCOMPLETE</b>. Any changes made will not affect the status.
+                                                </div>`).show();
+                            }
+                            else {
+                                (__type != "delay")? __type = "view" : null;
+                            }
+                        }
+
                         __status = obj.status;
 
                         $.each(obj.destination, function(i,val){
@@ -4882,7 +4918,7 @@ var DISPATCH = {
                             if(val.trigger) $(val.id).trigger(val.trigger);
                         });
 
-                        ATTACHMENTS.set(obj.attachments);
+                        ATTACHMENTS.set(obj.attachments,((__type == "delay" || __type == "view")?true:false));
                         
                         if(obj.destination.length == 0){
                             addNewDestinationRow();
@@ -4905,7 +4941,8 @@ var DISPATCH = {
                 function addNewDestinationRow(data,routeId){
                     data = data || {};
                     (destination_index < 1) ? destination_index = 1 : null;
-                    var _row = DISPATCH.FUNCTION.add_row.destination(destination_index,data,routeId);
+                    var noAction = (["delay","view"].includes(__type) || ["queueingAtOrigin","processingAtOrigin","in_transit","queueingAtDestination","processingAtDestination"].includes(__status))?true:false,
+                        _row = DISPATCH.FUNCTION.add_row.destination(destination_index,data,routeId,noAction);
                     destination_index ++;	
                     $(`[_row="${_row}"] [delete-destination]`).click(function(){
                         $(this).parent().parent().remove();	
@@ -4941,15 +4978,15 @@ var DISPATCH = {
                 /******** END ROUTE & TRANSIT TIME ********/
 
                 /******** ATTACHMENT ********/
-                ATTACHMENTS.initialize();
+                ATTACHMENTS.initialize(((__type == "delay" || __type == "view")?true:false));
                 /******** END ATTACHMENT ********/
 
                 /******** SUBMIT ENTRY ********/
                 $(`#submit`).click(function(){
                     var status = "assigned",
                         body = {},
-                        buttonDefaultText = (!has_id) ? "Submit" : "Update",
-                        buttonLoadingText = (!has_id) ? "Submitting.." : "Updating..",
+                        buttonDefaultText = (__type == "delay" || !has_id) ? "Submit" : "Update",
+                        buttonLoadingText = (__type == "delay" || !has_id) ? "Submitting.." : "Updating..",
                         button = $(this);
                     
                     $(`#error`).hide();
@@ -5053,101 +5090,18 @@ var DISPATCH = {
                         
                     _id = shipment_number;
 
-                    if(clientCustom.autoGeneratedId === true){
-                        $(`#shipment_number`).css(css_default);
-                    } else {
-                        if(_id.isEmpty() || !regex.test(_id)){
-                            invalid = true;
-                            invalid_arr.push("shipment_number");
-                        } else {
-                            $(`#shipment_number`).css(css_default);
-                        }
-                    }
-                    // (origin_id == null || (origin_id != null && origin_id.isEmpty())) ? invalid_arr.push("origin") : $(`#origin`).css(css_default);
-                    (route == null || (route != null && route.isEmpty())) ? invalid_arr.push("route") : $(`#route`).css(css_default);
-                    (vehicle_id == null || (vehicle != null && vehicle_id.isEmpty())) ? invalid_arr.push("vehicle") : $(`#vehicle`).next(".select2-container").find(".select2-selection").css(css_default);
-                    
-                    if(CLIENT.id == "wilcon"){
-                        (ticket_number == null || (ticket_number != null && ticket_number.isEmpty())) ? invalid_arr.push("ticket_number") : $(`#ticket_number`).css(css_default);
-                        (driver_id == null || (driver_id != null && driver_id.isEmpty())) ? invalid_arr.push("driver_id") : $(`#driver_id`).css(css_default);
-                        // (chassis == null || (chassis != null && chassis.isEmpty())) ? invalid_arr.push("chassis") : $(`#chassis`).css(css_default);
-                        // (checker_id == null || (checker_id != null && checker_id.isEmpty())) ? invalid_arr.push("checker_id") : $(`#checker_id`).css(css_default);
-                        // (helper_id == null || (helper_id != null && helper_id.isEmpty())) ? invalid_arr.push("helper_id") : $(`#helper_id`).css(css_default);
-                        (scheduled_date == null || (scheduled_date != null && scheduled_date.isEmpty())) ? invalid_arr.push("scheduled_date") : $(`#scheduled_date`).css(css_default);
-                        (shift_schedule == null || (shift_schedule != null && shift_schedule.isEmpty())) ? invalid_arr.push("shift_schedule") : $(`#shift_schedule`).css(css_default);
-                    } else {
-                        (trailer == null || (trailer != null && trailer.isEmpty())) ? invalid_arr.push("trailer") : $(`#trailer`).next(".select2-container").find(".select2-selection").css(css_default);
-                    }
-
-                    $.each(invalid_arr, function(i,val){
-                        if($(`#${val}`).next(".select2-container").find(".select2-selection").length > 0){
-                            $(`#${val}`).next(".select2-container").find(".select2-selection").css(css_error);
-                        } else {
-                            $(`#${val}`).css(css_error);
-                        }
-                        incomplete = true;
-                    });
-
-                    if(invalid === true || disabledSumitButton === true){
-                        $(`#error`).html(`<div class="alert alert-danger alert-dismissible mb-1 role="alert">
-                                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                                <span aria-hidden="true">×</span>
-                                            </button>
-                                            <i class="la la-times-circle"></i> Please fill all the required fields
-                                        </div>`).show();
-                        $("#modal").animate({ scrollTop: 0 }, "fast");
-
-                        if(CLIENT.id != "wilcon"){
-                            if(!regex.test(_id)) {
-                                $(`#error`).append(ALERT.HTML.ERROR(`Invalid shipment number indicated. Field should contain eight (8) numerical digit.`,"mb-1"));
-                            }
-                        }
-                    } else {
-                        if(incomplete === true) {
-                            // warn staut is PLAN
-                            MODAL.CONFIRMATION({
-                                content: `You have not filled in all of the required fields. This will be saved as <span class="text-info font-bold">PLAN</span><sup style="font-size: 8px;">**</sup> instead. Do you wish to proceed?<span style="font-size: 9px;margin-left: 15px;font-style: italic;" class="d-block text-left mt-5">**Shipments with status <span class="text-info font-bold">PLAN</span> will be ignored during event process.</span>`,
-                                confirmCloseCondition: true,
-                                confirmButtonText: "Proceed",
-                                confirmBGStyle: "background-color:#64b03a;",
-                                confirmCallback: function(){
-                                    status = "plan";
-                                    SUBMITFORM();
-                                    $(`#confirm-modal`).remove(); 
-                                }
-                            });
-                        } else {
-                            console.log("HIIII");
-                            checkSelectedVehicleWithinGeofence().then(() => {
-                                console.log("HEY");
-                                body.late_entry = late_data_entry;
-                                
-                                (__tempStat) ? __status = __tempStat : null;
-                                (__status && __status != "plan") ? status = __status : null;
-
-                                SUBMITFORM();
-
-                            }).catch(error => {
-                                console.log(error);
-                            });
-                        } 
-                    }
-
-                    function SUBMITFORM(){
+                    if(isStatusIncomplete()){
                         var url = `/api/dispatch/${CLIENT.id}/${USER.username}`,
                             method = "POST";
 
                         body.origin_id = origin_id;
                         body.route = route;
                         body.destination = destination;
-                        body.vehicle_id = Number(vehicle_id);
+                        body.vehicle_id =  Number(vehicle_id);
                         body.trailer = trailer;
-                        body.vehicleData = __vehicleData;
                         body.comments = comments;
                         body.attachments = ATTACHMENTS.get(CLIENT.dsName);
-                        body.status = status;
                         body.username = USER.username;
-                        body.version = VERSION;
                         
                         if(CLIENT.id == "wilcon"){
                             body.ticket_number = ticket_number;
@@ -5155,68 +5109,21 @@ var DISPATCH = {
                             body.checker_id = checker_id;
                             body.helper_id = helper_id;
                             body.chassis = chassis;
-
+                            
                             (scheduled_date) ? body.scheduled_date = new Date(scheduled_date).toISOString() : null;
                             (shift_schedule) ? body.shift_schedule = shift_schedule : null;
-                        
-                            if(scheduled_date && !withinSchedule(scheduled_date,shift_schedule)){
-                                if(status != "plan"){
-                                    status = "scheduled";
-                                    body.status = status;
-                                }
-                            }
                         }
 
                         // check for difference (if update only)
-                        var selectedCheckIn = false;
-                        historyOptions.excludeKeys = ["events_captured","vehicleData","username"];
-                        historyOptions.customChanges = [
-                            function(){
-                                var message = null;
-                                if(vehicleOriginGeofence || vehicleDestinationGeofence){
-                                    if(__originalObj){
-                                        var found = false;
-                                        Object.keys((__originalObj.events_captured||{})).forEach(key => {
-                                            if(moment(Number(key)).format('HH:mm:ss') === moment(vehicleOriginGeofence.events[0].timestamp).format('HH:mm:ss')){
-                                                found = true;
-                                            }
-                                        });
-                                        if(found == true){
-                                            message = null;
-                                        } else {
-                                            var checkinTime = DATETIME.FORMAT(vehicleOriginGeofence.events[0].timestamp);
-                                            message = `Selected <u>${checkinTime}</u> check-in date & time.`;
-                                            selectedCheckIn = true;
-                                        }
-                                    } else {
-                                        message = null;
-                                    }
-                                } else {
-                                    message = null;
-                                }
-                                return message;
-                            } 
-                        ];
-
+                        historyOptions.excludeKeys = ["status","vehicleData","username"];
                         body = HISTORY.check(__originalObj,body,USER.username,historyOptions);
-                        body.selectedCheckIn = selectedCheckIn;
 
                         var changesKey = false;
                         Object.keys(body).forEach(key => {
                             (key.indexOf("history.") > -1 ) ? changesKey = key : null;
                         });
 
-                        if(__originalObj){
-                            if(__originalObj.route != route || Number(__originalObj.vehicle_id) != Number(vehicle_id) || vehicleOriginGeofence || vehicleDestinationGeofence){
-                                body.events_captured = __events_captured;
-                            } else {
-                                body.events_captured = __originalObj.events_captured;
-                            }
-                        } else {
-                            body.events_captured = __events_captured;
-                        }
-                        
-                        if(changesKey && !["plan"].includes(__originalObj.status) ) {// can make, if no hisotry, submit button will remain disabled..
+                        if(changesKey) {// can make, if no hisotry, submit button will remain disabled..
                             MODAL.CONFIRMATION_W_FIELD({
                                 content: `Please provide a reason for updating this entry.`,
                                 confirmCloseCondition: true,
@@ -5238,7 +5145,7 @@ var DISPATCH = {
                         function _submit_(){
                             $(`.main-content .clearfix`).css({"pointer-events": "none"});
                             $(button).html(`<i class="la la-spinner la-spin mr-2"></i>${buttonLoadingText}`).attr("disabled",true);
-
+                            
                             if(has_id === true){
                                 url = `/api/dispatch/${CLIENT.id}/${USER.username}/${_id}`;
                                 method = "PUT";
@@ -5248,28 +5155,7 @@ var DISPATCH = {
                                 }
                             }
                             // body = $.extend(new_data,body);
-                            if(body.late_entry === true){
-                                var inTransitKey = OBJECT.getKeyByValue(__events_captured,"in_transit");
-                                var _route = getRoute(route);
-                                var date =  (inTransitKey) ? new Date(Number(inTransitKey)) : new Date(),
-                                    transit_time = DATETIME.HH_MM(null,_route.transit_time),
-                                    hours = transit_time.hour,
-                                    minutes = transit_time.minute;
-                                
-                                body.departure_date = date.toISOString();
-                                body.destination[0].etd = date.toISOString();
-
-                                if(!inTransitKey){
-                                    body.events_captured[date.getTime()] = "in_transit";
-                                    body.events_captured = OBJECT.sortByKey(body.events_captured);
-                                }
                             
-                                (hours)?date.setHours(date.getHours() + Number(hours)):null;
-                                (minutes)?date.setMinutes(date.getMinutes() + Number(minutes)):null;
-                                
-                                body.destination[0].eta = date.toISOString();
-                            }
-                            body.vehicleChanged = vehicleChanged;
                             GET.AJAX({
                                 url,
                                 method,
@@ -5294,38 +5180,291 @@ var DISPATCH = {
                                     console.log(docs.error);
                                     $(button).html(buttonDefaultText).attr("disabled",false);
                                     $(`.main-content .clearfix`).css({"pointer-events": ""});
-                                    TOASTR.ERROR({statusText:"Shipment # already exists."},`<br><br><a id="toastr-link" href="javascript:void(0);">Click here to Load Existing Entry</a><br><br>or Tap anywhere to close`,{ timeOut: 0, extendedTimeOut: 0 });
-                                    $("body").on('click', `#toastr-link`,function(e){
-                                        e.stopImmediatePropagation();
-                                        // do not use _id or shipment_number for value of {_id:...}. It will use the previous form ID.
-                                        // should also be before body.append.
-                                        var __id = $(`#shipment_number`).val()._trim();
-                                        $(`#overlay`).remove();
-                                        $(`body`).append(MODAL.CREATE.EMPTY(`View Dispatch Entry`,modalViews.dispatch.form()));
-                                        DISPATCH.FUNCTION.form({ _id: __id });
-                                        $("html, body,#modal").animate({ scrollTop: 0 }, "fast");
-                                    });
                                 }
                             },function(error){
                                 console.log(error);
                                 $(button).html(buttonDefaultText).attr("disabled",false);
                                 $(`.main-content .clearfix`).css({"pointer-events": ""});
-                                if(error.status == 409){
-                                    TOASTR.ERROR({statusText:"Shipment # already exists."},`<br><br><a id="toastr-link" href="javascript:void(0);">Click here to Load Existing Entry</a><br><br>or Tap anywhere to close`,{ timeOut: 0, extendedTimeOut: 0 });
-                                    $("body").on('click', `#toastr-link`,function(e){
-                                        e.stopImmediatePropagation();
-                                        // do not use _id or shipment_number for value of {_id:...}. It will use the previous form ID.
-                                        // should also be before body.append.
-                                        var __id = $(`#shipment_number`).val()._trim();
-                                        $(`#overlay`).remove();
-                                        $(`body`).append(MODAL.CREATE.EMPTY(`View Dispatch Entry`,modalViews.dispatch.form()));
-                                        DISPATCH.FUNCTION.form({ _id: __id });
-                                        $("html, body,#modal").animate({ scrollTop: 0 }, "fast");
-                                    });
-                                } else {
+                                if(error.status == 409){} else {
                                     TOASTR.ERROR(error.responseJSON);
                                 }
                             });
+                        }
+                    } else {
+                        if(clientCustom.autoGeneratedId === true){
+                            $(`#shipment_number`).css(css_default);
+                        } else {
+                            if(_id.isEmpty() || !regex.test(_id)){
+                                invalid = true;
+                                invalid_arr.push("shipment_number");
+                            } else {
+                                $(`#shipment_number`).css(css_default);
+                            }
+                        }
+                        // (origin_id == null || (origin_id != null && origin_id.isEmpty())) ? invalid_arr.push("origin") : $(`#origin`).css(css_default);
+                        (route == null || (route != null && route.isEmpty())) ? invalid_arr.push("route") : $(`#route`).css(css_default);
+                        (vehicle_id == null || (vehicle != null && vehicle_id.isEmpty())) ? invalid_arr.push("vehicle") : $(`#vehicle`).next(".select2-container").find(".select2-selection").css(css_default);
+                        
+                        if(CLIENT.id == "wilcon"){
+                            (ticket_number == null || (ticket_number != null && ticket_number.isEmpty())) ? invalid_arr.push("ticket_number") : $(`#ticket_number`).css(css_default);
+                            (driver_id == null || (driver_id != null && driver_id.isEmpty())) ? invalid_arr.push("driver_id") : $(`#driver_id`).css(css_default);
+                            // (chassis == null || (chassis != null && chassis.isEmpty())) ? invalid_arr.push("chassis") : $(`#chassis`).css(css_default);
+                            // (checker_id == null || (checker_id != null && checker_id.isEmpty())) ? invalid_arr.push("checker_id") : $(`#checker_id`).css(css_default);
+                            // (helper_id == null || (helper_id != null && helper_id.isEmpty())) ? invalid_arr.push("helper_id") : $(`#helper_id`).css(css_default);
+                            (scheduled_date == null || (scheduled_date != null && scheduled_date.isEmpty())) ? invalid_arr.push("scheduled_date") : $(`#scheduled_date`).css(css_default);
+                            (shift_schedule == null || (shift_schedule != null && shift_schedule.isEmpty())) ? invalid_arr.push("shift_schedule") : $(`#shift_schedule`).css(css_default);
+                        } else {
+                            (trailer == null || (trailer != null && trailer.isEmpty())) ? invalid_arr.push("trailer") : $(`#trailer`).next(".select2-container").find(".select2-selection").css(css_default);
+                        }
+
+                        $.each(invalid_arr, function(i,val){
+                            if($(`#${val}`).next(".select2-container").find(".select2-selection").length > 0){
+                                $(`#${val}`).next(".select2-container").find(".select2-selection").css(css_error);
+                            } else {
+                                $(`#${val}`).css(css_error);
+                            }
+                            incomplete = true;
+                        });
+
+                        if(invalid === true || disabledSumitButton === true){
+                            $(`#error`).html(`<div class="alert alert-danger alert-dismissible mb-1 role="alert">
+                                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                                    <span aria-hidden="true">×</span>
+                                                </button>
+                                                <i class="la la-times-circle"></i> Please fill all the required fields
+                                            </div>`).show();
+                            $("#modal").animate({ scrollTop: 0 }, "fast");
+
+                            if(CLIENT.id != "wilcon"){
+                                if(!regex.test(_id)) {
+                                    $(`#error`).append(ALERT.HTML.ERROR(`Invalid shipment number indicated. Field should contain eight (8) numerical digit.`,"mb-1"));
+                                }
+                            }
+                        } else {
+                            if(incomplete === true) {
+                                // warn staut is PLAN
+                                MODAL.CONFIRMATION({
+                                    content: `You have not filled in all of the required fields. This will be saved as <span class="text-info font-bold">PLAN</span><sup style="font-size: 8px;">**</sup> instead. Do you wish to proceed?<span style="font-size: 9px;margin-left: 15px;font-style: italic;" class="d-block text-left mt-5">**Shipments with status <span class="text-info font-bold">PLAN</span> will be ignored during event process.</span>`,
+                                    confirmCloseCondition: true,
+                                    confirmButtonText: "Proceed",
+                                    confirmBGStyle: "background-color:#64b03a;",
+                                    confirmCallback: function(){
+                                        status = "plan";
+                                        SUBMITFORM();
+                                        $(`#confirm-modal`).remove(); 
+                                    }
+                                });
+                            } else {
+                                console.log("HIIII");
+                                checkSelectedVehicleWithinGeofence().then(() => {
+                                    console.log("HEY");
+                                    body.late_entry = late_data_entry;
+                                    
+                                    (__tempStat) ? __status = __tempStat : null;
+                                    (__status && __status != "plan") ? status = __status : null;
+
+                                    SUBMITFORM();
+
+                                }).catch(error => {
+                                    console.log(error);
+                                });
+                            } 
+                        }
+
+                        function SUBMITFORM(){
+                            var url = `/api/dispatch/${CLIENT.id}/${USER.username}`,
+                                method = "POST";
+
+                            body.origin_id = origin_id;
+                            body.route = route;
+                            body.destination = destination;
+                            body.vehicle_id = Number(vehicle_id);
+                            body.trailer = trailer;
+                            body.vehicleData = __vehicleData;
+                            body.comments = comments;
+                            body.attachments = ATTACHMENTS.get(CLIENT.dsName);
+                            body.status = status;
+                            body.username = USER.username;
+                            body.version = VERSION;
+                            
+                            if(CLIENT.id == "wilcon"){
+                                body.ticket_number = ticket_number;
+                                body.driver_id = driver_id;
+                                body.checker_id = checker_id;
+                                body.helper_id = helper_id;
+                                body.chassis = chassis;
+
+                                (scheduled_date) ? body.scheduled_date = new Date(scheduled_date).toISOString() : null;
+                                (shift_schedule) ? body.shift_schedule = shift_schedule : null;
+                            
+                                if(scheduled_date && !withinSchedule(scheduled_date,shift_schedule)){
+                                    if(status != "plan"){
+                                        status = "scheduled";
+                                        body.status = status;
+                                    }
+                                }
+                            }
+
+                            // check for difference (if update only)
+                            var selectedCheckIn = false;
+                            historyOptions.excludeKeys = ["events_captured","vehicleData","username"];
+                            historyOptions.customChanges = [
+                                function(){
+                                    var message = null;
+                                    if(vehicleOriginGeofence || vehicleDestinationGeofence){
+                                        if(__originalObj){
+                                            var found = false;
+                                            Object.keys((__originalObj.events_captured||{})).forEach(key => {
+                                                if(moment(Number(key)).format('HH:mm:ss') === moment(vehicleOriginGeofence.events[0].timestamp).format('HH:mm:ss')){
+                                                    found = true;
+                                                }
+                                            });
+                                            if(found == true){
+                                                message = null;
+                                            } else {
+                                                var checkinTime = DATETIME.FORMAT(vehicleOriginGeofence.events[0].timestamp);
+                                                message = `Selected <u>${checkinTime}</u> check-in date & time.`;
+                                                selectedCheckIn = true;
+                                            }
+                                        } else {
+                                            message = null;
+                                        }
+                                    } else {
+                                        message = null;
+                                    }
+                                    return message;
+                                } 
+                            ];
+
+                            body = HISTORY.check(__originalObj,body,USER.username,historyOptions);
+                            body.selectedCheckIn = selectedCheckIn;
+
+                            var changesKey = false;
+                            Object.keys(body).forEach(key => {
+                                (key.indexOf("history.") > -1 ) ? changesKey = key : null;
+                            });
+
+                            if(__originalObj){
+                                if(__originalObj.route != route || Number(__originalObj.vehicle_id) != Number(vehicle_id) || vehicleOriginGeofence || vehicleDestinationGeofence){
+                                    body.events_captured = __events_captured;
+                                } else {
+                                    body.events_captured = __originalObj.events_captured;
+                                }
+                            } else {
+                                body.events_captured = __events_captured;
+                            }
+                            
+                            if(changesKey && !["plan"].includes(__originalObj.status) ) {// can make, if no hisotry, submit button will remain disabled..
+                                MODAL.CONFIRMATION_W_FIELD({
+                                    content: `Please provide a reason for updating this entry.`,
+                                    confirmCloseCondition: true,
+                                    confirmButtonText: "Submit",
+                                    cancelButtonText: "Cancel",
+                                    confirmCallback: function(field_val){
+                                        body[changesKey] += `<br><br>Reason for update: ${field_val.bold()}`;
+                                        _submit_();
+                                    },
+                                    cancelCallback: function(){
+                                        $(`#submit`).html(`Submit`).attr("disabled",false);
+                                    }
+                                });
+                            } else {
+                                _submit_();
+                            }
+                            // end check for difference (if update only)
+
+                            function _submit_(){
+                                $(`.main-content .clearfix`).css({"pointer-events": "none"});
+                                $(button).html(`<i class="la la-spinner la-spin mr-2"></i>${buttonLoadingText}`).attr("disabled",true);
+
+                                if(has_id === true){
+                                    url = `/api/dispatch/${CLIENT.id}/${USER.username}/${_id}`;
+                                    method = "PUT";
+                                } else {
+                                    if(CLIENT.id != "wilcon"){
+                                        body = $.extend(body,{_id});
+                                    }
+                                }
+                                // body = $.extend(new_data,body);
+                                if(body.late_entry === true){
+                                    var inTransitKey = OBJECT.getKeyByValue(__events_captured,"in_transit");
+                                    var _route = getRoute(route);
+                                    var date =  (inTransitKey) ? new Date(Number(inTransitKey)) : new Date(),
+                                        transit_time = DATETIME.HH_MM(null,_route.transit_time),
+                                        hours = transit_time.hour,
+                                        minutes = transit_time.minute;
+                                    
+                                    body.departure_date = date.toISOString();
+                                    body.destination[0].etd = date.toISOString();
+
+                                    if(!inTransitKey){
+                                        body.events_captured[date.getTime()] = "in_transit";
+                                        body.events_captured = OBJECT.sortByKey(body.events_captured);
+                                    }
+                                
+                                    (hours)?date.setHours(date.getHours() + Number(hours)):null;
+                                    (minutes)?date.setMinutes(date.getMinutes() + Number(minutes)):null;
+                                    
+                                    body.destination[0].eta = date.toISOString();
+                                }
+                                body.vehicleChanged = vehicleChanged;
+                                GET.AJAX({
+                                    url,
+                                    method,
+                                    headers: {
+                                        "Content-Type": "application/json; charset=utf-8",
+                                        "Authorization": SESSION_TOKEN
+                                    },
+                                    data: JSON.stringify(body)
+                                }, function(docs){
+                                    $(`#confirm-modal,#overlay`).remove(); 
+                                    if(docs.ok == 1){
+                                        console.log(docs);
+                                        var message,sticky = false;
+                                        if(clientCustom.autoGeneratedId === true){
+                                            message = `<br>Shipment Number: <b>${docs.sequence}</b>`;
+                                            sticky = true;
+                                        }
+                                        (method == "PUT") ? TOASTR.UPDATEDSUCCESSFULLY() : TOASTR.CREATEDSUCCESSFULLY(message,sticky);
+                                        $(`.main-content .clearfix`).css({"pointer-events": ""});
+                                        $(`#overlay`).remove();
+                                    } else {
+                                        console.log(docs.error);
+                                        $(button).html(buttonDefaultText).attr("disabled",false);
+                                        $(`.main-content .clearfix`).css({"pointer-events": ""});
+                                        TOASTR.ERROR({statusText:"Shipment # already exists."},`<br><br><a id="toastr-link" href="javascript:void(0);">Click here to Load Existing Entry</a><br><br>or Tap anywhere to close`,{ timeOut: 0, extendedTimeOut: 0 });
+                                        $("body").on('click', `#toastr-link`,function(e){
+                                            e.stopImmediatePropagation();
+                                            // do not use _id or shipment_number for value of {_id:...}. It will use the previous form ID.
+                                            // should also be before body.append.
+                                            var __id = $(`#shipment_number`).val()._trim();
+                                            $(`#overlay`).remove();
+                                            $(`body`).append(MODAL.CREATE.EMPTY(`View Dispatch Entry`,modalViews.dispatch.form()));
+                                            DISPATCH.FUNCTION.form({ _id: __id });
+                                            $("html, body,#modal").animate({ scrollTop: 0 }, "fast");
+                                        });
+                                    }
+                                },function(error){
+                                    console.log(error);
+                                    $(button).html(buttonDefaultText).attr("disabled",false);
+                                    $(`.main-content .clearfix`).css({"pointer-events": ""});
+                                    if(error.status == 409){
+                                        TOASTR.ERROR({statusText:"Shipment # already exists."},`<br><br><a id="toastr-link" href="javascript:void(0);">Click here to Load Existing Entry</a><br><br>or Tap anywhere to close`,{ timeOut: 0, extendedTimeOut: 0 });
+                                        $("body").on('click', `#toastr-link`,function(e){
+                                            e.stopImmediatePropagation();
+                                            // do not use _id or shipment_number for value of {_id:...}. It will use the previous form ID.
+                                            // should also be before body.append.
+                                            var __id = $(`#shipment_number`).val()._trim();
+                                            $(`#overlay`).remove();
+                                            $(`body`).append(MODAL.CREATE.EMPTY(`View Dispatch Entry`,modalViews.dispatch.form()));
+                                            DISPATCH.FUNCTION.form({ _id: __id });
+                                            $("html, body,#modal").animate({ scrollTop: 0 }, "fast");
+                                        });
+                                    } else {
+                                        TOASTR.ERROR(error.responseJSON);
+                                    }
+                                });
+                            }
                         }
                     }
                 });

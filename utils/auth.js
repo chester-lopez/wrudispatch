@@ -822,7 +822,7 @@ var LIMIT = 200,
                 dispatch: {
                     editableTrailer: true,
                     previousCheckIns: {
-                        status: ["queueingAtOrigin","processingAtOrigin","idlingAtOrigin","in_transit","incomplete"],
+                        status: ["queueingAtOrigin","processingAtOrigin","idlingAtOrigin","in_transit"],
                         roles: ["administrator","developer"]
                     },
                     columns: {
