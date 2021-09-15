@@ -75,7 +75,7 @@ WEBSOCKET.connect().then(() => {
                     Cookies.set(`GKEY`,apiKey,{expires: 30});
                     if(apiKey){
                         $.ajax({ 
-                            url: "https://ipinfo.io?token=92bde40026acde", 
+                            url: "https://ipinfo.io?token=abb7bdafe48093", 
                             method: "GET", 
                             timeout: 6000,
                             async: true

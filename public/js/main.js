@@ -751,7 +751,7 @@ class Dispatch {
                                     <button type="button" class="close" id="close" aria-hidden="true">×</button>
                                     <div class="float-left">
                                         <h4 class="modal-title" id="myModalLabel2">
-                                            <b>${this._id}${((this.ticket_number)?` | ${this.ticket_number}`:"")}</b> 
+                                            <b>${this._id}</b> 
                                             <div style="display: inline-block;top: -4px;position: relative;margin-left: 2px;font-size: 12px;">${this.status}</div>
                                         </h4>
                                         <div>Full Entry Details</div>
@@ -761,6 +761,14 @@ class Dispatch {
                                     <div class="main-details col-sm-9" style="border-right: 1px solid #eee;padding: 15px 0px 10px 30px !important;">
                                         <table>
                                             <tbody>
+                                                ${(CLIENT.id == "wilcon")?`
+                                                    ${this.tbl().getTr("Ticket Number",this.ticket_number)} ${this.tbl().empty}
+                                                `:`
+                                                    ${this.tbl().getTr("Shipment Type",this.shipment_type)} ${this.tbl().empty}
+                                                `}
+
+                                                ${this.tbl().empty} ${this.tbl().empty}
+
                                                 ${this.tbl().getTr("Region",this.region)}
                                                 ${this.tbl().getTr("Origin",this.origin)}
                                                 ${this.tbl().getTr("Cluster",this.cluster)}
@@ -4534,9 +4542,9 @@ var DISPATCH = {
                         }
                     });
 
-                    if($(`[name="checkin"]:checked`).length == 0){
-                        $($(`[name="checkin"]`).get(0)).prop("checked",true);
-                    }
+                    // if($(`[name="checkin"]:checked`).length == 0){
+                    //     $($(`[name="checkin"]`).get(0)).prop("checked",true);
+                    // }
                     
                     $(`[name="checkin"]`).change(function(){
                         var checked = $(this).prop("checked");
@@ -4692,6 +4700,7 @@ var DISPATCH = {
                         });
                     }
                     function populateDispatchEntry(){
+                        // $('#coket1-shipment_type').remove();
                         $(`#loading-text`).remove();
                         $(`.main-content .clearfix`).css({"pointer-events": ""});
 
@@ -4707,6 +4716,8 @@ var DISPATCH = {
                         if(obj.scheduled_date){
                             $(`#scheduled_date`).trigger('apply.daterangepicker',{startDate: obj.scheduled_date});
                         }
+
+                        // $(`[name="shipment_type"][value="${obj.shipment_type}"]`).prop("checked",true);
 
                         CUSTOM.FORM.dispatch[CLIENT.id]().forEach(val => {
                             var value = obj[val.key] || val.alternativeValue || "";
@@ -4965,20 +4976,28 @@ var DISPATCH = {
                                 }
                             });
                         } else {
-                            checkSelectedVehicleWithinGeofence().then(() => {
-                                body.late_entry = late_data_entry;
-                                
-                                (__tempStat) ? __status = __tempStat : null;
-                                (__status && __status != "plan") ? status = __status : null;
+                            if(body.shipment_type == "Pick-up"){
+                                // ignore check vehicle
+                                body.late_entry = false;
+                                (__status) ? status = __status : null;
 
                                 SUBMITFORM();
-
-                            }).catch(error => {
-                                console.log(error);
-                                $('#modal-error').html(ALERT.HTML.ERROR(error.message,".")).show();
-                                $("#modal").animate({ scrollTop: 0 }, "fast");
-                                $(`#submit`).html('Submit').attr("disabled",false);
-                            });
+                            } else {
+                                checkSelectedVehicleWithinGeofence().then(() => {
+                                    body.late_entry = late_data_entry;
+                                    
+                                    (__tempStat) ? __status = __tempStat : null;
+                                    (__status && __status != "plan") ? status = __status : null;
+    
+                                    SUBMITFORM();
+    
+                                }).catch(error => {
+                                    console.log(error);
+                                    $('#modal-error').html(ALERT.HTML.ERROR(error.message,".")).show();
+                                    $("#modal").animate({ scrollTop: 0 }, "fast");
+                                    $(`#submit`).html('Submit').attr("disabled",false);
+                                });
+                            }
                         } 
                     }
 
@@ -18725,18 +18744,29 @@ const modalViews = new function(){
                                 </div>
                                 <div class="col-sm-12 p-0">
                                     <div class="col-sm-4">
-                                        <small><span class="text-danger">*</span>Shipment Number:</small>
+                                        <div class="font-normal"><span class="text-danger">*</span>Shipment Number</div>
                                         <input id="shipment_number" type="text" class="form-control" placeholder="Shipment Number" autocomplete="off">
                                         <small class="text-muted" style="font-style: italic;">Once saved, shipment number cannot be edited.</small>
+                                    </div>
+                                    <div class="col-sm-3" id="coket1-shipment_type">
+                                        <div class="font-normal"><span class="text-danger">*</span>Shipment Type</div>
+                                        <div class="radio-parent" style="border: 1px solid #eee;padding: 5px 0px 6px;text-align: center;">
+                                            <label class="radio radio-inline" style="margin: 0;width: 40%;">
+                                                <input type="radio" name="shipment_type" value="Normal" style="margin-top: 2px;" checked> Normal
+                                            </label>
+                                            <label class="radio radio-inline" style="width: 40%;">
+                                                <input type="radio" name="shipment_type" value="Pick-up" style="margin-top: 2px;"> Pick-up
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-sm-12 mt-3 p-0">
                                     <div class="col-sm-4">
-                                        <small>Origin:</small>
+                                        <div class="font-normal">Origin</div>
                                         <input id="origin" type="text" class="form-control" autocomplete="off" readonly>
                                     </div>
                                     <div class="col-sm-5">
-                                        <small><span class="text-danger">*</span>Route:</small>
+                                        <div class="font-normal"><span class="text-danger">*</span>Route</div>
                                         <select id="route" class="select-multiple-basic" style="width:100%;"></select>
                                         <small class="text-muted">Separate origin and destination by comma (,). e.g., Calasiao,BALANGA</small>
                                     </div>
@@ -18761,11 +18791,11 @@ const modalViews = new function(){
                                 </div>
                                 <div class="col-sm-12 p-0">
                                     <div class="col-sm-3">
-                                        <small><span class="text-danger">*</span>Truck:</small>
+                                        <div class="font-normal"><span class="text-danger">*</span>Truck</div>
                                         <select id="vehicle_id" class="select-multiple-basic" style="width:100%;"></select>
                                     </div>
                                     <div class="col-sm-3">
-                                        <small><span class="text-danger">*</span>Trailer:</small>
+                                        <div class="font-normal"><span class="text-danger">*</span>Trailer</div>
                                         <select id="trailer" class="select-multiple-basic" style="width:100%;"></select>
                                     </div>
                                     <div class="col-sm-6" style="word-break: break-word;">
@@ -18792,14 +18822,14 @@ const modalViews = new function(){
                                 ${previousCheckIns}
                                 <div class="col-sm-12 p-0">
                                     <div class="col-sm-7">
-                                        <small>Comments:</small>
+                                        <div class="font-normal">Comments</div>
                                         <textarea id="comments" class="form-control" rows="2"></textarea>
                                     </div>
                                 </div>
                                 <div class="col-sm-7 mt-3">
                                     <div class="table-wrapper">
                                         <div class="table-title">
-                                            <small style="line-height: 28px;">Attachment:</small>
+                                            <div class="font-normal" style="display: inline-block;padding-top: 6px;">Attachments</div>
                                             <input id="new-file" type="file" class="hide">
                                             <button id="new-attachment" type="button" class="btn btn-default float-right" style="padding: 4px 10px;top: -3px;position: relative;"><i class="la la-plus"></i> Add Attachment</button>
                                         </div>

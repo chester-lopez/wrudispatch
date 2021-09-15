@@ -606,6 +606,7 @@ const CUSTOM = {
             coket1: function(){
                 return [
                     {id:"#shipment_number",key:"_id",inputType:"val",readonly:true,regex:/^\d{8}$/},
+                    {id:"shipment_type",key:"shipment_type",inputType:"val",required:true,dataType:"radiobutton"},
                     {id:"#route",key:"route",inputType:"val",readonly:true,required:true,trigger:"change",dataType:"select"},
                     {id:"#trailer",key:"trailer",inputType:"val",trigger:"change",required:true,dataType:"select"}, // should be before vehilce
                     {id:"#vehicle_id",key:"vehicle_id",inputType:"val",trigger:"change",required:true,dataType:"select",typeOf:"number"},

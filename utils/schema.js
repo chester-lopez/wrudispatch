@@ -28,7 +28,7 @@ const dispatch = () => {
         status: Joi.string().required(),
         posting_date: Joi.string(),
         departure_date: Joi.string().allow('',null),
-        // username: Joi.string().required(),
+        username: Joi.string().allow('',null),
         event_time: Joi.object().allow(null),
         events_captured: Joi.object().allow(null),
         vehicleData: Joi.array().allow(null),

@@ -1115,7 +1115,7 @@ var LIMIT = 200,
                         buttons: ["statusUpdate","view","edit","delete"],
                     },
                     create: {
-                        requiredFields: ["shipment_number","route","vehicle_id","trailer"],
+                        requiredFields: ["shipment_number","shipment_type","route","vehicle_id","trailer"],
                     }
                 },
                 vehicles: {
