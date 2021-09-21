@@ -401,15 +401,10 @@ router.post('/:dbName/:username', (req,res,next)=>{
         (userInput.origin_id) ? userInput.origin_id = db.getPrimaryKey(userInput.origin_id) : null;
         (userInput.destination && userInput.destination[0] && userInput.destination[0].location_id) ? userInput.destination[0].location_id = db.getPrimaryKey(userInput.destination[0].location_id) : null;
 
-        var vehicleData = userInput.vehicleData;
-        delete userInput.vehicleData;
         delete userInput.vehicleChanged;
         delete userInput.selectedCheckIn;
 
         userInput.history = { original: JSON.stringify(userInput) };
-        if(vehicleData){
-            userInput.history.vehicle = JSON.stringify(vehicleData);
-        }
 
         function save(sequence){
             var fa = storage._attachments_.filter(`${encrypted}/${(sequence||userInput._id)}`,userInput);
@@ -464,7 +459,6 @@ router.put('/:dbName/:username/:_id', (req,res,next)=>{
 
         delete userInput.type;
         delete userInput.transit_time;
-        delete userInput.vehicleData;
         delete userInput.vehicleChanged;
         delete userInput.selectedCheckIn;
 

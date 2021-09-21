@@ -105,6 +105,8 @@ const CUSTOM = {
                             break;
                         case "departureDate":
                             arr.push(objectOptions(val,{ data: "Departure Date", title: "Departure Date", type:"date", visible: true }));
+                        case "dispatchDateTime":
+                            arr.push(objectOptions(val,{ data: "Departure Date", title: "Dispatch Date and Time", type:"date", visible: true }));
                             break;
                         case "_departureDate_":
                             arr.push(objectOptions(val,{ data: "Departure__Date", title: "Departure Date", visible: true }));
@@ -121,8 +123,14 @@ const CUSTOM = {
                         case "origin":
                             arr.push(objectOptions(val,{ data: "Origin", title: "Origin", visible: true }));
                             break;
+                        case "originSiteCode":
+                            arr.push(objectOptions(val,{ data: "Origin Site Code", title: "Origin Site Code", visible: true }));
+                            break;
                         case "origin_id":
                             arr.push(objectOptions(val,{ data: "Origin", title: "Origin", visible: true }));
+                            break;
+                        case "customers":
+                            arr.push(objectOptions(val,{ data: "Customers", title: "Customer(s)", visible: true }));
                             break;
                         case "route":
                             arr.push(objectOptions(val,{ data: "Route", title: "Route", visible: true }));
@@ -148,6 +156,15 @@ const CUSTOM = {
                         case "truckName":
                             arr.push(objectOptions(val,{ data: "Vehicle", title: "Truck Plate Number", visible: true }));
                             break;
+                        case "truckBase":
+                            arr.push(objectOptions(val,{ data: "Truck Base", title: "Truck Base", visible: true }));
+                            break;
+                        case "truckBaseRegion":
+                            arr.push(objectOptions(val,{ data: "Truck Base Region", title: "Truck Base Region", visible: true }));
+                            break;
+                        case "truckBaseCluster":
+                            arr.push(objectOptions(val,{ data: "Truck Base Cluster", title: "Truck Base Cluster", visible: true }));
+                            break;
                         case "chassis":
                             arr.push(objectOptions(val,{ data: "Chassis", title: "Chassis", visible: false }));
                             break;
@@ -159,6 +176,9 @@ const CUSTOM = {
                             break;
                         case "palCap":
                             arr.push(objectOptions(val,{ data: "Pal Cap", title: "Pal Cap", visible: true }));
+                            break;
+                        case "truckPalCap":
+                            arr.push(objectOptions(val,{ data: "Pal Cap", title: "Truck Pallet Capacity", visible: true }));
                             break;
                         case "plateNumber":
                             arr.push(objectOptions(val,{ data: "Plate Number", title: "Plate Number", visible: true }));
@@ -176,16 +196,16 @@ const CUSTOM = {
                             arr.push(objectOptions(val,{ data: "Helper", title: "Helper", visible: true }));
                             break;
                         case "supportUnit":
-                            arr.push(objectOptions(val,{ data: "Support Unit", title: "Support Unit", visible: true }));
+                            arr.push(objectOptions(val,{ data: "Support Unit", title: "Support Truck", visible: false }));
                             break;
                         case "shipmentType":
-                            arr.push(objectOptions(val,{ data: "Shipment Type", title: "Shipment Type", visible: true }));
+                            arr.push(objectOptions(val,{ data: "Shipment Type", title: "Shipment Type", visible: false }));
                             break;
                         case "deliverySequence":
-                            arr.push(objectOptions(val,{ data: "Delivery Sequence", title: "Delivery Sequence", visible: true }));
+                            arr.push(objectOptions(val,{ data: "Delivery Sequence", title: "Delivery Sequence", visible: false }));
                             break;
                         case "mdsdUsage":
-                            arr.push(objectOptions(val,{ data: "MDSD Usage", title: "MDSD Usage", visible: true }));
+                            arr.push(objectOptions(val,{ data: "MDSD Usage", title: "MDSD Usage", visible: false }));
                             break;
                         case "comments":
                             arr.push(objectOptions(val,{ data: "Comments", title: "Comments", visible: true }));
@@ -199,6 +219,9 @@ const CUSTOM = {
                         case "idlingDuration":
                             arr.push(objectOptions(val,{ data: "Idling Duration", title: "Idling Duration", visible: true }));
                             break;
+                        case "cicoTime2":
+                            arr.push(objectOptions(val,{ data: "CICO Time2", title: "CICO", visible: true }));
+                            break;
                         case "cicoTime":
                             arr.push(objectOptions(val,{ data: "CICO Time", title: "CICO Time", visible: true }));
                             break;
@@ -207,6 +230,9 @@ const CUSTOM = {
                             break;
                         case "transitDuration":
                             arr.push(objectOptions(val,{ data: "Transit Duration", title: "Transit Duration", visible: true }));
+                            break;
+                        case "deliveryDuration":
+                            arr.push(objectOptions(val,{ data: "Delivery Duration", title: "Delivery Duration", visible: true }));
                             break;
                         case "status":
                             arr.push(objectOptions(val,{ data: "Status", title: "Status", visible: true }));
@@ -221,7 +247,7 @@ const CUSTOM = {
                             arr.push(objectOptions(val,{ data: "Posted By", title: "Posted By", visible: true }));
                             break;
                         case "postingDate":
-                            arr.push(objectOptions(val,{ data: "Posting Date", title: "Posting Date", type:"date", visible: true }));
+                            arr.push(objectOptions(val,{ data: "Posting Date", title: "Posting Date and Time", type:"date", visible: true }));
                             break;
                         case "lateEntry":
                             arr.push(objectOptions(val,{ data: "Late Entry", title: "Late Entry", visible: true }));
@@ -377,25 +403,28 @@ const CUSTOM = {
 
             return arr;
         },
-        geofences: [
-            { data: "Site Code", title: "Site Code", visible: true },
-            { data: "Site Name", title: "Site Name", visible: true },
-            { data: "Short Name", title: "Short Name", visible: true },
-            { data: "CICO", title: "CICO (HH:MM)", visible: true },
-            { data: "Cluster", title: "Cluster", visible: true },
-            { data: "Region", title: "Region", visible: true },
-            { data: "Dispatcher", title: "Dispatcher", visible: true },
-            { data: "esq1_lq", title: "Person In-Charge (E-1 Long Queueing)", visible: false },
-            { data: "esq1_oc", title: "Person In-Charge (E-1 Over CICO)", visible: false },
-            { data: "esq1_ot", title: "Person In-Charge (E-1 Over Transit)", visible: false },
-            { data: "esq2_lq", title: "Person In-Charge (E-2 Long Queueing)", visible: false },
-            { data: "esq2_oc", title: "Person In-Charge (E-2 Over CICO)", visible: false },
-            { data: "esq2_ot", title: "Person In-Charge (E-2 Over Transit)", visible: false },
-            { data: "esq3_lq", title: "Person In-Charge (E-3 Long Queueing)", visible: false },
-            { data: "esq3_oc", title: "Person In-Charge (E-3 Over CICO)", visible: false },
-            { data: "esq3_ot", title: "Person In-Charge (E-3 Over Transit)", visible: false },
-            { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
-        ],
+        geofences: function(){
+            const cicoTitle = (CLIENT.id == "coket2") ? "RCICO Target" : "CICO (HH:MM)";
+            return [
+                { data: "Site Code", title: "Site Code", visible: true },
+                { data: "Site Name", title: "Site Name", visible: true },
+                { data: "Short Name", title: "Short Name", visible: true },
+                { data: "CICO", title: cicoTitle, visible: true },
+                { data: "Cluster", title: "Cluster", visible: true },
+                { data: "Region", title: "Region", visible: true },
+                { data: "Dispatcher", title: "Dispatcher", visible: true },
+                { data: "esq1_lq", title: "Person In-Charge (E-1 Long Queueing)", visible: false },
+                { data: "esq1_oc", title: "Person In-Charge (E-1 Over CICO)", visible: false },
+                { data: "esq1_ot", title: "Person In-Charge (E-1 Over Transit)", visible: false },
+                { data: "esq2_lq", title: "Person In-Charge (E-2 Long Queueing)", visible: false },
+                { data: "esq2_oc", title: "Person In-Charge (E-2 Over CICO)", visible: false },
+                { data: "esq2_ot", title: "Person In-Charge (E-2 Over Transit)", visible: false },
+                { data: "esq3_lq", title: "Person In-Charge (E-3 Long Queueing)", visible: false },
+                { data: "esq3_oc", title: "Person In-Charge (E-3 Over CICO)", visible: false },
+                { data: "esq3_ot", title: "Person In-Charge (E-3 Over Transit)", visible: false },
+                { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
+            ];
+        },
         routes: [
             { data: "_id", title: "Route", visible: true },
             { data: "Origin", title: "Origin", visible: true },
@@ -501,6 +530,9 @@ const CUSTOM = {
                         break;
                     case "site":
                         arr.push({ data: "Site", title: "Site", visible: true });
+                        break;
+                    case "truckBase":
+                        arr.push({ data: "Site", title: "Truck Base", visible: true });
                         break;
                     case "section_id":
                         arr.push({ data: "Section", title: "Section", visible: true });

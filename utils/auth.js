@@ -1335,9 +1335,21 @@ var LIMIT = 200,
                         roles: ["administrator","developer"]
                     },
                     columns: {
-                        list: ["_id","origin_id","truckName","supportUnit","shipmentType","deliverySequence","mdsdUsage","comments","status","postedBy","postingDate","action"],
-                        visible: ["_id","origin_id","truckName","supportUnit","shipmentType","deliverySequence","mdsdUsage","status","postedBy","postingDate","action"],
+                        list: ["_id","dispatchDateTime","origin_id","originSiteCode","customers","truckName","truckPalCap","status","postedBy","postingDate","action","supportUnit","truckBase","truckBaseRegion","truckBaseCluster","lateEntry","cicoTime2","deliveryDuration","mdsdUsage","deliverySequence","shipmentType"],
+                        visible: ["_id","origin_id","truckName","status","postedBy","postingDate","action"],
                         notExport: ["action"]
+
+// Truck Base
+// Truck Base Region
+// Truck Base Cluster
+// Late Entry
+// CICO
+// Delivery Duration
+// MDSD Usage
+// Delivery Sequence
+// Shipment Type
+// KM Travelled (On Delivery)
+
                     },
                     rowButtons: { 
                         buttons: ["statusUpdate","view","edit","delete"],
@@ -1347,12 +1359,13 @@ var LIMIT = 200,
                     },
                 },
                 vehicles: {
-                    columns: ["name","trailer","equipmentNumber","site","availability","last2Locations","action"],
+                    columns: ["name","conductionNumber","equipmentNumber","truckBase","availability","last2Locations","action"],
                     tableButtons: { 
                         buttons: ["refresh","filter","export"]
                     },
+                    modalFields: ["Availability","desc",],
                     rowButtons: { 
-                        buttons: [],
+                        buttons: ["edit"],
                         condition: [
                             { roles: ["developer"], additionalButton: ["view"] }
                         ] 

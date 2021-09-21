@@ -390,6 +390,7 @@ class Dispatch {
             processingAtOrigin = getDuration("processingAtOrigin",obj),
             idlingAtOrigin = getDuration("idlingAtOrigin",obj),
             in_transit = getDuration("in_transit",obj),
+            onDelivery = getDuration("onDelivery",obj),
             action = TABLE.ROW_BUTTONS(PAGE.GET(),{loadView:loadView_ReadOnly,readonlyArr:loadView_ReadOnly,adminArr:["edit-admin"],status:obj.status,username:obj.username,disabledArr}),
             user = getUser(obj.username) || {},
             posted_by = ((USER.username == obj.username)?"You":(user.name || obj.username)),
@@ -406,7 +407,13 @@ class Dispatch {
             checker = getValue(LIST["vehicle_personnel"],"vehicle_personnel",(obj.checker_id),null,null,["name"]),
             helper = getValue(LIST["vehicle_personnel"],"vehicle_personnel",(obj.helper_id),null,null,["name"]),
             index = LIST["dispatch"].findIndex(x => x._id == obj._id),
-            beforeCheckOutTime = getDateTime("entered_origin",obj) || getDateTime("queueingAtOrigin",obj) || getDateTime("processingAtOrigin",obj) || getDateTime("idlingAtOrigin",obj),
+            beforeCheckOutTime = getDateTime("entered_origin",obj) || getDateTime("queueingAtOrigin",obj) || getDateTime("processingAtOrigin",obj) || getDateTime("idlingAtOrigin",obj) || getDateTime("dispatched",obj),
+
+            cico_time2_calcAtOrigin = (beforeCheckOutTime) ?  (getDateTime("onDelivery",obj,"last") - beforeCheckOutTime) : 0,
+            cico_time2_dhAtOrigin = (["onDelivery","complete","incomplete"].includes(obj.status)) ? DATETIME.DH(cico_time2_calcAtOrigin || 0) : "-",
+            cico_time2_hhmmAtOrigin = (cico_time2_dhAtOrigin == "-")?"-":DATETIME.HH_MM(null,cico_time2_dhAtOrigin).hour_minute,
+
+
             cico_time_calcAtOrigin = (beforeCheckOutTime) ?  (getDateTime("in_transit",obj,"last") - beforeCheckOutTime) : 0,
             cico_time_dhAtOrigin = (["in_transit","complete","incomplete"].includes(obj.status)) ? DATETIME.DH(cico_time_calcAtOrigin || 0) : "-",
             cico_time_hhmmAtOrigin = (cico_time_dhAtOrigin == "-")?"-":DATETIME.HH_MM(null,cico_time_dhAtOrigin).hour_minute,
@@ -438,10 +445,12 @@ class Dispatch {
         }
         
         var customersHTML = "";
+        const customers = [];
         if(obj.customers){
             obj.customers.forEach((val,i) => {
                 const customer = getCustomer(val) || {};
                 customersHTML += `<div style="font-weight: normal;">${i+1}. ${customer.name||val||"-"}</div>`;
+                customers.push(customer.name||val||"-");
             });
         }
 
@@ -485,6 +494,7 @@ class Dispatch {
         this.shipment_type = obj.shipment_type || "-";
         this.delivery_sequence = obj.delivery_sequence || "-";
         this.mdsd_usage = obj.mdsd_usage || "-";
+        this.customers = customers.join(", ");
         
         this.dispatched_datetime = DATETIME.FORMAT(getDateTime("dispatched",obj));
         this.onDelivery_datetime = DATETIME.FORMAT(getDateTime("onDelivery",obj));
@@ -495,9 +505,11 @@ class Dispatch {
         this.processingDuration = DATETIME.HH_MM(processingAtOrigin).hour_minute;
         this.idling_datetime = DATETIME.FORMAT(getDateTime("idlingAtOrigin",obj));
         this.idlingDuration = DATETIME.HH_MM(idlingAtOrigin).hour_minute;
+        this.cico2 = (["onDelivery","complete","incomplete"].includes(obj.status)) ? cico_time2_hhmmAtOrigin : "-";
         this.cico = (["in_transit","onSite","returning","complete","incomplete"].includes(obj.status)) ? cico_time_hhmmAtOrigin : "-";
         this.cico_capped = (["in_transit","onSite","returning","complete","incomplete"].includes(obj.status)) ? ((cico_time_dhAtOrigin>5 && isPL)?cico_time_5AtOrigin:cico_time_hhmmAtOrigin) : "-";
         this.transit_datetime = (["in_transit","onSite","returning","complete","incomplete"].includes(obj.status)) ? DATETIME.FORMAT(getDateTime("in_transit",obj,"last")) : "-";
+        this.deliveryDuration = (["onDelivery","complete","incomplete"].includes(obj.status)) ? DATETIME.HH_MM(onDelivery).hour_minute : "-";
         this.transitDuration = (["in_transit","onSite","returning","complete","incomplete"].includes(obj.status)) ? DATETIME.HH_MM(in_transit).hour_minute : "-";
         this.onSite_datetime = (["onSite","returning","complete","incomplete"].includes(obj.status)) ? DATETIME.FORMAT(getDateTime("onSite",obj,"last")) : "-";
         this.returning_datetime = (["returning","complete","incomplete"].includes(obj.status)) ? DATETIME.FORMAT(getDateTime("returning",obj,"last")) : "-";
@@ -557,6 +569,8 @@ class Dispatch {
             'Region': this.region,
             'Cluster': this.cluster,
             'Origin': this.origin,
+            'Origin Site Code': this.originSiteCode,
+            'Customers': this.customers,
             'Route': this.route,
             'Destination': this.destination,
             'ETD': this.etd,
@@ -566,6 +580,9 @@ class Dispatch {
             'Vehicle': this.vehicle,
             'Plate Number': this.plate_number,
             'Truck Number': this.truck_number,
+            'Truck Base': this.truck_site,
+            'Truck Base Region': this.truck_region,
+            'Truck Base Cluster': this.truck_cluster,
             'Trailer': this.trailer,
             'Chassis': this.chassis,
             'Conduction Number': this.conduction_number,
@@ -581,9 +598,11 @@ class Dispatch {
             'Queueing Duration': this.queueingDuration,
             'Processing Duration':this.processingDuration,
             'Idling Duration':this.idlingDuration,
+            'CICO Time2': this.cico2,
             'CICO Time': this.cico,
             'CICO Time (Capped)': this.cico_capped,
             'Transit Duration': this.transitDuration,
+            'Delivery Duration': this.deliveryDuration,
             'Status': this.status,
             'Scheduled Date': this.scheduled_date,
             'Shift Schedule': this.shift_schedule,
@@ -3884,7 +3903,10 @@ var DISPATCH = {
                     });
                     
                     $(`.page-box`).append(SLIDER.EXPORT()); 
-                    TABLE.TOOLBAR(dt);
+                    TABLE.TOOLBAR(dt,() => { 
+                        const title = (CLIENT.id == "coket2") ? "T2 Dispatch Entries | WRU Dispatch" : "Dispatch Entries | WRU Dispatch";
+                        return title; 
+                    } );
                     $(`.buttons-copy span`).html("Copy Table");
                     $(`.buttons-csv span`).html("Export Table As CSV File");
                     $(`.buttons-excel span`).html("Export Table As Excel File");
@@ -4125,7 +4147,6 @@ var DISPATCH = {
                 __status = "",
                 __tempStat = null,
                 __events_captured = {},
-                __vehicleData = null,
                 __originalObj = null,
                 originOptions = G_SELECT2["form-geofences"] ,
                 vehiclesOptions = G_SELECT2["form-vehicles-admin"],
@@ -4137,8 +4158,8 @@ var DISPATCH = {
                 DESTINATION_ID,
                 TRAILER,
                 disabledSumitButton = false,
-                vehicleOriginGeofence = null,
-                vehicleDestinationGeofence = null,
+                previousCheckInOriginGeofence = null,
+                previousCheckInDestinationGeofence = null,
                 initialize_buttons = {
                     new: function(){
                         $(`#submit`).text("Submit");
@@ -4173,7 +4194,6 @@ var DISPATCH = {
                             vehicleDoneLoading = false;
 
                             __tempStat = null;
-                            __vehicleData = null;
                             __events_captured = {};
                             late_data_entry = null;
 
@@ -4204,8 +4224,8 @@ var DISPATCH = {
                                     shift_schedule,
                                     __originalObj,
                                     route,
-                                    vehicleOriginGeofence,
-                                    vehicleDestinationGeofence,
+                                    previousCheckInOriginGeofence,
+                                    previousCheckInDestinationGeofence,
                                     __status,
                                     vehicle: {
                                         _id: vehicle_id,
@@ -4228,7 +4248,6 @@ var DISPATCH = {
                                     });
                                 } else {
                                     (docs.events_captured) ? __events_captured = docs.events_captured : null;
-                                    (docs.__vehicleData) ? __vehicleData = docs.__vehicleData : null;
                                     (docs.late_data_entry) ? late_data_entry = docs.late_data_entry : null;
 
                                     __tempStat = docs.status || "assigned";
@@ -4496,8 +4515,8 @@ var DISPATCH = {
                     
                     $(`#previous-checkins tbody`).html("");
                     $(`[name="checkin"]`).prop("checked",false);
-                    vehicleOriginGeofence = null;
-                    vehicleDestinationGeofence = null;
+                    previousCheckInOriginGeofence = null;
+                    previousCheckInDestinationGeofence = null;
 
                     var loc = (vehiclesHistory.location||[]);
                     var reversedLoc = [...loc].reverse();
@@ -4552,7 +4571,7 @@ var DISPATCH = {
                         if(checked) {
                             var index = $(this).val();
     
-                            vehicleOriginGeofence = reversedLoc[index];
+                            previousCheckInOriginGeofence = reversedLoc[index];
     
                             var destinationSelected = getGeofence(DESTINATION_ID);
                             var destinationIndex = null;
@@ -4565,12 +4584,12 @@ var DISPATCH = {
                                 }
                             }
                             destinationIndex = (!destinationIndex || destinationIndex < 0) ? (index-1) : destinationIndex;
-                            vehicleDestinationGeofence = reversedLoc[destinationIndex];
+                            previousCheckInDestinationGeofence = reversedLoc[destinationIndex];
     
                             console.log("INDEX",index);
-                            console.log("ORIGIN",vehicleOriginGeofence);
+                            console.log("ORIGIN",previousCheckInOriginGeofence);
                             console.log("destinationIndex",destinationIndex);
-                            console.log("DESTINATION",vehicleDestinationGeofence);
+                            console.log("DESTINATION",previousCheckInDestinationGeofence);
                         }
                     }).trigger("change");
                 }
@@ -5005,7 +5024,6 @@ var DISPATCH = {
                         var url = `/api/dispatch/${CLIENT.id}/${USER.username}`,
                             method = "POST";
 
-                        body.vehicleData = __vehicleData;
                         body.status = status;
                     
                         // wilcon
@@ -5019,22 +5037,22 @@ var DISPATCH = {
 
                         // check for difference (if update only)
                         var selectedCheckIn = false;
-                        historyOptions.excludeKeys = ["events_captured","vehicleData"];
+                        historyOptions.excludeKeys = ["events_captured"];
                         historyOptions.customChanges = [
                             function(){
                                 var message = null;
-                                if(vehicleOriginGeofence || vehicleDestinationGeofence){
+                                if(previousCheckInOriginGeofence || previousCheckInDestinationGeofence){
                                     if(__originalObj){
                                         var found = false;
                                         Object.keys((__originalObj.events_captured||{})).forEach(key => {
-                                            if(moment(Number(key)).format('HH:mm:ss') === moment(vehicleOriginGeofence.events[0].timestamp).format('HH:mm:ss')){
+                                            if(moment(Number(key)).format('HH:mm:ss') === moment(previousCheckInOriginGeofence.events[0].timestamp).format('HH:mm:ss')){
                                                 found = true;
                                             }
                                         });
                                         if(found == true){
                                             message = null;
                                         } else {
-                                            var checkinTime = DATETIME.FORMAT(vehicleOriginGeofence.events[0].timestamp);
+                                            var checkinTime = DATETIME.FORMAT(previousCheckInOriginGeofence.events[0].timestamp);
                                             message = `Selected <u>${checkinTime}</u> check-in date & time.`;
                                             selectedCheckIn = true;
                                         }
@@ -5057,7 +5075,7 @@ var DISPATCH = {
                         });
 
                         if(__originalObj){
-                            if(__originalObj.route != body.route || Number(__originalObj.vehicle_id) != Number(body.vehicle_id) || vehicleOriginGeofence || vehicleDestinationGeofence){
+                            if(__originalObj.route != body.route || Number(__originalObj.vehicle_id) != Number(body.vehicle_id) || previousCheckInOriginGeofence || previousCheckInDestinationGeofence){
                                 body.events_captured = __events_captured;
                             } else {
                                 body.events_captured = __originalObj.events_captured;
@@ -11846,7 +11864,7 @@ var LOCATIONS = {
                         goto: "geofences",
                         filterType: "basic",
                         dataTableOptions: {
-                            columns: TABLE.COL_ROW(CUSTOM.COLUMN.geofences).column,
+                            columns: TABLE.COL_ROW(CUSTOM.COLUMN.geofences()).column,
                             order: [[ 0, "desc" ]],
                             createdRow: function (row, data, dataIndex) {
                                 var _row = data._row;
@@ -14442,7 +14460,7 @@ const CUSTOMERS = {
             getSelect2Options();
             x.obj = x.obj || {};
             
-            var title = (x.method == "PUT") ? `Edit Chassis` : `Create New Chassis`,
+            var title = (x.method == "PUT") ? `Edit Customer` : `Add New Customer`,
                 modalElements = function(obj){
                     var readonly = x.method == "PUT";
                     return [

@@ -2485,4 +2485,57 @@ router.get('/test/import/regionsClusters', (req,res,next)=>{
     /**************** END OTHER COLLECTIONS */
 });
 
+// remove history.vehicle
+router.get('/test/delete/history/vehicle', (req,res,next)=>{
+    // PRODUCTION
+    const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    // DEVELOPMENT
+    // const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+    var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
+    
+    var dbName = "wd-wilcon";
+    
+    MongoClient.connect(url, mongoOptions, (err,client) => {
+        if(err){
+            console.log("ERROR1",err);
+        } else {
+            client.db(dbName).collection("dispatch").updateMany({ "history.vehicle": { $exists: true } }, { $unset: { "history.vehicle": "" } }).then(result => {
+                client.close();
+                res.json({ok:1,result});
+            }).catch(error => {
+                client.close();
+                res.json({error});
+            });
+        }
+    });
+    /**************** END OTHER COLLECTIONS */
+});
+
+// export dispatch entries
+router.get('/test/deleted/dispatch', (req,res,next)=>{
+    // PRODUCTION
+    const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    // DEVELOPMENT
+    // const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+    var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
+    
+    var dbName = "wd-wilcon-logging";
+    
+    MongoClient.connect(url, mongoOptions, (err,client) => {
+        if(err){
+            console.log("ERROR1",err);
+        } else {
+            client.db(dbName).collection("user_action").deleteMany({ collection: "dispatch" }).then(docs => {
+                client.close();
+                res.json(docs);
+            }).catch(error => {
+                client.close();
+                res.json({error});
+            });
+        }
+    });
+    /**************** END OTHER COLLECTIONS */
+});
+
+
 module.exports = router;

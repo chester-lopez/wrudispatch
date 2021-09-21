@@ -31,7 +31,6 @@ const dispatch = () => {
         username: Joi.string().allow('',null),
         event_time: Joi.object().allow(null),
         events_captured: Joi.object().allow(null),
-        vehicleData: Joi.array().allow(null),
         late_entry: Joi.boolean().allow(null),
         version: Joi.string().allow('',null),
         vehicleChanged: Joi.boolean().allow(null),
