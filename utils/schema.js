@@ -67,7 +67,8 @@ const users = () => {
 };
 const regions = () => {
     return Joi.object().keys({
-        region: Joi.string().required(),
+        name: Joi.string().required(),
+        code: Joi.string().required(),
         person_in_charge: Joi.object().allow('',null),
         sequence: Joi.number().allow('',null),
     });

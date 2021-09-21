@@ -145,7 +145,7 @@ function getSelect2Options(){
     /******** REGIONS ********/
     G_SELECT2["form-regions"] = `<option value="">&nbsp;</option>`;
     (LIST["regions"]||[]).forEach(val => {
-        (!val.delete) ? G_SELECT2["form-regions"] += `<option value="${val._id}">${val.region}</option>` : null;
+        (!val.delete) ? G_SELECT2["form-regions"] += `<option value="${val._id}">${val.code}</option>` : null;
     });
     /******** END REGIONS ********/
 
@@ -397,7 +397,7 @@ class Dispatch {
             postedByWithName = user.name || obj.username,
             origin = getValue(LIST["geofences"],"geofences",obj.origin_id,null,"_origin",["short_name"]),
             destination = getValue(LIST["geofences"],"geofences",obj.destination[0].location_id,null,"_destination",["short_name"]),
-            region = getValue(LIST["regions"]&&LIST["geofences"],"regions",origin.region_id,"region","_region"),
+            region = getValue(LIST["regions"]&&LIST["geofences"],"regions",origin.region_id,"code","_region"),
             cluster = getValue(LIST["clusters"]&&LIST["geofences"],"clusters",origin.cluster_id,"cluster","_cluster"),
             vehicle = getValue(LIST["vehicles"],"vehicles",obj.vehicle_id,null,"_vehicle",["name","Trailer"]),
             route = getValue(LIST["routes"],"routes",obj.route,null,"_route",["transit_time"]),
@@ -474,7 +474,7 @@ class Dispatch {
         this.vehicle = vehicle.name || "-";
 
         const truckGeofence = getGeofence(vehicle["Site"],"short_name") || {};
-        this.truck_region = (getRegion(truckGeofence.region_id) || {}).region || "-";
+        this.truck_region = (getRegion(truckGeofence.region_id) || {}).code || "-";
         this.truck_cluster = (getCluster(truckGeofence.cluster_id) || {}).cluster || "-";
         this.truck_site = vehicle["Site"] || "-";
         this.plate_number = vehicle["Plate Number"] || "-";
@@ -1041,7 +1041,7 @@ class loadInBackground {
             if(self.urlPath == "regions"){
                 obj = {
                     id: val._id,
-                    value: val.region
+                    value: val.code
                 };
             }
             if(self.urlPath == "clusters"){
@@ -1707,7 +1707,7 @@ var PROFILE = {
                         return text;
                     }
                     doc.myRegions.forEach((val,i) => {
-                        myRegions.push(`${val.region || "-"}<div class="font-italic font-11 text-muted mb-1">${getLocationsInCharge(val).join(" | ")}</div>`);
+                        myRegions.push(`${val.code || "-"}<div class="font-italic font-11 text-muted mb-1">${getLocationsInCharge(val).join(" | ")}</div>`);
                     });
                     doc.myClusters.forEach((val,i) => {
                         myClusters.push(`${val.cluster || "-"}<div class="font-italic font-11 text-muted mb-1">${getLocationsInCharge(val).join(" | ")}</div>`);
@@ -2547,7 +2547,7 @@ var DASHBOARD = {
                 $('#export-container').html('');
                 TABLE.TOOLBAR(dt, function(){
                     var _date = calendarview == "day" ? moment(selectedDate).format("MM.DD.YYYY") : moment(selectedDate).format("MM.YYYY");
-                    var _region = filter && filter.toLowerCase() != 'all' ? (getRegion(filter)||{}).region || '-' : 'All';
+                    var _region = filter && filter.toLowerCase() != 'all' ? (getRegion(filter)||{}).code || '-' : 'All';
                     return `Deployment Dashboard - ${currentView.capitalize()} View - Region ${_region} - Filter ${calendarview.capitalize()} - ${_date}`
                 }, function (xlsx) {
                     var sheet = xlsx.xl.worksheets['sheet1.xml'];
@@ -2708,7 +2708,7 @@ var DASHBOARD = {
                     var _regionData = SORT.ARRAY_OBJECT(LIST["regions"],"sequence",{sortType:"asc"});
                     $(`#_regions`).append(`<li class="active"><a id="ALL" class="summary-tab" href="javascript:void(0)" role="tab" data-toggle="tab">ALL</a></li>`);
                     _regionData.forEach(val => {
-                        $(`#_regions`).append(`<li><a id="${val._id}" class="summary-tab" href="javascript:void(0)" role="tab" data-toggle="tab">${val.region}</a></li>`);
+                        $(`#_regions`).append(`<li><a id="${val._id}" class="summary-tab" href="javascript:void(0)" role="tab" data-toggle="tab">${val.code}</a></li>`);
                     });
                     $(`.summary-tab`).css({"border-radius":"2px","margin-bottom":"3px"});
                     $(`#_regions [role="tab"]`).click(function(){
@@ -3005,7 +3005,7 @@ var DE_DASHBOARD = {
                     var _regionData = SORT.ARRAY_OBJECT(LIST["regions"],"sequence",{sortType:"asc"});
                     $(`#_regions`).append(`<li class="active"><a id="ALL" class="summary-tab" href="javascript:void(0)" role="tab" data-toggle="tab">ALL</a></li>`);
                     _regionData.forEach(val => {
-                        $(`#_regions`).append(`<li><a id="${val._id}" class="summary-tab" href="javascript:void(0)" role="tab" data-toggle="tab">${val.region}</a></li>`);
+                        $(`#_regions`).append(`<li><a id="${val._id}" class="summary-tab" href="javascript:void(0)" role="tab" data-toggle="tab">${val.code}</a></li>`);
                     });
                     $(`.summary-tab`).css({"border-radius":"2px","margin-bottom":"3px"});
                     $(`#_regions [role="tab"]`).click(function(){
@@ -4110,7 +4110,7 @@ var DISPATCH = {
                         var regionOptions = `<option value="all">All</option>`,
                             clusterOptions = `<option value="all">All</option>`;
                         LIST["regions"].forEach(val => {
-                            regionOptions += `<option value="${val._id}">${val.region}</option>`;
+                            regionOptions += `<option value="${val._id}">${val.code}</option>`;
                         });
                         LIST["clusters"].forEach(val => {
                             clusterOptions += `<option value="${val._id}">${val.cluster}</option>`;
@@ -4407,7 +4407,7 @@ var DISPATCH = {
                     $(`[${type}-based] td[trailer]`).html(_id || "-");
                     $(`[${type}-based] td[cluster]`).html(cluster.cluster || info["Cluster"] || info.cluster || "-");
                     $(`[${type}-based] td[base]`).html(info["Site"] || info.site || "-");
-                    $(`[${type}-based] td[region]`).html(region.region || info["Region"] || info.region || "-");
+                    $(`[${type}-based] td[region]`).html(region.code || info["Region"] || info.region || "-");
                     $(`[${type}-based] td[pallet_type],td[pallet_capacity]`).html(info["Pal Cap"] || info.pal_cap || "-");
                 }
                 $(`#trailer`).html(trailersOptions).select2().val("").on("select2:select", function() {
@@ -6706,63 +6706,101 @@ var REPORTS = {
         },
         REPORTS: {
             CICOR: function(title,docs,originChosen,date_from,date_to){
+                // Legend:
+                //    · GBO - Grouped by Origin
+                //    · GBR - Grouped by Region
+
+
+                /****** CSS ******/
+                const rotateCSS = ` -webkit-transform: rotate(-90deg);
+                                    -moz-transform: rotate(-90deg);
+                                    -ms-transform: rotate(-90deg);
+                                    -o-transform: rotate(-90deg);
+                                    transform: rotate(-90deg);
+                                    mso-rotate: 90;
+                                    -webkit-transform-origin: 50% 50%;
+                                    -moz-transform-origin: 50% 50%;
+                                    -ms-transform-origin: 50% 50%;
+                                    -o-transform-origin: 50% 50%;
+                                    transform-origin: 50% 50%;
+                                    position: absolute;
+                                    filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=3);
+                                    
+                                    color: #595959;
+                                    background-color: #E2EFDA;
+                                    height: 127px;
+                                    border: none;
+                                    border-right: thin dashed #595959;`;
+
+                const tblHeaderCSS = `  background-color: #404040;
+                                        color: white;
+                                        font-size: 13px;
+                                        text-align: center;
+                                        border: thin solid #404040;
+                                        font-weight: bold;
+                                        vertical-align: middle;
+                                        font-family: Franklin Gothic Book;`;
+                                    
+                const noBorderCSS = `border: none;
+                                     font-size: 13px;
+                                     vertical-align: middle;
+                                     font-family: Franklin Gothic Book;`;
+                /****** end CSS ******/
+                
                 // var arr = ["destination","origin","route","sn","plate_num","trailer","pal_cap","hauler_name","cico_target","actual_timelapse","remarks1","remarks2","base_plant"];
                 var details = "",
-                    summary = "",
-                    summary_info = {},
-                    summary_total = {
-                        in_site: 0,
-                        over_cico: 0,
-                        w_in_cico: 0,
-                        count_time_lapse: 0,
-                        sum_time_lapse: 0,
-                        count_cico: 0,
-                        sum_cico: 0
-                    },
+
+                    // GBO
+                    gboHtml = "",
+                    gboInfo = {},
+
+                    // GBR
+                    gbrHtml = "",
+                    gbrInfo = {},
                     detailsHeaderHTML = "",
                     detailsBodyHTML = "",
-                    textCellStyle = `border:2px solid black;mso-number-format:'\@';`,
+                    textCellStyle = `border:2px solid #404040;mso-number-format:'\@';`,
                     columns = clientCustom.reports.cicor || [];
                 columns.forEach(_val_ => {
                     switch (_val_) {
                         case "origin":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Origin (Plant)</td>`;
+                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Origin (Plant)</td>`;
                             break;
                         case "destination":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Destination (DC)</td>`;
+                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Destination (DC)</td>`;
                             break;
                         case "route":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Route</td>`;
+                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Route</td>`;
                             break;
                         case "sn":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">SN</td>`;
+                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">SN</td>`;
                             break;
                         case "plateNumber":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Plate No.</td>`;
+                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Plate No.</td>`;
                             break;
                         case "trailer":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Trailer</td>`;
+                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Trailer</td>`;
                             break;
                         case "palCap":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Pal Cap</td>`;
+                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Pal Cap</td>`;
                             break;
                         case "haulerName":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Hauler Name</td>`;
+                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Hauler Name</td>`;
                             break;
                         case "targetCico":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Target CICO (hrs)</td>`;
+                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Target CICO (hrs)</td>`;
                             break;
                         case "actualTimelapse":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Actual Time Lapse (hrs)</td>`;
+                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Actual Time Lapse (hrs)</td>`;
                             break;
                         case "remarks1":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Remarks1</td>`;
+                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Remarks1</td>`;
                             break;
                         case "remarks2":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Remarks2</td>`;
+                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Remarks2</td>`;
                             break;
                         case "truckBasePlant":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Truck Base Plant</td>`;
+                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Truck Base Plant</td>`;
                             break;
                         default:
                             break;
@@ -6771,143 +6809,195 @@ var REPORTS = {
 
                 docs.forEach(function(val,i){
                     val.destination[0] = val.destination[0] || {};
-                    var cico_time,actual_time_lapse = null,
-                        remarks2Class = "",
+                    var remarks2Class = "",
                         origin = getGeofence(val.origin_id) || {},
                         destination = getGeofence(val.destination[0].location_id) || {},
                         vehicle = getVehicle(val.vehicle_id) || {},
-                        orig_dest = `${origin.short_name}_${destination.short_name}`,
-                        remarks2 = "w/in CICO Time",
+                        remarks2 = "In CICO",
                         beforeCheckOutTime = getDateTime("entered_origin",val) || getDateTime("queueingAtOrigin",val) || getDateTime("processingAtOrigin",val) || getDateTime("idlingAtOrigin",val);
+                    
+                    const queueingDuration = getDuration("queueingAtOrigin",val);
+                    const processingDuration = getDuration("processingAtOrigin",val);
+                    const idlingDuration = getDuration("idlingAtOrigin",val);
 
-                    var calcCICO = (beforeCheckOutTime) ?  (getDateTime("in_transit",val,"last") - beforeCheckOutTime) : 0;
-                    cico_time = calcCICO || 0;
+                    var calcCICO = (beforeCheckOutTime) ?  (getDateTime(clientCustom.status.enrouteToDestination,val,"last") - beforeCheckOutTime) : 0;
 
-                    actual_time_lapse = Number(DATETIME.DH(cico_time,null,"0"));
+                    const cico = Number(DATETIME.DH(calcCICO || 0,null,"0"));
+                    const cappedCICO = (cico > 5) ? 5 : cico;
 
-                    if(!summary_info[orig_dest]){
-                        summary_info[orig_dest] = {
-                            destination:destination.short_name,
-                            origin:origin.short_name,
-                            in_site:1,
-                            over_cico:0,
-                            w_in_cico:0,
-                            sum_time_lapse: actual_time_lapse,
-                            count_time_lapse: (actual_time_lapse != null) ? 1 : 0,
-                            cico_target: destination.cico || 0,
+                    if(cico != null){
+                        const key = origin.short_name;
+
+                        gboInfo[key] = gboInfo[key] || {
+                            totalShipments: 0,
+
+                            cico: 0,
+                            cappedCICO: 0,
+                            over_cico: 0,
+                            w_in_cico: 0,
+    
+                            queueingDuration: 0,
+                            processingDuration: 0,
+                            idlingDuration: 0,
                         };
-                    } else {
-                        summary_info[orig_dest].in_site++;
-                        if(actual_time_lapse != null){
-                            summary_info[orig_dest].sum_time_lapse = summary_info[orig_dest].sum_time_lapse || 0; // in case value is null
 
-                            summary_info[orig_dest].count_time_lapse++;
-                            summary_info[orig_dest].sum_time_lapse += actual_time_lapse;
-                        }
-                    }
-                    if(actual_time_lapse != null) {
-                        if(actual_time_lapse > destination.cico){
-                            remarks2Class = "background-color:#ffc7ce;color:#9c0006";
-                            remarks2 = "Over CICO Time";
-                            summary_info[orig_dest].over_cico ++;
+                        gboInfo[key].totalShipments++;
+
+                        gboInfo[key].cico += cico;
+                        gboInfo[key].cappedCICO += cappedCICO;
+
+                        gboInfo[key].queueingDuration += queueingDuration;
+                        gboInfo[key].processingDuration += processingDuration;
+                        gboInfo[key].idlingDuration += idlingDuration;
+
+                        if(cico > origin.cico){
+                            remarks2 = "Over CICO";
+                            gboInfo[key].over_cico ++;
                         } else {
-                            summary_info[orig_dest].w_in_cico ++;
+                            gboInfo[key].w_in_cico ++;
                         }
                     }
 
-                    detailsBodyHTML += `<tr>`;
-                    columns.forEach(_val_ => {
-                        switch (_val_) {
-                            case "destination":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${destination.short_name}</td>`;
-                                break;
-                            case "origin":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${origin.short_name}</td>`;
-                                break;
-                            case "route":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${val.route}</td>`;
-                                break;
-                            case "sn":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${val._id}</td>`;
-                                break;
-                            case "plateNumber":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle.name || "")}</td>`;
-                                break;
-                            case "trailer":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle["Trailer"] || "")}</td>`;
-                                break;
-                            case "palCap":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle["Pal Cap"] || "")}</td>`;
-                                break;
-                            case "haulerName":
-                                detailsBodyHTML += `<td style="${textCellStyle}"></td>`;
-                                break;
-                            case "targetCico":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${DATETIME.HH_MM(null,destination.cico).hour_minute}</td>`;
-                                break;
-                            case "actualTimelapse":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${DATETIME.HH_MM(null,actual_time_lapse).hour_minute}</td>`;
-                                break;
-                            case "remarks1":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${(val.remarks || "")}</td>`;
-                                break;
-                            case "remarks2":
-                                detailsBodyHTML += `<td style="${textCellStyle}${remarks2Class}">${remarks2}</td>`;
-                                break;
-                            case "truckBasePlant":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle["Site"] || "")}</td>`;
-                                break;
-                            default:
-                                break;
-                        }
-                    });
-                    detailsBodyHTML += `</tr>`;
+
+                    const cicoDifference = cico - Number(origin.cico);
+                    const cicoVariance = (cicoDifference > 0) ? DATETIME.HH_MM(null,cicoDifference).hour_minute : "-";
+
+                    detailsBodyHTML += `<tr>
+                                            <td style="${noBorderCSS}text-align: left;">${val._id}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${(vehicle.name || "")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${(vehicle["Trailer"] || "")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${(vehicle["Pal Cap"] || "")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${origin.short_name}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${destination.short_name}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${val.route}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(beforeCheckOutTime,"MM/DD/YYYY")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(beforeCheckOutTime,"H:mm")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(val.departure_date,"MM/DD/YYYY")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(val.departure_date,"H:mm")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${queueingDuration ? DATETIME.HH_MM(queueingDuration).hour_minute : "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${processingDuration ? DATETIME.HH_MM(processingDuration).hour_minute : "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${idlingDuration ? DATETIME.HH_MM(idlingDuration).hour_minute : "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${DATETIME.HH_MM(null,cico).hour_minute}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${DATETIME.HH_MM(null,cappedCICO).hour_minute}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${DATETIME.HH_MM(null,origin.cico).hour_minute}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${cicoVariance}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${vehicle["Base Site"]}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${remarks2}</td>
+                                        </tr>`;
                 });
-                Object.values(summary_info).forEach(val => {
-                    var ave_time_lapse = val.sum_time_lapse/val.count_time_lapse;
-                    summary += `<tr>
-                                    <td style="${textCellStyle}">${val.destination}</td>
-                                    <td style="${textCellStyle}">${val.origin}</td>
-                                    <td style="${textCellStyle}">${val.in_site}</td>
-                                    <td style="${textCellStyle}">${val.over_cico}</td>
-                                    <td style="${textCellStyle}">${val.w_in_cico}</td>
-                                    <td style="${textCellStyle}">${DATETIME.HH_MM(null,ave_time_lapse).hour_minute}</td>
-                                    <td style="${textCellStyle}">${DATETIME.HH_MM(null,val.cico_target).hour_minute}</td>
+
+                // GBO
+                const filteredGeofences = LIST["geofences"].filter(x => x.code);
+                const sortedGeofences = ARRAY.OBJECT.sort(filteredGeofences,"short_name",{ sortType: "asc" });
+                sortedGeofences.forEach(gVal => {
+
+                    const val = gboInfo[gVal.short_name] || {};
+
+                    const aveCICO = val.cico/val.totalShipments;
+                    const aveCappedCICO = val.cappedCICO/val.totalShipments;
+                    const cicoDifference = aveCICO - Number(gVal.cico);
+                    const cicoVariance = (cicoDifference > 0) ? DATETIME.HH_MM(null,cicoDifference).hour_minute : "-";
+
+                    const aveQueueingDuration = val.queueingDuration/val.totalShipments;
+                    const aveProcessingDuration = val.processingDuration/val.in_totalShipmentssite;
+                    const aveIdlingDuration = val.idlingDuration/val.totalShipments;
+
+                    // const origin = getGeofence(key,"short_name") || {};
+                    const region = getRegion(gVal.region_id) || {}; 
+
+                    const remarks = (aveCICO > Number(gVal.cico)) ? "Over CICO" : "In CICO";
+
+                    gboHtml += `<tr>
+                                    <td style="${noBorderCSS}">${gVal.short_name}</td>
+                                    <td style="${noBorderCSS}text-align: center;">${gVal.code || "-"}</td>
+                                    <td style="${noBorderCSS}text-align: center;">${region.code || "-"}</td>
+                                    <td style="${noBorderCSS}text-align: center;">${aveCICO ? DATETIME.HH_MM(null,aveCICO).hour_minute : "-"}</td>
+                                    <td style="${noBorderCSS}text-align: center;">${aveCappedCICO ? DATETIME.HH_MM(null,aveCappedCICO).hour_minute : "-"}</td>
+                                    <td style="${noBorderCSS}text-align: center;">${DATETIME.HH_MM(null,gVal.cico,"-").hour_minute}</td>
+                                    <td style="${noBorderCSS}text-align: center;">${cicoVariance}</td>
+                                    <td style="${noBorderCSS}text-align: center;">${aveQueueingDuration ? DATETIME.HH_MM(aveQueueingDuration).hour_minute : "-"}</td>
+                                    <td style="${noBorderCSS}text-align: center;">${aveProcessingDuration ? DATETIME.HH_MM(aveProcessingDuration).hour_minute : "-"}</td>
+                                    <td style="${noBorderCSS}text-align: center;">${aveIdlingDuration ? DATETIME.HH_MM(aveIdlingDuration).hour_minute : "-"}</td>
+                                    <td style="${noBorderCSS}text-align: center;">${val.totalShipments || "-"}</td>
+                                    <td style="${noBorderCSS}text-align: center;">${aveCICO ? remarks : "-"}</td>
                                 </tr>`;
-                    summary_total.in_site += val.in_site;
-                    summary_total.over_cico += val.over_cico;
-                    summary_total.w_in_cico += val.w_in_cico;
-                    summary_total.count_cico ++;
-                    summary_total.sum_cico += Number(val.cico_target);
-                    if(val.sum_time_lapse != null){
-                        summary_total.count_time_lapse ++;
-                        summary_total.sum_time_lapse += val.sum_time_lapse;
+                    
+                    if(gboInfo[gVal.short_name]) {
+
+                        gbrInfo[gVal.region_id] = gbrInfo[gVal.region_id] || {
+                            totalShipments: 0,
+
+                            cico: 0,
+                            cappedCICO: 0,
+                            targetCICO: 0,
+                            over_cico: 0,
+                            w_in_cico: 0,
+    
+                            queueingDuration: 0,
+                            processingDuration: 0,
+                            idlingDuration: 0,
+                        };
+    
+                        gbrInfo[gVal.region_id].totalShipments += val.totalShipments;
+                        gbrInfo[gVal.region_id].cappedCICO += val.cappedCICO;
+                        gbrInfo[gVal.region_id].over_cico += val.over_cico;
+                        gbrInfo[gVal.region_id].w_in_cico += val.w_in_cico;
+                        gbrInfo[gVal.region_id].targetCICO += Number(gVal.cico) || 0;
+                        
+                        gbrInfo[gVal.region_id].queueingDuration += val.queueingDuration;
+                        gbrInfo[gVal.region_id].processingDuration += val.processingDuration;
+                        gbrInfo[gVal.region_id].idlingDuration += val.idlingDuration;
+    
+                        gbrInfo[gVal.region_id].cico += val.cico;
                     }
                 });
-                summary_total.ave_time_lapse = summary_total.sum_time_lapse/summary_total.count_time_lapse;
-                summary_total.ave_cico = summary_total.sum_cico/summary_total.count_cico;
-                console.log("summary_total",summary_total);
-                summary += `<tr>
-                                <td style="${textCellStyle}font-weight: bold;" colspan=2>TOTAL</td>
-                                <td style="${textCellStyle}font-weight: bold;">${(summary_total.in_site || 0)}</td>
-                                <td style="${textCellStyle}font-weight: bold;">${(summary_total.over_cico || 0)}</td>
-                                <td style="${textCellStyle}font-weight: bold;">${(summary_total.w_in_cico || 0)}</td>
-                                <td style="${textCellStyle}font-weight: bold;">${DATETIME.HH_MM(null,summary_total.ave_time_lapse).hour_minute}</td>
-                                <td style="${textCellStyle}font-weight: bold;">${DATETIME.HH_MM(null,summary_total.ave_cico).hour_minute}</td>
-                            </tr>`;
+
+                // GBR
+                const sortedRegions = ARRAY.OBJECT.sort(LIST["regions"],"sequence",{ sortType: "asc" });
+                sortedRegions.forEach(rVal => {
+
+                    const val = gbrInfo[rVal._id] || {};
+
+                    const aveCICO = val.cico/val.totalShipments;
+                    const aveCappedCICO = val.cappedCICO/val.totalShipments;
+                    const aveTargetCICO = val.targetCICO/val.totalShipments;
+
+                    const cicoDifference = aveCICO - aveTargetCICO;
+                    const cicoVariance = (cicoDifference > 0) ? DATETIME.HH_MM(null,cicoDifference).hour_minute : "-";
+
+                    const aveQueueingDuration = val.queueingDuration/val.totalShipments;
+                    const aveProcessingDuration = val.processingDuration/val.totalShipments;
+                    const aveIdlingDuration = val.idlingDuration/val.totalShipments;
+
+                    const remarks = (aveCICO > aveTargetCICO) ? "Over CICO" : "In CICO";
+
+                    gbrHtml += `<tr>
+                                    <td style="${noBorderCSS}background-color:#F2F2F2;">${rVal.name || "-"}</td>
+                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${rVal.code || "-"}</td>
+                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;"> </td>
+                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveCICO ? DATETIME.HH_MM(null,aveCICO).hour_minute : "-"}</td>
+                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveCappedCICO ? DATETIME.HH_MM(null,aveCappedCICO).hour_minute : "-"}</td>
+                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveTargetCICO ? DATETIME.HH_MM(null,aveTargetCICO).hour_minute : "-"}</td>
+                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${cicoVariance}</td>
+                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveQueueingDuration ? DATETIME.HH_MM(aveQueueingDuration).hour_minute : "-"}</td>
+                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveProcessingDuration ? DATETIME.HH_MM(aveProcessingDuration).hour_minute : "-"}</td>
+                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveIdlingDuration ? DATETIME.HH_MM(aveIdlingDuration).hour_minute : "-"}</td>
+                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${val.totalShipments || "-"}</td>
+                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveCICO ? remarks : "-"}</td>
+                                </tr>`;
+                });
 
                 return `<table id="report-hidden" style="opacity:0;">
                             <tr>
-                                <td style="border: none;">Report name: <b style="color:#c00000;">${title}</b></td>
+                                <td style="${noBorderCSS}" colspan=2>Report name: <b style="color:#c00000;">${title}</b></td>
                             </tr>
-                            <tr><td style="border: none;"></td></tr>
+                            <tr><td style="${noBorderCSS}" colspan=2></td></tr>
                             <tr>
-                                <td style="border: none;"><b>Summary:</b></td>
+                                <td style="${noBorderCSS}" colspan=2>Date Info:</td>
                             </tr>
                             <tr>
-                                <td style="border: none;">
+                                <td style="${noBorderCSS}" colspan=2>
                                     <div>
-                                        <div>Plant Site: ${originChosen}</div>
                                         <div>Date from: ${moment(new Date(date_from)).format("MM/DD/YYYY hh:mm A")}</div>
                                         <div>Date to: ${moment(new Date(date_to)).format("MM/DD/YYYY hh:mm A")}</div>
                                         <div>&nbsp;</div>
@@ -6915,25 +7005,320 @@ var REPORTS = {
                                     </div>
                                 </td>
                             </tr>
-                            <tr><td style="border: none;"></td></tr>
+                            <tr><td style="${noBorderCSS}" colspan=2></td></tr>
                             <tr>
-                                <td style="background-color:black;color:white;">Destination (DC)</td>
-                                <td style="background-color:black;color:white;">Origin (Plant)</td>
-                                <td style="background-color:black;color:white;">In Site</td>
-                                <td style="background-color:#757070;color:white;">Over CICO</td>
-                                <td style="background-color:#757070;color:white;">W/in CICO</td>
-                                <td style="background-color:black;color:white;">Ave. Time Lapse (hrs)</td>
-                                <td style="background-color:black;color:white;">CICO Target (hrs)</td>
+                                <td style="${rotateCSS}">Source Name</td>
+                                <td style="${rotateCSS}">Numerical identifier of the origin</td>
+                                <td style="${rotateCSS}">Region where the origin site is located</td>
+                                <td style="${rotateCSS}">Average of actual duration of stay inside the origin site</td>
+                                <td style="${rotateCSS}">Average duration of stay inside the origin site that exceeded to 5 hrs will automatically rolled back to 5 hrs</td>
+                                <td style="${rotateCSS}">Maximum duration of stay inside the origin site</td>
+                                <td style="${rotateCSS}">Excess CICO duration from the CICO target</td>
+                                <td style="${rotateCSS}">Average duration of stay inside the queueing area geofence</td>
+                                <td style="${rotateCSS}">Average duration of stay inside the processing area geofence</td>
+                                <td style="${rotateCSS}">Average duration of stay inside the idling area geofence</td>
+                                <td style="${rotateCSS}">Count of posted shipment from the origin</td>
+                                <td style="${rotateCSS}">Identifier if the average duration of stay inside the origin site is "In CICO" or "Over CICO"</td>
                             </tr>
-                            ${summary}
-                            <tr><td style="border: none;"></td></tr>
                             <tr>
-                                <td style="border: none;"><b>Details:</b></td>
+                                <td style="${tblHeaderCSS}">Origin</td>
+                                <td style="${tblHeaderCSS}">Origin Site Code</td>
+                                <td style="${tblHeaderCSS}">Origin Region</td>
+                                <td style="${tblHeaderCSS}">CICO Duration</td>
+                                <td style="${tblHeaderCSS}">CICO with Capping</td>
+                                <td style="${tblHeaderCSS}">CICO Target</td>
+                                <td style="${tblHeaderCSS}">CICO Variance</td>
+                                <td style="${tblHeaderCSS}">Queueing Duration</td>
+                                <td style="${tblHeaderCSS}">Processing Duration</td>
+                                <td style="${tblHeaderCSS}">Idling Duration</td>
+                                <td style="${tblHeaderCSS}">Shipment Count</td>
+                                <td style="${tblHeaderCSS}">Remarks</td>
                             </tr>
-                            <tr>${detailsHeaderHTML}</tr>
+                            ${gboHtml}
+                            <tr><td style="${noBorderCSS}"></td></tr>
+                            ${gbrHtml}
+                            <tr><td style="${noBorderCSS}"></td></tr>
+                            <tr><td style="${noBorderCSS}"></td></tr>
+                            <tr>
+                                <td style="${noBorderCSS}"><b>Details:</b></td>
+                            </tr>
+                            <tr><td style="${noBorderCSS}"></td></tr>
+                            <tr>
+                                <td style="${rotateCSS}">Numerical identifier of assigned shipment</td>
+                                <td style="${rotateCSS}">Plate number of the tractor where the shipment is assigned</td>
+                                <td style="${rotateCSS}">Plate number of the trailer coupled to the tractor where the shipment is assigned</td>
+                                <td style="${rotateCSS}">Trailer capacity in pallets</td>
+                                <td style="${rotateCSS}">Source Name</td>
+                                <td style="${rotateCSS}">Destination Name</td>
+                                <td style="${rotateCSS}">Site codes combination of origin and destination</td>
+                                <td style="${rotateCSS}">Actual date of entry to the origin site</td>
+                                <td style="${rotateCSS}">Actual time of entry to the origin site</td>
+                                <td style="${rotateCSS}">Actual date of departure to the origin site</td>
+                                <td style="${rotateCSS}">Actual time of departure to the origin site</td>
+                                <td style="${rotateCSS}">Duration of stay inside the queueing area geofence</td>
+                                <td style="${rotateCSS}">Duration of stay inside the processing area geofence</td>
+                                <td style="${rotateCSS}">Duration of stay inside the idling area geofence</td>
+                                <td style="${rotateCSS}">Actual duration of stay inside the origin site</td>
+                                <td style="${rotateCSS}">Duration of stay inside the origin site that exceeded to 5 hrs will automatically rolled back to 5 hrs</td>
+                                <td style="${rotateCSS}">Maximum duration of stay inside the origin site</td>
+                                <td style="${rotateCSS}">Difference between the CICO duration and the CICO target</td>
+                                <td style="${rotateCSS}">Site where the vehicle was allocated and will serve as its base site</td>
+                                <td style="${rotateCSS}">Identifier if the shipment is "In CICO" or "Over CICO"</td>
+                            </tr>
+                            <tr>
+                                <td style="${tblHeaderCSS}">Shipment</td>
+                                <td style="${tblHeaderCSS}">Vehicle</td>
+                                <td style="${tblHeaderCSS}">Trailer</td>
+                                <td style="${tblHeaderCSS}">Pal Cap</td>
+                                <td style="${tblHeaderCSS}">Origin</td>
+                                <td style="${tblHeaderCSS}">Destination</td>
+                                <td style="${tblHeaderCSS}">Route</td>
+                                <td style="${tblHeaderCSS}">Check In Date</td>
+                                <td style="${tblHeaderCSS}">Check In Time</td>
+                                <td style="${tblHeaderCSS}">Check Out Date</td>
+                                <td style="${tblHeaderCSS}">Check Out Time</td>
+                                <td style="${tblHeaderCSS}">Queueing Duration</td>
+                                <td style="${tblHeaderCSS}">Processing Duration</td>
+                                <td style="${tblHeaderCSS}">Idling Duration</td>
+                                <td style="${tblHeaderCSS}">CICO Duration</td>
+                                <td style="${tblHeaderCSS}">CICO with Capping</td>
+                                <td style="${tblHeaderCSS}">CICO Target</td>
+                                <td style="${tblHeaderCSS}">CICO Variance</td>
+                                <td style="${tblHeaderCSS}">Vehicle Base Site</td>
+                                <td style="${tblHeaderCSS}">Remarks</td>
+                            </tr>
                             ${detailsBodyHTML}
                         </table> `;
             },
+            // CICOR: function(title,docs,originChosen,date_from,date_to){
+            //     // var arr = ["destination","origin","route","sn","plate_num","trailer","pal_cap","hauler_name","cico_target","actual_timelapse","remarks1","remarks2","base_plant"];
+            //     var details = "",
+            //         summary = "",
+            //         summary_info = {},
+            //         summary_total = {
+            //             in_site: 0,
+            //             over_cico: 0,
+            //             w_in_cico: 0,
+            //             count_time_lapse: 0,
+            //             sum_time_lapse: 0,
+            //             count_cico: 0,
+            //             sum_cico: 0
+            //         },
+            //         detailsHeaderHTML = "",
+            //         detailsBodyHTML = "",
+            //         textCellStyle = `border:2px solid black;mso-number-format:'\@';`,
+            //         columns = clientCustom.reports.cicor || [];
+            //     columns.forEach(_val_ => {
+            //         switch (_val_) {
+            //             case "origin":
+            //                 detailsHeaderHTML += `<td style="background-color:black;color:white;">Origin (Plant)</td>`;
+            //                 break;
+            //             case "destination":
+            //                 detailsHeaderHTML += `<td style="background-color:black;color:white;">Destination (DC)</td>`;
+            //                 break;
+            //             case "route":
+            //                 detailsHeaderHTML += `<td style="background-color:black;color:white;">Route</td>`;
+            //                 break;
+            //             case "sn":
+            //                 detailsHeaderHTML += `<td style="background-color:black;color:white;">SN</td>`;
+            //                 break;
+            //             case "plateNumber":
+            //                 detailsHeaderHTML += `<td style="background-color:black;color:white;">Plate No.</td>`;
+            //                 break;
+            //             case "trailer":
+            //                 detailsHeaderHTML += `<td style="background-color:black;color:white;">Trailer</td>`;
+            //                 break;
+            //             case "palCap":
+            //                 detailsHeaderHTML += `<td style="background-color:black;color:white;">Pal Cap</td>`;
+            //                 break;
+            //             case "haulerName":
+            //                 detailsHeaderHTML += `<td style="background-color:black;color:white;">Hauler Name</td>`;
+            //                 break;
+            //             case "targetCico":
+            //                 detailsHeaderHTML += `<td style="background-color:black;color:white;">Target CICO (hrs)</td>`;
+            //                 break;
+            //             case "actualTimelapse":
+            //                 detailsHeaderHTML += `<td style="background-color:black;color:white;">Actual Time Lapse (hrs)</td>`;
+            //                 break;
+            //             case "remarks1":
+            //                 detailsHeaderHTML += `<td style="background-color:black;color:white;">Remarks1</td>`;
+            //                 break;
+            //             case "remarks2":
+            //                 detailsHeaderHTML += `<td style="background-color:black;color:white;">Remarks2</td>`;
+            //                 break;
+            //             case "truckBasePlant":
+            //                 detailsHeaderHTML += `<td style="background-color:black;color:white;">Truck Base Plant</td>`;
+            //                 break;
+            //             default:
+            //                 break;
+            //         }
+            //     });
+
+            //     docs.forEach(function(val,i){
+            //         val.destination[0] = val.destination[0] || {};
+            //         var cico_time,actual_time_lapse = null,
+            //             remarks2Class = "",
+            //             origin = getGeofence(val.origin_id) || {},
+            //             destination = getGeofence(val.destination[0].location_id) || {},
+            //             vehicle = getVehicle(val.vehicle_id) || {},
+            //             orig_dest = `${origin.short_name}_${destination.short_name}`,
+            //             remarks2 = "w/in CICO Time",
+            //             beforeCheckOutTime = getDateTime("entered_origin",val) || getDateTime("queueingAtOrigin",val) || getDateTime("processingAtOrigin",val) || getDateTime("idlingAtOrigin",val);
+
+            //         var calcCICO = (beforeCheckOutTime) ?  (getDateTime("in_transit",val,"last") - beforeCheckOutTime) : 0;
+            //         cico_time = calcCICO || 0;
+
+            //         actual_time_lapse = Number(DATETIME.DH(cico_time,null,"0"));
+
+            //         if(!summary_info[orig_dest]){
+            //             summary_info[orig_dest] = {
+            //                 destination:destination.short_name,
+            //                 origin:origin.short_name,
+            //                 in_site:1,
+            //                 over_cico:0,
+            //                 w_in_cico:0,
+            //                 sum_time_lapse: actual_time_lapse,
+            //                 count_time_lapse: (actual_time_lapse != null) ? 1 : 0,
+            //                 cico_target: destination.cico || 0,
+            //             };
+            //         } else {
+            //             summary_info[orig_dest].in_site++;
+            //             if(actual_time_lapse != null){
+            //                 summary_info[orig_dest].sum_time_lapse = summary_info[orig_dest].sum_time_lapse || 0; // in case value is null
+
+            //                 summary_info[orig_dest].count_time_lapse++;
+            //                 summary_info[orig_dest].sum_time_lapse += actual_time_lapse;
+            //             }
+            //         }
+            //         if(actual_time_lapse != null) {
+            //             if(actual_time_lapse > destination.cico){
+            //                 remarks2Class = "background-color:#ffc7ce;color:#9c0006";
+            //                 remarks2 = "Over CICO Time";
+            //                 summary_info[orig_dest].over_cico ++;
+            //             } else {
+            //                 summary_info[orig_dest].w_in_cico ++;
+            //             }
+            //         }
+
+            //         detailsBodyHTML += `<tr>`;
+            //         columns.forEach(_val_ => {
+            //             switch (_val_) {
+            //                 case "destination":
+            //                     detailsBodyHTML += `<td style="${textCellStyle}">${destination.short_name}</td>`;
+            //                     break;
+            //                 case "origin":
+            //                     detailsBodyHTML += `<td style="${textCellStyle}">${origin.short_name}</td>`;
+            //                     break;
+            //                 case "route":
+            //                     detailsBodyHTML += `<td style="${textCellStyle}">${val.route}</td>`;
+            //                     break;
+            //                 case "sn":
+            //                     detailsBodyHTML += `<td style="${textCellStyle}">${val._id}</td>`;
+            //                     break;
+            //                 case "plateNumber":
+            //                     detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle.name || "")}</td>`;
+            //                     break;
+            //                 case "trailer":
+            //                     detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle["Trailer"] || "")}</td>`;
+            //                     break;
+            //                 case "palCap":
+            //                     detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle["Pal Cap"] || "")}</td>`;
+            //                     break;
+            //                 case "haulerName":
+            //                     detailsBodyHTML += `<td style="${textCellStyle}"></td>`;
+            //                     break;
+            //                 case "targetCico":
+            //                     detailsBodyHTML += `<td style="${textCellStyle}">${DATETIME.HH_MM(null,destination.cico).hour_minute}</td>`;
+            //                     break;
+            //                 case "actualTimelapse":
+            //                     detailsBodyHTML += `<td style="${textCellStyle}">${DATETIME.HH_MM(null,actual_time_lapse).hour_minute}</td>`;
+            //                     break;
+            //                 case "remarks1":
+            //                     detailsBodyHTML += `<td style="${textCellStyle}">${(val.remarks || "")}</td>`;
+            //                     break;
+            //                 case "remarks2":
+            //                     detailsBodyHTML += `<td style="${textCellStyle}${remarks2Class}">${remarks2}</td>`;
+            //                     break;
+            //                 case "truckBasePlant":
+            //                     detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle["Site"] || "")}</td>`;
+            //                     break;
+            //                 default:
+            //                     break;
+            //             }
+            //         });
+            //         detailsBodyHTML += `</tr>`;
+            //     });
+            //     Object.values(summary_info).forEach(val => {
+            //         var ave_time_lapse = val.sum_time_lapse/val.count_time_lapse;
+            //         summary += `<tr>
+            //                         <td style="${textCellStyle}">${val.destination}</td>
+            //                         <td style="${textCellStyle}">${val.origin}</td>
+            //                         <td style="${textCellStyle}">${val.in_site}</td>
+            //                         <td style="${textCellStyle}">${val.over_cico}</td>
+            //                         <td style="${textCellStyle}">${val.w_in_cico}</td>
+            //                         <td style="${textCellStyle}">${DATETIME.HH_MM(null,ave_time_lapse).hour_minute}</td>
+            //                         <td style="${textCellStyle}">${DATETIME.HH_MM(null,val.cico_target).hour_minute}</td>
+            //                     </tr>`;
+            //         summary_total.in_site += val.in_site;
+            //         summary_total.over_cico += val.over_cico;
+            //         summary_total.w_in_cico += val.w_in_cico;
+            //         summary_total.count_cico ++;
+            //         summary_total.sum_cico += Number(val.cico_target);
+            //         if(val.sum_time_lapse != null){
+            //             summary_total.count_time_lapse ++;
+            //             summary_total.sum_time_lapse += val.sum_time_lapse;
+            //         }
+            //     });
+            //     summary_total.ave_time_lapse = summary_total.sum_time_lapse/summary_total.count_time_lapse;
+            //     summary_total.ave_cico = summary_total.sum_cico/summary_total.count_cico;
+            //     console.log("summary_total",summary_total);
+            //     summary += `<tr>
+            //                     <td style="${textCellStyle}font-weight: bold;" colspan=2>TOTAL</td>
+            //                     <td style="${textCellStyle}font-weight: bold;">${(summary_total.in_site || 0)}</td>
+            //                     <td style="${textCellStyle}font-weight: bold;">${(summary_total.over_cico || 0)}</td>
+            //                     <td style="${textCellStyle}font-weight: bold;">${(summary_total.w_in_cico || 0)}</td>
+            //                     <td style="${textCellStyle}font-weight: bold;">${DATETIME.HH_MM(null,summary_total.ave_time_lapse).hour_minute}</td>
+            //                     <td style="${textCellStyle}font-weight: bold;">${DATETIME.HH_MM(null,summary_total.ave_cico).hour_minute}</td>
+            //                 </tr>`;
+
+            //     return `<table id="report-hidden" style="opacity:0;">
+            //                 <tr>
+            //                     <td style="border: none;">Report name: <b style="color:#c00000;">${title}</b></td>
+            //                 </tr>
+            //                 <tr><td style="border: none;"></td></tr>
+            //                 <tr>
+            //                     <td style="border: none;"><b>Summary:</b></td>
+            //                 </tr>
+            //                 <tr>
+            //                     <td style="border: none;">
+            //                         <div>
+            //                             <div>Plant Site: ${originChosen}</div>
+            //                             <div>Date from: ${moment(new Date(date_from)).format("MM/DD/YYYY hh:mm A")}</div>
+            //                             <div>Date to: ${moment(new Date(date_to)).format("MM/DD/YYYY hh:mm A")}</div>
+            //                             <div>&nbsp;</div>
+            //                             <div>Generated on: ${moment(new Date()).format("MM/DD/YYYY hh:mm A")}</div>
+            //                         </div>
+            //                     </td>
+            //                 </tr>
+            //                 <tr><td style="border: none;"></td></tr>
+            //                 <tr>
+            //                     <td style="background-color:black;color:white;">Destination (DC)</td>
+            //                     <td style="background-color:black;color:white;">Origin (Plant)</td>
+            //                     <td style="background-color:black;color:white;">In Site</td>
+            //                     <td style="background-color:#757070;color:white;">Over CICO</td>
+            //                     <td style="background-color:#757070;color:white;">W/in CICO</td>
+            //                     <td style="background-color:black;color:white;">Ave. Time Lapse (hrs)</td>
+            //                     <td style="background-color:black;color:white;">CICO Target (hrs)</td>
+            //                 </tr>
+            //                 ${summary}
+            //                 <tr><td style="border: none;"></td></tr>
+            //                 <tr>
+            //                     <td style="border: none;"><b>Details:</b></td>
+            //                 </tr>
+            //                 <tr>${detailsHeaderHTML}</tr>
+            //                 ${detailsBodyHTML}
+            //             </table> `;
+            // },
             OTR: function(title,docs,originChosen,date_from,date_to){
                 var summary = "",
                     summary_info = {},
@@ -9659,7 +10044,7 @@ var REPORTS = {
                                     }, function(docs){
                                         console.log("Geofence:",docs);
                                         if(docs[0]){
-                                            region = docs[0].region.region || "-";
+                                            region = docs[0].region.code || "-";
                                         }
                                         callback({origin,destination,region});
                                         $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
@@ -9852,7 +10237,7 @@ var REPORTS = {
                         var title = "CICO Report";
                         df_dt_dest(title,"REPORT_MODAL_01","Plant Site",function(){
                             cicor_otr_report(
-                                {origin_id: _siteId},
+                                { origin_id: _siteId, status: { $in: ["in_transit","complete"] } },
                                 function(docs){
                                     $(`body`).append(REPORTS.UI.REPORTS.CICOR(title,docs,_siteText,date_from,date_to));
                                     GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY")}`);
@@ -11080,7 +11465,7 @@ var LOCATIONS = {
                         goto: "regions",
                         dataTableOptions: {
                             columns: TABLE.COL_ROW(CUSTOM.COLUMN.regions).column,
-                            order: [[ 1, "asc" ]],
+                            order: [[ 2, "asc" ]],
                             // sDom: "t" + "<'row'<'col-sm-6'i><'col-sm-6'p>>", // remove all filter container
                             createdRow: function (row, data, dataIndex) {
                                 var _row = data._row;
@@ -11135,7 +11520,8 @@ var LOCATIONS = {
                     return TABLE.COL_ROW(null,{
                         '_id': obj._id,
                         '_row':  obj._row,
-                        'Region': obj.region || "-",
+                        'Region Name': obj.name || "-",
+                        'Region Code': obj.code || "-",
                         'Sequence': obj.sequence,
                         'esq1_lq': getEscalationUsers("escalation1","lq"),
                         'esq1_oc': getEscalationUsers("escalation1","oc"),
@@ -11162,7 +11548,8 @@ var LOCATIONS = {
                         modalElements = function(obj){
                             obj = obj || {};
                             return [
-                                {title:"Region",id:"region",type:"text",required:true,value:obj.region},
+                                {title:"Region Name",id:"name",type:"text",required:true,value:obj.name},
+                                {title:"Region Code",id:"code",type:"text",required:true,value:obj.code},
                                 {title:"Sequence",id:"sequence",type:"number",required:true,value:obj.sequence,sub_title:"Please enter a number. This refers to the sequence of the tabs in the Deployment Dashboard."},
                             ];
                         };
@@ -11488,7 +11875,7 @@ var LOCATIONS = {
                     var action = TABLE.ROW_BUTTONS(PAGE.GET(),{loadView:["edit"],readonlyArr:["edit"]});
                     $(`${self.id} th:last-child`).css({"min-width":action.width,"width":action.width});
 
-                    var region = (LIST["regions"]) ? (getRegion(obj.region_id) || {}).region : `<small class="font-italic text-muted">loading...</small>`;
+                    var region = (LIST["regions"]) ? (getRegion(obj.region_id) || {}).code : `<small class="font-italic text-muted">loading...</small>`;
                     var totalGeofences = (GGS.STATUS.GEOFENCES) ? (getGeofence(obj._id,"cluster_id","filter") || {}).length : `<small class="font-italic text-muted">loading...</small>`;
 
                     (LIST["regions"]) ? obj._region = region : null;
@@ -12244,7 +12631,7 @@ var LOCATIONS = {
                         // regions
                         var regionOptions = `<option value="">&nbsp;</option>`;
                         (LIST["regions"]||[]).forEach(val => {
-                            regionOptions += `<option value="${val._id}">${val.region}</option>`;
+                            regionOptions += `<option value="${val._id}">${val.code}</option>`;
                         });
                         $(`#_region_id`).html(regionOptions).select2().val(table.filter.region_id || "").trigger("change");
 
@@ -14384,7 +14771,7 @@ const CUSTOMERS = {
             });
             $(`${self.id} th:last-child`).css({"min-width":action.width,"width":action.width});
 
-            var region = (LIST["regions"]) ? (getRegion(obj.region_id) || {}).region : `<small class="font-italic text-muted">loading...</small>`;
+            var region = (LIST["regions"]) ? (getRegion(obj.region_id) || {}).code : `<small class="font-italic text-muted">loading...</small>`;
             var cluster = (LIST["clusters"]) ? (getCluster(obj.cluster_id) || {}).cluster : `<small class="font-italic text-muted">loading...</small>`;
 
             return TABLE.COL_ROW(null,{
@@ -19123,7 +19510,7 @@ const modalViews = new function(){
             },
             statusUpdate: function(_id){
                 var statusHTML = "";
-                (clientCustom.completeStatusList.dispatch||[]).forEach(val => {
+                (clientCustom.status.all||[]).forEach(val => {
                     const stat = GET.STATUS(val);
                     statusHTML += `<span status="${val}" class="col-sm-12 label ${stat.color} label-transparent font-12 cursor-pointer active pb-2 pt-2 mt-1 d-block">${stat.text.toUpperCase()}</span>`;
                 });

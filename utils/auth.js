@@ -1101,7 +1101,6 @@ var LIMIT = 200,
                 dispatch: {
                     editableTrailer: true,
                     columnOrder: [[ 1, "desc" ]],
-                    completeStatusList: ["plan","assigned","queueingAtOrigin","processingAtOrigin","idlingAtOrigin","in_transit","complete","incomplete"],
                     previousCheckIns: {
                         status: ["queueingAtOrigin","processingAtOrigin","idlingAtOrigin","in_transit","incomplete"],
                         roles: ["administrator","developer"]
@@ -1116,6 +1115,10 @@ var LIMIT = 200,
                     },
                     create: {
                         requiredFields: ["shipment_number","shipment_type","route","vehicle_id","trailer"],
+                    },
+                    status: {
+                        all: ["plan","assigned","queueingAtOrigin","processingAtOrigin","idlingAtOrigin","in_transit","complete","incomplete"],
+                        enrouteToDestination: "in_transit",
                     }
                 },
                 vehicles: {
@@ -1203,7 +1206,6 @@ var LIMIT = 200,
                     roundtrip: true,
                     scheduled: true,
                     columnOrder: [[ 0, "desc" ]],
-                    completeStatusList: ["plan","assigned","processingAtOrigin","in_transit","onSite","returning","complete","incomplete"],
                     // statusWhenTruckEnteredOrigin: "processingAtOrigin", // SHOULD CHANGE WHEN IN PROCESSSING NA TALAGA
                     // statusWhenTruckEnteredOrigin: "assigned",
                     rowButtons: { 
@@ -1221,6 +1223,10 @@ var LIMIT = 200,
                     },
                     create: {
                         requiredFields: ["ticket_number","scheduled_date","shift_schedule","route","vehicle_id","driver_id"],
+                    },
+                    status: {
+                        all: ["plan","assigned","processingAtOrigin","in_transit","onSite","returning","complete","incomplete"],
+                        enrouteToDestination: "in_transit",
                     }
                 },
                 vehicles: {
@@ -1329,7 +1335,6 @@ var LIMIT = 200,
                 dispatch: {
                     editableTrailer: true,
                     columnOrder: [[ 10, "desc" ]],
-                    completeStatusList: ["plan","assigned","dispatched","onDelivery","complete","incomplete"],
                     previousCheckIns: {
                         status: ["queueingAtOrigin","processingAtOrigin","idlingAtOrigin","in_transit"],
                         roles: ["administrator","developer"]
@@ -1357,6 +1362,10 @@ var LIMIT = 200,
                     create: {
                         requiredFields: ["shipment_number","origin_id","customers","vehicle_id","support_unit","shipment_type","delivery_sequence","mdsd_usage"],
                     },
+                    status: {
+                        all: ["plan","assigned","dispatched","onDelivery","complete","incomplete"],
+                        enrouteToDestination: "onDelivery",
+                    }
                 },
                 vehicles: {
                     columns: ["name","conductionNumber","equipmentNumber","truckBase","availability","last2Locations","action"],

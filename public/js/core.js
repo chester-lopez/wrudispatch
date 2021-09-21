@@ -336,7 +336,8 @@ const CUSTOM = {
             { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
         ],
         regions: [
-            { data: "Region", title: "Region", visible: true },
+            { data: "Region Name", title: "Region Name", visible: true },
+            { data: "Region Code", title: "Region Code", visible: true },
             { data: "Sequence", title: "Sequence", width: "50px", visible: true },
             { data: "esq1_lq", title: "Person In-Charge (E-1 Long Queueing)", visible: false },
             { data: "esq1_oc", title: "Person In-Charge (E-1 Over CICO)", visible: false },
@@ -907,7 +908,6 @@ const WEBSOCKET = {
                 };
 
                 clientCustom.statusAllowedEditable = {};
-                clientCustom.completeStatusList = {};
                 clientCustom.allowExportTable = {};
                 clientCustom.requiredFields = {};
                 clientCustom.calendarView = {};
@@ -920,6 +920,7 @@ const WEBSOCKET = {
                 
                 clientCustom.gSelect2 = {};
                 clientCustom.columns = {};
+                clientCustom.status = {};
 
                 clientCustom.ignoreRolesWithString = setValue("custom.users.ignoreRolesWithString", []);
                 clientCustom.visibleStatus = setValue("custom.dashboard.visibleStatus", []);
@@ -980,8 +981,9 @@ const WEBSOCKET = {
                 // requiredFields
                 clientCustom.requiredFields.dispatch = setValue("custom.dispatch.create.requiredFields", []);
 
-                // completeStatusList
-                clientCustom.completeStatusList.dispatch = setValue("custom.dispatch.completeStatusList", []);
+                // status
+                clientCustom.status.all = setValue("custom.dispatch.status.all", []);
+                clientCustom.status.enrouteToDestination = setValue("custom.dispatch.status.enrouteToDestination", "in_transit");
             }
 
             SOCKET = io();
