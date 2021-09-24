@@ -10,6 +10,20 @@ WEBSOCKET.connect().then(() => {
         $(`#wrapper`).attr({"style":`background:url(../public/img/${CLIENT.id}-bg.jpg) no-repeat;background-size: cover;`});
 
 
+        var loginButtons = "";
+        ((CLIENT.loginOptions||{}).buttons||[]).forEach(val => {
+            const style = val.active ? `border: 1px solid #00a54887;background-color: #00a5482e;border-radius: 3px;` : "";
+            loginButtons += `<a href="/${val.path}/login">
+                                <div class="col-sm-6 pl-0 pr-1"><img alt="${val.path} Logo" style="image-rendering: -webkit-optimize-contrast;width: 100%;padding: 5px;${style}" src="${val.logo}" width="220"></div>
+                            </a>`;
+        });
+
+        if(loginButtons){
+            $('.header').after(`<div class="header">
+                                    <div class="logo text-center col-sm-12 mb-3 p-0">${loginButtons}</div>
+                                </div>`);
+        }
+
         GENERATE.HIDESHOWPASSWORD(`#password`);
         $(`#submit`).click(function(e){
             e.preventDefault();

@@ -1086,6 +1086,20 @@ var LIMIT = 200,
             ggsURL: `coca-cola.server93.com`,
             type: 1,
             tabCloseAutoLogout: true,
+            loginOptions: {
+                buttons: [
+                    {
+                        path: "CokeT1",
+                        logo: "../public/img/coket1-dashboard.png",
+                        active: true
+                    },
+                    {
+                        path: "CokeT2",
+                        logo: "../public/img/coket2-dashboard.png",
+                        active: false
+                    },
+                ]
+            },
             loadInBackground: ["VEHICLES","REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","USERS","VEHICLES_HISTORY","NOTIFICATIONS","SESSIONS"],
             allowRolesToViewAs: {
                 developer: ["developer","administrator","management","dispatcher","user"],
@@ -1320,6 +1334,20 @@ var LIMIT = 200,
             allowDownloadFromOtherDB: "CokeT1",
             type: 2,
             tabCloseAutoLogout: true,
+            loginOptions: {
+                buttons: [
+                    {
+                        path: "CokeT1",
+                        logo: "../public/img/coket1-dashboard.png",
+                        active: false
+                    },
+                    {
+                        path: "CokeT2",
+                        logo: "../public/img/coket2-dashboard.png",
+                        active: true
+                    },
+                ]
+            },
             loadInBackground: ["VEHICLES","REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","USERS","VEHICLES_HISTORY","NOTIFICATIONS","SESSIONS","CUSTOMERS"],
             allowRolesToViewAs: {
                 developer: ["developer","administrator","management","dispatcher","user"],
