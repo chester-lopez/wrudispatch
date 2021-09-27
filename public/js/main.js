@@ -144,7 +144,8 @@ function getSelect2Options(){
 
     /******** REGIONS ********/
     G_SELECT2["form-regions"] = `<option value="">&nbsp;</option>`;
-    (LIST["regions"]||[]).forEach(val => {
+    const sortedRegions = ARRAY.OBJECT.sort((LIST["regions"]||[]),"sequence",{sortType:"asc"});
+    sortedRegions.forEach(val => {
         (!val.delete) ? G_SELECT2["form-regions"] += `<option value="${val._id}">${val.code}</option>` : null;
     });
     /******** END REGIONS ********/
@@ -230,7 +231,8 @@ function getSelect2Options(){
     
     /******** GEOFENCES ********/
     G_SELECT2["form-geofences"] = `<option value="">&nbsp;</option>`;
-    (LIST["geofences"]||[]).forEach(val => {
+    const sortedGeofences = ARRAY.OBJECT.sort((LIST["geofences"]||[]),"short_name",{sortType:"asc"});
+    sortedGeofences.forEach(val => {
         val.code ? G_SELECT2["form-geofences"] += `<option value="${val._id}">${val.short_name}</option>` : null;
     });
     /******** END GEOFENCES ********/
@@ -14772,14 +14774,18 @@ const CUSTOMERS = {
             $(`${self.id} th:last-child`).css({"min-width":action.width,"width":action.width});
 
             var region = (LIST["regions"]) ? (getRegion(obj.region_id) || {}).code : `<small class="font-italic text-muted">loading...</small>`;
-            var cluster = (LIST["clusters"]) ? (getCluster(obj.cluster_id) || {}).cluster : `<small class="font-italic text-muted">loading...</small>`;
+            var geofence = (LIST["geofences"]) ? (getGeofence(obj.dc_id) || {}).short_name : `<small class="font-italic text-muted">loading...</small>`;
 
             return TABLE.COL_ROW(null,{
                 '_id': obj._id,
                 '_row':  obj._row,
-                'Customer': obj.name || "-",
+                'Customer Name': obj.name || "-",
+                'Service Model': obj.service_model || "-",
+                'Territory': obj.territory || "-",
                 'Region': region || "-",
-                'Cluster': cluster || "-",
+                'DC': geofence || "-",
+                'Mode of Transport': obj.mode_of_transport || "-",
+                'Type': obj.type || "-",
                 'Action': action.buttons,
             }).row;
         };
@@ -14852,15 +14858,21 @@ const CUSTOMERS = {
                     var readonly = x.method == "PUT";
                     return [
                         {title:"Customer Number",id:"_id",type:"text",required:true,value:obj._id,readonly,sub_title:"Once saved, customer number cannot be edited."},
-                        {title:"Customer",id:"name",type:"text",value:obj.name,required:true,},
+                        {title:"Customer Name",id:"name",type:"text",value:obj.name,required:true,},
+                        {title:"Service Model",id:"service_model",type:"text",value:obj.service_model,required:true,},
+                        {title:"Territory",id:"territory",type:"text",value:obj.territory,required:true,},
                         {title:"Region",id:"region_id",type:"select2",attr:"blankStringIfEmpty"},
-                        {title:"Cluster",id:"cluster_id",type:"select2",attr:"blankStringIfEmpty"},
+                        {title:"DC",id:"dc_id",type:"select2",attr:"blankStringIfEmpty"},
+                        {title:"Mode of Transport",id:"mode_of_transport",type:"select2",attr:"blankStringIfEmpty",required:true,},
+                        {title:"Type",id:"type",type:"select2",attr:"blankStringIfEmpty",required:true,},
                     ];
                 };
             $(`body`).append(MODAL.CREATE.BASIC({title, el: modalElements(x.obj)}));
 
             $(`#region_id`).html(G_SELECT2["form-regions"]).select2().val(x.obj.region_id || "").trigger("change");
-            $(`#cluster_id`).html(G_SELECT2["form-clusters"]).select2().val(x.obj.cluster_id || "").trigger("change");
+            $(`#dc_id`).html(G_SELECT2["form-geofences"]).select2().val(x.obj.dc_id || "").trigger("change");
+            $(`#mode_of_transport`).html(`<option>OTR</option> <option>Off-shore</option>`).select2().val(x.obj.mode_of_transport || "").trigger("change");
+            $(`#type`).html(`<option>Pick-up</option> <option>Delivery</option>`).select2().val(x.obj.type || "").trigger("change");
 
             MODAL.SUBMIT(x);
         };
@@ -14873,13 +14885,13 @@ const CUSTOMERS = {
                 table.populateRows(LIST[urlPath]);
                 table.hideProgressBar();
             });
-            isFinishedLoading(["REGIONS","CLUSTERS"], _new1_, function(){
+            isFinishedLoading(["REGIONS","GEOFENCES"], _new1_, function(){
                 if(table.dt){
                     _new1_ = false;
                     table.updateRows(LIST[urlPath]);
                 }
             });
-            isFinishedLoading(["REGIONS","CLUSTERS"], true, function(){
+            isFinishedLoading(["REGIONS","GEOFENCES"], true, function(){
                 TABLE.FINISH_LOADING.UPDATE();
             });
         }
@@ -17525,80 +17537,82 @@ var TABLE = {
     },
     TOOLBAR: function(dt,filenameCallback,customizeCallback){
 
-        new $.fn.dataTable.Buttons(dt, {
-                buttons: [
-                    {
-                        extend: 'copy',
-                        text: 'Copy',
-                        title: filenameCallback ? filenameCallback() : undefined,
-                        exportOptions: {
-                            modifier: {
-                                search: 'applied',
-                                order: 'applied',
-                            },
-                            columns: ":not(.notExport)",
-                            rows: ":not(.notExport)",
-                            format: {
-                                body: function ( data, row, column, node ) {
-                                    var _data = data;
-                                    
-                                    (_data === "You") ? _data = _data.replace("You", USER.fullName) : null; // change "You" to user's full name
-                                    try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags
-
-                                    return _data;
+        try {
+            new $.fn.dataTable.Buttons(dt, {
+                    buttons: [
+                        {
+                            extend: 'copy',
+                            text: 'Copy',
+                            title: filenameCallback ? filenameCallback() : undefined,
+                            exportOptions: {
+                                modifier: {
+                                    search: 'applied',
+                                    order: 'applied',
+                                },
+                                columns: ":not(.notExport)",
+                                rows: ":not(.notExport)",
+                                format: {
+                                    body: function ( data, row, column, node ) {
+                                        var _data = data;
+                                        
+                                        (_data === "You") ? _data = _data.replace("You", USER.fullName) : null; // change "You" to user's full name
+                                        try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags
+    
+                                        return _data;
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            extend: 'csv',
+                            text: 'CSV',
+                            title: filenameCallback ? filenameCallback() : undefined,
+                            exportOptions: {
+                                modifier: {
+                                    search: 'applied',
+                                    order: 'applied',
+                                },
+                                columns: ":not(.notExport)",
+                                rows: ":not(.notExport)",
+                                format: {
+                                    body: function ( data, row, column, node ) {
+                                        var _data = data;
+                                        
+                                        (_data === "You") ? _data = _data.replace("You", USER.fullName) : null; // change "You" to user's full name
+                                        try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags 
+    
+                                        return _data;
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            extend: 'excel',
+                            text: 'Excel',
+                            title: filenameCallback ? filenameCallback() : undefined,
+                            customize: customizeCallback ? customizeCallback : undefined,
+                            exportOptions: {
+                                modifier: {
+                                    search: 'applied',
+                                    order: 'applied',
+                                },
+                                columns: ":not(.notExport)",
+                                rows: ":not(.notExport)",
+                                format: {
+                                    body: function ( data, row, column, node ) {
+                                        var _data = data;
+                                        
+                                        (_data === "You") ? _data = _data.replace("You", USER.fullName) : null; // change "You" to user's full name
+                                        try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags 
+    
+                                        return _data;
+                                    }
                                 }
                             }
                         }
-                    },
-                    {
-                        extend: 'csv',
-                        text: 'CSV',
-                        title: filenameCallback ? filenameCallback() : undefined,
-                        exportOptions: {
-                            modifier: {
-                                search: 'applied',
-                                order: 'applied',
-                            },
-                            columns: ":not(.notExport)",
-                            rows: ":not(.notExport)",
-                            format: {
-                                body: function ( data, row, column, node ) {
-                                    var _data = data;
-                                    
-                                    (_data === "You") ? _data = _data.replace("You", USER.fullName) : null; // change "You" to user's full name
-                                    try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags 
-
-                                    return _data;
-                                }
-                            }
-                        }
-                    },
-                    {
-                        extend: 'excel',
-                        text: 'Excel',
-                        title: filenameCallback ? filenameCallback() : undefined,
-                        customize: customizeCallback ? customizeCallback : undefined,
-                        exportOptions: {
-                            modifier: {
-                                search: 'applied',
-                                order: 'applied',
-                            },
-                            columns: ":not(.notExport)",
-                            rows: ":not(.notExport)",
-                            format: {
-                                body: function ( data, row, column, node ) {
-                                    var _data = data;
-                                    
-                                    (_data === "You") ? _data = _data.replace("You", USER.fullName) : null; // change "You" to user's full name
-                                    try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags 
-
-                                    return _data;
-                                }
-                            }
-                        }
-                    }
-            ]
-        }).container().appendTo($('#export-container'));
+                ]
+            }).container().appendTo($('#export-container'));
+        } catch(error) {}
     },
     FINISH_LOADING: {
         CHECK: null,
