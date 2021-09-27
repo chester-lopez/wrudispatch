@@ -17631,80 +17631,82 @@ var TABLE = {
     },
     TOOLBAR: function(dt,filenameCallback,customizeCallback){
 
-        new $.fn.dataTable.Buttons(dt, {
-                buttons: [
-                    {
-                        extend: 'copy',
-                        text: 'Copy',
-                        title: filenameCallback ? filenameCallback() : undefined,
-                        exportOptions: {
-                            modifier: {
-                                search: 'applied',
-                                order: 'applied',
-                            },
-                            columns: ":not(.notExport)",
-                            rows: ":not(.notExport)",
-                            format: {
-                                body: function ( data, row, column, node ) {
-                                    var _data = data;
-                                    
-                                    (_data === "You") ? _data = _data.replace("You", USER.fullName) : null; // change "You" to user's full name
-                                    try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags
+        try {
+            new $.fn.dataTable.Buttons(dt, {
+                    buttons: [
+                        {
+                            extend: 'copy',
+                            text: 'Copy',
+                            title: filenameCallback ? filenameCallback() : undefined,
+                            exportOptions: {
+                                modifier: {
+                                    search: 'applied',
+                                    order: 'applied',
+                                },
+                                columns: ":not(.notExport)",
+                                rows: ":not(.notExport)",
+                                format: {
+                                    body: function ( data, row, column, node ) {
+                                        var _data = data;
+                                        
+                                        (_data === "You") ? _data = _data.replace("You", USER.fullName) : null; // change "You" to user's full name
+                                        try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags
 
-                                    return _data;
+                                        return _data;
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            extend: 'csv',
+                            text: 'CSV',
+                            title: filenameCallback ? filenameCallback() : undefined,
+                            exportOptions: {
+                                modifier: {
+                                    search: 'applied',
+                                    order: 'applied',
+                                },
+                                columns: ":not(.notExport)",
+                                rows: ":not(.notExport)",
+                                format: {
+                                    body: function ( data, row, column, node ) {
+                                        var _data = data;
+                                        
+                                        (_data === "You") ? _data = _data.replace("You", USER.fullName) : null; // change "You" to user's full name
+                                        try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags 
+
+                                        return _data;
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            extend: 'excel',
+                            text: 'Excel',
+                            title: filenameCallback ? filenameCallback() : undefined,
+                            customize: customizeCallback ? customizeCallback : undefined,
+                            exportOptions: {
+                                modifier: {
+                                    search: 'applied',
+                                    order: 'applied',
+                                },
+                                columns: ":not(.notExport)",
+                                rows: ":not(.notExport)",
+                                format: {
+                                    body: function ( data, row, column, node ) {
+                                        var _data = data;
+                                        
+                                        (_data === "You") ? _data = _data.replace("You", USER.fullName) : null; // change "You" to user's full name
+                                        try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags 
+
+                                        return _data;
+                                    }
                                 }
                             }
                         }
-                    },
-                    {
-                        extend: 'csv',
-                        text: 'CSV',
-                        title: filenameCallback ? filenameCallback() : undefined,
-                        exportOptions: {
-                            modifier: {
-                                search: 'applied',
-                                order: 'applied',
-                            },
-                            columns: ":not(.notExport)",
-                            rows: ":not(.notExport)",
-                            format: {
-                                body: function ( data, row, column, node ) {
-                                    var _data = data;
-                                    
-                                    (_data === "You") ? _data = _data.replace("You", USER.fullName) : null; // change "You" to user's full name
-                                    try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags 
-
-                                    return _data;
-                                }
-                            }
-                        }
-                    },
-                    {
-                        extend: 'excel',
-                        text: 'Excel',
-                        title: filenameCallback ? filenameCallback() : undefined,
-                        customize: customizeCallback ? customizeCallback : undefined,
-                        exportOptions: {
-                            modifier: {
-                                search: 'applied',
-                                order: 'applied',
-                            },
-                            columns: ":not(.notExport)",
-                            rows: ":not(.notExport)",
-                            format: {
-                                body: function ( data, row, column, node ) {
-                                    var _data = data;
-                                    
-                                    (_data === "You") ? _data = _data.replace("You", USER.fullName) : null; // change "You" to user's full name
-                                    try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags 
-
-                                    return _data;
-                                }
-                            }
-                        }
-                    }
-            ]
-        }).container().appendTo($('#export-container'));
+                ]
+            }).container().appendTo($('#export-container'));
+        } catch(error) {}
     },
     FINISH_LOADING: {
         CHECK: null,
