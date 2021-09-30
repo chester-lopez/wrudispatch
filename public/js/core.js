@@ -4,7 +4,7 @@ const authorizationLevel  = {
     administrator: () => { return ["administrator","developer"].includes(USER.role); },
 };
 const ENVIRONMENT = $(`#ENVIRONMENT`).text() || "development";
-const SHIPMENT_CHECK_STATUS_URLPATH = (ENVIRONMENT == "development") ? 'shipmentStatusxDev' : 'shipmentStatus';
+const SHIPMENT_CHECK_STATUS_URLPATH = (ENVIRONMENT == "development") ? '/development' : '';
 const CUSTOM = {
     COLUMN:{
         settings: [
@@ -105,6 +105,7 @@ const CUSTOM = {
                             break;
                         case "departureDate":
                             arr.push(objectOptions(val,{ data: "Departure Date", title: "Departure Date", type:"date", visible: true }));
+                            break;
                         case "dispatchDateTime":
                             arr.push(objectOptions(val,{ data: "Departure Date", title: "Dispatch Date and Time", type:"date", visible: true }));
                             break;
@@ -247,6 +248,9 @@ const CUSTOM = {
                             arr.push(objectOptions(val,{ data: "Posted By", title: "Posted By", visible: true }));
                             break;
                         case "postingDate":
+                            arr.push(objectOptions(val,{ data: "Posting Date", title: "Posting Date", type:"date", visible: true }));
+                            break;
+                        case "postingDateTime":
                             arr.push(objectOptions(val,{ data: "Posting Date", title: "Posting Date and Time", type:"date", visible: true }));
                             break;
                         case "lateEntry":

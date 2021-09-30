@@ -272,7 +272,7 @@ var LIMIT = 200,
                 read: "all",
                 create: "none",
                 update: "all",
-                delete: "none",
+                delete: "all",
             },
             trailers:{
                 read: "all",
@@ -1131,7 +1131,7 @@ var LIMIT = 200,
                     rowButtons: { 
                         buttons: ["edit"],
                         condition: [
-                            { roles: ["developer"], additionalButton: ["view"] }
+                            { roles: ["developer"], additionalButton: ["view","delete"] }
                         ] 
                     },
                 },
@@ -1350,8 +1350,8 @@ var LIMIT = 200,
                         roles: ["administrator","developer"]
                     },
                     columns: {
-                        list: ["_id","dispatchDateTime","origin_id","originSiteCode","customers","truckName","truckPalCap","status","postedBy","postingDate","action","supportUnit","truckBase","truckBaseRegion","truckBaseCluster","lateEntry","cicoTime2","deliveryDuration","mdsdUsage","deliverySequence","shipmentType"],
-                        visible: ["_id","origin_id","truckName","status","postedBy","postingDate","action"],
+                        list: ["_id","dispatchDateTime","origin_id","originSiteCode","customers","truckName","truckPalCap","status","postedBy","postingDateTime","action","supportUnit","truckBase","truckBaseRegion","truckBaseCluster","lateEntry","cicoTime2","deliveryDuration","mdsdUsage","deliverySequence","shipmentType"],
+                        visible: ["_id","origin_id","truckName","status","postedBy","postingDateTime","action"],
                         notExport: ["action"]
 
 // Truck Base

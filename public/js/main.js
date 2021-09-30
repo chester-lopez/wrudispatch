@@ -4209,14 +4209,14 @@ var DISPATCH = {
                             const dGeofence = getGeofence(DESTINATION_ID) || {};
                             $(`#submit`).html(`<i class="la la-spinner la-spin mr-2"></i>Detecting vehicle's location..`).attr("disabled",true);
                             $.ajax({
-                                url: `https://asia-east2-secure-unison-275408.cloudfunctions.net/${SHIPMENT_CHECK_STATUS_URLPATH}`,
+                                url: `/api/shipmentStatus/${CLIENT.id}/${USER.username}${SHIPMENT_CHECK_STATUS_URLPATH}`,
                                 method: "POST",
                                 timeout: 90000 ,
                                 headers: {
                                     "Content-Type": "application/json; charset=utf-8",
+                                    "Authorization": SESSION_TOKEN
                                 },
                                 data: JSON.stringify({
-                                    clientName: CLIENT.dsName,
                                     apiKey: USER.apiKey,
                                     roundtrip: clientCustom.roundtrip,
 
@@ -5629,14 +5629,14 @@ var DISPATCH = {
                                     } else {
 
                                         $.ajax({
-                                            url: `https://asia-east2-secure-unison-275408.cloudfunctions.net/${SHIPMENT_CHECK_STATUS_URLPATH}`,
+                                            url: `/api/shipmentStatus/${CLIENT.id}/${USER.username}${SHIPMENT_CHECK_STATUS_URLPATH}`,
                                             method: "POST",
                                             timeout: 90000 ,
                                             headers: {
                                                 "Content-Type": "application/json; charset=utf-8",
+                                                "Authorization": SESSION_TOKEN
                                             },
                                             data: JSON.stringify({
-                                                clientName: CLIENT.dsName,
                                                 apiKey: USER.apiKey,
                                                 roundtrip: clientCustom.roundtrip,
 
