@@ -15726,7 +15726,7 @@ var PAGE = {
                 display: function() { return views.all_events(); },
                 function: function() { ALL_EVENTS.FUNCTION.init() },
                 buttons: {
-                    table: ["refresh","filter","search"],
+                    table: ["refresh","export","filter","search"],
                     row:["view"]
                 },
                 menu_group: {
@@ -17557,6 +17557,10 @@ var TABLE = {
                                         
                                         (_data === "You") ? _data = _data.replace("You", USER.fullName) : null; // change "You" to user's full name
                                         try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags
+
+                                        _data = _data.replace('<span class="text-success">', '')  // remove specific html tags
+                                                     .replace('<span class="text-danger">', '')
+                                                     .replace('</span>', '');
     
                                         return _data;
                                     }
@@ -17580,6 +17584,10 @@ var TABLE = {
                                         
                                         (_data === "You") ? _data = _data.replace("You", USER.fullName) : null; // change "You" to user's full name
                                         try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags 
+
+                                        _data = _data.replace('<span class="text-success">', '')  // remove specific html tags
+                                                     .replace('<span class="text-danger">', '')
+                                                     .replace('</span>', '');
     
                                         return _data;
                                     }
@@ -17604,6 +17612,10 @@ var TABLE = {
                                         
                                         (_data === "You") ? _data = _data.replace("You", USER.fullName) : null; // change "You" to user's full name
                                         try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags 
+
+                                        _data = _data.replace('<span class="text-success">', '')  // remove specific html tags
+                                                     .replace('<span class="text-danger">', '')
+                                                     .replace('</span>', '');
     
                                         return _data;
                                     }
