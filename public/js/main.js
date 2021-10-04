@@ -11276,8 +11276,15 @@ var ALL_EVENTS = {
             table.setButtons({
                 actions:{
                     refresh: function(){ table.countRows(); },
-                    filter: function(){ $(`#filter-container`).toggle("slide", {direction:'right'},100); },
-                    search: function(){ $(`.row-filter`).toggle(); }
+                    filter: function(){ 
+                        $(`#export-container`).hide("slide", {direction:'right'},100);
+                        $(`#filter-container`).toggle("slide", {direction:'right'},100); 
+                    },
+                    search: function(){ $(`.row-filter`).toggle(); },
+                    export: function(){
+                        $(`#filter-container`).hide("slide", {direction:'right'},100);
+                        $(`#export-container`).toggle("slide", {direction:'right'},100);
+                    }
                 }
             });
             table.addRow = function(obj){
@@ -11319,6 +11326,13 @@ var ALL_EVENTS = {
                 });
             };
             table.filterListener = function(_row,_id){
+                $(`.page-box`).append(SLIDER.EXPORT()); 
+                TABLE.TOOLBAR(table.dt);
+                $(`.buttons-copy span`).html("Copy Table");
+                $(`.buttons-csv span`).html("Export Table As CSV File");
+                $(`.buttons-excel span`).html("Export Table As Excel File");
+
+
                 // initialize filter
                 FILTER.RESET({
                     dateEl: `#_date`,
@@ -15850,7 +15864,7 @@ var PAGE = {
                 display: function() { return views.all_events(); },
                 function: function() { ALL_EVENTS.FUNCTION.init() },
                 buttons: {
-                    table: ["refresh","filter","search"],
+                    table: ["refresh","export","filter","search"],
                     row:["view"]
                 },
                 menu_group: {
@@ -17652,6 +17666,10 @@ var TABLE = {
                                         (_data === "You") ? _data = _data.replace("You", USER.fullName) : null; // change "You" to user's full name
                                         try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags
 
+                                        _data = _data.replace('<span class="text-success">', '')  // remove specific html tags
+                                                     .replace('<span class="text-danger">', '')
+                                                     .replace('</span>', '');
+    
                                         return _data;
                                     }
                                 }
@@ -17675,6 +17693,10 @@ var TABLE = {
                                         (_data === "You") ? _data = _data.replace("You", USER.fullName) : null; // change "You" to user's full name
                                         try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags 
 
+                                        _data = _data.replace('<span class="text-success">', '')  // remove specific html tags
+                                                     .replace('<span class="text-danger">', '')
+                                                     .replace('</span>', '');
+    
                                         return _data;
                                     }
                                 }
@@ -17699,6 +17721,10 @@ var TABLE = {
                                         (_data === "You") ? _data = _data.replace("You", USER.fullName) : null; // change "You" to user's full name
                                         try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags 
 
+                                        _data = _data.replace('<span class="text-success">', '')  // remove specific html tags
+                                                     .replace('<span class="text-danger">', '')
+                                                     .replace('</span>', '');
+    
                                         return _data;
                                     }
                                 }
