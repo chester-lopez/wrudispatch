@@ -854,6 +854,7 @@ const WEBSOCKET = {
                 
                 clientCustom.gSelect2 = {};
                 clientCustom.columns = {};
+                clientCustom.status = {};
 
                 clientCustom.ignoreRolesWithString = setValue("custom.users.ignoreRolesWithString", []);
                 clientCustom.visibleStatus = setValue("custom.dashboard.visibleStatus", []);
@@ -909,6 +910,10 @@ const WEBSOCKET = {
                 clientCustom.rowButtons.dispatch = setValue("custom.dispatch.rowButtons", { buttons: [] });
                 clientCustom.rowButtons.clusters = setValue("custom.clusters.rowButtons", { buttons: [] });
                 clientCustom.rowButtons.vehicles = setValue("custom.vehicles.rowButtons", { buttons: [] });
+
+                // status
+                clientCustom.status.all = setValue("custom.dispatch.status.all", []);
+                clientCustom.status.enrouteToDestination = setValue("custom.dispatch.status.enrouteToDestination", "in_transit");
             }
 
             SOCKET = io();

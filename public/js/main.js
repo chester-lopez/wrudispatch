@@ -7217,6 +7217,392 @@ var REPORTS = {
                     </div>`;
         },
         REPORTS: {
+            CICOR_T1: function(title,docs,originChosen,date_from,date_to){
+                // Legend:
+                //    · GBO - Grouped by Origin
+                //    · GBR - Grouped by Region
+
+
+                /****** CSS ******/
+                const rotateCSS = ` -webkit-transform: rotate(-90deg);
+                                    -moz-transform: rotate(-90deg);
+                                    -ms-transform: rotate(-90deg);
+                                    -o-transform: rotate(-90deg);
+                                    transform: rotate(-90deg);
+                                    mso-rotate: 90;
+                                    -webkit-transform-origin: 50% 50%;
+                                    -moz-transform-origin: 50% 50%;
+                                    -ms-transform-origin: 50% 50%;
+                                    -o-transform-origin: 50% 50%;
+                                    transform-origin: 50% 50%;
+                                    position: absolute;
+                                    filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=3);
+                                    
+                                    color: #595959;
+                                    background-color: #E2EFDA;
+                                    height: 127px;
+                                    border: none;
+                                    border-right: thin dashed #595959;`;
+
+                const tblHeaderCSS = `  background-color: #404040;
+                                        color: white;
+                                        font-size: 13px;
+                                        text-align: center;
+                                        border: thin solid #404040;
+                                        font-weight: bold;
+                                        vertical-align: middle;
+                                        font-family: Franklin Gothic Book;`;
+                                    
+                const noBorderCSS = `border: none;
+                                     font-size: 13px;
+                                     vertical-align: middle;
+                                     font-family: Franklin Gothic Book;`;
+                /****** end CSS ******/
+                
+                // var arr = ["destination","origin","route","sn","plate_num","trailer","pal_cap","hauler_name","cico_target","actual_timelapse","remarks1","remarks2","base_plant"];
+                var details = "",
+
+                    // GBO
+                    gboHtml = "",
+                    gboInfo = {},
+
+                    // GBR
+                    gbrHtml = "",
+                    gbrInfo = {},
+                    detailsHeaderHTML = "",
+                    detailsBodyHTML = "",
+                    textCellStyle = `border:2px solid #404040;mso-number-format:'\@';`,
+                    columns = clientCustom.reports.cicor || [];
+                columns.forEach(_val_ => {
+                    switch (_val_) {
+                        case "origin":
+                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Origin (Plant)</td>`;
+                            break;
+                        case "destination":
+                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Destination (DC)</td>`;
+                            break;
+                        case "route":
+                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Route</td>`;
+                            break;
+                        case "sn":
+                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">SN</td>`;
+                            break;
+                        case "plateNumber":
+                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Plate No.</td>`;
+                            break;
+                        case "trailer":
+                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Trailer</td>`;
+                            break;
+                        case "palCap":
+                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Pal Cap</td>`;
+                            break;
+                        case "haulerName":
+                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Hauler Name</td>`;
+                            break;
+                        case "targetCico":
+                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Target CICO (hrs)</td>`;
+                            break;
+                        case "actualTimelapse":
+                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Actual Time Lapse (hrs)</td>`;
+                            break;
+                        case "remarks1":
+                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Remarks1</td>`;
+                            break;
+                        case "remarks2":
+                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Remarks2</td>`;
+                            break;
+                        case "truckBasePlant":
+                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Truck Base Plant</td>`;
+                            break;
+                        default:
+                            break;
+                    }
+                });
+
+                docs.forEach(function(val,i){
+                    val.destination[0] = val.destination[0] || {};
+                    var remarks2Class = "",
+                        origin = getGeofence(val.origin_id) || {},
+                        destination = getGeofence(val.destination[0].location_id) || {},
+                        vehicle = getVehicle(val.vehicle_id) || {},
+                        remarks2 = "In CICO",
+                        beforeCheckOutTime = getDateTime("entered_origin",val) || getDateTime("queueingAtOrigin",val) || getDateTime("processingAtOrigin",val) || getDateTime("idlingAtOrigin",val);
+                    
+                    const queueingDuration = getDuration("queueingAtOrigin",val);
+                    const processingDuration = getDuration("processingAtOrigin",val);
+                    const idlingDuration = getDuration("idlingAtOrigin",val);
+
+
+                    var calcCICO = (beforeCheckOutTime) ?  (getDateTime(clientCustom.status.enrouteToDestination,val,"last") - beforeCheckOutTime) : 0;
+
+                    const cico = Number(DATETIME.DH(calcCICO || 0,null,"0"));
+                    const cappedCICO = (cico > 5) ? 5 : cico;
+
+                    if(cico != null){
+                        const key = origin.short_name;
+
+                        gboInfo[key] = gboInfo[key] || {
+                            totalShipments: 0,
+
+                            cico: 0,
+                            cappedCICO: 0,
+                            over_cico: 0,
+                            w_in_cico: 0,
+    
+                            queueingDuration: 0,
+                            processingDuration: 0,
+                            idlingDuration: 0,
+                        };
+
+                        gboInfo[key].totalShipments++;
+
+                        gboInfo[key].cico += cico;
+                        gboInfo[key].cappedCICO += cappedCICO;
+
+                        gboInfo[key].queueingDuration += queueingDuration;
+                        gboInfo[key].processingDuration += processingDuration;
+                        gboInfo[key].idlingDuration += idlingDuration;
+
+                        if(cico > origin.cico){
+                            remarks2 = "Over CICO";
+                            gboInfo[key].over_cico ++;
+                        } else {
+                            gboInfo[key].w_in_cico ++;
+                        }
+                    }
+
+
+                    const cicoDifference = cico - Number(origin.cico);
+                    const cicoVariance = (cicoDifference > 0) ? DATETIME.HH_MM(null,cicoDifference).hour_minute : "-";
+
+                    detailsBodyHTML += `<tr>
+                                            <td style="${noBorderCSS}text-align: left;">${val._id}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${(vehicle.name || "")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${(vehicle["Trailer"] || "")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${(vehicle["Pal Cap"] || "")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${origin.short_name}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${destination.short_name}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${val.route}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(beforeCheckOutTime,"MM/DD/YYYY")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(beforeCheckOutTime,"H:mm")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(val.departure_date,"MM/DD/YYYY")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(val.departure_date,"H:mm")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${queueingDuration ? DATETIME.HH_MM(queueingDuration).hour_minute : "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${processingDuration ? DATETIME.HH_MM(processingDuration).hour_minute : "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${idlingDuration ? DATETIME.HH_MM(idlingDuration).hour_minute : "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${DATETIME.HH_MM(null,cico).hour_minute}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${DATETIME.HH_MM(null,cappedCICO).hour_minute}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${DATETIME.HH_MM(null,origin.cico).hour_minute}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${cicoVariance}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${vehicle["Base Site"]}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${remarks2}</td>
+                                        </tr>`;
+                });
+
+                // GBO
+                const filteredGeofences = LIST["geofences"].filter(x => x.code);
+                const sortedGeofences = ARRAY.OBJECT.sort(filteredGeofences,"short_name",{ sortType: "asc" });
+                sortedGeofences.forEach(gVal => {
+
+                    const val = gboInfo[gVal.short_name] || {};
+
+                    const aveCICO = val.cico/val.totalShipments;
+                    const aveCappedCICO = val.cappedCICO/val.totalShipments;
+                    const cicoDifference = aveCICO - Number(gVal.cico);
+                    const cicoVariance = (cicoDifference > 0) ? DATETIME.HH_MM(null,cicoDifference).hour_minute : "-";
+
+                    const aveQueueingDuration = val.queueingDuration/val.totalShipments;
+                    const aveProcessingDuration = val.processingDuration/val.in_totalShipmentssite;
+                    const aveIdlingDuration = val.idlingDuration/val.totalShipments;
+
+                    // const origin = getGeofence(key,"short_name") || {};
+                    const region = getRegion(gVal.region_id) || {}; 
+
+                    const remarks = (aveCICO > Number(gVal.cico)) ? "Over CICO" : "In CICO";
+
+                    gboHtml += `<tr>
+                                    <td style="${noBorderCSS}">${gVal.short_name}</td>
+                                    <td style="${noBorderCSS}text-align: center;">${gVal.code || "-"}</td>
+                                    <td style="${noBorderCSS}text-align: center;">${region.code || "-"}</td>
+                                    <td style="${noBorderCSS}text-align: center;">${aveCICO ? DATETIME.HH_MM(null,aveCICO).hour_minute : "-"}</td>
+                                    <td style="${noBorderCSS}text-align: center;">${aveCappedCICO ? DATETIME.HH_MM(null,aveCappedCICO).hour_minute : "-"}</td>
+                                    <td style="${noBorderCSS}text-align: center;">${DATETIME.HH_MM(null,gVal.cico,"-").hour_minute}</td>
+                                    <td style="${noBorderCSS}text-align: center;">${cicoVariance}</td>
+                                    <td style="${noBorderCSS}text-align: center;">${aveQueueingDuration ? DATETIME.HH_MM(aveQueueingDuration).hour_minute : "-"}</td>
+                                    <td style="${noBorderCSS}text-align: center;">${aveProcessingDuration ? DATETIME.HH_MM(aveProcessingDuration).hour_minute : "-"}</td>
+                                    <td style="${noBorderCSS}text-align: center;">${aveIdlingDuration ? DATETIME.HH_MM(aveIdlingDuration).hour_minute : "-"}</td>
+                                    <td style="${noBorderCSS}text-align: center;">${val.totalShipments || "-"}</td>
+                                    <td style="${noBorderCSS}text-align: center;">${aveCICO ? remarks : "-"}</td>
+                                </tr>`;
+                    
+                    if(gboInfo[gVal.short_name]) {
+
+                        gbrInfo[gVal.region_id] = gbrInfo[gVal.region_id] || {
+                            totalShipments: 0,
+
+                            cico: 0,
+                            cappedCICO: 0,
+                            targetCICO: 0,
+                            over_cico: 0,
+                            w_in_cico: 0,
+    
+                            queueingDuration: 0,
+                            processingDuration: 0,
+                            idlingDuration: 0,
+                        };
+    
+                        gbrInfo[gVal.region_id].totalShipments += val.totalShipments;
+                        gbrInfo[gVal.region_id].cappedCICO += val.cappedCICO;
+                        gbrInfo[gVal.region_id].over_cico += val.over_cico;
+                        gbrInfo[gVal.region_id].w_in_cico += val.w_in_cico;
+                        gbrInfo[gVal.region_id].targetCICO += Number(gVal.cico) || 0;
+                        
+                        gbrInfo[gVal.region_id].queueingDuration += val.queueingDuration;
+                        gbrInfo[gVal.region_id].processingDuration += val.processingDuration;
+                        gbrInfo[gVal.region_id].idlingDuration += val.idlingDuration;
+    
+                        gbrInfo[gVal.region_id].cico += val.cico;
+                    }
+                });
+
+                // GBR
+                const sortedRegions = ARRAY.OBJECT.sort(LIST["regions"],"sequence",{ sortType: "asc" });
+                sortedRegions.forEach(rVal => {
+
+                    const val = gbrInfo[rVal._id] || {};
+
+                    const aveCICO = val.cico/val.totalShipments;
+                    const aveCappedCICO = val.cappedCICO/val.totalShipments;
+                    const aveTargetCICO = val.targetCICO/val.totalShipments;
+
+                    const cicoDifference = aveCICO - aveTargetCICO;
+                    const cicoVariance = (cicoDifference > 0) ? DATETIME.HH_MM(null,cicoDifference).hour_minute : "-";
+
+                    const aveQueueingDuration = val.queueingDuration/val.totalShipments;
+                    const aveProcessingDuration = val.processingDuration/val.totalShipments;
+                    const aveIdlingDuration = val.idlingDuration/val.totalShipments;
+
+                    const remarks = (aveCICO > aveTargetCICO) ? "Over CICO" : "In CICO";
+
+                    gbrHtml += `<tr>
+                                    <td style="${noBorderCSS}background-color:#F2F2F2;">${rVal.name || "-"}</td>
+                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${rVal.code || "-"}</td>
+                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;"> </td>
+                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveCICO ? DATETIME.HH_MM(null,aveCICO).hour_minute : "-"}</td>
+                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveCappedCICO ? DATETIME.HH_MM(null,aveCappedCICO).hour_minute : "-"}</td>
+                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveTargetCICO ? DATETIME.HH_MM(null,aveTargetCICO).hour_minute : "-"}</td>
+                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${cicoVariance}</td>
+                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveQueueingDuration ? DATETIME.HH_MM(aveQueueingDuration).hour_minute : "-"}</td>
+                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveProcessingDuration ? DATETIME.HH_MM(aveProcessingDuration).hour_minute : "-"}</td>
+                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveIdlingDuration ? DATETIME.HH_MM(aveIdlingDuration).hour_minute : "-"}</td>
+                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${val.totalShipments || "-"}</td>
+                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveCICO ? remarks : "-"}</td>
+                                </tr>`;
+                });
+
+                return `<table id="report-hidden" style="opacity:0;">
+                            <tr>
+                                <td style="${noBorderCSS}" colspan=2>Report name: <b style="color:#c00000;">${title}</b></td>
+                            </tr>
+                            <tr><td style="${noBorderCSS}" colspan=2></td></tr>
+                            <tr>
+                                <td style="${noBorderCSS}" colspan=2>Date Info:</td>
+                            </tr>
+                            <tr>
+                                <td style="${noBorderCSS}" colspan=2>
+                                    <div>
+                                        <div>Date from: ${moment(new Date(date_from)).format("MM/DD/YYYY hh:mm A")}</div>
+                                        <div>Date to: ${moment(new Date(date_to)).format("MM/DD/YYYY hh:mm A")}</div>
+                                        <div>&nbsp;</div>
+                                        <div>Generated on: ${moment(new Date()).format("MM/DD/YYYY hh:mm A")}</div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr><td style="${noBorderCSS}" colspan=2></td></tr>
+                            <tr>
+                                <td style="${rotateCSS}">Source Name</td>
+                                <td style="${rotateCSS}">Numerical identifier of the origin</td>
+                                <td style="${rotateCSS}">Region where the origin site is located</td>
+                                <td style="${rotateCSS}">Average of actual duration of stay inside the origin site</td>
+                                <td style="${rotateCSS}">Average duration of stay inside the origin site that exceeded to 5 hrs will automatically rolled back to 5 hrs</td>
+                                <td style="${rotateCSS}">Maximum duration of stay inside the origin site</td>
+                                <td style="${rotateCSS}">Excess CICO duration from the CICO target</td>
+                                <td style="${rotateCSS}">Average duration of stay inside the queueing area geofence</td>
+                                <td style="${rotateCSS}">Average duration of stay inside the processing area geofence</td>
+                                <td style="${rotateCSS}">Average duration of stay inside the idling area geofence</td>
+                                <td style="${rotateCSS}">Count of posted shipment from the origin</td>
+                                <td style="${rotateCSS}">Identifier if the average duration of stay inside the origin site is "In CICO" or "Over CICO"</td>
+                            </tr>
+                            <tr>
+                                <td style="${tblHeaderCSS}">Origin</td>
+                                <td style="${tblHeaderCSS}">Origin Site Code</td>
+                                <td style="${tblHeaderCSS}">Origin Region</td>
+                                <td style="${tblHeaderCSS}">CICO Duration</td>
+                                <td style="${tblHeaderCSS}">CICO with Capping</td>
+                                <td style="${tblHeaderCSS}">CICO Target</td>
+                                <td style="${tblHeaderCSS}">CICO Variance</td>
+                                <td style="${tblHeaderCSS}">Queueing Duration</td>
+                                <td style="${tblHeaderCSS}">Processing Duration</td>
+                                <td style="${tblHeaderCSS}">Idling Duration</td>
+                                <td style="${tblHeaderCSS}">Shipment Count</td>
+                                <td style="${tblHeaderCSS}">Remarks</td>
+                            </tr>
+                            ${gboHtml}
+                            <tr><td style="${noBorderCSS}"></td></tr>
+                            ${gbrHtml}
+                            <tr><td style="${noBorderCSS}"></td></tr>
+                            <tr><td style="${noBorderCSS}"></td></tr>
+                            <tr>
+                                <td style="${noBorderCSS}"><b>Details:</b></td>
+                            </tr>
+                            <tr><td style="${noBorderCSS}"></td></tr>
+                            <tr>
+                                <td style="${rotateCSS}">Numerical identifier of assigned shipment</td>
+                                <td style="${rotateCSS}">Plate number of the tractor where the shipment is assigned</td>
+                                <td style="${rotateCSS}">Plate number of the trailer coupled to the tractor where the shipment is assigned</td>
+                                <td style="${rotateCSS}">Trailer capacity in pallets</td>
+                                <td style="${rotateCSS}">Source Name</td>
+                                <td style="${rotateCSS}">Destination Name</td>
+                                <td style="${rotateCSS}">Site codes combination of origin and destination</td>
+                                <td style="${rotateCSS}">Actual date of entry to the origin site</td>
+                                <td style="${rotateCSS}">Actual time of entry to the origin site</td>
+                                <td style="${rotateCSS}">Actual date of departure to the origin site</td>
+                                <td style="${rotateCSS}">Actual time of departure to the origin site</td>
+                                <td style="${rotateCSS}">Duration of stay inside the queueing area geofence</td>
+                                <td style="${rotateCSS}">Duration of stay inside the processing area geofence</td>
+                                <td style="${rotateCSS}">Duration of stay inside the idling area geofence</td>
+                                <td style="${rotateCSS}">Actual duration of stay inside the origin site</td>
+                                <td style="${rotateCSS}">Duration of stay inside the origin site that exceeded to 5 hrs will automatically rolled back to 5 hrs</td>
+                                <td style="${rotateCSS}">Maximum duration of stay inside the origin site</td>
+                                <td style="${rotateCSS}">Difference between the CICO duration and the CICO target</td>
+                                <td style="${rotateCSS}">Site where the vehicle was allocated and will serve as its base site</td>
+                                <td style="${rotateCSS}">Identifier if the shipment is "In CICO" or "Over CICO"</td>
+                            </tr>
+                            <tr>
+                                <td style="${tblHeaderCSS}">Shipment</td>
+                                <td style="${tblHeaderCSS}">Vehicle</td>
+                                <td style="${tblHeaderCSS}">Trailer</td>
+                                <td style="${tblHeaderCSS}">Pal Cap</td>
+                                <td style="${tblHeaderCSS}">Origin</td>
+                                <td style="${tblHeaderCSS}">Destination</td>
+                                <td style="${tblHeaderCSS}">Route</td>
+                                <td style="${tblHeaderCSS}">Check In Date</td>
+                                <td style="${tblHeaderCSS}">Check In Time</td>
+                                <td style="${tblHeaderCSS}">Check Out Date</td>
+                                <td style="${tblHeaderCSS}">Check Out Time</td>
+                                <td style="${tblHeaderCSS}">Queueing Duration</td>
+                                <td style="${tblHeaderCSS}">Processing Duration</td>
+                                <td style="${tblHeaderCSS}">Idling Duration</td>
+                                <td style="${tblHeaderCSS}">CICO Duration</td>
+                                <td style="${tblHeaderCSS}">CICO with Capping</td>
+                                <td style="${tblHeaderCSS}">CICO Target</td>
+                                <td style="${tblHeaderCSS}">CICO Variance</td>
+                                <td style="${tblHeaderCSS}">Vehicle Base Site</td>
+                                <td style="${tblHeaderCSS}">Remarks</td>
+                            </tr>
+                            ${detailsBodyHTML}
+                        </table> `;
+            },
             CICOR: function(title,docs,originChosen,date_from,date_to){
                 // var arr = ["destination","origin","route","sn","plate_num","trailer","pal_cap","hauler_name","cico_target","actual_timelapse","remarks1","remarks2","base_plant"];
                 var details = "",
@@ -10171,7 +10557,7 @@ var REPORTS = {
                                     }, function(docs){
                                         console.log("Geofence:",docs);
                                         if(docs[0]){
-                                            region = docs[0].region.region || "-";
+                                            region = docs[0].region.code || "-";
                                         }
                                         callback({origin,destination,region});
                                         $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
@@ -10364,9 +10750,26 @@ var REPORTS = {
                         var title = "CICO Report";
                         df_dt_dest(title,"REPORT_MODAL_01","Plant Site",function(){
                             cicor_otr_report(
-                                {origin_id: _siteId},
+                                { origin_id: _siteId, status: { $in: ["in_transit","complete"] } },
                                 function(docs){
                                     $(`body`).append(REPORTS.UI.REPORTS.CICOR(title,docs,_siteText,date_from,date_to));
+                                    GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY")}`);
+                                }
+                            );
+                        });
+                        $('#daterange').daterangepicker({
+                            locale: {
+                                format: 'MM/DD/YYYY'
+                            }
+                        });
+                    });
+                    $(`[cicor_t1]`).click(function(){
+                        var title = "CICO Report";
+                        df_dt_dest(title,"REPORT_MODAL_01","Plant Site",function(){
+                            cicor_otr_report(
+                                { origin_id: _siteId, status: { $in: ["in_transit","complete"] } },
+                                function(docs){
+                                    $(`body`).append(REPORTS.UI.REPORTS.CICOR_T1(title,docs,_siteText,date_from,date_to));
                                     GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY")}`);
                                 }
                             );
@@ -18459,6 +18862,12 @@ const views = new function(){
             }
             if(clientCustom.reports.cicor){
                 htmlTags(`<div cicor class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
+                            <span>CICO Report</span>
+                            <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
+                        </div>`);
+            }
+            if(clientCustom.reports.cicor_t1){
+                htmlTags(`<div cicor_t1 class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
                             <span>CICO Report</span>
                             <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
                         </div>`);
