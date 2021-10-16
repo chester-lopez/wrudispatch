@@ -1150,7 +1150,7 @@ var LIMIT = 200,
                 },
                 reports: {
                     dvr: true,
-                    cicor: ["destination","origin","route","sn","plateNumber","trailer","palCap","haulerName","targetCico","actualTimelapse","remarks1","remarks2","truckBasePlant"],
+                    cicor_t1: ["destination","origin","route","sn","plateNumber","trailer","palCap","haulerName","targetCico","actualTimelapse","remarks1","remarks2","truckBasePlant"],
                     otr: ["origin","destination","route","sn","plateNumber","trailer","palCap","haulerName","targetTransit","actualTimelapse","remarks1","remarks2","truckBasePlant"],
                     pbpa: true,
                     hwtr: true,

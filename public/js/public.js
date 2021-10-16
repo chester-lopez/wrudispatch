@@ -1278,7 +1278,7 @@ const HISTORY = {
     }
 };
 var PAGE_SETUP = function(){
-    $("body").on('click', `#overlay #close`,function(e){
+    $("body").on('click', `#overlay #close,#overlay #cancel`,function(e){
         $(`.daterangepicker`).hide();
         $(this).parents("#overlay").remove();
     });

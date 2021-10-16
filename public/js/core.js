@@ -4,7 +4,7 @@ const authorizationLevel  = {
     administrator: () => { return ["administrator","developer"].includes(USER.role); },
 };
 const ENVIRONMENT = $(`#ENVIRONMENT`).text() || "development";
-const SHIPMENT_CHECK_STATUS_URLPATH = (ENVIRONMENT == "development") ? '/development' : '';
+// const SHIPMENT_CHECK_STATUS_URLPATH = (ENVIRONMENT == "development") ? '/development' : '';
 const CUSTOM = {
     COLUMN:{
         settings: [

@@ -3629,6 +3629,620 @@ const OTD_DASHBOARD = {
     }
 };
 var DISPATCH = {
+    detectStatus: function(body){
+        const CLIENT_OPTIONS = {
+            "coket1": { ggsURL: "coca-cola.server93.com",    appId: 9,     scheduledEntry: false,     allowTempStatus: true,     ignoreDestinationEvents: false,     statusOption: { default: "assigned", insideOrigin: "assigned",     insideOriginEvent: "entered_origin",    enRouteToDestination: "in_transit" }    },
+            "coket2": { ggsURL: "coca-cola.server93.com",    appId: 4,     scheduledEntry: false,     allowTempStatus: false,    ignoreDestinationEvents: true,      statusOption: { default: "assigned", insideOrigin: "dispatched",   insideOriginEvent: "dispatched",        enRouteToDestination: "onDelivery" }    },
+            "wilcon": { ggsURL: "wru.server93.com",          appId: 427,   scheduledEntry: true,      allowTempStatus: true,     ignoreDestinationEvents: false,     statusOption: { default: "assigned", insideOrigin: "assigned",     insideOriginEvent: "entered_origin",    enRouteToDestination: "in_transit" }    },
+        };
+
+        // maximum number of times to call an API when it returned an error
+        const MAX_TRIES = 5;
+
+        // maximum number of hours between event time and current time
+        // events beyond that time difference are ignored
+        const MAX_HOURDIFF = 24;
+        return new Promise((resolve,reject) => {
+            // option for current client
+            const clientOption = CLIENT_OPTIONS[CLIENT.id];
+                                
+            // initialize timezone and date formats
+            const now_ms = moment().valueOf(); // get current time in milliseconds
+
+            // get Main credentials
+            const ggsURL = clientOption.ggsURL;
+            const appId = clientOption.appId;
+
+            // check whether NOW is within schedule date
+            function isNowWithinSchedule(minDate,shiftTime){
+                // format date to MMM DD, YYYY
+                minDate = moment(minDate).format("MMM DD, YYYY");
+
+                // split shift schedule into minimum and maximum time.
+                // Sample Original format: 12:00 AM - 3:00 PM
+                shiftTime = (shiftTime||"").split(" - ");
+
+                const minTime = shiftTime[0]; // minimum time - 12:00 AM
+                const maxTime = shiftTime[1]; // maximum time - 3:00 PM
+
+                // convert minimum time to moment object
+                const minTimeMoment = moment(minTime);
+                // convert maximum time to moment object
+                const maxTimeMoment = moment(maxTime);
+                // if maximum time is before minimum time, add 1 day to date
+                // Reason: shifts like "July 28, 2021 - 8:00 PM - 1:00 AM"
+                // Goal: Min DateTime = July 28, 2021, 8:00 PM
+                //       Max DateTime = July 29, 2021, 1:00 AM
+                const maxDate = (maxTimeMoment.isBefore(minTimeMoment)) ? moment(minDate).add(1,"day") : minDate;
+                
+                // activate entry XX minutes BEFORE scheduled date and time. Default value is 0.
+                // Eg. Schedule: July 28, 2021 (8:00 PM - 1:00 AM)
+                //     activateInMinutes: 60
+                //     Result: Activate entry on July 28, 2021, 7:00 PM
+                const minutes = (clientOption||{}).activateInMinutes || 0;
+
+                // get the minimum date and time minus X minutes in milliseconds
+                const minSchedule = moment(`${minDate}, ${minTime}`).subtract(minutes,"minutes").valueOf();
+                // get the maximum date and time in milliseconds
+                const maxSchedule = moment(`${maxDate}, ${maxTime}`).valueOf();
+
+                // return true if NOW is between minimum schedule and maximum schedule
+                return (now_ms >= minSchedule && now_ms <= maxSchedule);
+            }
+
+            // check if RULE_NAME meets the condition
+            function getIndexOf(text,arr,op){
+                var cond = null;
+                arr.forEach(val => {
+                    if(op == "or" && !cond){
+                        cond = (text.indexOf(val) > -1);
+                    }
+                    if(op == "and" && (cond == null || cond == true)){
+                        cond = (text.indexOf(val) > -1);
+                    }
+                });
+                return cond;
+            };
+
+            // declare variables
+            var __tempStat = null;
+            var late_data_entry = null;
+            var events_captured = {};
+
+            // variables sent by client
+            const geofenceId = body.geofenceId;
+            const scheduled_date = body.scheduled_date;
+            const shift_schedule = body.shift_schedule;
+            const __originalObj = body.__originalObj;
+            const route = body.route;
+            const vehicle_id = Number((body.vehicle||{})._id);
+            const vehicleUsername = (body.vehicle||{}).username;
+            const __status = body.__status;
+            const dGeofence = body.dGeofence;
+            const geofence = body.geofence;
+            const roundtrip = body.roundtrip;
+            const checkSchedule = body.checkSchedule; // boolean - whether the function should check for Schedule or not
+            const apiKey = body.apiKey;
+
+            // sent by client because of Previous Check-In feature. User can select a different check-in-check-out
+            // and this function should be able to detect shipment's status based on their selection
+            const previousCheckInOriginGeofence = body.previousCheckInOriginGeofence;
+            const previousCheckInDestinationGeofence = body.previousCheckInDestinationGeofence;
+
+            // Custom client options
+            // Custom status
+            const defaultStatus = clientOption.statusOption.default;
+            const insideOriginStatus = clientOption.statusOption.insideOrigin;
+            const insideOriginEventStatus = clientOption.statusOption.insideOriginEvent;
+            const enRouteToDestinationStatus = clientOption.statusOption.enRouteToDestination;
+
+            // if dispatch entry is set to make a scheduled/advanced entry
+            const scheduledEntry = clientOption.scheduledEntry;
+
+            // whether to ignore the destination events or not
+            const ignoreDestinationEvents = clientOption.ignoreDestinationEvents;
+
+            // whether to allow the function to save temp status. Temp status are used to save event times that did not meet the other conditions.
+            // Useful for clients that depends on event times PER geofence. 
+            const allowTempStatus = clientOption.allowTempStatus;
+            
+            // Geofence ID should not be null of undefined
+            if(geofenceId){
+
+                // If 'checkSchedule' is false OR
+                // 'checkSchedule' is true AND 
+                // either 'scheduledEntry' is false OR 
+                // 'scheduledEntry' is true AND current dateTime is within the scheduled date and shift
+                if(!checkSchedule || (checkSchedule && (!scheduledEntry || (scheduledEntry && isNowWithinSchedule(scheduled_date,shift_schedule))))){
+                    
+                    // check if original route and vehicle is same as current
+                    if((__originalObj && (__originalObj.route == route && __originalObj.vehicle_id == Number(vehicle_id))) && (!previousCheckInOriginGeofence && !previousCheckInDestinationGeofence)){
+                        // return empty object 
+                        resolve({});
+                    } else {
+                        // if vehicle username is not null or undefined AND status is not in the array
+                        if(vehicleUsername && !["complete","incomplete","scheduled"].includes(__status)){
+
+                            // function that checks whether the vehicle is inside the geofence or not (WRU Main)
+                            function isVehicleInsideGeofenceId(tries){
+                                tries = tries || 0;
+
+                                // destination geofence
+                                const destinationGeofenceName = dGeofence.short_name;
+                                // origin geofence
+                                const originShortName = geofence.short_name;
+
+                                // function that determins what the status of the shipment should be based on the vehicle's location history
+                                function determineShipmentStatus(oEvents,dEvents,byPassHourDiff){
+                                    // note: byPassHourDiff is used to not check the time difference between the event time and current time
+
+                                    // value will change depending on where the truck is
+                                    // set status to Client's default shipment status
+                                    var status = defaultStatus;
+                                    
+                                    // used to know the time difference between the event time and current time
+                                    // value will change when the truck left the origin. The new value will be used to check
+                                    // the time difference between the event time and Check-out time
+                                    var tempDateTime = now_ms;
+
+
+                                    // used for CokeT2
+                                    var isOnDelivery = false;
+                                    var storedDispatched = false;
+
+                                    // ------------> Origin
+                                    // loop origin events
+                                    for(var i = oEvents.length-1; i >= 0; i--){
+
+                                        const val = oEvents[i];
+
+                                        // convert time to milliseconds
+                                        const eventDate = moment(val.timestamp).valueOf();
+                                        // calculate time difference between event time and 'tempDateTime'
+                                        const hourDiff = (byPassHourDiff === true) ? 0 : Math.abs(tempDateTime - eventDate) / 36e5;
+
+                                        // print necessary data for debugging
+                                        console.log("oEvents",val.RULE_NAME,val.stage,!events_captured[eventDate],hourDiff < MAX_HOURDIFF);
+
+                                        // in transit
+                                        // do not remove status = in_transit.
+                                        if(((val.RULE_NAME == "Inside Geofence" && val.stage == "end") || (val.RULE_NAME == "Outside Geofence" && val.stage == "start")) && late_data_entry == true && status != enRouteToDestinationStatus && hourDiff < MAX_HOURDIFF) {
+                                                status = enRouteToDestinationStatus;
+                                                events_captured[eventDate] = enRouteToDestinationStatus;
+                                                
+                                                tempDateTime = eventDate;
+                                        }
+                                        
+                                        // save event as idlingAtOrigin if RULE_NAME consists "Inside" and "Idle" strings
+                                        if(getIndexOf(val.RULE_NAME,["Inside","Idle"],"and") && !events_captured[eventDate] && hourDiff < MAX_HOURDIFF){
+                                            events_captured[eventDate] = "idlingAtOrigin";
+                                        }
+
+                                        // save event as processingAtOrigin if RULE_NAME consists "Inside" and "Processing" strings
+                                        if(getIndexOf(val.RULE_NAME,["Inside","Processing"],"and") && !events_captured[eventDate] && hourDiff < MAX_HOURDIFF){
+                                            events_captured[eventDate] = "processingAtOrigin";
+                                        }
+
+                                        // save event as queueingAtOrigin if RULE_NAME consists "Inside" and "Queueing" strings
+                                        if(getIndexOf(val.RULE_NAME,["Inside","Queueing"],"and") && !events_captured[eventDate] && hourDiff < MAX_HOURDIFF){
+                                            events_captured[eventDate] = "queueingAtOrigin";
+                                        }
+                                        
+                                        // Left the geofence
+                                        // "!isOnDelivery && !storedDispatched" is added to check that the shipment is neither detected as On Delivery or Dispatched yet
+                                        // The status should be based on the latest data ONLY and not by geofence unlike CokeT1 and Wilcon
+                                        if((val.RULE_NAME == "Check Out" && val.stage == "start") && late_data_entry == true && status != enRouteToDestinationStatus && !isOnDelivery && !storedDispatched) {
+                                            status = enRouteToDestinationStatus;
+                                            events_captured[eventDate] = enRouteToDestinationStatus;
+                                            tempDateTime = eventDate;
+                                            isOnDelivery = true;
+                                        }
+                                        // Entered the geofence
+                                        // "!storedDispatched" is added to check that the shipment is not yet tagged as Dispatched
+                                        // The status should be based on the latest data ONLY and not by geofence unlike CokeT1 and Wilcon
+                                        if((val.RULE_NAME == "Check Out" && val.stage == "end") && !events_captured[eventDate] && !storedDispatched) {
+                                            events_captured[eventDate] = insideOriginStatus;
+                                            storedDispatched = true;
+                                        }
+
+                                        // save event as tempStatus for events that do not fall under idlingAtOrigin, processingAtOrigin, or queueingAtOrigin, etc
+                                        if(allowTempStatus && !events_captured[eventDate] && hourDiff < MAX_HOURDIFF){
+                                            events_captured[eventDate] = "tempStatus";
+                                        }
+                                    }
+
+                                    // if late entry and no 'enRouteToDestinationStatus' timestamp
+                                    if(late_data_entry == true && !OBJECT.getKeyByValue(events_captured,enRouteToDestinationStatus)){
+                                        // last timestamp will be 'enRouteToDestinationStatus'
+                                        events_captured[now_ms] = enRouteToDestinationStatus;
+                                    }
+
+                                    // sort eventsCaptured by key (timestamp/eventDate) in ascending order
+                                    const sortedEvents = OBJECT.sortByKey(events_captured);
+
+                                    // change first status event to "entered_origin" or 'insideOriginEventStatus'
+                                    // Note: "entered_origin" is just for reference when the truck entered the origin geofence. It is not a status.
+                                    Object.keys(sortedEvents).forEach((key,i) => {
+                                        if(i == 0){
+                                            // if first timestamp is not in transit, change value to entered_origin
+                                            (sortedEvents[key] != enRouteToDestinationStatus) ? sortedEvents[key] = insideOriginEventStatus : null
+                                        }
+                                    });
+
+                                    // loop to delete "tempStatus"
+                                    Object.keys(sortedEvents).forEach(key => {
+                                        (sortedEvents[key] == "tempStatus") ? delete sortedEvents[key] : null;
+                                    });
+                                    
+                                    // had to loop again because when "tempStatus" is deleted, sortedEvents[lastTimestamp] ends up to be undefined
+                                    const lastTimestamp = Object.keys(sortedEvents).map(key => { return Number(key); }).sort().reverse()[0];
+                                    
+                                    // set events_captured equal to its sorted version
+                                    events_captured = sortedEvents;
+
+                                    // print necessary data for debugging
+                                    console.log("sortedEvents",status,sortedEvents);
+
+                                    // status is equal to the last timestamp's status value
+                                    status = sortedEvents[lastTimestamp] || defaultStatus;
+                                    // if status is equal to 'insideOriginEventStatus', change it to the proper status or  'insideOriginStatus'
+                                    // ex. For CokeT1/Wilcon, 'insideOriginEventStatus' is 'entered_origin' but 'insideOriginStatus' is 'assigned'
+                                    (status == insideOriginEventStatus) ? status = insideOriginStatus : null;
+
+
+
+                                    // ------------> Destination
+                                    // Check if its late entry 
+                                    if(late_data_entry == true && !ignoreDestinationEvents){
+
+                                        // get leaving time by status based on events captured
+                                        const enRouteDateTime = OBJECT.getKeyByValue(events_captured,enRouteToDestinationStatus);
+
+                                        status = enRouteToDestinationStatus;
+
+                                        // loop destination events
+                                        dEvents.forEach(val => {
+                                            // convert time to milliseconds
+                                            const eventDate = moment(val.timestamp).valueOf();
+                                            // calculate time difference between event time and 'tempDateTime'
+                                            const hourDiff = (byPassHourDiff === true) ? 0 : Math.abs(tempDateTime - eventDate) / 36e5;
+
+                                            // in_transit/onDelivery (if no enRouteDateTime)
+                                            if(val.stage == "start" && !enRouteDateTime && hourDiff < MAX_HOURDIFF){
+                                                events_captured[eventDate] = enRouteToDestinationStatus;
+                                            }
+                                            // end in_transit/onDelivery (if no enRouteDateTime)
+
+                                            if(roundtrip) {
+                                                // onSite
+                                                // save event as onSite if conditions are the same as entering a geofence (destination geofence)
+                                                if(!((val.RULE_NAME == "Inside Geofence" && val.stage == "end") || (val.RULE_NAME == "Outside Geofence" && val.stage == "start")) && status == enRouteToDestinationStatus && !events_captured[eventDate]){
+                                                    status = "onSite";
+                                                    events_captured[eventDate] = "onSite";
+                                                }
+                                                // end onSite
+                                                
+
+                                                // returning
+                                                // save event as returning if conditions are the same as leaving a geofence (destination geofence)
+                                                if(((val.RULE_NAME == "Inside Geofence" && val.stage == "end") || (val.RULE_NAME == "Outside Geofence" && val.stage == "start")) && status == "onSite" && !events_captured[eventDate]){
+                                                    status = "returning";
+                                                    events_captured[eventDate] = "returning";
+                                                }
+                                                // end returning
+                                            } else {
+                                                // complete
+                                                // save event as complete when the truck entered the destination geofence
+                                                if(status == enRouteToDestinationStatus && !events_captured[eventDate] && (Number(enRouteDateTime) < eventDate) && hourDiff < MAX_HOURDIFF){
+                                                    status = "complete";
+                                                    events_captured[eventDate] = "complete";
+                                                }
+                                                // end complete
+                                            }
+                                        });
+                                    }
+
+                                    return status;
+                                };
+
+                                // if no previous check-in geofences sent
+                                if(!previousCheckInOriginGeofence && !previousCheckInDestinationGeofence){
+                                    
+                                    function loadVehiclesHistory(){
+
+                                        // declare client query to be able to close connection later
+                                        $.ajax({
+                                            url: `/api/vehicles_history/${CLIENT.id}/${USER.username}/${vehicle_id}`,
+                                            method: "GET",
+                                            timeout: 90000 ,
+                                            headers: {
+                                                "Authorization": SESSION_TOKEN
+                                            },
+                                            async: true
+                                        }).done(function (docs) {
+                                            console.log("docs!!",docs);
+
+                                            
+                                            if(docs.length > 0){
+                                                const doc = docs[0];
+                                                
+                                                const loc = doc.location || []; // don't name it 'location', it will refresh page (page.location??)
+
+                                                // late entry - Truck selected is outside the origin
+                                                if(late_data_entry) {
+                                                    // loop location history - latest to oldest
+                                                    for(var i = loc.length-1; i >= 0; i--){
+
+                                                        // if location is shipment's origin
+                                                        if(loc[i].short_name == originShortName){
+                                                            // >>>>> Truck selected has left the origin <<<<<
+                                                            
+                                                            // late entry is true
+                                                            late_data_entry = true;
+
+                                                            // determine shipment status
+                                                            // will automatically be saved as IN TRANSIT or ON DELIVERY.
+                                                            __tempStat = determineShipmentStatus(loc[i].events,[]);
+
+                                                            break;
+                                                        } else {
+                                                            // if location is shipment's destination
+                                                            if(loc[i].short_name == destinationGeofenceName){
+                                                                // remove the last location (detected as shipment's destination)
+                                                                // ex. 
+                                                                // loc = [ { short_name: "ABC" }, { short_name: "EFG" }, { short_name: "HIJ" }, { short_name: "KLM" } ] 
+                                                                // destination = "HIJ"
+                                                                // locationsBeforeDestination = [ { short_name: "ABC" }, { short_name: "EFG" } ] 
+                                                                const locationsBeforeDestination = loc.slice(0, i);
+
+                                                                // used to check if the origin is found???
+                                                                var prevHasOrigin = false;
+
+                                                                // loop locationsBeforeDestination - latest to oldest
+                                                                for(var j = locationsBeforeDestination.length-1; j >= 0; j--){
+                                                                    // if it kept on looping and location is the destination again, break loop
+                                                                    if(locationsBeforeDestination[j].short_name == destinationGeofenceName){
+                                                                        break;
+                                                                    }
+                                                                    // if location is origin,
+                                                                    // >>>>> Truck selected has left the origin and is already at destination. <<<<<
+                                                                    if(locationsBeforeDestination[j].short_name == originShortName){
+                                                                        // late entry is true
+                                                                        late_data_entry = true;
+                                                                        // determine shipment status
+                                                                        __tempStat = determineShipmentStatus(locationsBeforeDestination[j].events,loc[i].events);
+                                                                        prevHasOrigin = true;
+                                                                        break;
+                                                                    }
+                                                                }
+                                                                // >>>>> Truck selected is NOT within the origin. It is assumed that the truck is enroute to origin <<<<<
+                                                                if(!prevHasOrigin){
+                                                                    // late entry is false
+                                                                    late_data_entry = false;
+                                                                    // make set it to Client's default shipment status
+                                                                    __tempStat = defaultStatus;
+                                                                }
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // even after looping the vehicle's location history and __tempStat is still null then,
+                                                    // >>>>> Truck selected is NOT within the origin. It is assumed that the truck is enroute to origin <<<<<
+                                                    if(__tempStat == null) {
+                                                        // make set it to Client's default inside origin status
+                                                        __tempStat = defaultStatus;
+                                                        // late entry is false
+                                                        late_data_entry = false;
+                                                    }
+                                                } else {
+                                                    // >>>>> Truck selected is within the origin <<<<<
+                                                    
+                                                    // get the last location of the truck and check if it is the shipment's origin
+                                                    if(loc[loc.length-1].short_name == originShortName){
+                                                        // determine shipment status
+                                                        __tempStat = determineShipmentStatus(loc[loc.length-1].events);
+                                                    }
+                                                    
+                                                    // if '__tempStat' is null, then 
+                                                    if(__tempStat == null) {
+                                                        // make set it to Client's default inside origin status
+                                                        __tempStat = insideOriginStatus;
+                                                        // late entry is false
+                                                        late_data_entry = false;
+                                                    }
+                                                }
+                                                
+                                                // sort events_captured
+                                                const sortedEvents = OBJECT.sortByKey(events_captured);
+                                                events_captured = sortedEvents;
+
+                                                // added this just in case __tempStat is null
+                                                __tempStat = __tempStat || defaultStatus;
+
+                                                // print necessary data for debugging
+                                                console.log("EYOOOEOEOEOOEOEO",late_data_entry,__tempStat,events_captured);
+                                                
+                                                // return data
+                                                resolve({
+                                                    status: __tempStat,
+                                                    late_data_entry,
+                                                    events_captured,
+                                                });
+
+                                            } else {                                                
+                                                // return error
+                                                resolve({
+                                                    error: 1,
+                                                    message: 'Truck selected does not exist.'
+                                                });
+                                            }
+                                        }).fail(error => {
+                                            console.log("Error",error);
+
+                                            // if the request returned an error, we will try until the number of maximum tries is reached
+                                            if(error.status == 0 && tries < MAX_TRIES){
+                                                tries++;
+                                                isVehicleInsideGeofenceId(tries);
+                                            } else {
+                                                // if maximum tries is reached, resolve this dbName function
+                                                reject("Vehicles History",error);
+                                            }
+                                        });
+                                    }
+                                    
+                                    // get the list of users/trucks inside the geofence (WRU Main)
+                                    $.ajax({
+                                        url: `https://${ggsURL}/comGpsGate/api/v.1/applications/${appId}/geofences/${geofenceId}/users?FromIndex=0&PageSize=500`,
+                                        method: "GET",
+                                        timeout: 90000 ,
+                                        headers: {
+                                            "Authorization": apiKey
+                                        },
+                                        async: true
+                                    }).done(function (docs) {
+                                        console.log("docs!!",docs);
+
+                                        // print necessary data for debugging
+                                        // console.log("Vehicles1:",JSON.stringify(docs));
+
+                                        // if the truck is inside the geofence, late_data_entry is false. Else, true
+                                        // Ex. docs = [ { id: "A", username: "123" }, { id: "B", username: "456" } ] 
+                                        // !docs.some(x => x.username == "555"); -----> true
+                                        // !docs.some(x => x.username == "456"); -----> false
+                                        late_data_entry = !docs.some(x => x.username == vehicleUsername);
+                                        
+                                        // load vehicle history
+                                        loadVehiclesHistory();
+                                    }).fail(error => {
+                                        console.log("Error",error);
+                                        // if the request returned an error, we will try until the number of maximum tries is reached
+                                        if(error.status == 0 && tries < MAX_TRIES){
+                                            tries++;
+                                            isVehicleInsideGeofenceId(tries);
+                                        } else {
+                                            // if maximum tries is reached, resolve this dbName function
+                                            reject("GGS Geofences 01",error);
+                                        }
+                                    });
+                                } else {
+                                    if(previousCheckInOriginGeofence && previousCheckInDestinationGeofence){
+
+                                        // late entry is true (there's data for 'previousCheckInDestinationGeofence' too)
+                                        late_data_entry = true;
+
+                                        // print necessary data for debugging
+                                        console.log(previousCheckInDestinationGeofence.short_name,destinationGeofenceName);
+
+                                        // if location is destination
+                                        if(previousCheckInDestinationGeofence.short_name == destinationGeofenceName){
+                                            // determine shipment status -- 'previousCheckInOriginGeofence' and 'previousCheckInDestinationGeofence' is passed
+                                            __tempStat = determineShipmentStatus(previousCheckInOriginGeofence.events,(previousCheckInDestinationGeofence||{}).events,true);
+                                        } else {
+                                            // determine shipment status -- only 'previousCheckInOriginGeofence'
+                                            __tempStat = determineShipmentStatus(previousCheckInOriginGeofence.events,[],true);
+                                        }
+
+                                        // sort events_captured
+                                        var tempEventsCaptured = OBJECT.sortByKey(events_captured);
+                                        events_captured = tempEventsCaptured;
+
+                                        // print necessary data for debugging
+                                        console.log("EYOOOEOEOEOOEOEO1111111111",late_data_entry,__tempStat,events_captured);
+
+                                        // return data
+                                        resolve({
+                                            status: __tempStat,
+                                            late_data_entry,
+                                            events_captured: events_captured
+                                        });
+                                    } else {
+                                        // ---> There's only data for 'previousCheckInOriginGeofence'
+
+                                        // get the list of users/trucks inside the geofence (WRU Main)
+                                        $.ajax({
+                                            url: `https://${ggsURL}/comGpsGate/api/v.1/applications/${appId}/geofences/${geofenceId}/users?FromIndex=0&PageSize=500`,
+                                            method: "GET",
+                                            timeout: 90000 ,
+                                            headers: {
+                                                "Authorization": apiKey
+                                            },
+                                            async: true
+                                        }).done(function (docs) {
+                                            console.log("docs!!",docs);
+
+                                            // print necessary data for debugging
+                                            // console.log("Vehicles2:",JSON.stringify(docs));
+
+                                            // if the truck is inside the geofence, late_data_entry is false. Else, true
+                                            // Ex. docs = [ { id: "A", username: "123" }, { id: "B", username: "456" } ] 
+                                            // !docs.some(x => x.username == "555"); -----> true
+                                            // !docs.some(x => x.username == "456"); -----> false
+                                            late_data_entry = !docs.some(x => x.username == vehicleUsername);
+                                            
+                                            // determine shipment status
+                                            __tempStat = determineShipmentStatus(previousCheckInOriginGeofence.events,[],true);
+
+                                            // sort events_captured
+                                            const sortedEvents = OBJECT.sortByKey(events_captured);
+                                            events_captured = sortedEvents;
+
+                                            // print necessary data for debugging
+                                            console.log("EYOOOEOEOEOOEOEO222222222",late_data_entry,__tempStat,events_captured);
+
+                                            resolve({
+                                                status: __tempStat,
+                                                late_data_entry,
+                                                events_captured: events_captured
+                                            });
+                                        }).fail(error => {
+                                            console.log("Error",error);
+                                            // if the request returned an error, we will try until the number of maximum tries is reached
+                                             if(error.status == 0 && tries < MAX_TRIES){
+                                                tries++;
+                                                isVehicleInsideGeofenceId(tries);
+                                            } else {
+                                                // if maximum tries is reached, resolve this dbName function
+                                                reject("GGS Geofences 02",error);
+                                            }
+                                        });
+                                    }
+                                }
+                            }
+
+                            isVehicleInsideGeofenceId();
+                        } else {
+                            // return empty object 
+                            resolve({});
+                        }
+                    }
+                } else {
+                    // if current time is not within schedule, status is "scheduled"
+                    if(checkSchedule && scheduledEntry && !isNowWithinSchedule(scheduled_date,shift_schedule)){
+                        resolve({
+                            status: "scheduled",
+                            late_data_entry: false,
+                            events_captured: {},
+                        });
+                    } else {
+                        // return the Client's default shipment status
+                        resolve({
+                            status: defaultStatus,
+                            late_data_entry: false,
+                            events_captured: {},
+                        });
+                    }
+                }
+            } else {
+                // incomplete data. Status is PLAN
+                resolve({
+                    status: "plan",
+                    late_data_entry: false,
+                    events_captured: {},
+                });
+            } 
+        });
+    },
     FUNCTION: {
         monitoring: function(){
             /******** TABLE ********/
@@ -4091,7 +4705,7 @@ var DISPATCH = {
 
             /******** TABLE CHECK ********/
             TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
-                isFinishedLoading(["REGIONS","CLUSTERS","GEOFENCES","VEHICLES","TRAILERS","CHASSIS","VEHICLES_HISTORY","ROUTES","USERS","VEHICLE_PERSONNEL","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE","CUSTOMERS"], _new_, function(){
+                isFinishedLoading(["REGIONS","CLUSTERS","GEOFENCES","VEHICLES","TRAILERS","CHASSIS","ROUTES","USERS","VEHICLE_PERSONNEL","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE","CUSTOMERS"], _new_, function(){
                     if(dt){
                         _new_ = false;
                         
@@ -4103,7 +4717,7 @@ var DISPATCH = {
                     }
                     
                 });
-                isFinishedLoading(["GEOFENCES","VEHICLES","TRAILERS","CHASSIS","VEHICLES_HISTORY","ROUTES","VEHICLE_PERSONNEL","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE","CUSTOMERS"], true, function(){
+                isFinishedLoading(["GEOFENCES","VEHICLES","TRAILERS","CHASSIS","ROUTES","VEHICLE_PERSONNEL","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE","CUSTOMERS"], true, function(){
                     TABLE.FINISH_LOADING.UPDATE();
                 });
                 isFinishedLoading(["REGIONS","CLUSTERS"], _new2_, function(){
@@ -4208,41 +4822,31 @@ var DISPATCH = {
 
                             const dGeofence = getGeofence(DESTINATION_ID) || {};
                             $(`#submit`).html(`<i class="la la-spinner la-spin mr-2"></i>Detecting vehicle's location..`).attr("disabled",true);
-                            $.ajax({
-                                url: `/api/shipmentStatus/${CLIENT.id}/${USER.username}${SHIPMENT_CHECK_STATUS_URLPATH}`,
-                                method: "POST",
-                                timeout: 90000 ,
-                                headers: {
-                                    "Content-Type": "application/json; charset=utf-8",
-                                    "Authorization": SESSION_TOKEN
-                                },
-                                data: JSON.stringify({
-                                    apiKey: USER.apiKey,
-                                    roundtrip: clientCustom.roundtrip,
+                            DISPATCH.detectStatus({
+                                apiKey: USER.apiKey,
+                                roundtrip: clientCustom.roundtrip,
 
-                                    checkSchedule: true,
-                                    geofenceId,
-                                    scheduled_date,
-                                    shift_schedule,
-                                    __originalObj,
-                                    route,
-                                    previousCheckInOriginGeofence,
-                                    previousCheckInDestinationGeofence,
-                                    __status,
-                                    vehicle: {
-                                        _id: vehicle_id,
-                                        username: vehicleUsername,
-                                    },
-                                    dGeofence: {
-                                        short_name: dGeofence.short_name
-                                    },
-                                    geofence: {
-                                        short_name: geofence.short_name,
-                                    },
-                                }),
-                                async: true
-                            }).done(function (docs) {
-                                console.log("docs!!",docs);
+                                checkSchedule: true,
+                                geofenceId,
+                                scheduled_date,
+                                shift_schedule,
+                                __originalObj,
+                                route,
+                                previousCheckInOriginGeofence,
+                                previousCheckInDestinationGeofence,
+                                __status,
+                                vehicle: {
+                                    _id: vehicle_id,
+                                    username: vehicleUsername,
+                                },
+                                dGeofence: {
+                                    short_name: dGeofence.short_name
+                                },
+                                geofence: {
+                                    short_name: geofence.short_name,
+                                },
+                            }).then(docs => {
+                                console.log("Docs",docs);
 
                                 if(docs.error){
                                     reject({
@@ -5628,36 +6232,26 @@ var DISPATCH = {
                                         resolve();
                                     } else {
 
-                                        $.ajax({
-                                            url: `/api/shipmentStatus/${CLIENT.id}/${USER.username}${SHIPMENT_CHECK_STATUS_URLPATH}`,
-                                            method: "POST",
-                                            timeout: 90000 ,
-                                            headers: {
-                                                "Content-Type": "application/json; charset=utf-8",
-                                                "Authorization": SESSION_TOKEN
-                                            },
-                                            data: JSON.stringify({
-                                                apiKey: USER.apiKey,
-                                                roundtrip: clientCustom.roundtrip,
+                                        DISPATCH.detectStatus({
+                                            apiKey: USER.apiKey,
+                                            roundtrip: clientCustom.roundtrip,
 
-                                                geofenceId: origin.geofence_id,
-                                                scheduled_date,
-                                                shift_schedule,
-                                                route,
-                                                __status: obj.status,
-                                                vehicle: {
-                                                    _id: vehicle._id,
-                                                    username: vehicle.username,
-                                                },
-                                                dGeofence: {
-                                                    short_name: destination.short_name
-                                                },
-                                                geofence: {
-                                                    short_name: origin.short_name,
-                                                },
-                                            }),
-                                            async: true
-                                        }).done(function (docs) {
+                                            geofenceId: origin.geofence_id,
+                                            scheduled_date,
+                                            shift_schedule,
+                                            route,
+                                            __status: obj.status,
+                                            vehicle: {
+                                                _id: vehicle._id,
+                                                username: vehicle.username,
+                                            },
+                                            dGeofence: {
+                                                short_name: destination.short_name
+                                            },
+                                            geofence: {
+                                                short_name: origin.short_name,
+                                            },
+                                        }).then(docs => {
                                             console.log("docs!!",docs);
 
                                             if(docs.error){
@@ -6707,7 +7301,7 @@ var REPORTS = {
                     </div>`;
         },
         REPORTS: {
-            CICOR: function(title,docs,originChosen,date_from,date_to){
+            CICOR_T1: function(title,docs,originChosen,date_from,date_to){
                 // Legend:
                 //    · GBO - Grouped by Origin
                 //    · GBR - Grouped by Region
@@ -7092,235 +7686,235 @@ var REPORTS = {
                             ${detailsBodyHTML}
                         </table> `;
             },
-            // CICOR: function(title,docs,originChosen,date_from,date_to){
-            //     // var arr = ["destination","origin","route","sn","plate_num","trailer","pal_cap","hauler_name","cico_target","actual_timelapse","remarks1","remarks2","base_plant"];
-            //     var details = "",
-            //         summary = "",
-            //         summary_info = {},
-            //         summary_total = {
-            //             in_site: 0,
-            //             over_cico: 0,
-            //             w_in_cico: 0,
-            //             count_time_lapse: 0,
-            //             sum_time_lapse: 0,
-            //             count_cico: 0,
-            //             sum_cico: 0
-            //         },
-            //         detailsHeaderHTML = "",
-            //         detailsBodyHTML = "",
-            //         textCellStyle = `border:2px solid black;mso-number-format:'\@';`,
-            //         columns = clientCustom.reports.cicor || [];
-            //     columns.forEach(_val_ => {
-            //         switch (_val_) {
-            //             case "origin":
-            //                 detailsHeaderHTML += `<td style="background-color:black;color:white;">Origin (Plant)</td>`;
-            //                 break;
-            //             case "destination":
-            //                 detailsHeaderHTML += `<td style="background-color:black;color:white;">Destination (DC)</td>`;
-            //                 break;
-            //             case "route":
-            //                 detailsHeaderHTML += `<td style="background-color:black;color:white;">Route</td>`;
-            //                 break;
-            //             case "sn":
-            //                 detailsHeaderHTML += `<td style="background-color:black;color:white;">SN</td>`;
-            //                 break;
-            //             case "plateNumber":
-            //                 detailsHeaderHTML += `<td style="background-color:black;color:white;">Plate No.</td>`;
-            //                 break;
-            //             case "trailer":
-            //                 detailsHeaderHTML += `<td style="background-color:black;color:white;">Trailer</td>`;
-            //                 break;
-            //             case "palCap":
-            //                 detailsHeaderHTML += `<td style="background-color:black;color:white;">Pal Cap</td>`;
-            //                 break;
-            //             case "haulerName":
-            //                 detailsHeaderHTML += `<td style="background-color:black;color:white;">Hauler Name</td>`;
-            //                 break;
-            //             case "targetCico":
-            //                 detailsHeaderHTML += `<td style="background-color:black;color:white;">Target CICO (hrs)</td>`;
-            //                 break;
-            //             case "actualTimelapse":
-            //                 detailsHeaderHTML += `<td style="background-color:black;color:white;">Actual Time Lapse (hrs)</td>`;
-            //                 break;
-            //             case "remarks1":
-            //                 detailsHeaderHTML += `<td style="background-color:black;color:white;">Remarks1</td>`;
-            //                 break;
-            //             case "remarks2":
-            //                 detailsHeaderHTML += `<td style="background-color:black;color:white;">Remarks2</td>`;
-            //                 break;
-            //             case "truckBasePlant":
-            //                 detailsHeaderHTML += `<td style="background-color:black;color:white;">Truck Base Plant</td>`;
-            //                 break;
-            //             default:
-            //                 break;
-            //         }
-            //     });
+            CICOR: function(title,docs,originChosen,date_from,date_to){
+                // var arr = ["destination","origin","route","sn","plate_num","trailer","pal_cap","hauler_name","cico_target","actual_timelapse","remarks1","remarks2","base_plant"];
+                var details = "",
+                    summary = "",
+                    summary_info = {},
+                    summary_total = {
+                        in_site: 0,
+                        over_cico: 0,
+                        w_in_cico: 0,
+                        count_time_lapse: 0,
+                        sum_time_lapse: 0,
+                        count_cico: 0,
+                        sum_cico: 0
+                    },
+                    detailsHeaderHTML = "",
+                    detailsBodyHTML = "",
+                    textCellStyle = `border:2px solid black;mso-number-format:'\@';`,
+                    columns = clientCustom.reports.cicor || [];
+                columns.forEach(_val_ => {
+                    switch (_val_) {
+                        case "origin":
+                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Origin (Plant)</td>`;
+                            break;
+                        case "destination":
+                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Destination (DC)</td>`;
+                            break;
+                        case "route":
+                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Route</td>`;
+                            break;
+                        case "sn":
+                            detailsHeaderHTML += `<td style="background-color:black;color:white;">SN</td>`;
+                            break;
+                        case "plateNumber":
+                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Plate No.</td>`;
+                            break;
+                        case "trailer":
+                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Trailer</td>`;
+                            break;
+                        case "palCap":
+                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Pal Cap</td>`;
+                            break;
+                        case "haulerName":
+                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Hauler Name</td>`;
+                            break;
+                        case "targetCico":
+                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Target CICO (hrs)</td>`;
+                            break;
+                        case "actualTimelapse":
+                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Actual Time Lapse (hrs)</td>`;
+                            break;
+                        case "remarks1":
+                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Remarks1</td>`;
+                            break;
+                        case "remarks2":
+                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Remarks2</td>`;
+                            break;
+                        case "truckBasePlant":
+                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Truck Base Plant</td>`;
+                            break;
+                        default:
+                            break;
+                    }
+                });
 
-            //     docs.forEach(function(val,i){
-            //         val.destination[0] = val.destination[0] || {};
-            //         var cico_time,actual_time_lapse = null,
-            //             remarks2Class = "",
-            //             origin = getGeofence(val.origin_id) || {},
-            //             destination = getGeofence(val.destination[0].location_id) || {},
-            //             vehicle = getVehicle(val.vehicle_id) || {},
-            //             orig_dest = `${origin.short_name}_${destination.short_name}`,
-            //             remarks2 = "w/in CICO Time",
-            //             beforeCheckOutTime = getDateTime("entered_origin",val) || getDateTime("queueingAtOrigin",val) || getDateTime("processingAtOrigin",val) || getDateTime("idlingAtOrigin",val);
+                docs.forEach(function(val,i){
+                    val.destination[0] = val.destination[0] || {};
+                    var cico_time,actual_time_lapse = null,
+                        remarks2Class = "",
+                        origin = getGeofence(val.origin_id) || {},
+                        destination = getGeofence(val.destination[0].location_id) || {},
+                        vehicle = getVehicle(val.vehicle_id) || {},
+                        orig_dest = `${origin.short_name}_${destination.short_name}`,
+                        remarks2 = "w/in CICO Time",
+                        beforeCheckOutTime = getDateTime("entered_origin",val) || getDateTime("queueingAtOrigin",val) || getDateTime("processingAtOrigin",val) || getDateTime("idlingAtOrigin",val);
 
-            //         var calcCICO = (beforeCheckOutTime) ?  (getDateTime("in_transit",val,"last") - beforeCheckOutTime) : 0;
-            //         cico_time = calcCICO || 0;
+                    var calcCICO = (beforeCheckOutTime) ?  (getDateTime("in_transit",val,"last") - beforeCheckOutTime) : 0;
+                    cico_time = calcCICO || 0;
 
-            //         actual_time_lapse = Number(DATETIME.DH(cico_time,null,"0"));
+                    actual_time_lapse = Number(DATETIME.DH(cico_time,null,"0"));
 
-            //         if(!summary_info[orig_dest]){
-            //             summary_info[orig_dest] = {
-            //                 destination:destination.short_name,
-            //                 origin:origin.short_name,
-            //                 in_site:1,
-            //                 over_cico:0,
-            //                 w_in_cico:0,
-            //                 sum_time_lapse: actual_time_lapse,
-            //                 count_time_lapse: (actual_time_lapse != null) ? 1 : 0,
-            //                 cico_target: destination.cico || 0,
-            //             };
-            //         } else {
-            //             summary_info[orig_dest].in_site++;
-            //             if(actual_time_lapse != null){
-            //                 summary_info[orig_dest].sum_time_lapse = summary_info[orig_dest].sum_time_lapse || 0; // in case value is null
+                    if(!summary_info[orig_dest]){
+                        summary_info[orig_dest] = {
+                            destination:destination.short_name,
+                            origin:origin.short_name,
+                            in_site:1,
+                            over_cico:0,
+                            w_in_cico:0,
+                            sum_time_lapse: actual_time_lapse,
+                            count_time_lapse: (actual_time_lapse != null) ? 1 : 0,
+                            cico_target: destination.cico || 0,
+                        };
+                    } else {
+                        summary_info[orig_dest].in_site++;
+                        if(actual_time_lapse != null){
+                            summary_info[orig_dest].sum_time_lapse = summary_info[orig_dest].sum_time_lapse || 0; // in case value is null
 
-            //                 summary_info[orig_dest].count_time_lapse++;
-            //                 summary_info[orig_dest].sum_time_lapse += actual_time_lapse;
-            //             }
-            //         }
-            //         if(actual_time_lapse != null) {
-            //             if(actual_time_lapse > destination.cico){
-            //                 remarks2Class = "background-color:#ffc7ce;color:#9c0006";
-            //                 remarks2 = "Over CICO Time";
-            //                 summary_info[orig_dest].over_cico ++;
-            //             } else {
-            //                 summary_info[orig_dest].w_in_cico ++;
-            //             }
-            //         }
+                            summary_info[orig_dest].count_time_lapse++;
+                            summary_info[orig_dest].sum_time_lapse += actual_time_lapse;
+                        }
+                    }
+                    if(actual_time_lapse != null) {
+                        if(actual_time_lapse > destination.cico){
+                            remarks2Class = "background-color:#ffc7ce;color:#9c0006";
+                            remarks2 = "Over CICO Time";
+                            summary_info[orig_dest].over_cico ++;
+                        } else {
+                            summary_info[orig_dest].w_in_cico ++;
+                        }
+                    }
 
-            //         detailsBodyHTML += `<tr>`;
-            //         columns.forEach(_val_ => {
-            //             switch (_val_) {
-            //                 case "destination":
-            //                     detailsBodyHTML += `<td style="${textCellStyle}">${destination.short_name}</td>`;
-            //                     break;
-            //                 case "origin":
-            //                     detailsBodyHTML += `<td style="${textCellStyle}">${origin.short_name}</td>`;
-            //                     break;
-            //                 case "route":
-            //                     detailsBodyHTML += `<td style="${textCellStyle}">${val.route}</td>`;
-            //                     break;
-            //                 case "sn":
-            //                     detailsBodyHTML += `<td style="${textCellStyle}">${val._id}</td>`;
-            //                     break;
-            //                 case "plateNumber":
-            //                     detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle.name || "")}</td>`;
-            //                     break;
-            //                 case "trailer":
-            //                     detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle["Trailer"] || "")}</td>`;
-            //                     break;
-            //                 case "palCap":
-            //                     detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle["Pal Cap"] || "")}</td>`;
-            //                     break;
-            //                 case "haulerName":
-            //                     detailsBodyHTML += `<td style="${textCellStyle}"></td>`;
-            //                     break;
-            //                 case "targetCico":
-            //                     detailsBodyHTML += `<td style="${textCellStyle}">${DATETIME.HH_MM(null,destination.cico).hour_minute}</td>`;
-            //                     break;
-            //                 case "actualTimelapse":
-            //                     detailsBodyHTML += `<td style="${textCellStyle}">${DATETIME.HH_MM(null,actual_time_lapse).hour_minute}</td>`;
-            //                     break;
-            //                 case "remarks1":
-            //                     detailsBodyHTML += `<td style="${textCellStyle}">${(val.remarks || "")}</td>`;
-            //                     break;
-            //                 case "remarks2":
-            //                     detailsBodyHTML += `<td style="${textCellStyle}${remarks2Class}">${remarks2}</td>`;
-            //                     break;
-            //                 case "truckBasePlant":
-            //                     detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle["Site"] || "")}</td>`;
-            //                     break;
-            //                 default:
-            //                     break;
-            //             }
-            //         });
-            //         detailsBodyHTML += `</tr>`;
-            //     });
-            //     Object.values(summary_info).forEach(val => {
-            //         var ave_time_lapse = val.sum_time_lapse/val.count_time_lapse;
-            //         summary += `<tr>
-            //                         <td style="${textCellStyle}">${val.destination}</td>
-            //                         <td style="${textCellStyle}">${val.origin}</td>
-            //                         <td style="${textCellStyle}">${val.in_site}</td>
-            //                         <td style="${textCellStyle}">${val.over_cico}</td>
-            //                         <td style="${textCellStyle}">${val.w_in_cico}</td>
-            //                         <td style="${textCellStyle}">${DATETIME.HH_MM(null,ave_time_lapse).hour_minute}</td>
-            //                         <td style="${textCellStyle}">${DATETIME.HH_MM(null,val.cico_target).hour_minute}</td>
-            //                     </tr>`;
-            //         summary_total.in_site += val.in_site;
-            //         summary_total.over_cico += val.over_cico;
-            //         summary_total.w_in_cico += val.w_in_cico;
-            //         summary_total.count_cico ++;
-            //         summary_total.sum_cico += Number(val.cico_target);
-            //         if(val.sum_time_lapse != null){
-            //             summary_total.count_time_lapse ++;
-            //             summary_total.sum_time_lapse += val.sum_time_lapse;
-            //         }
-            //     });
-            //     summary_total.ave_time_lapse = summary_total.sum_time_lapse/summary_total.count_time_lapse;
-            //     summary_total.ave_cico = summary_total.sum_cico/summary_total.count_cico;
-            //     console.log("summary_total",summary_total);
-            //     summary += `<tr>
-            //                     <td style="${textCellStyle}font-weight: bold;" colspan=2>TOTAL</td>
-            //                     <td style="${textCellStyle}font-weight: bold;">${(summary_total.in_site || 0)}</td>
-            //                     <td style="${textCellStyle}font-weight: bold;">${(summary_total.over_cico || 0)}</td>
-            //                     <td style="${textCellStyle}font-weight: bold;">${(summary_total.w_in_cico || 0)}</td>
-            //                     <td style="${textCellStyle}font-weight: bold;">${DATETIME.HH_MM(null,summary_total.ave_time_lapse).hour_minute}</td>
-            //                     <td style="${textCellStyle}font-weight: bold;">${DATETIME.HH_MM(null,summary_total.ave_cico).hour_minute}</td>
-            //                 </tr>`;
+                    detailsBodyHTML += `<tr>`;
+                    columns.forEach(_val_ => {
+                        switch (_val_) {
+                            case "destination":
+                                detailsBodyHTML += `<td style="${textCellStyle}">${destination.short_name}</td>`;
+                                break;
+                            case "origin":
+                                detailsBodyHTML += `<td style="${textCellStyle}">${origin.short_name}</td>`;
+                                break;
+                            case "route":
+                                detailsBodyHTML += `<td style="${textCellStyle}">${val.route}</td>`;
+                                break;
+                            case "sn":
+                                detailsBodyHTML += `<td style="${textCellStyle}">${val._id}</td>`;
+                                break;
+                            case "plateNumber":
+                                detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle.name || "")}</td>`;
+                                break;
+                            case "trailer":
+                                detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle["Trailer"] || "")}</td>`;
+                                break;
+                            case "palCap":
+                                detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle["Pal Cap"] || "")}</td>`;
+                                break;
+                            case "haulerName":
+                                detailsBodyHTML += `<td style="${textCellStyle}"></td>`;
+                                break;
+                            case "targetCico":
+                                detailsBodyHTML += `<td style="${textCellStyle}">${DATETIME.HH_MM(null,destination.cico).hour_minute}</td>`;
+                                break;
+                            case "actualTimelapse":
+                                detailsBodyHTML += `<td style="${textCellStyle}">${DATETIME.HH_MM(null,actual_time_lapse).hour_minute}</td>`;
+                                break;
+                            case "remarks1":
+                                detailsBodyHTML += `<td style="${textCellStyle}">${(val.remarks || "")}</td>`;
+                                break;
+                            case "remarks2":
+                                detailsBodyHTML += `<td style="${textCellStyle}${remarks2Class}">${remarks2}</td>`;
+                                break;
+                            case "truckBasePlant":
+                                detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle["Site"] || "")}</td>`;
+                                break;
+                            default:
+                                break;
+                        }
+                    });
+                    detailsBodyHTML += `</tr>`;
+                });
+                Object.values(summary_info).forEach(val => {
+                    var ave_time_lapse = val.sum_time_lapse/val.count_time_lapse;
+                    summary += `<tr>
+                                    <td style="${textCellStyle}">${val.destination}</td>
+                                    <td style="${textCellStyle}">${val.origin}</td>
+                                    <td style="${textCellStyle}">${val.in_site}</td>
+                                    <td style="${textCellStyle}">${val.over_cico}</td>
+                                    <td style="${textCellStyle}">${val.w_in_cico}</td>
+                                    <td style="${textCellStyle}">${DATETIME.HH_MM(null,ave_time_lapse).hour_minute}</td>
+                                    <td style="${textCellStyle}">${DATETIME.HH_MM(null,val.cico_target).hour_minute}</td>
+                                </tr>`;
+                    summary_total.in_site += val.in_site;
+                    summary_total.over_cico += val.over_cico;
+                    summary_total.w_in_cico += val.w_in_cico;
+                    summary_total.count_cico ++;
+                    summary_total.sum_cico += Number(val.cico_target);
+                    if(val.sum_time_lapse != null){
+                        summary_total.count_time_lapse ++;
+                        summary_total.sum_time_lapse += val.sum_time_lapse;
+                    }
+                });
+                summary_total.ave_time_lapse = summary_total.sum_time_lapse/summary_total.count_time_lapse;
+                summary_total.ave_cico = summary_total.sum_cico/summary_total.count_cico;
+                console.log("summary_total",summary_total);
+                summary += `<tr>
+                                <td style="${textCellStyle}font-weight: bold;" colspan=2>TOTAL</td>
+                                <td style="${textCellStyle}font-weight: bold;">${(summary_total.in_site || 0)}</td>
+                                <td style="${textCellStyle}font-weight: bold;">${(summary_total.over_cico || 0)}</td>
+                                <td style="${textCellStyle}font-weight: bold;">${(summary_total.w_in_cico || 0)}</td>
+                                <td style="${textCellStyle}font-weight: bold;">${DATETIME.HH_MM(null,summary_total.ave_time_lapse).hour_minute}</td>
+                                <td style="${textCellStyle}font-weight: bold;">${DATETIME.HH_MM(null,summary_total.ave_cico).hour_minute}</td>
+                            </tr>`;
 
-            //     return `<table id="report-hidden" style="opacity:0;">
-            //                 <tr>
-            //                     <td style="border: none;">Report name: <b style="color:#c00000;">${title}</b></td>
-            //                 </tr>
-            //                 <tr><td style="border: none;"></td></tr>
-            //                 <tr>
-            //                     <td style="border: none;"><b>Summary:</b></td>
-            //                 </tr>
-            //                 <tr>
-            //                     <td style="border: none;">
-            //                         <div>
-            //                             <div>Plant Site: ${originChosen}</div>
-            //                             <div>Date from: ${moment(new Date(date_from)).format("MM/DD/YYYY hh:mm A")}</div>
-            //                             <div>Date to: ${moment(new Date(date_to)).format("MM/DD/YYYY hh:mm A")}</div>
-            //                             <div>&nbsp;</div>
-            //                             <div>Generated on: ${moment(new Date()).format("MM/DD/YYYY hh:mm A")}</div>
-            //                         </div>
-            //                     </td>
-            //                 </tr>
-            //                 <tr><td style="border: none;"></td></tr>
-            //                 <tr>
-            //                     <td style="background-color:black;color:white;">Destination (DC)</td>
-            //                     <td style="background-color:black;color:white;">Origin (Plant)</td>
-            //                     <td style="background-color:black;color:white;">In Site</td>
-            //                     <td style="background-color:#757070;color:white;">Over CICO</td>
-            //                     <td style="background-color:#757070;color:white;">W/in CICO</td>
-            //                     <td style="background-color:black;color:white;">Ave. Time Lapse (hrs)</td>
-            //                     <td style="background-color:black;color:white;">CICO Target (hrs)</td>
-            //                 </tr>
-            //                 ${summary}
-            //                 <tr><td style="border: none;"></td></tr>
-            //                 <tr>
-            //                     <td style="border: none;"><b>Details:</b></td>
-            //                 </tr>
-            //                 <tr>${detailsHeaderHTML}</tr>
-            //                 ${detailsBodyHTML}
-            //             </table> `;
-            // },
+                return `<table id="report-hidden" style="opacity:0;">
+                            <tr>
+                                <td style="border: none;">Report name: <b style="color:#c00000;">${title}</b></td>
+                            </tr>
+                            <tr><td style="border: none;"></td></tr>
+                            <tr>
+                                <td style="border: none;"><b>Summary:</b></td>
+                            </tr>
+                            <tr>
+                                <td style="border: none;">
+                                    <div>
+                                        <div>Plant Site: ${originChosen}</div>
+                                        <div>Date from: ${moment(new Date(date_from)).format("MM/DD/YYYY hh:mm A")}</div>
+                                        <div>Date to: ${moment(new Date(date_to)).format("MM/DD/YYYY hh:mm A")}</div>
+                                        <div>&nbsp;</div>
+                                        <div>Generated on: ${moment(new Date()).format("MM/DD/YYYY hh:mm A")}</div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr><td style="border: none;"></td></tr>
+                            <tr>
+                                <td style="background-color:black;color:white;">Destination (DC)</td>
+                                <td style="background-color:black;color:white;">Origin (Plant)</td>
+                                <td style="background-color:black;color:white;">In Site</td>
+                                <td style="background-color:#757070;color:white;">Over CICO</td>
+                                <td style="background-color:#757070;color:white;">W/in CICO</td>
+                                <td style="background-color:black;color:white;">Ave. Time Lapse (hrs)</td>
+                                <td style="background-color:black;color:white;">CICO Target (hrs)</td>
+                            </tr>
+                            ${summary}
+                            <tr><td style="border: none;"></td></tr>
+                            <tr>
+                                <td style="border: none;"><b>Details:</b></td>
+                            </tr>
+                            <tr>${detailsHeaderHTML}</tr>
+                            ${detailsBodyHTML}
+                        </table> `;
+            },
             OTR: function(title,docs,originChosen,date_from,date_to){
                 var summary = "",
                     summary_info = {},
@@ -10242,6 +10836,23 @@ var REPORTS = {
                                 { origin_id: _siteId, status: { $in: ["in_transit","complete"] } },
                                 function(docs){
                                     $(`body`).append(REPORTS.UI.REPORTS.CICOR(title,docs,_siteText,date_from,date_to));
+                                    GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY")}`);
+                                }
+                            );
+                        });
+                        $('#daterange').daterangepicker({
+                            locale: {
+                                format: 'MM/DD/YYYY'
+                            }
+                        });
+                    });
+                    $(`[cicor_t1]`).click(function(){
+                        var title = "CICO Report";
+                        df_dt_dest(title,"REPORT_MODAL_01","Plant Site",function(){
+                            cicor_otr_report(
+                                { origin_id: _siteId, status: { $in: ["in_transit","complete"] } },
+                                function(docs){
+                                    $(`body`).append(REPORTS.UI.REPORTS.CICOR_T1(title,docs,_siteText,date_from,date_to));
                                     GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY")}`);
                                 }
                             );
@@ -18319,6 +18930,7 @@ const views = new function(){
             /*
                 Deployment Visibility Report - dvr 
                 CICO Report - cicor
+                CICO Report (T1) - cicor_t1
                 Over Transit Report - otr
                 Per Base Plant Activity - pbpa
                 Haulage Window Time Report - hwtr
@@ -18349,6 +18961,12 @@ const views = new function(){
             if(clientCustom.reports.dvr){
                 htmlTags(`<div class="custom-btn-01 col-sm-12 pt-2 pb-2 pr-3 pl-3 disabled" no_function>
                             <span>Deployment Visibility Report</span>
+                            <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
+                        </div>`);
+            }
+            if(clientCustom.reports.cicor_t1){
+                htmlTags(`<div cicor_t1 class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
+                            <span>CICO Report</span>
                             <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
                         </div>`);
             }
