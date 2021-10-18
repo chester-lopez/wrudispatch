@@ -3720,9 +3720,9 @@ var DISPATCH = {
             const __status = body.__status;
             const dGeofence = body.dGeofence;
             const geofence = body.geofence;
-            const roundtrip = body.roundtrip;
+            const roundtrip = clientCustom.roundtrip;
             const checkSchedule = body.checkSchedule; // boolean - whether the function should check for Schedule or not
-            const apiKey = body.apiKey;
+            const apiKey = USER.apiKey;
 
             // sent by client because of Previous Check-In feature. User can select a different check-in-check-out
             // and this function should be able to detect shipment's status based on their selection
@@ -4823,9 +4823,6 @@ var DISPATCH = {
                             const dGeofence = getGeofence(DESTINATION_ID) || {};
                             $(`#submit`).html(`<i class="la la-spinner la-spin mr-2"></i>Detecting vehicle's location..`).attr("disabled",true);
                             DISPATCH.detectStatus({
-                                apiKey: USER.apiKey,
-                                roundtrip: clientCustom.roundtrip,
-
                                 checkSchedule: true,
                                 geofenceId,
                                 scheduled_date,
@@ -6233,9 +6230,6 @@ var DISPATCH = {
                                     } else {
 
                                         DISPATCH.detectStatus({
-                                            apiKey: USER.apiKey,
-                                            roundtrip: clientCustom.roundtrip,
-
                                             geofenceId: origin.geofence_id,
                                             scheduled_date,
                                             shift_schedule,
@@ -10433,7 +10427,8 @@ var REPORTS = {
                             });
                         },
                         pagination = function(x){
-                            $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-1"></i> 0%`).attr("disabled",true);
+                            $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-1"></i> Calculating document size...`).attr("disabled",true);
+                            // $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-1"></i> 0%`).attr("disabled",true);
 
                             $.ajax({
                                 url: x.countURL,
@@ -10449,6 +10444,8 @@ var REPORTS = {
                                 var pb = new ProgressBar(count);
                                 var docs = [];
                                 var skip = 0;
+                                var percent = 0;
+
 
                                 function retrieveData(length){
                                     if(length == null || length == LIMIT){
@@ -10469,22 +10466,28 @@ var REPORTS = {
                                                 } else {
                                                     skip += length;
                                                     docs = docs.concat(_docs_);
-                                                    var percent = pb.calculate();
+                                                    percent = pb.calculate();
+                                                    console.log("percent|pb.origPerc",percent,pb.origPerc);
                                                     
                                                     $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-1"></i> ${percent}%`);
-                                                    // $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-2"></i>Generating... ${percent}%`);
+                                                    pb.increase(percent,percent+pb.origPerc,'#generate-btn,#generate-1-btn');
                                                     
                                                     retrieveData(length);
                                                 }
                                             }
                                         });
                                     } else {
-                                        $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-1"></i> 100%`);
-                                        // $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-2"></i>Generating... 100%`);
-                                        x.callback(docs);
-                                        if(!x.doNotRemoveTable){
-                                            $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
-                                        }
+                                        console.log("percent",percent);
+                                        pb.increase(percent,100,'#generate-btn,#generate-1-btn',2);
+                                        setTimeout(function(){
+                                            $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-1"></i> 100%`);
+                                            setTimeout(function(){
+                                                x.callback(docs);
+                                                if(!x.doNotRemoveTable){
+                                                    $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
+                                                }
+                                            },150);
+                                        },300);
                                     }
                                 }
                                 retrieveData();
