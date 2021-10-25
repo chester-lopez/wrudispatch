@@ -878,6 +878,8 @@ const WEBSOCKET = {
     sendUserInfo: function(){
         return new Promise((resolve,reject) => {
             if(USER && USER.username){
+                s = $(`#PAGE`).text() || "main";
+                
                 WEBSOCKET.resolve = resolve;
                 SOCKET.emit("userInfo",{
                     username: USER.username,
