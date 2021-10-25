@@ -1,10 +1,11 @@
 /************** GLOBAL VARIABLES **************/
+var ENVIRONMENT = $(`#ENVIRONMENT`).text() || "development";
+var s = $(`#PAGE`).text() || "main";
+
 const authorizationLevel  = {
     dispatcher: () => { return ["dispatcher"].includes(USER.role); },
     administrator: () => { return ["administrator","developer"].includes(USER.role); },
 };
-const ENVIRONMENT = $(`#ENVIRONMENT`).text() || "development";
-// const SHIPMENT_CHECK_STATUS_URLPATH = (ENVIRONMENT == "development") ? '/development' : '';
 const CUSTOM = {
     COLUMN:{
         settings: [
@@ -872,10 +873,6 @@ var USER = null,
     exlStyle = "font-family:Arial;font-size:20px;",
     clientCustom = {};
 /************** END GLOBAL VARIABLES **************/
-
-var s = "m";
-var a = function(){};
-
 
 const WEBSOCKET = {
     sendUserInfo: function(){
