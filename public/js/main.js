@@ -4013,7 +4013,11 @@ var DISPATCH = {
                                             vehicleDoneLoading = true;
                                             resolve();
                                         } else {
-                                            if(vehicleUsername && geofenceId && (authorizationLevel .administrator() || !["in_transit","complete","incomplete","scheduled"].includes(__status))){
+                                            var ignoreStatus = ["in_transit","complete","scheduled"];
+                                            if(CLIENT.id == "coket1"){
+                                                ignoreStatus.push("incomplete");
+                                            }
+                                            if(vehicleUsername && geofenceId && (authorizationLevel .administrator() || !ignoreStatus.includes(__status))){
                                                 // $(`#modal #alert`).html(`<i class="la la-spin la-spinner font-18 mb-3"></i>`);
                                                 $(`#submit`).html(`<i class="la la-spinner la-spin mr-2"></i>Detecting vehicle's location..`).attr("disabled",true);
                                                 
@@ -4864,8 +4868,8 @@ var DISPATCH = {
                     function populateDispatchEntry(){
                         $(`#loading-text`).remove();
                         $(`.main-content .clearfix`).css({"pointer-events": ""});
-
-                        if(["complete","incomplete"].includes(obj.status)){
+                        //   incomplete
+                        if(["complete"].includes(obj.status)){
                             if(isStatusIncomplete() && authorizationLevel .administrator()) {
                                 $(`#error`).html(`<div class="alert alert-danger alert-dismissible mb-1 role="alert">
                                                     <i class="la la-times-circle"></i> The status of this entry is <b>INCOMPLETE</b>. Any changes made will not affect the status.
@@ -5090,107 +5094,107 @@ var DISPATCH = {
                         
                     _id = shipment_number;
 
-                    if(isStatusIncomplete()){
-                        var url = `/api/dispatch/${CLIENT.id}/${USER.username}`,
-                            method = "POST";
+                    // if(isStatusIncomplete()){
+                    //     var url = `/api/dispatch/${CLIENT.id}/${USER.username}`,
+                    //         method = "POST";
 
-                        body.origin_id = origin_id;
-                        body.route = route;
-                        body.destination = destination;
-                        body.vehicle_id =  Number(vehicle_id);
-                        body.trailer = trailer;
-                        body.comments = comments;
-                        body.attachments = ATTACHMENTS.get(CLIENT.dsName);
-                        body.username = USER.username;
+                    //     body.origin_id = origin_id;
+                    //     body.route = route;
+                    //     body.destination = destination;
+                    //     body.vehicle_id =  Number(vehicle_id);
+                    //     body.trailer = trailer;
+                    //     body.comments = comments;
+                    //     body.attachments = ATTACHMENTS.get(CLIENT.dsName);
+                    //     body.username = USER.username;
                         
-                        if(CLIENT.id == "wilcon"){
-                            body.ticket_number = ticket_number;
-                            body.driver_id = driver_id;
-                            body.checker_id = checker_id;
-                            body.helper_id = helper_id;
-                            body.chassis = chassis;
+                    //     if(CLIENT.id == "wilcon"){
+                    //         body.ticket_number = ticket_number;
+                    //         body.driver_id = driver_id;
+                    //         body.checker_id = checker_id;
+                    //         body.helper_id = helper_id;
+                    //         body.chassis = chassis;
                             
-                            (scheduled_date) ? body.scheduled_date = new Date(scheduled_date).toISOString() : null;
-                            (shift_schedule) ? body.shift_schedule = shift_schedule : null;
-                        }
+                    //         (scheduled_date) ? body.scheduled_date = new Date(scheduled_date).toISOString() : null;
+                    //         (shift_schedule) ? body.shift_schedule = shift_schedule : null;
+                    //     }
 
-                        // check for difference (if update only)
-                        historyOptions.excludeKeys = ["status","vehicleData","username"];
-                        body = HISTORY.check(__originalObj,body,USER.username,historyOptions);
+                    //     // check for difference (if update only)
+                    //     historyOptions.excludeKeys = ["status","vehicleData","username"];
+                    //     body = HISTORY.check(__originalObj,body,USER.username,historyOptions);
 
-                        var changesKey = false;
-                        Object.keys(body).forEach(key => {
-                            (key.indexOf("history.") > -1 ) ? changesKey = key : null;
-                        });
+                    //     var changesKey = false;
+                    //     Object.keys(body).forEach(key => {
+                    //         (key.indexOf("history.") > -1 ) ? changesKey = key : null;
+                    //     });
 
-                        if(changesKey) {// can make, if no hisotry, submit button will remain disabled..
-                            MODAL.CONFIRMATION_W_FIELD({
-                                content: `Please provide a reason for updating this entry.`,
-                                confirmCloseCondition: true,
-                                confirmButtonText: "Submit",
-                                cancelButtonText: "Cancel",
-                                confirmCallback: function(field_val){
-                                    body[changesKey] += `<br><br>Reason for update: ${field_val.bold()}`;
-                                    _submit_();
-                                },
-                                cancelCallback: function(){
-                                    $(`#submit`).html(`Submit`).attr("disabled",false);
-                                }
-                            });
-                        } else {
-                            _submit_();
-                        }
-                        // end check for difference (if update only)
+                    //     if(changesKey) {// can make, if no hisotry, submit button will remain disabled..
+                    //         MODAL.CONFIRMATION_W_FIELD({
+                    //             content: `Please provide a reason for updating this entry.`,
+                    //             confirmCloseCondition: true,
+                    //             confirmButtonText: "Submit",
+                    //             cancelButtonText: "Cancel",
+                    //             confirmCallback: function(field_val){
+                    //                 body[changesKey] += `<br><br>Reason for update: ${field_val.bold()}`;
+                    //                 _submit_();
+                    //             },
+                    //             cancelCallback: function(){
+                    //                 $(`#submit`).html(`Submit`).attr("disabled",false);
+                    //             }
+                    //         });
+                    //     } else {
+                    //         _submit_();
+                    //     }
+                    //     // end check for difference (if update only)
 
-                        function _submit_(){
-                            $(`.main-content .clearfix`).css({"pointer-events": "none"});
-                            $(button).html(`<i class="la la-spinner la-spin mr-2"></i>${buttonLoadingText}`).attr("disabled",true);
+                    //     function _submit_(){
+                    //         $(`.main-content .clearfix`).css({"pointer-events": "none"});
+                    //         $(button).html(`<i class="la la-spinner la-spin mr-2"></i>${buttonLoadingText}`).attr("disabled",true);
                             
-                            if(has_id === true){
-                                url = `/api/dispatch/${CLIENT.id}/${USER.username}/${_id}`;
-                                method = "PUT";
-                            } else {
-                                if(CLIENT.id != "wilcon"){
-                                    body = $.extend(body,{_id});
-                                }
-                            }
-                            // body = $.extend(new_data,body);
+                    //         if(has_id === true){
+                    //             url = `/api/dispatch/${CLIENT.id}/${USER.username}/${_id}`;
+                    //             method = "PUT";
+                    //         } else {
+                    //             if(CLIENT.id != "wilcon"){
+                    //                 body = $.extend(body,{_id});
+                    //             }
+                    //         }
+                    //         // body = $.extend(new_data,body);
                             
-                            GET.AJAX({
-                                url,
-                                method,
-                                headers: {
-                                    "Content-Type": "application/json; charset=utf-8",
-                                    "Authorization": SESSION_TOKEN
-                                },
-                                data: JSON.stringify(body)
-                            }, function(docs){
-                                $(`#confirm-modal,#overlay`).remove(); 
-                                if(docs.ok == 1){
-                                    console.log(docs);
-                                    var message,sticky = false;
-                                    if(clientCustom.autoGeneratedId === true){
-                                        message = `<br>Shipment Number: <b>${docs.sequence}</b>`;
-                                        sticky = true;
-                                    }
-                                    (method == "PUT") ? TOASTR.UPDATEDSUCCESSFULLY() : TOASTR.CREATEDSUCCESSFULLY(message,sticky);
-                                    $(`.main-content .clearfix`).css({"pointer-events": ""});
-                                    $(`#overlay`).remove();
-                                } else {
-                                    console.log(docs.error);
-                                    $(button).html(buttonDefaultText).attr("disabled",false);
-                                    $(`.main-content .clearfix`).css({"pointer-events": ""});
-                                }
-                            },function(error){
-                                console.log(error);
-                                $(button).html(buttonDefaultText).attr("disabled",false);
-                                $(`.main-content .clearfix`).css({"pointer-events": ""});
-                                if(error.status == 409){} else {
-                                    TOASTR.ERROR(error.responseJSON);
-                                }
-                            });
-                        }
-                    } else {
+                    //         GET.AJAX({
+                    //             url,
+                    //             method,
+                    //             headers: {
+                    //                 "Content-Type": "application/json; charset=utf-8",
+                    //                 "Authorization": SESSION_TOKEN
+                    //             },
+                    //             data: JSON.stringify(body)
+                    //         }, function(docs){
+                    //             $(`#confirm-modal,#overlay`).remove(); 
+                    //             if(docs.ok == 1){
+                    //                 console.log(docs);
+                    //                 var message,sticky = false;
+                    //                 if(clientCustom.autoGeneratedId === true){
+                    //                     message = `<br>Shipment Number: <b>${docs.sequence}</b>`;
+                    //                     sticky = true;
+                    //                 }
+                    //                 (method == "PUT") ? TOASTR.UPDATEDSUCCESSFULLY() : TOASTR.CREATEDSUCCESSFULLY(message,sticky);
+                    //                 $(`.main-content .clearfix`).css({"pointer-events": ""});
+                    //                 $(`#overlay`).remove();
+                    //             } else {
+                    //                 console.log(docs.error);
+                    //                 $(button).html(buttonDefaultText).attr("disabled",false);
+                    //                 $(`.main-content .clearfix`).css({"pointer-events": ""});
+                    //             }
+                    //         },function(error){
+                    //             console.log(error);
+                    //             $(button).html(buttonDefaultText).attr("disabled",false);
+                    //             $(`.main-content .clearfix`).css({"pointer-events": ""});
+                    //             if(error.status == 409){} else {
+                    //                 TOASTR.ERROR(error.responseJSON);
+                    //             }
+                    //         });
+                    //     }
+                    // } else {
                         if(clientCustom.autoGeneratedId === true){
                             $(`#shipment_number`).css(css_default);
                         } else {
@@ -5280,7 +5284,7 @@ var DISPATCH = {
                             body.destination = destination;
                             body.vehicle_id = Number(vehicle_id);
                             body.trailer = trailer;
-                            body.vehicleData = __vehicleData;
+                            // body.vehicleData = __vehicleData;
                             body.comments = comments;
                             body.attachments = ATTACHMENTS.get(CLIENT.dsName);
                             body.status = status;
@@ -5466,7 +5470,7 @@ var DISPATCH = {
                                 });
                             }
                         }
-                    }
+                    // }
                 });
                 /******** END SUBMIT ENTRY ********/
             }

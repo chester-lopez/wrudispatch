@@ -1,4 +1,8 @@
 const changelogList = {
+    "2.57.125": {
+        date: "October 26, 2021",
+        fix: ["[Adjustment][CokeT1] Incomplete editing - allow incomplete shipments be edited and their status be changed accordingly."]
+    },
     "2.57.124": {
         date: "October 16, 2021",
         fix: ["[Adjustment][CokeT1] CICO report format and formulas"]
