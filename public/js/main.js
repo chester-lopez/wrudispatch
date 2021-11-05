@@ -7416,7 +7416,7 @@ var REPORTS = {
                     const cicoVariance = (cicoDifference > 0) ? DATETIME.HH_MM(null,cicoDifference).hour_minute : "-";
 
                     const aveQueueingDuration = val.queueingDuration/val.totalShipments;
-                    const aveProcessingDuration = val.processingDuration/val.in_totalShipmentssite;
+                    const aveProcessingDuration = val.processingDuration/val.totalShipments;
                     const aveIdlingDuration = val.idlingDuration/val.totalShipments;
 
                     // const origin = getGeofence(key,"short_name") || {};
