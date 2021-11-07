@@ -58,7 +58,7 @@ router.get('/:dbName/:username/all/:filter/:skip/:limit', (req,res,next)=>{
     delete filter.destination_id; // do not delete
 
     defaultFilter.set(filter,{
-        condition: !filter.posting_date && !filter.departure_date,
+        condition: !filter.posting_date || !filter.departure_date,
         defaultValue: "date",
         key: "posting_date"
     }).then(_filter => {
@@ -289,6 +289,7 @@ router.get('/:dbName/:username/all/:filter/count', (req,res,next)=>{
     const filter = JSON.parse(req.params.filter) || {};
     
     (filter.origin_id && typeof filter.origin_id == "string") ? filter.origin_id = db.getPrimaryKey(filter.origin_id) : null;
+    (filter.destination_id && typeof filter.destination_id == "string") ? filter[`destination.0.location_id`] = db.getPrimaryKey(filter.destination_id) : null;
     (filter.destination && filter.destination.$elemMatch.location_id) ? filter.destination.$elemMatch.location_id = db.getPrimaryKey(filter.destination.$elemMatch.location_id) : null;
 
     Object.keys(filter).forEach(key => {
@@ -301,10 +302,11 @@ router.get('/:dbName/:username/all/:filter/count', (req,res,next)=>{
 
     delete filter.region; // do not delete
     delete filter.cluster; // do not delete
+    delete filter.destination_id; // do not delete
 
 
     defaultFilter.set(filter,{
-        condition: !filter.posting_date && !filter.departure_date,
+        condition: !filter.posting_date || !filter.departure_date,
         defaultValue: "date",
         key: "posting_date"
     }).then(_filter => {
@@ -401,6 +403,12 @@ router.post('/:dbName/:username', (req,res,next)=>{
         (userInput.origin_id) ? userInput.origin_id = db.getPrimaryKey(userInput.origin_id) : null;
         (userInput.destination && userInput.destination[0] && userInput.destination[0].location_id) ? userInput.destination[0].location_id = db.getPrimaryKey(userInput.destination[0].location_id) : null;
 
+        if(userInput.customers){
+            userInput.customers.forEach((val,i) => {
+                userInput.customers[i] = db.getPrimaryKey(val);
+            });
+        }
+
         delete userInput.vehicleChanged;
         delete userInput.selectedCheckIn;
 
@@ -471,6 +479,12 @@ router.put('/:dbName/:username/:_id', (req,res,next)=>{
 
         (userInput.origin_id) ? userInput.origin_id = db.getPrimaryKey(userInput.origin_id) : null;
         (userInput.destination && userInput.destination[0] && userInput.destination[0].location_id) ? userInput.destination[0].location_id = db.getPrimaryKey(userInput.destination[0].location_id) : null;
+        
+        if(userInput.customers){
+            userInput.customers.forEach((val,i) => {
+                userInput.customers[i] = db.getPrimaryKey(val);
+            });
+        }
         
         var fa = storage._attachments_.filter(`${encrypted}/${_id}`,userInput),
             attachments = fa.attachments;

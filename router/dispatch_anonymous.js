@@ -2538,4 +2538,64 @@ router.get('/test/deleted/dispatch', (req,res,next)=>{
 });
 
 
+var cData = [];
+// insert customers
+router.get('/test/insert/customers', (req,res,next)=>{
+    var prodURL = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    var devURL = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+
+    var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
+
+    var dbName = "wd-coket2";
+    const childPromise = [];
+
+    MongoClient.connect(prodURL, mongoOptions, (err,client) => {
+        if(err){
+            console.log("ERROR1",err);
+            res.json({error:1,error:err});
+        } else {
+            client.db(dbName).collection("regions").find({}).toArray().then(rDocs => {
+                client.db(dbName).collection("geofences").find({}).toArray().then(gDocs => {
+                    const finalData = [];
+                    cData.forEach(val => {
+                        const regionId = (rDocs.find(x => x.region == val.code) || {})._id;
+                        const geofenceId = (gDocs.find(x => x.short_name == val.dc) || {})._id;
+
+                        if(val. number) {
+                            finalData.push({
+                                number: val.number,
+                                name: val.name,
+                                service_model: val.service_model,
+                                mode_of_transport: val.mode_of_transport,
+                                type: val.type,
+                                region_id: regionId ? db.getPrimaryKey(regionId) : "",
+                                dc_id: geofenceId ? db.getPrimaryKey(geofenceId) : "",
+                            });
+                        }
+                    });
+                    client.db(dbName).collection("customers").insertMany(finalData).then(result => {
+                        client.close();
+                        res.json({ok:1,result});
+                    }).catch(error => {
+                        client.close();
+                        console.log("ERROR2",error);
+                        res.json({error:1,error});
+                    });
+                }).catch(error => {
+                    client.close();
+                    console.log("ERRO3",error);
+                    res.json({error:1,error});
+                });
+            }).catch(error => {
+                client.close();
+                console.log("ERROR4",error);
+                res.json({error:1,error});
+            });
+        }
+    });
+
+   
+});
+
+
 module.exports = router;

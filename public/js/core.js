@@ -410,26 +410,71 @@ const CUSTOM = {
             return arr;
         },
         geofences: function(){
+            var arr = [];
             const cicoTitle = (CLIENT.id == "coket2") ? "RCICO Target" : "CICO (HH:MM)";
-            return [
-                { data: "Site Code", title: "Site Code", visible: true },
-                { data: "Site Name", title: "Site Name", visible: true },
-                { data: "Short Name", title: "Short Name", visible: true },
-                { data: "CICO", title: cicoTitle, visible: true },
-                { data: "Cluster", title: "Cluster", visible: true },
-                { data: "Region", title: "Region", visible: true },
-                { data: "Dispatcher", title: "Dispatcher", visible: true },
-                { data: "esq1_lq", title: "Person In-Charge (E-1 Long Queueing)", visible: false },
-                { data: "esq1_oc", title: "Person In-Charge (E-1 Over CICO)", visible: false },
-                { data: "esq1_ot", title: "Person In-Charge (E-1 Over Transit)", visible: false },
-                { data: "esq2_lq", title: "Person In-Charge (E-2 Long Queueing)", visible: false },
-                { data: "esq2_oc", title: "Person In-Charge (E-2 Over CICO)", visible: false },
-                { data: "esq2_ot", title: "Person In-Charge (E-2 Over Transit)", visible: false },
-                { data: "esq3_lq", title: "Person In-Charge (E-3 Long Queueing)", visible: false },
-                { data: "esq3_oc", title: "Person In-Charge (E-3 Over CICO)", visible: false },
-                { data: "esq3_ot", title: "Person In-Charge (E-3 Over Transit)", visible: false },
-                { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
-            ];
+
+            clientCustom.columns.geofences.forEach(val => {
+                switch (val) {
+                    case "siteCode":
+                        arr.push({ data: "Site Code", title: "Site Code", visible: true });
+                        break;
+                    case "siteName":
+                        arr.push({ data: "Site Name", title: "Site Name", visible: true });
+                        break;
+                    case "shortName":
+                        arr.push({ data: "Short Name", title: "Short Name", visible: true });
+                        break;
+                    case "cico":
+                        arr.push({ data: "CICO", title: cicoTitle, visible: true });
+                        break;
+                    case "trippageTarget":
+                        arr.push({ data: "Trippage Target", title: "Trippage Target", visible: true });
+                        break;
+                    case "cluster":
+                        arr.push({ data: "Cluster", title: "Cluster", visible: true });
+                        break;
+                    case "region":
+                        arr.push({ data: "Region", title: "Region", visible: true });
+                        break;
+                    case "dispatcher":
+                        arr.push({ data: "Dispatcher", title: "Dispatcher", visible: true });
+                        break;
+                    case "esq1_lq":
+                        arr.push({ data: "esq1_lq", title: "Person In-Charge (E-1 Long Queueing)", visible: false });
+                        break;
+                    case "esq1_oc":
+                        arr.push({ data: "esq1_oc", title: "Person In-Charge (E-1 Over CICO)", visible: false });
+                        break;
+                    case "esq1_ot":
+                        arr.push({ data: "esq1_ot", title: "Person In-Charge (E-1 Over Transit)", visible: false });
+                        break;
+                    case "esq2_lq":
+                        arr.push({ data: "esq2_lq", title: "Person In-Charge (E-2 Long Queueing)", visible: false });
+                        break;
+                    case "esq2_oc":
+                        arr.push({ data: "esq2_oc", title: "Person In-Charge (E-2 Over CICO)", visible: false });
+                        break;
+                    case "esq2_ot":
+                        arr.push({ data: "esq2_ot", title: "Person In-Charge (E-2 Over Transit)", visible: false });
+                        break;
+                    case "esq3_lq":
+                        arr.push({ data: "esq3_lq", title: "Person In-Charge (E-3 Long Queueing)", visible: false });
+                        break;
+                    case "esq3_oc":
+                        arr.push({ data: "esq3_oc", title: "Person In-Charge (E-3 Over CICO)", visible: false });
+                        break;
+                    case "esq3_ot":
+                        arr.push({ data: "esq3_ot", title: "Person In-Charge (E-3 Over Transit)", visible: false });
+                        break;
+                    case "action":
+                        arr.push({ data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true });
+                        break;
+                    default:
+                        break;
+                }
+            });
+
+            return arr;
         },
         routes: [
             { data: "_id", title: "Route", visible: true },
@@ -946,6 +991,7 @@ const WEBSOCKET = {
                 clientCustom.columns.vehicles = setValue("custom.vehicles.columns", []);
                 clientCustom.columns.dispatch = setValue("custom.dispatch.columns", {});
                 clientCustom.columns.clusters = setValue("custom.clusters.columns", []);
+                clientCustom.columns.geofences = setValue("custom.geofences.columns", []);
                 
                 // calendarView
                 clientCustom.calendarView.dashboard = setValue("custom.dashboard.calendarView", ["day"]);
@@ -969,6 +1015,7 @@ const WEBSOCKET = {
                 // modalFields
                 clientCustom.modalFields.vehicles = setValue("custom.vehicles.modalFields", []);
                 clientCustom.modalFields.clusters = setValue("custom.clusters.modalFields", []);
+                clientCustom.modalFields.geofences = setValue("custom.geofences.modalFields", []);
 
                 // columnOrder
                 clientCustom.columnOrder.dispatch = setValue("custom.dispatch.columnOrder", [[ 0, "asc" ]]);

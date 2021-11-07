@@ -53,6 +53,7 @@ router.post('/:dbName/:username', (req,res,next)=>{
 
     (userInput.region_id) ? userInput.region_id = db.getPrimaryKey(userInput.region_id) : null;
     (userInput.cluster_id) ? userInput.cluster_id = db.getPrimaryKey(userInput.cluster_id) : null;
+    (userInput.dc_id) ? userInput.dc_id = db.getPrimaryKey(userInput.dc_id) : null;
 
     db.getCollection(dbName,collection).insertOne(userInput,(err,result)=>{
         if(err) next(_ERROR_.INTERNAL_SERVER(err));
@@ -69,6 +70,7 @@ router.put('/:dbName/:username/:_id', (req,res,next)=>{
 
     (userInput.region_id) ? userInput.region_id = db.getPrimaryKey(userInput.region_id) : null;
     (userInput.cluster_id) ? userInput.cluster_id = db.getPrimaryKey(userInput.cluster_id) : null;
+    (userInput.dc_id) ? userInput.dc_id = db.getPrimaryKey(userInput.dc_id) : null;
 
     db.getCollection(dbName,collection).findOneAndUpdate({ _id },{$set: userInput},{returnOriginal: false},(err,docs)=>{
         if(err) next(_ERROR_.INTERNAL_SERVER(err));
@@ -81,7 +83,7 @@ router.delete('/:dbName/:username/:_id', (req,res,next)=>{
     const dbName = req.params.dbName;
     const _id = req.params._id;
     const username = req.params.username; // not included yet in filter
-    const filter = { _id }; // NEVER LEAVE EMPTY! Will affect all
+    const filter = { _id: db.getPrimaryKey(_id) }; // NEVER LEAVE EMPTY! Will affect all
 
     db.getCollection(dbName,collection).findOneAndDelete(filter,(err,cDocs)=>{
         if(err) next(_ERROR_.INTERNAL_SERVER(err));

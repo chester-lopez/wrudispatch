@@ -22,7 +22,7 @@ app.set("view engine","ejs");
 
 /***** PAGE *****/
 // DON'T FORGET TO CHANGE DB URL
-const ENVIRONMENT = "development"; // development | production
+const ENVIRONMENT = "production"; // development | production
 const lTitle = "WRU Dispatch | Login";
 const mTitle = "WRU Dispatch";
 const setup = function(id,page,res,ENVIRONMENT,title){
@@ -256,10 +256,10 @@ app.use(`/api/shift_schedule`, verifyToken, require("./router/shift_schedule"));
 app.use(`/api/calendar`, verifyToken, require("./router/calendar"));
 app.use(`/api/customers`, verifyToken, require("./router/customers"));
 
-app.use(`/api/shipmentStatus`, verifyToken, require("./router/shipmentStatus"));
+// app.use(`/api/shipmentStatus`, verifyToken, require("./router/shipmentStatus"));
 
 app.use(`/api/remarks`, require("./router/remarks"));
-app.use(`/api/dispatch_anon`, require("./router/dispatch_anonymous"));
+// app.use(`/api/dispatch_anon`, require("./router/dispatch_anonymous"));
 /***** END ROUTER *****/
 
 app.use(function(req, res, next) {
