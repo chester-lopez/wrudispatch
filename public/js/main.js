@@ -31,7 +31,7 @@ function matcher(query, data,opt) {
             return data;
         }
         else return null;
-    } else if(id == "vehicle"){
+    } else if(id == "vehicle_id"){
         var tempSubText = (subText2.indexOf("TRAILER") > -1) ? subText3 : subText2;
         if(!query.term || text.indexOf(term1) > -1 || subText1.indexOf(term1) > -1 || tempSubText.indexOf(term1) > -1){
             return data;
@@ -57,11 +57,12 @@ function matcher(query, data,opt) {
     }
 };
 function formatCustom(state) {
-    return $(
-        '<div><b>' + state.text + '</b><div class="text-muted">'
+    return $(state.element).attr('data-subtext') ? 
+            $('<div><b>' + state.text + '</b><div class="text-muted">'
             + ($(state.element).attr('data-subtext')||"")
-            + '</div></div>'
-    );
+            + '</div></div>') 
+            : 
+            $('<div>' + state.text + '</div>');
 };
 function formatCustomGrayed(state) {
     var condition = false;
@@ -72,6 +73,15 @@ function formatCustomGrayed(state) {
     return $(`<div class="${_class_}">${state.text}</div>`);
 };
 function getSelect2Options(){
+    /******** CUSTOMERS ********/
+    G_SELECT2["form-customers"] = `<option value="">&nbsp;</option>`;
+    (LIST["customers"]||[]).forEach(val => {
+        var subtext = "Customer Number: " + val._id;
+        (!val.delete) ? G_SELECT2["form-customers"] += `<option value="${val._id}" data-subtext="${subtext}">${val.name}</option>` : null;
+    });
+    /******** END CUSTOMERS ********/
+
+
     /******** VEHICLES ********/
     G_SELECT2["form-vehicles"] = `<option value="">&nbsp;</option>`;
     G_SELECT2["form-vehicles-admin"] = `<option value="">&nbsp;</option>`;
@@ -131,6 +141,21 @@ function getSelect2Options(){
         (!val.delete) ? G_SELECT2["form-vehicles_company"] += `<option value="${val._id}">${val.company}</option>` : null;
     });
     /******** END VEHICLES COMPANY ********/
+
+    /******** REGIONS ********/
+    G_SELECT2["form-regions"] = `<option value="">&nbsp;</option>`;
+    const sortedRegions = ARRAY.OBJECT.sort((LIST["regions"]||[]),"sequence",{sortType:"asc"});
+    sortedRegions.forEach(val => {
+        (!val.delete) ? G_SELECT2["form-regions"] += `<option value="${val._id}">${val.code}</option>` : null;
+    });
+    /******** END REGIONS ********/
+
+    /******** CLUSTERS ********/
+    G_SELECT2["form-clusters"] = `<option value="">&nbsp;</option>`;
+    (LIST["clusters"]||[]).forEach(val => {
+        (!val.delete) ? G_SELECT2["form-clusters"] += `<option value="${val._id}">${val.cluster}</option>` : null;
+    });
+    /******** END CLUSTERS ********/
     
     /******** VEHICLE PERSONNEL ********/
     // G_SELECT2["form-vehicle_personnel"] = `<option value="">&nbsp;</option>`;
@@ -201,6 +226,16 @@ function getSelect2Options(){
         G_SELECT2["form-trailers"] += `<option value="${val._id}" data-subtext="${subtext}">${val._id}</option>`;
     });
     /******** END TRAILERS ********/
+
+    
+    
+    /******** GEOFENCES ********/
+    G_SELECT2["form-geofences"] = `<option value="">&nbsp;</option>`;
+    const sortedGeofences = ARRAY.OBJECT.sort((LIST["geofences"]||[]),"short_name",{sortType:"asc"});
+    sortedGeofences.forEach(val => {
+        val.code ? G_SELECT2["form-geofences"] += `<option value="${val._id}">${val.short_name}</option>` : null;
+    });
+    /******** END GEOFENCES ********/
 
 
     /******** ROUTES ********/
@@ -331,21 +366,21 @@ class Dispatch {
 
         var disabledArr = [];
         if(["complete"].includes(obj.status)){
-            if(authorizationLevel .administrator()){
+            if(authorizationLevel.administrator()){
                 disabledArr = ["statusUpdate","edit","edit-admin"];
             } else {
                 disabledArr = ["statusUpdate","edit","edit-admin","delete"];
             }
         }
         if(["in_transit","incomplete"].includes(obj.status)){ 
-            if(authorizationLevel .administrator()){
+            if(authorizationLevel.administrator()){
                 disabledArr = [];
             } else {
                 disabledArr = ["statusUpdate","edit","edit-admin"];
             }
         }
         if(["in_transit","complete","incomplete"].includes(obj.status)){ 
-            if(authorizationLevel .administrator()){} 
+            if(authorizationLevel.administrator()){} 
             else {
                 disabledArr.push("delete");
             }
@@ -357,13 +392,14 @@ class Dispatch {
             processingAtOrigin = getDuration("processingAtOrigin",obj),
             idlingAtOrigin = getDuration("idlingAtOrigin",obj),
             in_transit = getDuration("in_transit",obj),
+            onDelivery = getDuration("onDelivery",obj),
             action = TABLE.ROW_BUTTONS(PAGE.GET(),{loadView:loadView_ReadOnly,readonlyArr:loadView_ReadOnly,adminArr:["edit-admin"],status:obj.status,username:obj.username,disabledArr}),
             user = getUser(obj.username) || {},
             posted_by = ((USER.username == obj.username)?"You":(user.name || obj.username)),
             postedByWithName = user.name || obj.username,
             origin = getValue(LIST["geofences"],"geofences",obj.origin_id,null,"_origin",["short_name"]),
             destination = getValue(LIST["geofences"],"geofences",obj.destination[0].location_id,null,"_destination",["short_name"]),
-            region = getValue(LIST["regions"]&&LIST["geofences"],"regions",origin.region_id,"region","_region"),
+            region = getValue(LIST["regions"]&&LIST["geofences"],"regions",origin.region_id,"code","_region"),
             cluster = getValue(LIST["clusters"]&&LIST["geofences"],"clusters",origin.cluster_id,"cluster","_cluster"),
             vehicle = getValue(LIST["vehicles"],"vehicles",obj.vehicle_id,null,"_vehicle",["name","Trailer"]),
             route = getValue(LIST["routes"],"routes",obj.route,null,"_route",["transit_time"]),
@@ -373,7 +409,13 @@ class Dispatch {
             checker = getValue(LIST["vehicle_personnel"],"vehicle_personnel",(obj.checker_id),null,null,["name"]),
             helper = getValue(LIST["vehicle_personnel"],"vehicle_personnel",(obj.helper_id),null,null,["name"]),
             index = LIST["dispatch"].findIndex(x => x._id == obj._id),
-            beforeCheckOutTime = getDateTime("entered_origin",obj) || getDateTime("queueingAtOrigin",obj) || getDateTime("processingAtOrigin",obj) || getDateTime("idlingAtOrigin",obj),
+            beforeCheckOutTime = getDateTime("entered_origin",obj) || getDateTime("queueingAtOrigin",obj) || getDateTime("processingAtOrigin",obj) || getDateTime("idlingAtOrigin",obj) || getDateTime("dispatched",obj),
+
+            cico_time2_calcAtOrigin = (beforeCheckOutTime) ?  (getDateTime("onDelivery",obj,"last") - beforeCheckOutTime) : 0,
+            cico_time2_dhAtOrigin = (["onDelivery","complete","incomplete"].includes(obj.status)) ? DATETIME.DH(cico_time2_calcAtOrigin || 0) : "-",
+            cico_time2_hhmmAtOrigin = (cico_time2_dhAtOrigin == "-")?"-":DATETIME.HH_MM(null,cico_time2_dhAtOrigin).hour_minute,
+
+
             cico_time_calcAtOrigin = (beforeCheckOutTime) ?  (getDateTime("in_transit",obj,"last") - beforeCheckOutTime) : 0,
             cico_time_dhAtOrigin = (["in_transit","complete","incomplete"].includes(obj.status)) ? DATETIME.DH(cico_time_calcAtOrigin || 0) : "-",
             cico_time_hhmmAtOrigin = (cico_time_dhAtOrigin == "-")?"-":DATETIME.HH_MM(null,cico_time_dhAtOrigin).hour_minute,
@@ -403,6 +445,16 @@ class Dispatch {
                 attachmentsHTML += `<div style="font-weight: normal;">${i+1}. <a href="${val.url}" target="_blank">${val.filename||"-"}</a></div>`;
             });
         }
+        
+        var customersHTML = "";
+        const customers = [];
+        if(obj.customers){
+            obj.customers.forEach((val,i) => {
+                const customer = getCustomer(val) || {};
+                customersHTML += `<div style="font-weight: normal;">${i+1}. ${customer.name||val||"-"}</div>`;
+                customers.push(customer.name||val||"-");
+            });
+        }
 
         this._row = obj._row;
         this._id = obj._id;
@@ -413,6 +465,7 @@ class Dispatch {
         this.region = region || "-";
         this.cluster = cluster || "-";
         this.origin = origin.short_name || "-";
+        this.originSiteCode = origin.code || "-";
         this.route = obj.route || "-";
         this.destination = `${(destination.short_name || "-")}${GET.LENGTH(destination.length).text}`;
         this.etd = DATETIME.FORMAT(obj.destination[0].etd);
@@ -422,6 +475,10 @@ class Dispatch {
 
         this.vehicle = vehicle.name || "-";
 
+        const truckGeofence = getGeofence(vehicle["Site"],"short_name") || {};
+        this.truck_region = (getRegion(truckGeofence.region_id) || {}).code || "-";
+        this.truck_cluster = (getCluster(truckGeofence.cluster_id) || {}).cluster || "-";
+        this.truck_site = vehicle["Site"] || "-";
         this.plate_number = vehicle["Plate Number"] || "-";
         this.truck_number = vehicle["Truck Number"] || "-";
         this.chassis = chassis._id || "-";
@@ -434,7 +491,15 @@ class Dispatch {
         this.checker = checker.name || "-";
         this.helper = helper.name || "-";
         this.comments = obj.comments || "-";
+
+        this.support_unit = obj.support_unit || "-";
+        this.shipment_type = obj.shipment_type || "-";
+        this.delivery_sequence = obj.delivery_sequence || "-";
+        this.mdsd_usage = obj.mdsd_usage || "-";
+        this.customers = customers.join(", ");
         
+        this.dispatched_datetime = DATETIME.FORMAT(getDateTime("dispatched",obj));
+        this.onDelivery_datetime = DATETIME.FORMAT(getDateTime("onDelivery",obj));
         this.entered_datetime = DATETIME.FORMAT(getDateTime(null,obj));
         this.queueing_datetime = DATETIME.FORMAT(getDateTime("queueingAtOrigin",obj));
         this.queueingDuration = DATETIME.HH_MM(queueingAtOrigin).hour_minute;
@@ -442,9 +507,11 @@ class Dispatch {
         this.processingDuration = DATETIME.HH_MM(processingAtOrigin).hour_minute;
         this.idling_datetime = DATETIME.FORMAT(getDateTime("idlingAtOrigin",obj));
         this.idlingDuration = DATETIME.HH_MM(idlingAtOrigin).hour_minute;
+        this.cico2 = (["onDelivery","complete","incomplete"].includes(obj.status)) ? cico_time2_hhmmAtOrigin : "-";
         this.cico = (["in_transit","onSite","returning","complete","incomplete"].includes(obj.status)) ? cico_time_hhmmAtOrigin : "-";
         this.cico_capped = (["in_transit","onSite","returning","complete","incomplete"].includes(obj.status)) ? ((cico_time_dhAtOrigin>5 && isPL)?cico_time_5AtOrigin:cico_time_hhmmAtOrigin) : "-";
         this.transit_datetime = (["in_transit","onSite","returning","complete","incomplete"].includes(obj.status)) ? DATETIME.FORMAT(getDateTime("in_transit",obj,"last")) : "-";
+        this.deliveryDuration = (["onDelivery","complete","incomplete"].includes(obj.status)) ? DATETIME.HH_MM(onDelivery).hour_minute : "-";
         this.transitDuration = (["in_transit","onSite","returning","complete","incomplete"].includes(obj.status)) ? DATETIME.HH_MM(in_transit).hour_minute : "-";
         this.onSite_datetime = (["onSite","returning","complete","incomplete"].includes(obj.status)) ? DATETIME.FORMAT(getDateTime("onSite",obj,"last")) : "-";
         this.returning_datetime = (["returning","complete","incomplete"].includes(obj.status)) ? DATETIME.FORMAT(getDateTime("returning",obj,"last")) : "-";
@@ -460,6 +527,8 @@ class Dispatch {
         this.posting_date = DATETIME.FORMAT(obj.posting_date);
         this.late_entry = obj.late_entry ? "Yes".bold() : "No";
         this.action = action.buttons;
+
+        this.customersHTML = customersHTML;
         this.attachmentsHTML = attachmentsHTML;
 
         this.ongoingHTML = (obj.status != "complete") ? `<span class="ongoing" style="width: 7px;height: 7px;background: #00a548;border-radius: 20px;top: 14px;margin-left: 4px;position: absolute;"></span>` : "";
@@ -502,6 +571,8 @@ class Dispatch {
             'Region': this.region,
             'Cluster': this.cluster,
             'Origin': this.origin,
+            'Origin Site Code': this.originSiteCode,
+            'Customers': this.customers,
             'Route': this.route,
             'Destination': this.destination,
             'ETD': this.etd,
@@ -511,6 +582,9 @@ class Dispatch {
             'Vehicle': this.vehicle,
             'Plate Number': this.plate_number,
             'Truck Number': this.truck_number,
+            'Truck Base': this.truck_site,
+            'Truck Base Region': this.truck_region,
+            'Truck Base Cluster': this.truck_cluster,
             'Trailer': this.trailer,
             'Chassis': this.chassis,
             'Conduction Number': this.conduction_number,
@@ -518,13 +592,19 @@ class Dispatch {
             'Driver': this.driver,
             'Checker': this.checker,
             'Helper': this.helper,
+            'Support Unit': this.support_unit,
+            'Shipment Type': this.shipment_type,
+            'Delivery Sequence': this.delivery_sequence,
+            'MDSD Usage': this.mdsd_usage,
             'Comments': this.comments,
             'Queueing Duration': this.queueingDuration,
             'Processing Duration':this.processingDuration,
             'Idling Duration':this.idlingDuration,
+            'CICO Time2': this.cico2,
             'CICO Time': this.cico,
             'CICO Time (Capped)': this.cico_capped,
             'Transit Duration': this.transitDuration,
+            'Delivery Duration': this.deliveryDuration,
             'Status': this.status,
             'Scheduled Date': this.scheduled_date,
             'Shift Schedule': this.shift_schedule,
@@ -692,7 +772,7 @@ class Dispatch {
                                     <button type="button" class="close" id="close" aria-hidden="true">×</button>
                                     <div class="float-left">
                                         <h4 class="modal-title" id="myModalLabel2">
-                                            <b>${this._id}${((this.ticket_number)?` | ${this.ticket_number}`:"")}</b> 
+                                            <b>${this._id}</b> 
                                             <div style="display: inline-block;top: -4px;position: relative;margin-left: 2px;font-size: 12px;">${this.status}</div>
                                         </h4>
                                         <div>Full Entry Details</div>
@@ -702,6 +782,14 @@ class Dispatch {
                                     <div class="main-details col-sm-9" style="border-right: 1px solid #eee;padding: 15px 0px 10px 30px !important;">
                                         <table>
                                             <tbody>
+                                                ${(CLIENT.id == "wilcon")?`
+                                                    ${this.tbl().getTr("Ticket Number",this.ticket_number)} ${this.tbl().empty}
+                                                `:`
+                                                    ${this.tbl().getTr("Shipment Type",this.shipment_type)} ${this.tbl().empty}
+                                                `}
+
+                                                ${this.tbl().empty} ${this.tbl().empty}
+
                                                 ${this.tbl().getTr("Region",this.region)}
                                                 ${this.tbl().getTr("Origin",this.origin)}
                                                 ${this.tbl().getTr("Cluster",this.cluster)}
@@ -779,6 +867,90 @@ class Dispatch {
                                                 ${this.tbl().getTr("Escalation 1 Remarks",this.esc1_remarks,"","","padding-bottom: 2px;")}
                                                 ${this.tbl().getTr("Escalation 2 Remarks",this.esc2_remarks,"","","padding-bottom: 2px;")}
                                                 ${this.tbl().getTr("Escalation 3 Remarks",this.esc3_remarks,"","","padding-bottom: 2px;")}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="history-details col-sm-3" style="overflow-y: auto;padding-right:30px;">
+                                        <h5 class="mb-1">Logs</h5>
+                                        ${DISPATCH.FUNCTION.history(this.history)}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+    }
+    
+    fullView_2(){
+        return `<div id="overlay" class="swal2-container swal2-fade swal2-shown" style="overflow-y: auto;z-index:999999 !important;">
+                    <div id="modal" class="modal" role="dialog" aria-labelledby="myLargeModalLabel">
+                        <div role="document" class="modal-dialog modal-lg" style="margin:20px auto;width:90%;">
+                            <div class="modal-content">
+                                <div class="modal-header pb-2">
+                                    <button type="button" class="close" id="close" aria-hidden="true">×</button>
+                                    <div class="float-left">
+                                        <h4 class="modal-title" id="myModalLabel2">
+                                            <b>${this._id}</b> 
+                                            <div style="display: inline-block;top: -4px;position: relative;margin-left: 2px;font-size: 12px;">${this.status}</div>
+                                        </h4>
+                                        <div>Full Entry Details</div>
+                                    </div>
+                                </div>
+                                <div class="modal-body row p-0" max-height: 480px;overflow-y: auto;>
+                                    <div class="main-details col-sm-9" style="border-right: 1px solid #eee;padding: 15px 0px 10px 30px !important;">
+                                        <table style="width:100%;">
+                                            <tbody>
+                                                ${this.tbl().getTr("Origin",this.origin)}
+                                                ${this.tbl().getTr("Origin Site Code",this.originSiteCode)}
+                                            </tbody>
+                                        </table>
+                                        <div class="col-sm-12 p-0 mb-3">
+                                            <b>Delivery For (Customer(s))</b>
+                                            <div class="col-sm-12">
+                                                <div class="col-sm-12 pl-3">${this.customersHTML || "-"}</div>
+                                            </div>
+                                        </div>
+                                        <table style="width:100%;">
+                                            <tbody>
+                                                ${this.tbl().empty} ${this.tbl().empty}
+
+                                                ${this.tbl().getTr("Truck Plate Number",this.vehicle)}
+                                                ${this.tbl().getTr("Truck Base",this.truck_site)}
+                                                ${this.tbl().getTr("Support Unit?",this.support_unit)}
+                                                ${this.tbl().getTr("Base Region",this.truck_region)}
+                                                ${this.tbl().empty} ${this.tbl().getTr("Cluster",this.truck_cluster)}
+                                                ${this.tbl().empty} ${this.tbl().getTr("Pallet Capacity",this.pal_cap)}
+
+                                                ${this.tbl().empty} ${this.tbl().empty}
+
+                                                ${this.tbl().getTr("Shipment Type",this.shipment_type)} ${this.tbl().empty}
+                                                ${this.tbl().getTr("Delivery Sequence",this.delivery_sequence)} ${this.tbl().empty}
+                                                ${this.tbl().getTr("MDSD Usage",this.mdsd_usage)} ${this.tbl().empty}
+
+                                                ${this.tbl().empty} ${this.tbl().empty}
+
+                                                ${this.tbl().getTr("Check In Date & Time",this.dispatched_datetime)} ${this.tbl().empty}
+                                                ${this.tbl().getTr("Check Out Date & Time",this.onDelivery_datetime)} ${this.tbl().empty}
+                                                ${this.tbl().getTr("Completion Date & Time",this.complete_datetime)}
+
+                                                ${this.tbl().empty} ${this.tbl().empty}
+
+                                            </tbody>
+                                        </table>
+                                        <div class="col-sm-12 p-0 mb-3 mt-3">
+                                            <b>Attachments</b>
+                                            <div class="col-sm-12">
+                                                <div class="col-sm-12 pl-3">${this.attachmentsHTML || "-"}</div>
+                                            </div>
+                                        </div>
+                                        <table style="width:100%;">
+                                            <tbody>
+                                                ${this.tbl().getTr("Comments",this.comments)} ${this.tbl().empty}
+
+                                                ${this.tbl().empty} ${this.tbl().empty}
+                                                
+                                                ${this.tbl().getTr("Posted By",this.posted_by)}
+                                                ${this.tbl().getTr("Posting Date",this.posting_date)}
                                             </tbody>
                                         </table>
                                     </div>
@@ -871,7 +1043,7 @@ class loadInBackground {
             if(self.urlPath == "regions"){
                 obj = {
                     id: val._id,
-                    value: val.region
+                    value: val.code
                 };
             }
             if(self.urlPath == "clusters"){
@@ -905,6 +1077,7 @@ class Table {
         this.url = x.url || `${x.urlPath}/${CLIENT.id}/${USER.username}/all`;
         this.goto = x.goto;
         this.initializeCallback = x.initializeCallback;
+        this.modal = x.modal;
         this.filterType = x.filterType || "server";
         
         this.dataTableOptions = {
@@ -922,6 +1095,12 @@ class Table {
     get filter(){ return this._filter || {}; }
     set filter(val){ this._filter = val; }
 
+    get customFilter(){ return this._customFilter || []; }
+    set customFilter(val){ this._customFilter = val; }
+
+    get filterDataExtend(){ return this._filterDataExtend || []; }
+    set filterDataExtend(val){ this._filterDataExtend = val; }
+
     get progressBar(){ return this._progressBar; }
     set progressBar(val){ this._progressBar = val; }
 
@@ -932,8 +1111,9 @@ class Table {
             pageButtons = PAGE_FUNCTIONALITIES[goto].buttons.table || [],
             dt_buttons = x.dt_buttons || [],
             loadView = x.loadView || [],
-            dispatcherCondition = (authorizationLevel .dispatcher()) ? ((!USER.dc)?false:true) : true,
-            actions = x.actions || {};
+            dispatcherCondition = x.dispatcherCondition,
+            actions = x.actions || {},
+            defaultActionOptions = x.defaultActionOptions || {};
             
         var details = {
             create: {
@@ -972,15 +1152,52 @@ class Table {
                 tooltipTitle: "Search Table",
                 icon: "la-search"
             },
-            clone: {
-                tooltipTitle: "Clone Data from Production",
-                icon: "la-copy"
-            },
             data_maintenance: {
                 tooltipTitle: "Data Maintenance",
                 text: "Data Maintenance",
                 class: "data_maintenance-btn",
                 icon: "la-tasks"
+            },
+        };
+        var defaultActions = {
+            refresh: function(){ 
+                self.countRows(); 
+
+                if (typeof defaultActionOptions.refresh === 'function') { defaultActionOptions.refresh(); }
+            },
+            column: function(){
+                $(`#export-container`).hide("slide", {direction:'right'},100);
+                $(`#filter-container`).hide("slide", {direction:'right'},100);
+                $(`#cv-container`).toggle("slide", {direction:'right'},100);
+
+                if (typeof defaultActionOptions.column === 'function') { defaultActionOptions.column(); }
+            },
+            filter: function(){
+                $(`#export-container`).hide("slide", {direction:'right'},100);
+                $(`#cv-container`).hide("slide", {direction:'right'},100);
+                $(`#filter-container`).toggle("slide", {direction:'right'},100);
+
+                if (typeof defaultActionOptions.filter === 'function') { defaultActionOptions.filter(); }
+            },
+            export: function(){
+                $(`#filter-container`).hide("slide", {direction:'right'},100);
+                $(`#cv-container`).hide("slide", {direction:'right'},100);
+                $(`#export-container`).toggle("slide", {direction:'right'},100);
+
+                if (typeof defaultActionOptions.export === 'function') { defaultActionOptions.export(); }
+            },
+            search: function(){
+                var ths = "";
+                (self.dataTableOptions.columns||[]).forEach(val => { 
+                    if(val.visible) {
+                        ths += (val.searchable != false) ? '<th><input type="text" class="form-control input-sm" placeholder="Search..."></th>' : '<th></th>';
+                    }
+                });
+                $(`.row-filter`).html(ths).toggle(); 
+
+                $(self.id).find('.row-filter input').on('keyup change', function() {
+                    self.dt.column($(this).parent().index() + ':visible').search(this.value).draw();
+                });
             },
         };
         function addToDtButtons(val){
@@ -995,6 +1212,7 @@ class Table {
                 className: `${button.class||""} ${className} ${condClass}`,
                 action: function ( e, dt, node, config ) {
                     if (typeof actions[val] === 'function') { actions[val](); }
+                    else if (typeof defaultActions[val] === 'function') { defaultActions[val](); }
                 },
             });
         }
@@ -1019,7 +1237,10 @@ class Table {
         if ($.fn.DataTable.isDataTable(this.id) ) {
             $(self.id).DataTable().clear().destroy();
         } else {
-            PAGE.DISPLAY();
+            if(!self.modal){
+                PAGE.DISPLAY();
+                $('#filter-container input, #filter-container select, #filter-container button').attr("disabled",true);
+            }
         }
 
         $(`.dt-button .la-refresh`).addClass("la-spin disabled");
@@ -1028,16 +1249,9 @@ class Table {
         
         this.dt = $(this.id).DataTable(this.dataTableOptions);
 
-        if(ISMOBILE){
-            $(`.dt-buttons`).addClass("d-inline-block");
-            $(`.dataTables_wrapper`).css("text-align","center");
-            $(`.table.dataTable`).css("text-align","unset");
-        }
-
-        $(self.id).on('page.dt length.dt draw.dt order.dt', function () {
+        $(self.id).on('page.dt length.dt draw.dt', function () {
             PAGE.TOOLTIP();
             TABLE.FINISH_LOADING.START_CHECK();
-            // TABLE.FINISH_LOADING.UPDATE(); // will make button enabled even if not yet done loading
 
             $(`${self.id} thead tr th`).each((i,el) => {
                 if(!$(el).is(":visible")){
@@ -1056,15 +1270,8 @@ class Table {
         PAGE.TOOLTIP();
 
         if(self.perColumnSearch){
-            $(self.id).find('thead').append('<tr class="row-filter"><th></th><th></th><th></th><th></th><th></th></tr>');
-            $(self.id).find('thead .row-filter th:not(:last-child)').each(function() {
-                $(this).html('<input type="text" class="form-control input-sm" placeholder="Search...">');
-            });
-            $(self.id).find('.row-filter input').on('keyup change', function() {
-                self.dt.column($(this).parent().index() + ':visible')
-                    .search(this.value)
-                    .draw();
-            });
+            $(self.id).find('thead').append(`<tr class="row-filter"></tr>`);
+           
         }
 
         $(`.row-filter`).hide();
@@ -1078,18 +1285,65 @@ class Table {
 
         // always put end of datatable
         if (typeof this.initializeCallback === 'function') { this.initializeCallback(); }
+
+
+        /******* COLUMN VISIBILITY *******/
+        const customColumn = (self.dataTableOptions.columns||[]);
+        if(customColumn){
+            $(`.page-box`).append(SLIDER.COLUMN_VISIBILITY(customColumn));
+            $('span.toggle-vis').on( 'click', function (e) {
+                var index = $(this).attr('data-column'),
+                    column = self.dt.column(index);
+
+                column.visible( ! column.visible() );
+                
+                customColumn[index].visible = column.visible();
+                customColumn[index].bVisible = column.visible(); 
+                
+                $(self.id).attr("style","");
+
+                $(`${self.id} thead tr th`).each((i,el) => {
+                    if(!$(el).is(":visible")){
+                        $(`${self.id} tr:not(.child)`).each((i1,el1) => {
+                            $(el1).find("td").eq(i).hide();
+                        });
+                    }
+                });
+                
+                var ths = "";
+                customColumn.forEach(val => { 
+                    if(val.visible) {
+                        ths += (val.searchable != false) ? '<th><input type="text" class="form-control input-sm" placeholder="Search..."></th>' : '<th></th>';
+                    }
+                });
+                $(`.row-filter`).html(ths);
+
+                $(self.id).find('.row-filter input').on('keyup change', function() {
+                    self.dt.column($(this).parent().index() + ':visible').search(this.value).draw();
+                });
+            });
+        }
+        /******* END COLUMN VISIBILITY *******/
+        
+        /******* EXPORT OPTIONS *******/
+        $(`.page-box`).append(SLIDER.EXPORT()); 
+        TABLE.TOOLBAR(self.dt);
+        $(`.buttons-copy span`).html("Copy Table");
+        $(`.buttons-csv span`).html("Export Table As CSV File");
+        $(`.buttons-excel span`).html("Export Table As Excel File");
+        /******* END EXPORT OPTIONS *******/
     }
     hideProgressBar(){
         $(`#progress-striped-active .progress-bar`).css("width",`0%`).html(`0%`);
         $("div.tbl-progress-bar").hide();
     }
     tableFilter(){
-        var self = this;
+        const self = this;
 
         USER.filters[self.urlPath] = USER.filters[self.urlPath] || {};
 
         var filter = {};
-        var userDefinedFilter = USER.filters[self.urlPath];
+        const userDefinedFilter = USER.filters[self.urlPath];
 
         if(typeof userDefinedFilter == 'string'){
             try { filter = JSON.parse(USER.filters[self.urlPath]) } catch(error) {}
@@ -1098,12 +1352,23 @@ class Table {
             filter = userDefinedFilter;
         }
         self.filter = (Object.keys(USER.filters[self.urlPath]).length == 0) ? 
-                        {} :  // (self.filter||{}) // error when reset in geofence
+                        {} :  //(self.filter||{})
                         filter;
+
+        (self.customFilter||[]).forEach(val => {
+            if(val.dataType == "array"){
+                if(val.type == "concat"){
+                    self.filter[val.field] = self.filter[val.field] || {};
+
+                    (self.filter[val.field]||{}).$in = ((self.filter[val.field]||{}).$in||[]).concat(val.value||[]);
+                    console.log("self.filter",self.filter);
+                }
+            }
+        });
     }
     retrieveData(length){
         var self = this;
-        
+
         self.tableFilter();
 
         if(length == null && self.progressBar){
@@ -1113,18 +1378,16 @@ class Table {
             var finalFilter = (self.filterType == 'basic') ? {} : self.filter;
             var filterExtend = (self.filter)?`/${JSON.stringify(finalFilter)}`:``;
 
-            // var filterExtend = (self.filter)?`/${JSON.stringify(self.filter)}`:``;
-
             $.ajax({
                 url: `/api/${self.url}${filterExtend}/${self.skip}/${LIMIT}`,
-                method: "GET",
+                method: "get",
                 timeout: 90000, // 1 minute and 30 seconds
                 headers: {
                     "Authorization": SESSION_TOKEN
                 },
                 async: true
             }).done(function (docs) {
-                // console.log(`${self.goto}:`,docs);
+                console.log(`${self.goto}:`,docs);
                 if(!docs.error){
                     length = docs.length;
 
@@ -1135,7 +1398,7 @@ class Table {
                     } else {
                         self.skip += length;
                         
-                        if([self.goto].includes(PAGE.GET())){
+                        if(self.modal || [self.goto].includes(PAGE.GET())){
                             if (typeof self.populateRows === 'function') { self.populateRows(docs); }
                             ($(self.id).length > 0) ? self.retrieveData(length) : null;
                         }
@@ -1149,18 +1412,22 @@ class Table {
         }
     }
     display(){
+        const self = this;
+
         if (typeof FILTER.CALLBACK === 'function') { FILTER.CALLBACK(true); }
         $(`#filter-btn`).html("Apply").removeClass("disabled");
+        $(`#reset-btn`).html("Reset All").removeClass("disabled");
         
         $(`.dt-button .la-refresh`).removeClass("la-spin");
         $(`.dt-button .la-refresh`).parents(".dt-button").removeClass("disabled");
         if(FILTER.STATUS == "reset") $(`.cb-container .la-refresh`).removeClass("la-spin");
         else $(`.cb-container .la-refresh`).removeClass("la-spin disabled");
 
-        $(`#filter-container input,#filter-container select`).attr("disabled",false);
-        $(`#filter-container button,#filter-container a`).removeClass("disabled");
-
-        $(".dataTables_empty").text("No data available in table");
+        console.log("self.filterDataExtend",self.filterDataExtend);
+        if(self.filterDataExtend !== true) {
+            $('#filter-container input, #filter-container select, #filter-container button').attr("disabled",false);
+            $(`#filter-container button,#filter-container a`).removeClass("disabled");
+        }
     }
     watch(){
 
@@ -1169,18 +1436,23 @@ class Table {
         const self = this;
 
         self.tableFilter();
-        
+
         if(self.filterType == 'basic'){
             var filtered = LIST[self.urlPath].filter(x => {
                 var condition = true;
                 Object.keys(self.filter).forEach(key => {
-                    (self.filter[key] && x[key] != self.filter[key]) ? condition = false : null;
+                    if(self.filter[key] && self.filter[key].$in){
+                        (!(self.filter[key].$in||[]).includes(x[key])) ? condition = false : null;
+                    } else {
+                        (self.filter[key] && x[key] != self.filter[key]) ? condition = false : null;
+                    }
                 });
                 return condition;
             });
     
             data = filtered;
         }
+        
         if($(self.id).length > 0 && data.length > 0){
             // donePopulate = true; - dispatch only
             // $(`#search-btn`).css({"pointer-events":"","color":""});  - dispatch only
@@ -1197,7 +1469,6 @@ class Table {
             self.dt.rows.add(rows).draw(false);
 
             TABLE.FINISH_LOADING.START_CHECK();
-            // TABLE.FINISH_LOADING.UPDATE(); // will make button enabled even if not yet done loading
 
             
             $("div.tbl-progress-bar").show();
@@ -1207,6 +1478,7 @@ class Table {
         if(data.length == 0){
             $(".dataTables_empty").text("No data available in table");
         }
+        
         // initializeOtherSettings();
     }
     updateRows(data){
@@ -1222,20 +1494,18 @@ class Table {
     countRows(){
         const self = this;
         self.tableFilter();
-        
+
         var finalFilter = (self.filterType == 'basic') ? {} : self.filter;
 
         $.ajax({
             url: `/api/${self.urlPath}/${CLIENT.id}/${USER.username}/all/${JSON.stringify(finalFilter)}/count`,
-            method: "GET",
+            method: "get",
             timeout: 90000, // 1 minute and 30 seconds
             headers: {
                 "Authorization": SESSION_TOKEN
             },
             async: true
         }).done(function (count) {
-            console.log("count",count);
-
             self.progressBar = new ProgressBar(count);
             self.skip = 0;
             (self.filterType == 'basic') ? null : LIST[self.urlPath] = [];
@@ -1371,9 +1641,9 @@ var PROFILE = {
 
                 $(`#modal #submit`).click(function(){
                     var body = {}
-                        name = $(`#modal #name`).val()._trim(),
-                        email = $(`#modal #email`).val()._trim(),
-                        __phoneNumber = $("#modal #phoneNumber").val()._trim(),
+                        name = ($(`#modal #name`).val()||"")._trim(),
+                        email = ($(`#modal #email`).val()|"")._trim(),
+                        __phoneNumber = ($("#modal #phoneNumber").val()||"")._trim(),
                         phoneNumber = GET.INTLTELINPUT_VALUE("#modal #phoneNumber");
                     if(name) body.name = name;
                     if(email) body.email = email;
@@ -1439,7 +1709,7 @@ var PROFILE = {
                         return text;
                     }
                     doc.myRegions.forEach((val,i) => {
-                        myRegions.push(`${val.region || "-"}<div class="font-italic font-11 text-muted mb-1">${getLocationsInCharge(val).join(" | ")}</div>`);
+                        myRegions.push(`${val.code || "-"}<div class="font-italic font-11 text-muted mb-1">${getLocationsInCharge(val).join(" | ")}</div>`);
                     });
                     doc.myClusters.forEach((val,i) => {
                         myClusters.push(`${val.cluster || "-"}<div class="font-italic font-11 text-muted mb-1">${getLocationsInCharge(val).join(" | ")}</div>`);
@@ -1649,7 +1919,6 @@ var DASHBOARD = {
                 $(`#_site`).parent().removeAttr("style").css({position:"fixed",top:"69px",width:"100%",background:"white","box-shadow":"0 4px 8px -4px #c6c6c6",height:"28px"});
                 $(`#_site`).css("width","100%");
             }
-            console.log("CUSTOM.COLUMN.dispatch()",CUSTOM.COLUMN.dispatch())
 
             var table_id = "#tbl-dashboard",
                 urlPath1 = "dashboard",
@@ -2021,15 +2290,7 @@ var DASHBOARD = {
                                         _id = data._id;
                                     $(row).attr(`_row`, _row);
                                     
-                                    TABLE.ROW_LISTENER({table_id: modal_parent_id,_row,urlPath:urlPath,_id,
-                                        additionalListeners: function(){
-                                            // $(modal_parent_id).on('click', `[_row="${_row}"] [view],[_row="${_row}"] + tr.child [view]`,function(e){
-                                            //     e.stopImmediatePropagation();
-                                            //     $(`body`).append(modalViews.dispatch.view(_id));
-                                            //     $("html, body,#modal").animate({ scrollTop: 0 }, "fast");
-                                            // });
-                                        }
-                                    });
+                                    TABLE.ROW_LISTENER({table_id: modal_parent_id,_row,urlPath:urlPath,_id,});
                                 },
                             });
 
@@ -2288,7 +2549,7 @@ var DASHBOARD = {
                 $('#export-container').html('');
                 TABLE.TOOLBAR(dt, function(){
                     var _date = calendarview == "day" ? moment(selectedDate).format("MM.DD.YYYY") : moment(selectedDate).format("MM.YYYY");
-                    var _region = filter && filter.toLowerCase() != 'all' ? (getRegion(filter)||{}).region || '-' : 'All';
+                    var _region = filter && filter.toLowerCase() != 'all' ? (getRegion(filter)||{}).code || '-' : 'All';
                     return `Deployment Dashboard - ${currentView.capitalize()} View - Region ${_region} - Filter ${calendarview.capitalize()} - ${_date}`
                 }, function (xlsx) {
                     var sheet = xlsx.xl.worksheets['sheet1.xml'];
@@ -2449,7 +2710,7 @@ var DASHBOARD = {
                     var _regionData = SORT.ARRAY_OBJECT(LIST["regions"],"sequence",{sortType:"asc"});
                     $(`#_regions`).append(`<li class="active"><a id="ALL" class="summary-tab" href="javascript:void(0)" role="tab" data-toggle="tab">ALL</a></li>`);
                     _regionData.forEach(val => {
-                        $(`#_regions`).append(`<li><a id="${val._id}" class="summary-tab" href="javascript:void(0)" role="tab" data-toggle="tab">${val.region}</a></li>`);
+                        $(`#_regions`).append(`<li><a id="${val._id}" class="summary-tab" href="javascript:void(0)" role="tab" data-toggle="tab">${val.code}</a></li>`);
                     });
                     $(`.summary-tab`).css({"border-radius":"2px","margin-bottom":"3px"});
                     $(`#_regions [role="tab"]`).click(function(){
@@ -2746,7 +3007,7 @@ var DE_DASHBOARD = {
                     var _regionData = SORT.ARRAY_OBJECT(LIST["regions"],"sequence",{sortType:"asc"});
                     $(`#_regions`).append(`<li class="active"><a id="ALL" class="summary-tab" href="javascript:void(0)" role="tab" data-toggle="tab">ALL</a></li>`);
                     _regionData.forEach(val => {
-                        $(`#_regions`).append(`<li><a id="${val._id}" class="summary-tab" href="javascript:void(0)" role="tab" data-toggle="tab">${val.region}</a></li>`);
+                        $(`#_regions`).append(`<li><a id="${val._id}" class="summary-tab" href="javascript:void(0)" role="tab" data-toggle="tab">${val.code}</a></li>`);
                     });
                     $(`.summary-tab`).css({"border-radius":"2px","margin-bottom":"3px"});
                     $(`#_regions [role="tab"]`).click(function(){
@@ -3368,6 +3629,631 @@ const OTD_DASHBOARD = {
     }
 };
 var DISPATCH = {
+    detectStatus: function(body){
+        const CLIENT_OPTIONS = {
+            "coket1": { ggsURL: "coca-cola.server93.com",    appId: 9,     scheduledEntry: false,     allowTempStatus: true,     allowIncompleteUpdateStatus: true,     ignoreDestinationEvents: false,     statusOption: { default: "assigned", insideOrigin: "assigned",     insideOriginEvent: "entered_origin",    enRouteToDestination: "in_transit" }    },
+            "coket2": { ggsURL: "coca-cola.server93.com",    appId: 4,     scheduledEntry: false,     allowTempStatus: false,    allowIncompleteUpdateStatus: false,    ignoreDestinationEvents: true,      statusOption: { default: "assigned", insideOrigin: "dispatched",   insideOriginEvent: "dispatched",        enRouteToDestination: "onDelivery" }    },
+            "wilcon": { ggsURL: "wru.server93.com",          appId: 427,   scheduledEntry: true,      allowTempStatus: true,     allowIncompleteUpdateStatus: false,    ignoreDestinationEvents: false,     statusOption: { default: "assigned", insideOrigin: "assigned",     insideOriginEvent: "entered_origin",    enRouteToDestination: "in_transit" }    },
+        };
+
+        // maximum number of times to call an API when it returned an error
+        const MAX_TRIES = 5;
+
+        // maximum number of hours between event time and current time
+        // events beyond that time difference are ignored
+        const MAX_HOURDIFF = 24;
+        return new Promise((resolve,reject) => {
+            // option for current client
+            const clientOption = CLIENT_OPTIONS[CLIENT.id];
+                                
+            // initialize timezone and date formats
+            const now_ms = moment().valueOf(); // get current time in milliseconds
+
+            // get Main credentials
+            const ggsURL = clientOption.ggsURL;
+            const appId = clientOption.appId;
+
+            // check whether NOW is within schedule date
+            function isNowWithinSchedule(minDate,shiftTime){
+                // format date to MMM DD, YYYY
+                minDate = moment(minDate).format("MMM DD, YYYY");
+
+                // split shift schedule into minimum and maximum time.
+                // Sample Original format: 12:00 AM - 3:00 PM
+                shiftTime = (shiftTime||"").split(" - ");
+
+                const minTime = shiftTime[0]; // minimum time - 12:00 AM
+                const maxTime = shiftTime[1]; // maximum time - 3:00 PM
+
+                // convert minimum time to moment object
+                const minTimeMoment = moment(minTime);
+                // convert maximum time to moment object
+                const maxTimeMoment = moment(maxTime);
+                // if maximum time is before minimum time, add 1 day to date
+                // Reason: shifts like "July 28, 2021 - 8:00 PM - 1:00 AM"
+                // Goal: Min DateTime = July 28, 2021, 8:00 PM
+                //       Max DateTime = July 29, 2021, 1:00 AM
+                const maxDate = (maxTimeMoment.isBefore(minTimeMoment)) ? moment(minDate).add(1,"day") : minDate;
+                
+                // activate entry XX minutes BEFORE scheduled date and time. Default value is 0.
+                // Eg. Schedule: July 28, 2021 (8:00 PM - 1:00 AM)
+                //     activateInMinutes: 60
+                //     Result: Activate entry on July 28, 2021, 7:00 PM
+                const minutes = (clientOption||{}).activateInMinutes || 0;
+
+                // get the minimum date and time minus X minutes in milliseconds
+                const minSchedule = moment(`${minDate}, ${minTime}`).subtract(minutes,"minutes").valueOf();
+                // get the maximum date and time in milliseconds
+                const maxSchedule = moment(`${maxDate}, ${maxTime}`).valueOf();
+
+                // return true if NOW is between minimum schedule and maximum schedule
+                return (now_ms >= minSchedule && now_ms <= maxSchedule);
+            }
+
+            // check if RULE_NAME meets the condition
+            function getIndexOf(text,arr,op){
+                var cond = null;
+                arr.forEach(val => {
+                    if(op == "or" && !cond){
+                        cond = (text.indexOf(val) > -1);
+                    }
+                    if(op == "and" && (cond == null || cond == true)){
+                        cond = (text.indexOf(val) > -1);
+                    }
+                });
+                return cond;
+            };
+
+            // declare variables
+            var __tempStat = null;
+            var late_data_entry = null;
+            var events_captured = {};
+
+            // variables sent by client
+            const geofenceId = body.geofenceId;
+            const scheduled_date = body.scheduled_date;
+            const shift_schedule = body.shift_schedule;
+            const __originalObj = body.__originalObj;
+            const route = body.route;
+            const vehicle_id = Number((body.vehicle||{})._id);
+            const vehicleUsername = (body.vehicle||{}).username;
+            const __status = body.__status;
+            const dGeofence = body.dGeofence;
+            const geofence = body.geofence;
+            const roundtrip = clientCustom.roundtrip;
+            const checkSchedule = body.checkSchedule; // boolean - whether the function should check for Schedule or not
+            const apiKey = USER.apiKey;
+
+            // sent by client because of Previous Check-In feature. User can select a different check-in-check-out
+            // and this function should be able to detect shipment's status based on their selection
+            const previousCheckInOriginGeofence = body.previousCheckInOriginGeofence;
+            const previousCheckInDestinationGeofence = body.previousCheckInDestinationGeofence;
+
+            // Custom client options
+            // Custom status
+            const defaultStatus = clientOption.statusOption.default;
+            const insideOriginStatus = clientOption.statusOption.insideOrigin;
+            const insideOriginEventStatus = clientOption.statusOption.insideOriginEvent;
+            const enRouteToDestinationStatus = clientOption.statusOption.enRouteToDestination;
+
+            // allow incomplete shipment update its status
+            const allowIncompleteUpdateStatus = clientOption.allowIncompleteUpdateStatus;
+
+            // if dispatch entry is set to make a scheduled/advanced entry
+            const scheduledEntry = clientOption.scheduledEntry;
+
+            // whether to ignore the destination events or not
+            const ignoreDestinationEvents = clientOption.ignoreDestinationEvents;
+
+            // whether to allow the function to save temp status. Temp status are used to save event times that did not meet the other conditions.
+            // Useful for clients that depends on event times PER geofence. 
+            const allowTempStatus = clientOption.allowTempStatus;
+            
+            // Geofence ID should not be null of undefined
+            if(geofenceId){
+
+                // If 'checkSchedule' is false OR
+                // 'checkSchedule' is true AND 
+                // either 'scheduledEntry' is false OR 
+                // 'scheduledEntry' is true AND current dateTime is within the scheduled date and shift
+                if(!checkSchedule || (checkSchedule && (!scheduledEntry || (scheduledEntry && isNowWithinSchedule(scheduled_date,shift_schedule))))){
+                    
+                    console.log("DELTE",previousCheckInOriginGeofence,previousCheckInDestinationGeofence);
+                    // check if original route and vehicle is same as current
+                    if((__originalObj && (__originalObj.route == route && __originalObj.vehicle_id == Number(vehicle_id))) && (!previousCheckInOriginGeofence && !previousCheckInDestinationGeofence)){
+                        // return empty object 
+                        resolve({});
+                    } else {
+                        const ignoreStatus = ["complete","scheduled"];
+                        if( !allowIncompleteUpdateStatus ){
+                            ignoreStatus.push("incomplete");
+                        }
+                        console.log("DELTE",previousCheckInOriginGeofence,previousCheckInDestinationGeofence);
+                        // if vehicle username is not null or undefined AND status is not in the array
+                        if(vehicleUsername && !ignoreStatus.includes(__status) ){
+
+                            // function that checks whether the vehicle is inside the geofence or not (WRU Main)
+                            function isVehicleInsideGeofenceId(tries){
+                                tries = tries || 0;
+
+                                // destination geofence
+                                const destinationGeofenceName = dGeofence.short_name;
+                                // origin geofence
+                                const originShortName = geofence.short_name;
+
+                                // function that determins what the status of the shipment should be based on the vehicle's location history
+                                function determineShipmentStatus(oEvents,dEvents,byPassHourDiff){
+                                    // note: byPassHourDiff is used to not check the time difference between the event time and current time
+
+                                    // value will change depending on where the truck is
+                                    // set status to Client's default shipment status
+                                    var status = defaultStatus;
+                                    
+                                    // used to know the time difference between the event time and current time
+                                    // value will change when the truck left the origin. The new value will be used to check
+                                    // the time difference between the event time and Check-out time
+                                    var tempDateTime = now_ms;
+
+
+                                    // used for CokeT2
+                                    var isOnDelivery = false;
+                                    var storedDispatched = false;
+
+                                    // ------------> Origin
+                                    // loop origin events
+                                    for(var i = oEvents.length-1; i >= 0; i--){
+
+                                        const val = oEvents[i];
+
+                                        // convert time to milliseconds
+                                        const eventDate = moment(val.timestamp).valueOf();
+                                        // calculate time difference between event time and 'tempDateTime'
+                                        const hourDiff = (byPassHourDiff === true) ? 0 : Math.abs(tempDateTime - eventDate) / 36e5;
+
+                                        // print necessary data for debugging
+                                        console.log("oEvents",val.RULE_NAME,val.stage,!events_captured[eventDate],hourDiff < MAX_HOURDIFF);
+
+                                        // in transit
+                                        // do not remove status = in_transit.
+                                        if(((val.RULE_NAME == "Inside Geofence" && val.stage == "end") || (val.RULE_NAME == "Outside Geofence" && val.stage == "start")) && late_data_entry == true && status != enRouteToDestinationStatus && hourDiff < MAX_HOURDIFF) {
+                                                status = enRouteToDestinationStatus;
+                                                events_captured[eventDate] = enRouteToDestinationStatus;
+                                                
+                                                tempDateTime = eventDate;
+                                        }
+                                        
+                                        // save event as idlingAtOrigin if RULE_NAME consists "Inside" and "Idle" strings
+                                        if(getIndexOf(val.RULE_NAME,["Inside","Idle"],"and") && !events_captured[eventDate] && hourDiff < MAX_HOURDIFF){
+                                            events_captured[eventDate] = "idlingAtOrigin";
+                                        }
+
+                                        // save event as processingAtOrigin if RULE_NAME consists "Inside" and "Processing" strings
+                                        if(getIndexOf(val.RULE_NAME,["Inside","Processing"],"and") && !events_captured[eventDate] && hourDiff < MAX_HOURDIFF){
+                                            events_captured[eventDate] = "processingAtOrigin";
+                                        }
+
+                                        // save event as queueingAtOrigin if RULE_NAME consists "Inside" and "Queueing" strings
+                                        if(getIndexOf(val.RULE_NAME,["Inside","Queueing"],"and") && !events_captured[eventDate] && hourDiff < MAX_HOURDIFF){
+                                            events_captured[eventDate] = "queueingAtOrigin";
+                                        }
+                                        
+                                        // Left the geofence
+                                        // "!isOnDelivery && !storedDispatched" is added to check that the shipment is neither detected as On Delivery or Dispatched yet
+                                        // The status should be based on the latest data ONLY and not by geofence unlike CokeT1 and Wilcon
+                                        if((val.RULE_NAME == "Check Out" && val.stage == "start") && late_data_entry == true && status != enRouteToDestinationStatus && !isOnDelivery && !storedDispatched) {
+                                            status = enRouteToDestinationStatus;
+                                            events_captured[eventDate] = enRouteToDestinationStatus;
+                                            tempDateTime = eventDate;
+                                            isOnDelivery = true;
+                                        }
+                                        // Entered the geofence
+                                        // "!storedDispatched" is added to check that the shipment is not yet tagged as Dispatched
+                                        // The status should be based on the latest data ONLY and not by geofence unlike CokeT1 and Wilcon
+                                        if((val.RULE_NAME == "Check Out" && val.stage == "end") && !events_captured[eventDate] && !storedDispatched) {
+                                            events_captured[eventDate] = insideOriginStatus;
+                                            storedDispatched = true;
+                                        }
+
+                                        // save event as tempStatus for events that do not fall under idlingAtOrigin, processingAtOrigin, or queueingAtOrigin, etc
+                                        if(allowTempStatus && !events_captured[eventDate] && hourDiff < MAX_HOURDIFF){
+                                            events_captured[eventDate] = "tempStatus";
+                                        }
+                                    }
+
+                                    // if late entry and no 'enRouteToDestinationStatus' timestamp
+                                    if(late_data_entry == true && !OBJECT.getKeyByValue(events_captured,enRouteToDestinationStatus)){
+                                        // last timestamp will be 'enRouteToDestinationStatus'
+                                        events_captured[now_ms] = enRouteToDestinationStatus;
+                                    }
+
+                                    // sort eventsCaptured by key (timestamp/eventDate) in ascending order
+                                    const sortedEvents = OBJECT.sortByKey(events_captured);
+
+                                    // change first status event to "entered_origin" or 'insideOriginEventStatus'
+                                    // Note: "entered_origin" is just for reference when the truck entered the origin geofence. It is not a status.
+                                    Object.keys(sortedEvents).forEach((key,i) => {
+                                        if(i == 0){
+                                            // if first timestamp is not in transit, change value to entered_origin
+                                            (sortedEvents[key] != enRouteToDestinationStatus) ? sortedEvents[key] = insideOriginEventStatus : null
+                                        }
+                                    });
+
+                                    // loop to delete "tempStatus"
+                                    Object.keys(sortedEvents).forEach(key => {
+                                        (sortedEvents[key] == "tempStatus") ? delete sortedEvents[key] : null;
+                                    });
+                                    
+                                    // had to loop again because when "tempStatus" is deleted, sortedEvents[lastTimestamp] ends up to be undefined
+                                    const lastTimestamp = Object.keys(sortedEvents).map(key => { return Number(key); }).sort().reverse()[0];
+                                    
+                                    // set events_captured equal to its sorted version
+                                    events_captured = sortedEvents;
+
+                                    // print necessary data for debugging
+                                    console.log("sortedEvents",status,sortedEvents);
+
+                                    // status is equal to the last timestamp's status value
+                                    status = sortedEvents[lastTimestamp] || defaultStatus;
+                                    // if status is equal to 'insideOriginEventStatus', change it to the proper status or  'insideOriginStatus'
+                                    // ex. For CokeT1/Wilcon, 'insideOriginEventStatus' is 'entered_origin' but 'insideOriginStatus' is 'assigned'
+                                    (status == insideOriginEventStatus) ? status = insideOriginStatus : null;
+
+
+
+                                    // ------------> Destination
+                                    // Check if its late entry 
+                                    if(late_data_entry == true && !ignoreDestinationEvents){
+
+                                        // get leaving time by status based on events captured
+                                        const enRouteDateTime = OBJECT.getKeyByValue(events_captured,enRouteToDestinationStatus);
+
+                                        status = enRouteToDestinationStatus;
+
+                                        // loop destination events
+                                        dEvents.forEach(val => {
+                                            // convert time to milliseconds
+                                            const eventDate = moment(val.timestamp).valueOf();
+                                            // calculate time difference between event time and 'tempDateTime'
+                                            const hourDiff = (byPassHourDiff === true) ? 0 : Math.abs(tempDateTime - eventDate) / 36e5;
+
+                                            // in_transit/onDelivery (if no enRouteDateTime)
+                                            if(val.stage == "start" && !enRouteDateTime && hourDiff < MAX_HOURDIFF){
+                                                events_captured[eventDate] = enRouteToDestinationStatus;
+                                            }
+                                            // end in_transit/onDelivery (if no enRouteDateTime)
+
+                                            if(roundtrip) {
+                                                // onSite
+                                                // save event as onSite if conditions are the same as entering a geofence (destination geofence)
+                                                if(!((val.RULE_NAME == "Inside Geofence" && val.stage == "end") || (val.RULE_NAME == "Outside Geofence" && val.stage == "start")) && status == enRouteToDestinationStatus && !events_captured[eventDate]){
+                                                    status = "onSite";
+                                                    events_captured[eventDate] = "onSite";
+                                                }
+                                                // end onSite
+                                                
+
+                                                // returning
+                                                // save event as returning if conditions are the same as leaving a geofence (destination geofence)
+                                                if(((val.RULE_NAME == "Inside Geofence" && val.stage == "end") || (val.RULE_NAME == "Outside Geofence" && val.stage == "start")) && status == "onSite" && !events_captured[eventDate]){
+                                                    status = "returning";
+                                                    events_captured[eventDate] = "returning";
+                                                }
+                                                // end returning
+                                            } else {
+                                                // complete
+                                                // save event as complete when the truck entered the destination geofence
+                                                if(status == enRouteToDestinationStatus && !events_captured[eventDate] && (Number(enRouteDateTime) < eventDate) && hourDiff < MAX_HOURDIFF){
+                                                    status = "complete";
+                                                    events_captured[eventDate] = "complete";
+                                                }
+                                                // end complete
+                                            }
+                                        });
+                                    }
+
+                                    return status;
+                                };
+
+                                console.log("DELTE",previousCheckInOriginGeofence,previousCheckInDestinationGeofence);
+                                // if no previous check-in geofences sent
+                                if(!previousCheckInOriginGeofence && !previousCheckInDestinationGeofence){
+                                    
+                                    function loadVehiclesHistory(){
+
+                                        // declare client query to be able to close connection later
+                                        $.ajax({
+                                            url: `/api/vehicles_history/${CLIENT.id}/${USER.username}/${vehicle_id}`,
+                                            method: "GET",
+                                            timeout: 90000 ,
+                                            headers: {
+                                                "Authorization": SESSION_TOKEN
+                                            },
+                                            async: true
+                                        }).done(function (docs) {
+                                            console.log("docs!!",docs);
+
+                                            
+                                            if(docs.length > 0){
+                                                const doc = docs[0];
+                                                
+                                                const loc = doc.location || []; // don't name it 'location', it will refresh page (page.location??)
+
+                                                // late entry - Truck selected is outside the origin
+                                                if(late_data_entry) {
+                                                    // loop location history - latest to oldest
+                                                    for(var i = loc.length-1; i >= 0; i--){
+
+                                                        // if location is shipment's origin
+                                                        if(loc[i].short_name == originShortName){
+                                                            // >>>>> Truck selected has left the origin <<<<<
+                                                            
+                                                            // late entry is true
+                                                            late_data_entry = true;
+
+                                                            // determine shipment status
+                                                            // will automatically be saved as IN TRANSIT or ON DELIVERY.
+                                                            __tempStat = determineShipmentStatus(loc[i].events,[]);
+
+                                                            break;
+                                                        } else {
+                                                            // if location is shipment's destination
+                                                            if(loc[i].short_name == destinationGeofenceName){
+                                                                // remove the last location (detected as shipment's destination)
+                                                                // ex. 
+                                                                // loc = [ { short_name: "ABC" }, { short_name: "EFG" }, { short_name: "HIJ" }, { short_name: "KLM" } ] 
+                                                                // destination = "HIJ"
+                                                                // locationsBeforeDestination = [ { short_name: "ABC" }, { short_name: "EFG" } ] 
+                                                                const locationsBeforeDestination = loc.slice(0, i);
+
+                                                                // used to check if the origin is found???
+                                                                var prevHasOrigin = false;
+
+                                                                // loop locationsBeforeDestination - latest to oldest
+                                                                for(var j = locationsBeforeDestination.length-1; j >= 0; j--){
+                                                                    // if it kept on looping and location is the destination again, break loop
+                                                                    if(locationsBeforeDestination[j].short_name == destinationGeofenceName){
+                                                                        break;
+                                                                    }
+                                                                    // if location is origin,
+                                                                    // >>>>> Truck selected has left the origin and is already at destination. <<<<<
+                                                                    if(locationsBeforeDestination[j].short_name == originShortName){
+                                                                        // late entry is true
+                                                                        late_data_entry = true;
+                                                                        // determine shipment status
+                                                                        __tempStat = determineShipmentStatus(locationsBeforeDestination[j].events,loc[i].events);
+                                                                        prevHasOrigin = true;
+                                                                        break;
+                                                                    }
+                                                                }
+                                                                // >>>>> Truck selected is NOT within the origin. It is assumed that the truck is enroute to origin <<<<<
+                                                                if(!prevHasOrigin){
+                                                                    // late entry is false
+                                                                    late_data_entry = false;
+                                                                    // make set it to Client's default shipment status
+                                                                    __tempStat = defaultStatus;
+                                                                }
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // even after looping the vehicle's location history and __tempStat is still null then,
+                                                    // >>>>> Truck selected is NOT within the origin. It is assumed that the truck is enroute to origin <<<<<
+                                                    if(__tempStat == null) {
+                                                        // make set it to Client's default inside origin status
+                                                        __tempStat = defaultStatus;
+                                                        // late entry is false
+                                                        late_data_entry = false;
+                                                    }
+                                                } else {
+                                                    // >>>>> Truck selected is within the origin <<<<<
+                                                    
+                                                    // get the last location of the truck and check if it is the shipment's origin
+                                                    if(loc[loc.length-1].short_name == originShortName){
+                                                        // determine shipment status
+                                                        __tempStat = determineShipmentStatus(loc[loc.length-1].events);
+                                                    }
+                                                    
+                                                    // if '__tempStat' is null, then 
+                                                    if(__tempStat == null) {
+                                                        // make set it to Client's default inside origin status
+                                                        __tempStat = insideOriginStatus;
+                                                        // late entry is false
+                                                        late_data_entry = false;
+                                                    }
+                                                }
+                                                
+                                                // sort events_captured
+                                                const sortedEvents = OBJECT.sortByKey(events_captured);
+                                                events_captured = sortedEvents;
+
+                                                // added this just in case __tempStat is null
+                                                __tempStat = __tempStat || defaultStatus;
+
+                                                // print necessary data for debugging
+                                                console.log("EYOOOEOEOEOOEOEO",late_data_entry,__tempStat,events_captured);
+                                                
+                                                // return data
+                                                resolve({
+                                                    status: __tempStat,
+                                                    late_data_entry,
+                                                    events_captured,
+                                                });
+
+                                            } else {                                                
+                                                // return error
+                                                resolve({
+                                                    error: 1,
+                                                    message: 'Truck selected does not exist.'
+                                                });
+                                            }
+                                        }).fail(error => {
+                                            console.log("Error",error);
+
+                                            // if the request returned an error, we will try until the number of maximum tries is reached
+                                            if(error.status == 0 && tries < MAX_TRIES){
+                                                tries++;
+                                                isVehicleInsideGeofenceId(tries);
+                                            } else {
+                                                // if maximum tries is reached, resolve this dbName function
+                                                reject("Vehicles History",error);
+                                            }
+                                        });
+                                    }
+                                    
+                                    // get the list of users/trucks inside the geofence (WRU Main)
+                                    $.ajax({
+                                        url: `https://${ggsURL}/comGpsGate/api/v.1/applications/${appId}/geofences/${geofenceId}/users?FromIndex=0&PageSize=500`,
+                                        method: "GET",
+                                        timeout: 90000 ,
+                                        headers: {
+                                            "Authorization": apiKey
+                                        },
+                                        async: true
+                                    }).done(function (docs) {
+                                        console.log("docs!!",docs);
+
+                                        // print necessary data for debugging
+                                        // console.log("Vehicles1:",JSON.stringify(docs));
+
+                                        // if the truck is inside the geofence, late_data_entry is false. Else, true
+                                        // Ex. docs = [ { id: "A", username: "123" }, { id: "B", username: "456" } ] 
+                                        // !docs.some(x => x.username == "555"); -----> true
+                                        // !docs.some(x => x.username == "456"); -----> false
+                                        late_data_entry = !docs.some(x => x.username == vehicleUsername);
+                                        
+                                        // load vehicle history
+                                        loadVehiclesHistory();
+                                    }).fail(error => {
+                                        console.log("Error",error);
+                                        // if the request returned an error, we will try until the number of maximum tries is reached
+                                        if(error.status == 0 && tries < MAX_TRIES){
+                                            tries++;
+                                            isVehicleInsideGeofenceId(tries);
+                                        } else {
+                                            // if maximum tries is reached, resolve this dbName function
+                                            reject("GGS Geofences 01",error);
+                                        }
+                                    });
+                                } else {
+                                    console.log("DELTE",previousCheckInOriginGeofence,previousCheckInDestinationGeofence);
+                                    if(previousCheckInOriginGeofence && previousCheckInDestinationGeofence){
+
+                                        // late entry is true (there's data for 'previousCheckInDestinationGeofence' too)
+                                        late_data_entry = true;
+
+                                        // print necessary data for debugging
+                                        console.log(previousCheckInDestinationGeofence.short_name,destinationGeofenceName);
+
+                                        // if location is destination
+                                        if(previousCheckInDestinationGeofence.short_name == destinationGeofenceName){
+                                            // determine shipment status -- 'previousCheckInOriginGeofence' and 'previousCheckInDestinationGeofence' is passed
+                                            __tempStat = determineShipmentStatus(previousCheckInOriginGeofence.events,(previousCheckInDestinationGeofence||{}).events,true);
+                                        } else {
+                                            // determine shipment status -- only 'previousCheckInOriginGeofence'
+                                            __tempStat = determineShipmentStatus(previousCheckInOriginGeofence.events,[],true);
+                                        }
+
+                                        // sort events_captured
+                                        var tempEventsCaptured = OBJECT.sortByKey(events_captured);
+                                        events_captured = tempEventsCaptured;
+
+                                        // print necessary data for debugging
+                                        console.log("EYOOOEOEOEOOEOEO1111111111",late_data_entry,__tempStat,events_captured);
+
+                                        // return data
+                                        resolve({
+                                            status: __tempStat,
+                                            late_data_entry,
+                                            events_captured: events_captured
+                                        });
+                                    } else {
+                                        // ---> There's only data for 'previousCheckInOriginGeofence'
+
+                                        // get the list of users/trucks inside the geofence (WRU Main)
+                                        $.ajax({
+                                            url: `https://${ggsURL}/comGpsGate/api/v.1/applications/${appId}/geofences/${geofenceId}/users?FromIndex=0&PageSize=500`,
+                                            method: "GET",
+                                            timeout: 90000 ,
+                                            headers: {
+                                                "Authorization": apiKey
+                                            },
+                                            async: true
+                                        }).done(function (docs) {
+                                            console.log("docs!!",docs);
+
+                                            // print necessary data for debugging
+                                            // console.log("Vehicles2:",JSON.stringify(docs));
+
+                                            // if the truck is inside the geofence, late_data_entry is false. Else, true
+                                            // Ex. docs = [ { id: "A", username: "123" }, { id: "B", username: "456" } ] 
+                                            // !docs.some(x => x.username == "555"); -----> true
+                                            // !docs.some(x => x.username == "456"); -----> false
+                                            late_data_entry = !docs.some(x => x.username == vehicleUsername);
+                                            
+                                            // determine shipment status
+                                            __tempStat = determineShipmentStatus(previousCheckInOriginGeofence.events,[],true);
+
+                                            // sort events_captured
+                                            const sortedEvents = OBJECT.sortByKey(events_captured);
+                                            events_captured = sortedEvents;
+
+                                            // print necessary data for debugging
+                                            console.log("EYOOOEOEOEOOEOEO222222222",late_data_entry,__tempStat,events_captured);
+
+                                            resolve({
+                                                status: __tempStat,
+                                                late_data_entry,
+                                                events_captured: events_captured
+                                            });
+                                        }).fail(error => {
+                                            console.log("Error",error);
+                                            // if the request returned an error, we will try until the number of maximum tries is reached
+                                             if(error.status == 0 && tries < MAX_TRIES){
+                                                tries++;
+                                                isVehicleInsideGeofenceId(tries);
+                                            } else {
+                                                // if maximum tries is reached, resolve this dbName function
+                                                reject("GGS Geofences 02",error);
+                                            }
+                                        });
+                                    }
+                                }
+                            }
+
+                            isVehicleInsideGeofenceId();
+                        } else {
+                            // return empty object 
+                            resolve({});
+                        }
+                    }
+                } else {
+                    // if current time is not within schedule, status is "scheduled"
+                    if(checkSchedule && scheduledEntry && !isNowWithinSchedule(scheduled_date,shift_schedule)){
+                        resolve({
+                            status: "scheduled",
+                            late_data_entry: false,
+                            events_captured: {},
+                        });
+                    } else {
+                        // return the Client's default shipment status
+                        resolve({
+                            status: defaultStatus,
+                            late_data_entry: false,
+                            events_captured: {},
+                        });
+                    }
+                }
+            } else {
+                // incomplete data. Status is PLAN
+                resolve({
+                    status: "plan",
+                    late_data_entry: false,
+                    events_captured: {},
+                });
+            } 
+        });
+    },
     FUNCTION: {
         monitoring: function(){
             /******** TABLE ********/
@@ -3448,7 +4334,7 @@ var DISPATCH = {
                         loadView: ["create","create-admin","import"],
                         actions:{
                             "create": function(){ // create-admin
-                                $(`body`).append(MODAL.CREATE.EMPTY(`Create New ${uniTitle}`,modalViews.dispatch.form()));
+                                $(`body`).append(MODAL.CREATE.EMPTY(`Create New ${uniTitle}`,modalViews.dispatch.form[CLIENT.id]()));
                                 DISPATCH.FUNCTION.form({asAdmin:true});
                             },
                             import: function(){
@@ -3518,16 +4404,11 @@ var DISPATCH = {
                                     TABLE.ROW_LISTENER({table_id,_row,urlPath:urlPath,_id,
                                         deleteURL: `/api/${urlPath}/${CLIENT.id}/${USER.username}/${_id}`,
                                         editCallback: function(){
-                                            $(`body`).append(MODAL.CREATE.EMPTY(`Update ${uniTitle}`,modalViews.dispatch.form()));
+                                            $(`body`).append(MODAL.CREATE.EMPTY(`Update ${uniTitle}`,modalViews.dispatch.form[CLIENT.id]()));
                                             DISPATCH.FUNCTION.form({_id:data._id,asAdmin:true});
                                             $("html, body,#modal").animate({ scrollTop: 0 }, "fast");
                                         },
                                         additionalListeners: function(){
-                                            // $(table_id).on('click', `[_row="${_row}"] [view],[_row="${_row}"] + tr.child [view]`,function(e){
-                                            //     e.stopImmediatePropagation();
-                                            //     $(`body`).append(modalViews.dispatch.view(data._id));
-                                            //     $("html, body,#modal").animate({ scrollTop: 0 }, "fast");
-                                            // });
                                             $(table_id).on('click', `[_row="${_row}"] [statusUpdate],[_row="${_row}"] + tr.child [statusUpdate]`,function(e){
                                                 e.stopImmediatePropagation();
 
@@ -3541,7 +4422,7 @@ var DISPATCH = {
                                         }
                                     });
                                 },
-                                order: [[ 1, "desc" ]],
+                                order: clientCustom.columnOrder.dispatch,
                                 dom: 'lB<"toolbar">frti<"tbl-progress-bar">p',
                                 buttons: dt_buttons
                             },
@@ -3586,9 +4467,6 @@ var DISPATCH = {
                                     minWidth = maxWidth;
                                     maxWidth = Math.floor(totalPerc);
                                     LOADING.PROGRESSBAR.MOVE(minWidth,maxWidth);
-                                    // if(totalPerc >= 100 && !doNotClearList){
-                                    //     getInTransitData();
-                                    // }
                                 }
                             },
                         });
@@ -3652,7 +4530,10 @@ var DISPATCH = {
                     });
                     
                     $(`.page-box`).append(SLIDER.EXPORT()); 
-                    TABLE.TOOLBAR(dt);
+                    TABLE.TOOLBAR(dt,() => { 
+                        const title = (CLIENT.id == "coket2") ? "T2 Dispatch Entries | WRU Dispatch" : "Dispatch Entries | WRU Dispatch";
+                        return title; 
+                    } );
                     $(`.buttons-copy span`).html("Copy Table");
                     $(`.buttons-csv span`).html("Export Table As CSV File");
                     $(`.buttons-excel span`).html("Export Table As Excel File");
@@ -3835,17 +4716,19 @@ var DISPATCH = {
 
             /******** TABLE CHECK ********/
             TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
-                isFinishedLoading(["REGIONS","CLUSTERS","GEOFENCES","VEHICLES","TRAILERS","CHASSIS","VEHICLES_HISTORY","ROUTES","USERS","VEHICLE_PERSONNEL","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"], _new_, function(){
-                    _new_ = false;
+                isFinishedLoading(["REGIONS","CLUSTERS","GEOFENCES","VEHICLES","TRAILERS","CHASSIS","ROUTES","USERS","VEHICLE_PERSONNEL","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE","CUSTOMERS"], _new_, function(){
+                    if(dt){
+                        _new_ = false;
+                        
+                        $.each(LIST[urlPath], function(i,val){
+                            var rowNode = dt.row(`[_row="${val._row}"]`).node();
+                            (rowNode) ? dt.row(rowNode).data(rowData(val)) : null;
+                        });
+                        TABLE.FINISH_LOADING.UPDATE();
+                    }
                     
-                    $.each(LIST[urlPath], function(i,val){
-                        var rowNode = dt.row(`[_row="${val._row}"]`).node();
-                        (rowNode) ? dt.row(rowNode).data(rowData(val)) : null;
-                    });
-                    
-                    TABLE.FINISH_LOADING.UPDATE();
                 });
-                isFinishedLoading(["GEOFENCES","VEHICLES","TRAILERS","CHASSIS","VEHICLES_HISTORY","ROUTES","VEHICLE_PERSONNEL","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"], true, function(){
+                isFinishedLoading(["GEOFENCES","VEHICLES","TRAILERS","CHASSIS","ROUTES","VEHICLE_PERSONNEL","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE","CUSTOMERS"], true, function(){
                     TABLE.FINISH_LOADING.UPDATE();
                 });
                 isFinishedLoading(["REGIONS","CLUSTERS"], _new2_, function(){
@@ -3854,7 +4737,7 @@ var DISPATCH = {
                         var regionOptions = `<option value="all">All</option>`,
                             clusterOptions = `<option value="all">All</option>`;
                         LIST["regions"].forEach(val => {
-                            regionOptions += `<option value="${val._id}">${val.region}</option>`;
+                            regionOptions += `<option value="${val._id}">${val.code}</option>`;
                         });
                         LIST["clusters"].forEach(val => {
                             clusterOptions += `<option value="${val._id}">${val.cluster}</option>`;
@@ -3880,45 +4763,30 @@ var DISPATCH = {
         },
         form: function(__data){
             console.log("__data",__data)
-            var dispatchModule = (CLIENT.id == "wilcon") ? "dispatch_mod2" : "dispatch",
-                regex = /^\d{8}$/;
+            var regex = /^\d{8}$/;
 
             // LOAD SELECT 2 OPTIONS FOR: ORIGIN,DESTINATION,VEHICLES
             getSelect2Options();
 
-            // remove unwanted fields
-            CUSTOM.FORM[dispatchModule]().forEach(val => {
-                if(val.remove){
-                    if($(val.id).parents(`${val.parent}`).find("input,select,textarea").length >= 1){
-                        $(val.id).parents(`${val.parent}`).remove();
-                    }
-                    $(val.id).remove();
-                }
-            });
-
             LIST["dispatch"] = LIST["dispatch"] || [];
 
             var _id = __data._id,
-                __type = __data.type,
-                __escalation = Number(__data.escalation), 
                 __status = "",
                 __tempStat = null,
                 __events_captured = {},
-                __history = {},
-                __vehicleData = null,
                 __originalObj = null,
-                vehiclesOptions = (clientCustom.editableTrailer || clientCustom.editableChassis) ? G_SELECT2["form-vehicles-admin"] : G_SELECT2["form-vehicles"],
+                originOptions = G_SELECT2["form-geofences"] ,
+                vehiclesOptions = G_SELECT2["form-vehicles-admin"],
                 trailersOptions = G_SELECT2["form-trailers"],
                 routesOptions = G_SELECT2["form-routes"],// LIST["routes"],
                 shiftScheduleOptions = G_SELECT2["form-shift_schedule"],
                 late_data_entry = null,
-                vehicleDoneLoading = false,
                 ORIGIN_ID,
                 DESTINATION_ID,
                 TRAILER,
                 disabledSumitButton = false,
-                vehicleOriginGeofence = null,
-                vehicleDestinationGeofence = null,
+                previousCheckInOriginGeofence = null,
+                previousCheckInDestinationGeofence = null,
                 initialize_buttons = {
                     new: function(){
                         $(`#submit`).text("Submit");
@@ -3926,19 +4794,9 @@ var DISPATCH = {
                     }
                 },
                 disableFields = function(status){
-                    if(__type || status){
-                        if(__type == "delay") {
-                            $(`#submit`).html("Submit");
-                            $(`#modal input,#modal textarea,#modal select`).attr("disabled",true); // always put before escalation
-                            $(`#new-attachment,#new-destination`).remove();
-                            $(`#modal table > tbody > tr > td input:disabled`).parents("tr").css("background-color","#eee");
-                        } else if(__type == "view") {
-                            $(`#modal input,#modal textarea,#modal select`).attr("disabled",true);
-                            $(`#submit`).remove();
-                            $(`#new-attachment,#new-destination`).remove();
-                            $(`#modal table > tbody > tr > td input:disabled`).parents("tr").css("background-color","#eee");
-                        } else if(["in_transit"].includes(status)){
-                            if(authorizationLevel .administrator()){} 
+                    if(status){
+                        if(["in_transit"].includes(status)){
+                            if(authorizationLevel.administrator()){} 
                             else {
                                 $(`#modal input,#modal textarea,#modal select`).attr("disabled",true);
                                 $(`#new-destination`).remove();
@@ -3947,11 +4805,7 @@ var DISPATCH = {
                             }
                         }
                     }
-                },
-                isStatusIncomplete = function(){
-                    // check if original status is INCOMPLETE
-                    return (__originalObj && __originalObj.status == "incomplete");
-                }
+                };
 
             initializeElements();
             
@@ -3959,468 +4813,69 @@ var DISPATCH = {
                 var destination_index = 1,
                     checkSelectedVehicleWithinGeofence = function(){
                         return new Promise((resolve,reject) => {
-                            var shipment_number = $(`#shipment_number`).val()._trim(),
-                                scheduled_date = $(`#scheduled_date`).val(),
+                            var scheduled_date = $(`#scheduled_date`).val(),
                                 shift_schedule = $(`#shift_schedule option:selected`).val(),
-                                ticket_number = ($(`#ticket_number`).val()||"")._trim(),
-                                route = $(`#route`).val()._trim(),
-                                vehicle_id = $(`#vehicle option:selected`).val(),
-                                chassis = $(`#chassis option:selected`).val(),
-                                trailer = TRAILER,
-                                driver_id = $(`#driver_id option:selected`).val(),
-                                checker_id = $(`#checker_id option:selected`).val(),
-                                // helper_id = $(`#helper_id option:selected`).val(),
-                                isComplete = true;
-
-
-                            if(!route) isComplete = false;
-                            if(!vehicle_id) isComplete = false;
-
-                            if(CLIENT.id == "wilcon"){
-                                if(!ticket_number) isComplete = false;
-                                if(!driver_id) isComplete = false;
-                                // if(!chassis) isComplete = false;
-                                // if(!checker_id) isComplete = false;
-                                // if(!helper_id) isComplete = false;
-                            } else { 
-                                // trailer is not required for Wilcon
-                                if(!trailer) isComplete = false;
-                                // shipment number is automated for wilcon
-                                if(!shipment_number || !regex.test(shipment_number)) isComplete = false;
-                            }
+                                route = ($(`#route`).val()||"")._trim(),
+                                vehicle_id = $(`#vehicle_id option:selected`).val();
                             
-                            if(!["view","delay"].includes(__type) && isComplete){
-                                vehicleDoneLoading = false;
+                            vehicleDoneLoading = false;
 
-                                __tempStat = null;
-                                __vehicleData = null;
-                                // __events_captured = (__originalObj) ? (__originalObj.events_captured || {}) : {};
-                                __events_captured = {};
-                                late_data_entry = null;
+                            __tempStat = null;
+                            __events_captured = {};
+                            late_data_entry = null;
 
-                                $(`#overlay #alert`).html("");
-                                
-                                var vehicleUsername  = $(`#vehicle option:selected`).attr("username");
-                                var vehicle_id = $(`#vehicle`).val();
-                                var geofence =  getGeofence(ORIGIN_ID) || {};
-                                var geofenceId = geofence.geofence_id;
-    
-                                if(geofenceId){
-                                    if(CLIENT.id != "wilcon" || (CLIENT.id == "wilcon" && withinSchedule(scheduled_date,shift_schedule))){
-                                        console.log("__originalObj",__originalObj);
-                                        // check if original route and vehicle is same as current
-                                        if((__originalObj && (__originalObj.route == route && __originalObj.vehicle_id == Number(vehicle_id))) && (!vehicleOriginGeofence && !vehicleDestinationGeofence)){
-                                            vehicleDoneLoading = true;
-                                            resolve();
-                                        } else {
-                                            var ignoreStatus = ["in_transit","complete","scheduled"];
-                                            if(CLIENT.id == "coket1"){
-                                                ignoreStatus.push("incomplete");
-                                            }
-                                            if(vehicleUsername && geofenceId && (authorizationLevel .administrator() || !ignoreStatus.includes(__status))){
-                                                // $(`#modal #alert`).html(`<i class="la la-spin la-spinner font-18 mb-3"></i>`);
-                                                $(`#submit`).html(`<i class="la la-spinner la-spin mr-2"></i>Detecting vehicle's location..`).attr("disabled",true);
-                                                
-                                                function detectVehicleLocation(tries){
-                                                    tries = tries || 0;
+                            $(`#overlay #alert`).html("");
+                            
+                            var vehicleUsername  = $(`#vehicle_id option:selected`).attr("username");
+                            var vehicle_id = $(`#vehicle_id`).val();
+                            var geofence =  getGeofence(ORIGIN_ID || $('#origin_id').val()) || {};
+                            var geofenceId = geofence.geofence_id;
 
-                                                    var dGeofence =  getGeofence(DESTINATION_ID) || {};
-                                                    var dgeofenceName = dGeofence.short_name;
-                                                    var ogeofenceName = geofence.short_name;
+                            const dGeofence = getGeofence(DESTINATION_ID) || {};
+                            $(`#submit`).html(`<i class="la la-spinner la-spin mr-2"></i>Detecting vehicle's location..`).attr("disabled",true);
+                            DISPATCH.detectStatus({
+                                checkSchedule: true,
+                                geofenceId,
+                                scheduled_date,
+                                shift_schedule,
+                                __originalObj,
+                                route,
+                                previousCheckInOriginGeofence,
+                                previousCheckInDestinationGeofence,
+                                __status,
+                                vehicle: {
+                                    _id: vehicle_id,
+                                    username: vehicleUsername,
+                                },
+                                dGeofence: {
+                                    short_name: dGeofence.short_name
+                                },
+                                geofence: {
+                                    short_name: geofence.short_name,
+                                },
+                            }).then(docs => {
+                                console.log("Docs",docs);
 
-                                                    var getIndexOf = function(text,arr,op){
-                                                        var cond = null;
-                                                        arr.forEach(val => {
-                                                            if(op == "or" && !cond){
-                                                                cond = (text.indexOf(val) > -1);
-                                                            }
-                                                            if(op == "and" && (cond == null || cond == true)){
-                                                                cond = (text.indexOf(val) > -1);
-                                                            }
-                                                        });
-                                                        return cond;
-                                                    },
-                                                    getStat_Time = function(oEvents,dEvents,byPassHourDiff){
-                                                        console.log(late_data_entry,oEvents,dEvents,__events_captured);
-                                                        var gStat = "assigned",
-                                                            gCond = false;
-                                                            
-                                                        var tempDateTime = new Date().getTime();
-                                                        for(var i = oEvents.length-1; i >= 0; i--){
-                                                            var val = oEvents[i],
-                                                                eventDate = new Date(val.timestamp).getTime(),
-                                                                hourDiff = (byPassHourDiff === true) ? 0 : Math.abs(tempDateTime - eventDate) / 36e5;
-                                                            console.log("oEvents",val.RULE_NAME,val.stage,!__events_captured[eventDate],hourDiff < 24);
-                                                            // in transit
-                                                            // do not remove gStat = in_transit.
-                                                            if(((val.RULE_NAME == "Inside Geofence" && val.stage == "end") || (val.RULE_NAME == "Outside Geofence" && val.stage == "start")) && late_data_entry == true && gStat != "in_transit" && hourDiff < 24) {
-                                                                    gCond = true;
-                                                                    gStat = "in_transit";
-                                                                    __events_captured[eventDate] = "in_transit";
-                                                                    tempDateTime = new Date(val.timestamp).getTime();
-                                                                    // console.log("NO: In Transit");
-                                                            }
-                                                            // idling
-                                                            if(getIndexOf(val.RULE_NAME,["Inside","Idle"],"and") && !__events_captured[eventDate] && hourDiff < 24){
-                                                                gCond = true;
-                                                                __events_captured[eventDate] = "idlingAtOrigin";
-                                                                // console.log("NO: Idling");
-                                                            }
-                                                            // processing
-                                                            if(getIndexOf(val.RULE_NAME,["Inside","Processing"],"and") && !__events_captured[eventDate] && hourDiff < 24){
-                                                                gCond = true;
-                                                                __events_captured[eventDate] = "processingAtOrigin";
-                                                                // console.log("NO: Processing");
-                                                            }
-                                                            // queueing
-                                                            if(getIndexOf(val.RULE_NAME,["Inside","Queueing"],"and") && !__events_captured[eventDate] && hourDiff < 24){
-                                                                gCond = true;
-                                                                __events_captured[eventDate] = "queueingAtOrigin";
-                                                                // console.log("NO: Queueing");
-                                                            }
-
-                                                            // temp Status
-                                                            if(!__events_captured[eventDate] && hourDiff < 24){
-                                                                __events_captured[eventDate] = "tempStatus";
-                                                                // console.log("NO: TempStatus");
-                                                            }
-                                                        }
-                                                        
-
-                                                        // if late entry and no in_transit timestamp
-                                                        if(late_data_entry == true && !OBJECT.getKeyByValue(__events_captured,"in_transit")){
-                                                            // last timestamp will be in_transit
-                                                            __events_captured[new Date().getTime()] = "in_transit";
-                                                            console.log("YES: In Transit ~~~");
-                                                        }
-
-                                                        console.log("__events_captured",__events_captured);
-
-                                                        // sort events_captured
-                                                        var sortedEvents = OBJECT.sortByKey(__events_captured);
-                                                        var i = 0;
-                                                        var lastTimestamp;
-                                                        Object.keys(sortedEvents).forEach(key => {
-                                                            if(i == 0){
-                                                                i++;
-                                                                // if first timestamp is not in transit
-                                                                if(sortedEvents[key] != "in_transit"){
-                                                                    // console.log("sortedEvents[key]",sortedEvents[key])
-                                                                    // change value to entered_origin
-                                                                    sortedEvents[key] = "entered_origin";
-                                                                }
-                                                            }
-                                                        });
-
-                                                        // loop to delete tempStatus
-                                                        Object.keys(sortedEvents).forEach(key => {
-                                                            if(sortedEvents[key] == "tempStatus"){
-                                                                delete sortedEvents[key];
-                                                            }
-                                                        });
-
-                                                        // had to loop again because tempStatus is deleted. Ends up sortedEvents[lastTimestamp] to be undefined
-                                                        Object.keys(sortedEvents).forEach(key => { lastTimestamp = key; });
-                                                        
-                                                        __events_captured = sortedEvents;
-
-
-                                                        // status will be last timestamp's value
-                                                        gStat = sortedEvents[lastTimestamp];
-                                                        console.log("sortedEvents",gStat,sortedEvents);
-                                                        if(gStat == "entered_origin"){
-                                                            gStat = clientCustom.statusWhenTruckEnteredOrigin || "assigned";
-                                                        }
-
-                                                        // CICO AT ORIGIN
-                                                        if(late_data_entry == true){
-                                                            var InTransitDateTime = OBJECT.getKeyByValue(__events_captured,"in_transit");
-
-                                                            gStat = "in_transit";
-    
-                                                            dEvents.forEach(val => {
-                                                                var eventDate = new Date(val.timestamp).getTime(),
-                                                                    hourDiff = (byPassHourDiff === true) ? 0 : Math.abs(tempDateTime - eventDate) / 36e5;
-    
-                                                                // in transit (if no datetime)
-                                                                if(val.stage == "start" && !InTransitDateTime && hourDiff < 24){
-                                                                    gCond = true;
-                                                                    __events_captured[eventDate] = "in_transit";
-                                                                }
-                                                                // end in transit (if no datetime)
-
-                                                                // HERE!!!!!!!!!
-
-                                                                if(clientCustom.roundtrip) {
-                                                                    // onSite
-                                                                    if(!((val.RULE_NAME == "Inside Geofence" && val.stage == "end") || (val.RULE_NAME == "Outside Geofence" && val.stage == "start")) && gStat == "in_transit" && !__events_captured[eventDate]){
-                                                                        gStat = "onSite";
-                                                                        gCond = true;
-                                                                        __events_captured[eventDate] = "onSite";
-                                                                    }
-                                                                    // end onSite
-                                                                    
-
-                                                                    // returning
-                                                                    if(((val.RULE_NAME == "Inside Geofence" && val.stage == "end") || (val.RULE_NAME == "Outside Geofence" && val.stage == "start")) && gStat == "onSite" && !__events_captured[eventDate]){
-                                                                        gStat = "returning";
-                                                                        gCond = true;
-                                                                        __events_captured[eventDate] = "returning";
-                                                                    }
-                                                                    // end returning
-
-                                                                    
-                                                                    // complete ORIGINNNNN
-                                                                    // if(gStat == "returning" && isOrigin === true){
-                                                                    //     _ids.complete.push(doc._id);
-                                                                    // }
-                                                                    // end complete
-                                                                } else {
-                                                                    // complete
-                                                                    if(gStat == "in_transit" && !__events_captured[eventDate] && (Number(InTransitDateTime) < eventDate) && hourDiff < 24){
-                                                                        gStat = "complete";
-                                                                        gCond = true;
-                                                                        __events_captured[eventDate] = "complete";
-                                                                    }
-                                                                    // end complete
-                                                                }
-
-                                                                // HERE!!!!!!!!!
-                                                            });
-                                                        }
-        
-                                                        return gStat;
-                                                    };
-
-                                                    if(!vehicleOriginGeofence && !vehicleDestinationGeofence){
-                                                        var vehicleAjax = function(){
-                                                            $(`#submit`).html(`<i class="la la-spinner la-spin mr-2"></i>Adjusting entry status..`).attr("disabled",true);
-    
-                                                            GET.AJAX({
-                                                                url: `/api/vehicles_history/${CLIENT.id}/${USER.username}/${vehicle_id}`,
-                                                                method: "GET",
-                                                                headers: {
-                                                                    "Authorization": SESSION_TOKEN
-                                                                },
-                                                            }, function(docs){
-                                                                vehicleDoneLoading = true;
-    
-                                                                if(docs.length > 0){
-                                                                    var doc = docs[0],
-                                                                        loc = doc.location || []; // don't name it 'location', it will refresh page (page.location??)
-                        
-                                                                    __vehicleData = doc.location;
-    
-                                                                    if(late_data_entry) {
-                                                                        for(var i = loc.length-1; i >= 0; i--){
-                                                                            // if i is origin, no destination
-                                                                            // if i is destination, look for origin in previous. tag as late entry
-                                                                            // if i is not origin or destination, loop reverse. if i-- is origin, tag as late entry
-                                                                            // if i is not origin or destination, loop reverse. if i-- is destination, look for origin. tag as late entry
-                    
-                                                                            /**
-                                                                            // if late_data_entry
-                                                                            if(i == origin){
-                                                                                save location data
-                                                                                tag as late entry
-                                                                                BREAK;
-                                                                            } else {
-                                                                                if(i == destination){
-                                                                                    for loop before i
-                                                                                    check if origin is inside and  where it has not been to destination yet
-                                                                                    if(it has been to destination already){
-                                                                                        BREAK;
-                                                                                    }
-                                                                                    if(origin is inside new for loop){
-                                                                                        save location data (origin)
-                                                                                        save location data (destination)
-                                                                                        tag as late entry
-                                                                                        BREAK;
-                                                                                    } else {
-                                                                                        DO NOT tag as late entry
-                                                                                        status is dispatch
-                                                                                    }
-                                                                                }
-                                                                            }
-                                                                            */
-                                                                            
-                                                                            if(loc[i].short_name == ogeofenceName){
-                                                                                late_data_entry = true;
-                                                                                __tempStat = getStat_Time(loc[i].events,[]);
-                                                                                // Truck selected has left the origin. This shipment will be tagged as LATE_DATA_ENTRY and will automatically be saved as IN TRANSIT.
-                                                                                // modalAlert(`Truck selected has left the origin. This shipment will be tagged as <b>LATE_DATA_ENTRY</b> and will automatically be saved as <b>IN TRANSIT</b>.`,"WARNING");
-                                                                                break;
-                                                                            } else {
-                                                                                if(loc[i].short_name == dgeofenceName){
-                                                                                    var prevLoc = loc.slice(0, i),
-                                                                                        prevHasOrigin = false;
-                                                                                    for(var j = prevLoc.length-1; j >= 0; j--){
-                                                                                        if(prevLoc[j].short_name == dgeofenceName){
-                                                                                            break;
-                                                                                        }
-                                                                                        if(prevLoc[j].short_name == ogeofenceName){
-                                                                                            late_data_entry = true;
-                                                                                            __tempStat = getStat_Time(prevLoc[j].events,loc[i].events);
-                                                                                            prevHasOrigin = true;
-                                                                                            // modalAlert(`Truck selected has left the origin and is already at destination. This shipment will be tagged as <b>LATE_DATA_ENTRY</b>.`,"WARNING");
-                                                                                            // Truck selected has left the origin and is already at destination. This shipment will be tagged as LATE_DATA_ENTRY.
-                                                                                            break;
-                                                                                        }
-                                                                                    }
-                                                                                    if(!prevHasOrigin){
-                                                                                        late_data_entry = false;
-                                                                                        __tempStat = "assigned";
-                                                                                        // modalAlert(`Truck selected is <u>not</u> within the origin. It is assumed that the truck is enroute to origin.`,"INFO");
-                                                                                        // Truck selected is <u>not</u> within the origin. It is assumed that the truck is enroute to origin.
-                                                                                    }
-                                                                                    break;
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                        if(__tempStat == null) {
-                                                                            console.log("__tempStat is null");
-                                                                            __tempStat = "assigned";
-                                                                            late_data_entry = false;
-                                                                            // modalAlert(`Truck selected is <u>not</u> within the origin. It is assumed that the truck is enroute to origin.`,"INFO");
-                                                                            // Truck selected is <u>not</u> within the origin. It is assumed that the truck is enroute to origin.
-                                                                        }
-                                                                    } else {
-                                                                        if(loc[loc.length-1].short_name == ogeofenceName){
-                                                                            __tempStat = getStat_Time(loc[loc.length-1].events);
-                                                                        }
-                                                                        if(__tempStat == null) {
-                                                                            __tempStat = "assigned";
-                                                                            late_data_entry = false;
-                                                                            console.log("__tempStat is null but vehicle is inside origin.");
-                                                                        }
-                                                                        // modalAlert(`Truck selected is within the origin.`,"INFO");
-                                                                        // Truck selected is within the origin.
-                                                                    }
-                                                                } else {
-                                                                    // modalAlert(`Truck selected does not exist.`,"ERROR");
-                                                                    reject({
-                                                                        message: `Truck selected does not exist.`
-                                                                    });
-                                                                }
-    
-                                                                var tempEventsCaptured = OBJECT.sortByKey(__events_captured);
-                                                                __events_captured = tempEventsCaptured;
-
-                                                                __tempStat = __tempStat || "assigned";
-    
-                                                                console.log("EYOOOEOEOEOOEOEO",late_data_entry,__tempStat,__events_captured);
-    
-                                                                resolve();
-                                                            });
-                                                        };
-                                                        
-                                                        GET.AJAX({
-                                                            "url": `https://${CLIENT.ggsURL}/comGpsGate/api/v.1/applications/${CLIENT.appId}/geofences/${geofenceId}/users?FromIndex=0&PageSize=500`,
-                                                            "method": "GET",
-                                                            "headers": {
-                                                                "Authorization": USER.apiKey
-                                                            },
-                                                        }, function(response){
-                                                            console.log("Vehicles:",response);
-                                                            late_data_entry = true;
-                                                            response.forEach(val => {
-                                                                if(val.username == vehicleUsername){
-                                                                    late_data_entry = false;
-                                                                }
-                                                            });
-                                                            vehicleAjax();
-                                                        }, function(error){
-                                                            if(error.status == 0 && tries < MAX_TRIES){
-                                                                tries++;
-                                                                detectVehicleLocation(tries);
-                                                            }
-                                                            TOASTR.ERROR(error);
-                                                        });
-                                                    } else {
-                                                        $(`#submit`).html(`<i class="la la-spinner la-spin mr-2"></i>Adjusting entry status..`).attr("disabled",true);
-
-                                                        vehicleDoneLoading = true;
-
-                                                        if(vehicleOriginGeofence && vehicleDestinationGeofence){
-                                                            late_data_entry = true;
-
-                                                            console.log(vehicleDestinationGeofence.short_name,dgeofenceName);
-                                                            if(vehicleDestinationGeofence.short_name == dgeofenceName){
-                                                                __tempStat = getStat_Time(vehicleOriginGeofence.events,(vehicleDestinationGeofence||{}).events,true);
-                                                            } else {
-                                                                __tempStat = getStat_Time(vehicleOriginGeofence.events,[],true);
-                                                            }
-
-                                                            var tempEventsCaptured = OBJECT.sortByKey(__events_captured);
-                                                            __events_captured = tempEventsCaptured;
-    
-                                                            console.log("EYOOOEOEOEOOEOEO1111111111",late_data_entry,__tempStat,__events_captured);
-    
-                                                            resolve();
-                                                        } else {
-                                                            GET.AJAX({
-                                                                "url": `https://${CLIENT.ggsURL}/comGpsGate/api/v.1/applications/${CLIENT.appId}/geofences/${geofenceId}/users?FromIndex=0&PageSize=500`,
-                                                                "method": "GET",
-                                                                "headers": {
-                                                                    "Authorization": USER.apiKey
-                                                                },
-                                                            }, function(response){
-                                                                console.log("Vehicles:",response);
-                                                                late_data_entry = true;
-                                                                response.forEach(val => {
-                                                                    if(val.username == vehicleUsername){
-                                                                        late_data_entry = false;
-                                                                    }
-                                                                });
-                                                                __tempStat = getStat_Time(vehicleOriginGeofence.events,[],true);
-
-                                                                var tempEventsCaptured = OBJECT.sortByKey(__events_captured);
-                                                                __events_captured = tempEventsCaptured;
-        
-                                                                console.log("EYOOOEOEOEOOEOEO222222222",late_data_entry,__tempStat,__events_captured);
-        
-                                                                resolve();
-                                                            }, function(error){
-                                                                if(error.status == 0 && tries < MAX_TRIES){
-                                                                    tries++;
-                                                                    detectVehicleLocation(tries);
-                                                                }
-                                                                TOASTR.ERROR(error);
-                                                            });
-                                                        }
-                                                    }
-                                                }
-
-                                                detectVehicleLocation();
-                                            } else {
-                                                late_data_entry = false;
-                                                resolve();
-                                            }
-                                        }
-                                    } else {
-                                        vehicleDoneLoading = true;
-                                        __tempStat = "assigned";
-                                        late_data_entry = false;
-                                        __events_captured = {};
-                                        resolve();
-                                    }
+                                if(docs.error){
+                                    reject({
+                                        message: docs.message
+                                    });
                                 } else {
-                                    vehicleDoneLoading = true;
-                                    __tempStat = "plan";
-                                    late_data_entry = false;
-                                    __events_captured = {};
+                                    (docs.events_captured) ? __events_captured = docs.events_captured : null;
+                                    (docs.late_data_entry) ? late_data_entry = docs.late_data_entry : null;
+
+                                    __tempStat = docs.status || "assigned";
+
                                     resolve();
                                 }
-                            } else {
-                                resolve();
-                            }
+                            });
                         });
                     },
                     checkVehicleInfoAndScheduledDateTime = function(){
                         return new Promise((resolve,reject) => {
                             var scheduled_date = $(`#scheduled_date`).val(),
                                 shift_schedule = $(`#shift_schedule option:selected`).val(),
-                                vehicle_id = $(`#vehicle option:selected`).val(),
+                                vehicle_id = $(`#vehicle_id option:selected`).val(),
                                 driver_id = $(`#driver_id option:selected`).val(),
                                 checker_id = $(`#checker_id option:selected`).val(),
                                 helper_id = $(`#helper_id option:selected`).val();
@@ -4505,6 +4960,12 @@ var DISPATCH = {
                     var origin = getGeofence(clientCustom.defaultOrigin.id);
                     if(origin) $(`#origin`).val(origin.short_name);
                 } 
+                $(`#origin_id`).html(originOptions).select2({
+                    sorter: data => data.sort((a, b) => a.text.localeCompare(b.text)),
+                }).val("").on("select2:select", function() {
+                    const geofence = getGeofence($(this).val()) || {};
+                    $('#origin_code').val(geofence.code || '');
+                }).trigger("change");
                 /******** END ORIGIN ********/
 
                 /******** SCHEDULED DATE ********/
@@ -4543,12 +5004,6 @@ var DISPATCH = {
                 });
                 /******** END SCHEDULED DATE ********/
 
-                /******** TICKET NUMBER ********/
-                // $(`#search-ticket-number`).click(function(){
-                //     alert("HI")
-                // });
-                /******** END TICKET NUMBER ********/
-
                 /******** SHIFT SCHEDULE ********/
                 $(`#shift_schedule`).html(shiftScheduleOptions).select2().val("").on("select2:select", function() {
                     // checkSelectedVehicleWithinGeofence();
@@ -4557,18 +5012,24 @@ var DISPATCH = {
                 /******** END SHIFT SCHEDULE ********/
 
                 /******** TRAILERS ********/
+                function truckOrTrailerTableInfo(type,_id){
+                    const info = (type == "trailer" ? getTrailer(_id) : getVehicle(_id)) || {};
+                    const geofence = getGeofence(info["Site"] || info.site || "","short_name") || {};
+                    const region = getRegion(geofence.region_id) || {};
+                    const cluster = getCluster(geofence.cluster_id) || {};
+
+                    $(`[${type}-based] td[trailer]`).html(_id || "-");
+                    $(`[${type}-based] td[cluster]`).html(cluster.cluster || info["Cluster"] || info.cluster || "-");
+                    $(`[${type}-based] td[base]`).html(info["Site"] || info.site || "-");
+                    $(`[${type}-based] td[region]`).html(region.code || info["Region"] || info.region || "-");
+                    $(`[${type}-based] td[pallet_type],td[pallet_capacity]`).html(info["Pal Cap"] || info.pal_cap || "-");
+                }
                 $(`#trailer`).html(trailersOptions).select2().val("").on("select2:select", function() {
                     // checkSelectedVehicleWithinGeofence(7);
                 }).change(function(){
                     if($(this).val() != null){
                         TRAILER = $(this).val() || "";
-                        
-                        var trailer = getTrailer(TRAILER) || {};
-                        $(`td[trailer]`).html(TRAILER || "-");
-                        $(`td[cluster]`).html(trailer.cluster || "-");
-                        $(`td[base]`).html(trailer.site || "-");
-                        $(`td[region]`).html(trailer.region || "-");
-                        $(`td[pallet_type]`).html(trailer.pal_cap || "-");
+                        truckOrTrailerTableInfo("trailer",TRAILER);
                     }
                 }).prop("disabled",true);
                 /******** END TRAILERS ********/
@@ -4594,38 +5055,35 @@ var DISPATCH = {
 
                 /******** VEHICLES ********/
                 var originalVehicle;
-                $(`#vehicle`).html(vehiclesOptions).select2({
+                $(`#vehicle_id`).html(vehiclesOptions).select2({
                     matcher: matcher,
                     templateResult: formatCustom
                 }).val("").on("select2:select", function() {
                     // checkSelectedVehicleWithinGeofence(7);
                 }).change(function(){
-                    if($(this).val()){
-                        $(`#trailer,#chassis`).prop("disabled",false);
-                    } else {
-                        $(`#trailer,#chassis`).prop("disabled",true);
-                    }
+                    const vehicleId = $(this).val();
+                    
+                    // disable if vehicleId is empty/null. Enable if has value
+                    $(`#trailer,#chassis`).prop("disabled",!vehicleId);
 
-                    var vehicle = getVehicle($(this).val()) || {};
+                    var vehicle = getVehicle(vehicleId) || {};
                     var trailer = getTrailer(vehicle.name);
                     var sameVehicleAndTrailer = vehicle.name == vehicle["Trailer"];
+
                     // Straight Truck
                     if(trailer || sameVehicleAndTrailer) {
-                        if(trailer){
-                            TRAILER = trailer._id || "";
-                        } else {
-                            TRAILER = vehicle["Trailer"];
-                            trailer = {
-                                cluster: vehicle["Cluster"],
-                                site: vehicle["Site"],
-                                region: vehicle["Region"],
-                                pal_cap: vehicle["Pal Cap"],
-                            };
-                        }
-
                         $(`#trailer,#chassis`).prop("disabled",true);
                         if(clientCustom.editableTrailer) $(`#trailer`).val("Straight Truck").change();
                         $(`td[trailer]`).html("Straight Truck");
+
+                        if(trailer){
+                            TRAILER = trailer._id || "";
+                            truckOrTrailerTableInfo("trailer",TRAILER);
+                        } else {
+                            TRAILER = vehicle["Trailer"];
+                            truckOrTrailerTableInfo("truck",vehicleId);
+                        }
+
                     } else {
                         trailer = getTrailer(originalVehicle || vehicle["Trailer"]);
                         if(trailer){
@@ -4633,17 +5091,20 @@ var DISPATCH = {
 
                             if(clientCustom.editableTrailer) $(`#trailer`).val(TRAILER).change();
                             $(`td[trailer]`).html(TRAILER || "-");
+
+                            truckOrTrailerTableInfo("trailer",TRAILER);
                         } else {
                             trailer = {};
+                            truckOrTrailerTableInfo("trailer");
                         }
                     }
                     originalVehicle = null;
                 
                     $(`td[conduction_number]`).html(vehicle["Tractor Conduction"] || "-");
-                    $(`td[cluster]`).html(trailer.cluster || "-");
-                    $(`td[base]`).html(trailer.site || "-");
-                    $(`td[region]`).html(trailer.region || "-");
-                    $(`td[pallet_type]`).html(trailer.pal_cap || "-");
+
+                    if($('#trailer').val() == undefined){
+                        truckOrTrailerTableInfo("truck",vehicleId);
+                    }
 
                     setDriverChecker();
                     checkVehicleInfoAndScheduledDateTime();
@@ -4652,14 +5113,24 @@ var DISPATCH = {
                 /******** END VEHICLES ********/
 
 
+                /******** CUSTOMERS ********/
+                $('#customers').html(G_SELECT2['form-customers']).select2({
+                    tokenSeparators: [","],
+                    sorter: data => data.sort((a, b) => a.text.localeCompare(b.text)),
+                    matcher: matcher,
+                    templateResult: formatCustom
+                });
+                /******** END CUSTOMERS ********/
+
+
                 /******** PREVIOUS CHECK-INS ********/
                 function previousCheckIns(){
-                    var vehiclesHistory = getVehicleHistory($("#vehicle").val()) || {};
+                    var vehiclesHistory = getVehicleHistory($("#vehicle_id").val()) || {};
                     
                     $(`#previous-checkins tbody`).html("");
                     $(`[name="checkin"]`).prop("checked",false);
-                    vehicleOriginGeofence = null;
-                    vehicleDestinationGeofence = null;
+                    previousCheckInOriginGeofence = null;
+                    previousCheckInDestinationGeofence = null;
 
                     var loc = (vehiclesHistory.location||[]);
                     var reversedLoc = [...loc].reverse();
@@ -4704,9 +5175,9 @@ var DISPATCH = {
                         }
                     });
 
-                    if($(`[name="checkin"]:checked`).length == 0){
-                        $($(`[name="checkin"]`).get(0)).prop("checked",true);
-                    }
+                    // if($(`[name="checkin"]:checked`).length == 0){
+                    //     $($(`[name="checkin"]`).get(0)).prop("checked",true);
+                    // }
                     
                     $(`[name="checkin"]`).change(function(){
                         var checked = $(this).prop("checked");
@@ -4714,7 +5185,7 @@ var DISPATCH = {
                         if(checked) {
                             var index = $(this).val();
     
-                            vehicleOriginGeofence = reversedLoc[index];
+                            previousCheckInOriginGeofence = reversedLoc[index];
     
                             var destinationSelected = getGeofence(DESTINATION_ID);
                             var destinationIndex = null;
@@ -4727,12 +5198,12 @@ var DISPATCH = {
                                 }
                             }
                             destinationIndex = (!destinationIndex || destinationIndex < 0) ? (index-1) : destinationIndex;
-                            vehicleDestinationGeofence = reversedLoc[destinationIndex];
+                            previousCheckInDestinationGeofence = reversedLoc[destinationIndex];
     
                             console.log("INDEX",index);
-                            console.log("ORIGIN",vehicleOriginGeofence);
+                            console.log("ORIGIN",previousCheckInOriginGeofence);
                             console.log("destinationIndex",destinationIndex);
-                            console.log("DESTINATION",vehicleDestinationGeofence);
+                            console.log("DESTINATION",previousCheckInDestinationGeofence);
                         }
                     }).trigger("change");
                 }
@@ -4749,7 +5220,7 @@ var DISPATCH = {
                         function personnelList(occupation,idType,value){
                             var listHTML = `<option value="">&nbsp;</option>`;
                             var tempList = LIST["vehicle_personnel"].filter(x => x.occupation == occupation);
-                            var defaultPersonnel = LIST["vehicle_personnel"].find(x => (x.vehicle_id||"").toString() == $(`#vehicle`).val() && $(`#vehicle`).val() && x.occupation == occupation) || {};
+                            var defaultPersonnel = LIST["vehicle_personnel"].find(x => (x.vehicle_id||"").toString() == $(`#vehicle_id`).val() && $(`#vehicle_id`).val() && x.occupation == occupation) || {};
                             var originalPersonnel = LIST["vehicle_personnel"].find(x => x.name == value || __original[idType]) || {};
                             var unavailablePersonnel = [];
                             
@@ -4803,13 +5274,9 @@ var DISPATCH = {
                         $(`#origin`).val(`${origin.short_name} (${origin.site_name || "-"})`);
                         $(`[location]`).val(`${destination.short_name} (${destination.site_name || "-"})`);
                     } else {
-                        if(__type != "view") {
-                            // $(`#route`).val("").change();
-                            $(`#origin,[location]`).val("");
-                            ORIGIN_ID = "";
-                            DESTINATION_ID = "";
-                            // toastr.warning("The route you have selected is not defined in the database.");
-                        }
+                        $(`#origin,[location]`).val("");
+                        ORIGIN_ID = "";
+                        DESTINATION_ID = "";
                     }
                     route_and_transitTime(null,route);
                     previousCheckIns();
@@ -4868,17 +5335,6 @@ var DISPATCH = {
                     function populateDispatchEntry(){
                         $(`#loading-text`).remove();
                         $(`.main-content .clearfix`).css({"pointer-events": ""});
-                        //   incomplete
-                        if(["complete"].includes(obj.status)){
-                            if(isStatusIncomplete() && authorizationLevel .administrator()) {
-                                $(`#error`).html(`<div class="alert alert-danger alert-dismissible mb-1 role="alert">
-                                                    <i class="la la-times-circle"></i> The status of this entry is <b>INCOMPLETE</b>. Any changes made will not affect the status.
-                                                </div>`).show();
-                            }
-                            else {
-                                (__type != "delay")? __type = "view" : null;
-                            }
-                        }
 
                         __status = obj.status;
 
@@ -4893,7 +5349,7 @@ var DISPATCH = {
                             $(`#scheduled_date`).trigger('apply.daterangepicker',{startDate: obj.scheduled_date});
                         }
 
-                        CUSTOM.FORM[dispatchModule]().forEach(val => {
+                        CUSTOM.FORM.dispatch[CLIENT.id]().forEach(val => {
                             var value = obj[val.key] || val.alternativeValue || "";
                             if(val.dataType == "dateTime"){
                                 value = DATETIME.FORMAT(obj[val.key],"MM/DD/YYYY, hh:mm A","");
@@ -4915,14 +5371,17 @@ var DISPATCH = {
                             }
 
                             // set value
-                            if(value) $(val.id)[val.inputType](value);
+                            if(value) {
+                                $(val.id)[val.inputType](value);
+                                $('[name="'+val.id+'"][value="'+value+'"]').prop("checked",true);
+                            }
 
                             // options
                             if(val.readonly) $(val.id).attr("readonly",val.readonly);
-                            if(val.trigger) $(val.id).trigger(val.trigger);
+                            if(val.trigger) $(val.id).trigger(val.trigger).trigger("select2:select");
                         });
 
-                        ATTACHMENTS.set(obj.attachments,((__type == "delay" || __type == "view")?true:false));
+                        ATTACHMENTS.set(obj.attachments);
                         
                         if(obj.destination.length == 0){
                             addNewDestinationRow();
@@ -4945,8 +5404,7 @@ var DISPATCH = {
                 function addNewDestinationRow(data,routeId){
                     data = data || {};
                     (destination_index < 1) ? destination_index = 1 : null;
-                    var noAction = (["delay","view"].includes(__type) || ["queueingAtOrigin","processingAtOrigin","in_transit","queueingAtDestination","processingAtDestination"].includes(__status))?true:false,
-                        _row = DISPATCH.FUNCTION.add_row.destination(destination_index,data,routeId,noAction);
+                    var _row = DISPATCH.FUNCTION.add_row.destination(destination_index,data,routeId);
                     destination_index ++;	
                     $(`[_row="${_row}"] [delete-destination]`).click(function(){
                         $(this).parent().parent().remove();	
@@ -4982,39 +5440,52 @@ var DISPATCH = {
                 /******** END ROUTE & TRANSIT TIME ********/
 
                 /******** ATTACHMENT ********/
-                ATTACHMENTS.initialize(((__type == "delay" || __type == "view")?true:false));
+                ATTACHMENTS.initialize();
                 /******** END ATTACHMENT ********/
 
                 /******** SUBMIT ENTRY ********/
                 $(`#submit`).click(function(){
                     var status = "assigned",
-                        body = {},
-                        buttonDefaultText = (__type == "delay" || !has_id) ? "Submit" : "Update",
-                        buttonLoadingText = (__type == "delay" || !has_id) ? "Submitting.." : "Updating..",
+                        // body = {},
+                        buttonDefaultText = (!has_id) ? "Submit" : "Update",
+                        buttonLoadingText = (!has_id) ? "Submitting.." : "Updating..",
                         button = $(this);
                     
-                    $(`#error`).hide();
+                    $(`#modal-error`).hide();
+
                     // check if all fields have value
-                    var shipment_number = $(`#shipment_number`).val()._trim(),
-                        scheduled_date = $(`#scheduled_date`).val(),
-                        shift_schedule = $(`#shift_schedule option:selected`).val(),
-                        ticket_number = ($(`#ticket_number`).val()||"")._trim(),
-                        origin_id = ORIGIN_ID,
-                        route = $(`#route`).val()._trim(),
-                        destination = [{ location_id: DESTINATION_ID }],
-                        vehicle_id = $(`#vehicle option:selected`).val(),
-                        trailer = TRAILER,
-                        driver_id = $(`#driver_id option:selected`).val(),
-                        checker_id = $(`#checker_id option:selected`).val(),
-                        helper_id = $(`#helper_id option:selected`).val(),
-                        chassis = $(`#chassis option:selected`).val(),
-                        comments = $(`#comments`).val()._trim(),
-                        attachments = ATTACHMENTS.get(CLIENT.dsName),
-                        incomplete = false,
-                        invalid = false,
-                        invalid_arr = [],
-                        css_default = {"background-color":"white"},
-                        css_error = {"background-color":"#ffe4e4"},
+                    var body = {
+                        shipment_number: ($(`#shipment_number`).val()||"")._trim(),
+                        ticket_number: ($(`#ticket_number`).val()||"")._trim(),
+                        scheduled_date: $(`#scheduled_date`).val(),
+                        shift_schedule: $(`#shift_schedule option:selected`).val(),
+                        origin_id: ORIGIN_ID,
+                        route: ($(`#route`).val()||"")._trim(),
+                        destination: [{ location_id: DESTINATION_ID }],
+                        vehicle_id: Number($(`#vehicle_id option:selected`).val()),
+                        trailer: TRAILER,
+                        driver_id: $(`#driver_id option:selected`).val(),
+                        checker_id: $(`#checker_id option:selected`).val(),
+                        helper_id: $(`#helper_id option:selected`).val(),
+                        chassis: $(`#chassis option:selected`).val(),
+                        comments: ($(`#comments`).val()||"")._trim(),
+                        customers: $('#customers').val(),
+                        support_unit: $('[name="support_unit"]:checked').val(),
+                        shipment_type: $('[name="shipment_type"]:checked').val(),
+                        delivery_sequence: $('[name="delivery_sequence"]:checked').val(),
+                        mdsd_usage: $('[name="mdsd_usage"]:checked').val(),
+                        attachments: ATTACHMENTS.get(CLIENT.dsName),
+                        version: VERSION
+                    };
+
+                    body.origin_id = (!ORIGIN_ID) ? $(`#origin_id option:selected`).val() : ORIGIN_ID;
+                    body.scheduled_date = (body.scheduled_date) ? new Date(body.scheduled_date).toISOString() : null;
+
+                    // delete properties with empty or null values
+                    Object.keys(body).forEach(key => { (!body[key]) ? delete body[key] : null; });
+
+                    var invalid = false,
+                        errorType = "",
                         vehicleChanged = false,
                         historyOptions = {
                             fields: [
@@ -5089,388 +5560,257 @@ var DISPATCH = {
                                     key: "attachments",
                                     type: "attachments"
                                 },
+                                {
+                                    customTitle: "Delivery For (Customer(s))",
+                                    key: "customers",
+                                    type: "array"
+                                },
+                                {
+                                    customTitle: "MDSD Usage",
+                                    key: "mdsd_usage",
+                                },
                             ]
                         };
                         
-                    _id = shipment_number;
+                    !__data._id ? _id = body.shipment_number : null; 
 
-                    // if(isStatusIncomplete()){
-                    //     var url = `/api/dispatch/${CLIENT.id}/${USER.username}`,
-                    //         method = "POST";
+                    (clientCustom.requiredFields.dispatch||[]).forEach(val => {
+                        MODAL.FIELDCHECK(val,body[val], () => { invalid = true; });
 
-                    //     body.origin_id = origin_id;
-                    //     body.route = route;
-                    //     body.destination = destination;
-                    //     body.vehicle_id =  Number(vehicle_id);
-                    //     body.trailer = trailer;
-                    //     body.comments = comments;
-                    //     body.attachments = ATTACHMENTS.get(CLIENT.dsName);
-                    //     body.username = USER.username;
-                        
-                    //     if(CLIENT.id == "wilcon"){
-                    //         body.ticket_number = ticket_number;
-                    //         body.driver_id = driver_id;
-                    //         body.checker_id = checker_id;
-                    //         body.helper_id = helper_id;
-                    //         body.chassis = chassis;
-                            
-                    //         (scheduled_date) ? body.scheduled_date = new Date(scheduled_date).toISOString() : null;
-                    //         (shift_schedule) ? body.shift_schedule = shift_schedule : null;
-                    //     }
+                        if(val == "shipment_number" && !regex.test(_id)) 
+                            errorType = "invalid-shipment-number";
+                    });
 
-                    //     // check for difference (if update only)
-                    //     historyOptions.excludeKeys = ["status","vehicleData","username"];
-                    //     body = HISTORY.check(__originalObj,body,USER.username,historyOptions);
+                    if(disabledSumitButton === true){
+                        $('#modal-error').html(ALERT.HTML.ERROR("Please fill all the required fields.",".")).show();
+                        $("#modal").animate({ scrollTop: 0 }, "fast");
+                    } else if(errorType == "invalid-shipment-number") {
+                        $('#modal-error').html(ALERT.HTML.ERROR("Invalid shipment number indicated. Field should contain eight (8) numerical digit.",".")).show();
+                        $("#modal").animate({ scrollTop: 0 }, "fast");
+                        $(`#shipment_number`).css({"background-color":"#ffe4e4"});
+                    } else {
+                        body._id = body.shipment_number;
+                        delete body.shipment_number;
 
-                    //     var changesKey = false;
-                    //     Object.keys(body).forEach(key => {
-                    //         (key.indexOf("history.") > -1 ) ? changesKey = key : null;
-                    //     });
-
-                    //     if(changesKey) {// can make, if no hisotry, submit button will remain disabled..
-                    //         MODAL.CONFIRMATION_W_FIELD({
-                    //             content: `Please provide a reason for updating this entry.`,
-                    //             confirmCloseCondition: true,
-                    //             confirmButtonText: "Submit",
-                    //             cancelButtonText: "Cancel",
-                    //             confirmCallback: function(field_val){
-                    //                 body[changesKey] += `<br><br>Reason for update: ${field_val.bold()}`;
-                    //                 _submit_();
-                    //             },
-                    //             cancelCallback: function(){
-                    //                 $(`#submit`).html(`Submit`).attr("disabled",false);
-                    //             }
-                    //         });
-                    //     } else {
-                    //         _submit_();
-                    //     }
-                    //     // end check for difference (if update only)
-
-                    //     function _submit_(){
-                    //         $(`.main-content .clearfix`).css({"pointer-events": "none"});
-                    //         $(button).html(`<i class="la la-spinner la-spin mr-2"></i>${buttonLoadingText}`).attr("disabled",true);
-                            
-                    //         if(has_id === true){
-                    //             url = `/api/dispatch/${CLIENT.id}/${USER.username}/${_id}`;
-                    //             method = "PUT";
-                    //         } else {
-                    //             if(CLIENT.id != "wilcon"){
-                    //                 body = $.extend(body,{_id});
-                    //             }
-                    //         }
-                    //         // body = $.extend(new_data,body);
-                            
-                    //         GET.AJAX({
-                    //             url,
-                    //             method,
-                    //             headers: {
-                    //                 "Content-Type": "application/json; charset=utf-8",
-                    //                 "Authorization": SESSION_TOKEN
-                    //             },
-                    //             data: JSON.stringify(body)
-                    //         }, function(docs){
-                    //             $(`#confirm-modal,#overlay`).remove(); 
-                    //             if(docs.ok == 1){
-                    //                 console.log(docs);
-                    //                 var message,sticky = false;
-                    //                 if(clientCustom.autoGeneratedId === true){
-                    //                     message = `<br>Shipment Number: <b>${docs.sequence}</b>`;
-                    //                     sticky = true;
-                    //                 }
-                    //                 (method == "PUT") ? TOASTR.UPDATEDSUCCESSFULLY() : TOASTR.CREATEDSUCCESSFULLY(message,sticky);
-                    //                 $(`.main-content .clearfix`).css({"pointer-events": ""});
-                    //                 $(`#overlay`).remove();
-                    //             } else {
-                    //                 console.log(docs.error);
-                    //                 $(button).html(buttonDefaultText).attr("disabled",false);
-                    //                 $(`.main-content .clearfix`).css({"pointer-events": ""});
-                    //             }
-                    //         },function(error){
-                    //             console.log(error);
-                    //             $(button).html(buttonDefaultText).attr("disabled",false);
-                    //             $(`.main-content .clearfix`).css({"pointer-events": ""});
-                    //             if(error.status == 409){} else {
-                    //                 TOASTR.ERROR(error.responseJSON);
-                    //             }
-                    //         });
-                    //     }
-                    // } else {
-                        if(clientCustom.autoGeneratedId === true){
-                            $(`#shipment_number`).css(css_default);
-                        } else {
-                            if(_id.isEmpty() || !regex.test(_id)){
-                                invalid = true;
-                                invalid_arr.push("shipment_number");
-                            } else {
-                                $(`#shipment_number`).css(css_default);
-                            }
-                        }
-                        // (origin_id == null || (origin_id != null && origin_id.isEmpty())) ? invalid_arr.push("origin") : $(`#origin`).css(css_default);
-                        (route == null || (route != null && route.isEmpty())) ? invalid_arr.push("route") : $(`#route`).css(css_default);
-                        (vehicle_id == null || (vehicle != null && vehicle_id.isEmpty())) ? invalid_arr.push("vehicle") : $(`#vehicle`).next(".select2-container").find(".select2-selection").css(css_default);
-                        
-                        if(CLIENT.id == "wilcon"){
-                            (ticket_number == null || (ticket_number != null && ticket_number.isEmpty())) ? invalid_arr.push("ticket_number") : $(`#ticket_number`).css(css_default);
-                            (driver_id == null || (driver_id != null && driver_id.isEmpty())) ? invalid_arr.push("driver_id") : $(`#driver_id`).css(css_default);
-                            // (chassis == null || (chassis != null && chassis.isEmpty())) ? invalid_arr.push("chassis") : $(`#chassis`).css(css_default);
-                            // (checker_id == null || (checker_id != null && checker_id.isEmpty())) ? invalid_arr.push("checker_id") : $(`#checker_id`).css(css_default);
-                            // (helper_id == null || (helper_id != null && helper_id.isEmpty())) ? invalid_arr.push("helper_id") : $(`#helper_id`).css(css_default);
-                            (scheduled_date == null || (scheduled_date != null && scheduled_date.isEmpty())) ? invalid_arr.push("scheduled_date") : $(`#scheduled_date`).css(css_default);
-                            (shift_schedule == null || (shift_schedule != null && shift_schedule.isEmpty())) ? invalid_arr.push("shift_schedule") : $(`#shift_schedule`).css(css_default);
-                        } else {
-                            (trailer == null || (trailer != null && trailer.isEmpty())) ? invalid_arr.push("trailer") : $(`#trailer`).next(".select2-container").find(".select2-selection").css(css_default);
-                        }
-
-                        $.each(invalid_arr, function(i,val){
-                            if($(`#${val}`).next(".select2-container").find(".select2-selection").length > 0){
-                                $(`#${val}`).next(".select2-container").find(".select2-selection").css(css_error);
-                            } else {
-                                $(`#${val}`).css(css_error);
-                            }
-                            incomplete = true;
-                        });
-
-                        if(invalid === true || disabledSumitButton === true){
-                            $(`#error`).html(`<div class="alert alert-danger alert-dismissible mb-1 role="alert">
-                                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                                    <span aria-hidden="true">×</span>
-                                                </button>
-                                                <i class="la la-times-circle"></i> Please fill all the required fields
-                                            </div>`).show();
-                            $("#modal").animate({ scrollTop: 0 }, "fast");
-
-                            if(CLIENT.id != "wilcon"){
-                                if(!regex.test(_id)) {
-                                    $(`#error`).append(ALERT.HTML.ERROR(`Invalid shipment number indicated. Field should contain eight (8) numerical digit.`,"mb-1"));
+                        if(invalid === true) {
+                            // warn staut is PLAN
+                            MODAL.CONFIRMATION({
+                                content: `You have not filled in all of the required fields. This will be saved as <span class="text-info font-bold">PLAN</span><sup style="font-size: 8px;">**</sup> instead. Do you wish to proceed?<span style="font-size: 9px;margin-left: 15px;font-style: italic;" class="d-block text-left mt-5">**Shipments with status <span class="text-info font-bold">PLAN</span> will be ignored during event process.</span>`,
+                                confirmCloseCondition: true,
+                                confirmButtonText: "Proceed",
+                                confirmBGStyle: "background-color:#64b03a;",
+                                confirmCallback: function(){
+                                    status = "plan";
+                                    SUBMITFORM();
+                                    $(`#confirm-modal`).remove(); 
                                 }
-                            }
+                            });
                         } else {
-                            if(incomplete === true) {
-                                // warn staut is PLAN
-                                MODAL.CONFIRMATION({
-                                    content: `You have not filled in all of the required fields. This will be saved as <span class="text-info font-bold">PLAN</span><sup style="font-size: 8px;">**</sup> instead. Do you wish to proceed?<span style="font-size: 9px;margin-left: 15px;font-style: italic;" class="d-block text-left mt-5">**Shipments with status <span class="text-info font-bold">PLAN</span> will be ignored during event process.</span>`,
-                                    confirmCloseCondition: true,
-                                    confirmButtonText: "Proceed",
-                                    confirmBGStyle: "background-color:#64b03a;",
-                                    confirmCallback: function(){
-                                        status = "plan";
-                                        SUBMITFORM();
-                                        $(`#confirm-modal`).remove(); 
-                                    }
-                                });
+                            if(body.shipment_type == "Pick-up"){
+                                // ignore check vehicle
+                                body.late_entry = false;
+                                (__status) ? status = __status : null;
+
+                                SUBMITFORM();
                             } else {
-                                console.log("HIIII");
                                 checkSelectedVehicleWithinGeofence().then(() => {
-                                    console.log("HEY");
                                     body.late_entry = late_data_entry;
                                     
                                     (__tempStat) ? __status = __tempStat : null;
                                     (__status && __status != "plan") ? status = __status : null;
-
+    
                                     SUBMITFORM();
-
+    
                                 }).catch(error => {
                                     console.log(error);
+                                    $('#modal-error').html(ALERT.HTML.ERROR(error.message,".")).show();
+                                    $("#modal").animate({ scrollTop: 0 }, "fast");
+                                    $(`#submit`).html('Submit').attr("disabled",false);
                                 });
-                            } 
-                        }
-
-                        function SUBMITFORM(){
-                            var url = `/api/dispatch/${CLIENT.id}/${USER.username}`,
-                                method = "POST";
-
-                            body.origin_id = origin_id;
-                            body.route = route;
-                            body.destination = destination;
-                            body.vehicle_id = Number(vehicle_id);
-                            body.trailer = trailer;
-                            // body.vehicleData = __vehicleData;
-                            body.comments = comments;
-                            body.attachments = ATTACHMENTS.get(CLIENT.dsName);
-                            body.status = status;
-                            body.username = USER.username;
-                            body.version = VERSION;
-                            
-                            if(CLIENT.id == "wilcon"){
-                                body.ticket_number = ticket_number;
-                                body.driver_id = driver_id;
-                                body.checker_id = checker_id;
-                                body.helper_id = helper_id;
-                                body.chassis = chassis;
-
-                                (scheduled_date) ? body.scheduled_date = new Date(scheduled_date).toISOString() : null;
-                                (shift_schedule) ? body.shift_schedule = shift_schedule : null;
-                            
-                                if(scheduled_date && !withinSchedule(scheduled_date,shift_schedule)){
-                                    if(status != "plan"){
-                                        status = "scheduled";
-                                        body.status = status;
-                                    }
-                                }
                             }
+                        } 
+                    }
 
-                            // check for difference (if update only)
-                            var selectedCheckIn = false;
-                            historyOptions.excludeKeys = ["events_captured","vehicleData","username"];
-                            historyOptions.customChanges = [
-                                function(){
-                                    var message = null;
-                                    if(vehicleOriginGeofence || vehicleDestinationGeofence){
-                                        if(__originalObj){
-                                            var found = false;
-                                            Object.keys((__originalObj.events_captured||{})).forEach(key => {
-                                                if(moment(Number(key)).format('HH:mm:ss') === moment(vehicleOriginGeofence.events[0].timestamp).format('HH:mm:ss')){
-                                                    found = true;
-                                                }
-                                            });
-                                            if(found == true){
-                                                message = null;
-                                            } else {
-                                                var checkinTime = DATETIME.FORMAT(vehicleOriginGeofence.events[0].timestamp);
-                                                message = `Selected <u>${checkinTime}</u> check-in date & time.`;
-                                                selectedCheckIn = true;
+                    function SUBMITFORM(){
+                        var url = `/api/dispatch/${CLIENT.id}/${USER.username}`,
+                            method = "POST";
+
+                        body.status = status;
+                    
+                        // wilcon
+                        if(body.scheduled_date && !withinSchedule(body.scheduled_date,body.shift_schedule)){
+                            if(status != "plan"){
+                                status = "scheduled";
+                                body.status = status;
+                            }
+                        }
+                        // end wilcon
+
+                        // check for difference (if update only)
+                        var selectedCheckIn = false;
+                        historyOptions.excludeKeys = ["events_captured"];
+                        historyOptions.customChanges = [
+                            function(){
+                                var message = null;
+                                if(previousCheckInOriginGeofence || previousCheckInDestinationGeofence){
+                                    if(__originalObj){
+                                        var found = false;
+                                        Object.keys((__originalObj.events_captured||{})).forEach(key => {
+                                            if(moment(Number(key)).format('HH:mm:ss') === moment(previousCheckInOriginGeofence.events[0].timestamp).format('HH:mm:ss')){
+                                                found = true;
                                             }
-                                        } else {
+                                        });
+                                        if(found == true){
                                             message = null;
+                                        } else {
+                                            var checkinTime = DATETIME.FORMAT(previousCheckInOriginGeofence.events[0].timestamp);
+                                            message = `Selected <u>${checkinTime}</u> check-in date & time.`;
+                                            selectedCheckIn = true;
                                         }
                                     } else {
                                         message = null;
                                     }
-                                    return message;
-                                } 
-                            ];
-
-                            body = HISTORY.check(__originalObj,body,USER.username,historyOptions);
-                            body.selectedCheckIn = selectedCheckIn;
-
-                            var changesKey = false;
-                            Object.keys(body).forEach(key => {
-                                (key.indexOf("history.") > -1 ) ? changesKey = key : null;
-                            });
-
-                            if(__originalObj){
-                                if(__originalObj.route != route || Number(__originalObj.vehicle_id) != Number(vehicle_id) || vehicleOriginGeofence || vehicleDestinationGeofence){
-                                    body.events_captured = __events_captured;
                                 } else {
-                                    body.events_captured = __originalObj.events_captured;
+                                    message = null;
                                 }
-                            } else {
+                                return message;
+                            } 
+                        ];
+
+                        body = HISTORY.check(__originalObj,body,USER.username,historyOptions);
+                        body.selectedCheckIn = selectedCheckIn;
+
+                        var changesKey = false;
+                        Object.keys(body).forEach(key => {
+                            (key.indexOf("history.") > -1 ) ? changesKey = key : null;
+                        });
+
+                        if(__originalObj){
+                            if(__originalObj.route != body.route || Number(__originalObj.vehicle_id) != Number(body.vehicle_id) || previousCheckInOriginGeofence || previousCheckInDestinationGeofence){
                                 body.events_captured = __events_captured;
+                            } else {
+                                body.events_captured = __originalObj.events_captured;
+                            }
+                        } else {
+                            body.events_captured = __events_captured;
+                        }
+                        
+                        if(changesKey && !["plan"].includes(__originalObj.status) ) {// can make, if no hisotry, submit button will remain disabled..
+                            MODAL.CONFIRMATION_W_FIELD({
+                                content: `Please provide a reason for updating this entry.`,
+                                confirmCloseCondition: true,
+                                confirmButtonText: "Submit",
+                                cancelButtonText: "Cancel",
+                                confirmCallback: function(field_val){
+                                    body[changesKey] += `<br><br>Reason for update: ${field_val.bold()}`;
+                                    _submit_();
+                                },
+                                cancelCallback: function(){
+                                    $(`#submit`).html(`Submit`).attr("disabled",false);
+                                }
+                            });
+                        } else {
+                            _submit_();
+                        }
+                        // end check for difference (if update only)
+
+                        function _submit_(){
+                            $(`.main-content .clearfix`).css({"pointer-events": "none"});
+                            $(button).html(`<i class="la la-spinner la-spin mr-2"></i>${buttonLoadingText}`).attr("disabled",true);
+
+                            if(has_id === true){
+                                url = `/api/dispatch/${CLIENT.id}/${USER.username}/${_id}`;
+                                method = "PUT";
+                            } else {
+                                if(CLIENT.id != "wilcon"){
+                                    body = $.extend(body,{_id});
+                                }
                             }
                             
-                            if(changesKey && !["plan"].includes(__originalObj.status) ) {// can make, if no hisotry, submit button will remain disabled..
-                                MODAL.CONFIRMATION_W_FIELD({
-                                    content: `Please provide a reason for updating this entry.`,
-                                    confirmCloseCondition: true,
-                                    confirmButtonText: "Submit",
-                                    cancelButtonText: "Cancel",
-                                    confirmCallback: function(field_val){
-                                        body[changesKey] += `<br><br>Reason for update: ${field_val.bold()}`;
-                                        _submit_();
-                                    },
-                                    cancelCallback: function(){
-                                        $(`#submit`).html(`Submit`).attr("disabled",false);
-                                    }
-                                });
-                            } else {
-                                _submit_();
-                            }
-                            // end check for difference (if update only)
+                            if(body.late_entry === true){
+                                var inTransitKey = OBJECT.getKeyByValue(__events_captured, body.status);
+                                var date =  (inTransitKey) ? new Date(Number(inTransitKey)) : new Date();
+                                
+                                body.departure_date = date.toISOString();
 
-                            function _submit_(){
-                                $(`.main-content .clearfix`).css({"pointer-events": "none"});
-                                $(button).html(`<i class="la la-spinner la-spin mr-2"></i>${buttonLoadingText}`).attr("disabled",true);
-
-                                if(has_id === true){
-                                    url = `/api/dispatch/${CLIENT.id}/${USER.username}/${_id}`;
-                                    method = "PUT";
-                                } else {
-                                    if(CLIENT.id != "wilcon"){
-                                        body = $.extend(body,{_id});
-                                    }
+                                if(!inTransitKey){
+                                    body.events_captured[date.getTime()] = body.status;
+                                    body.events_captured = OBJECT.sortByKey(body.events_captured);
                                 }
-                                // body = $.extend(new_data,body);
-                                if(body.late_entry === true){
-                                    var inTransitKey = OBJECT.getKeyByValue(__events_captured,"in_transit");
-                                    var _route = getRoute(route);
-                                    var date =  (inTransitKey) ? new Date(Number(inTransitKey)) : new Date(),
-                                        transit_time = DATETIME.HH_MM(null,_route.transit_time),
-                                        hours = transit_time.hour,
-                                        minutes = transit_time.minute;
-                                    
-                                    body.departure_date = date.toISOString();
+
+                                if(body.route){
                                     body.destination[0].etd = date.toISOString();
 
-                                    if(!inTransitKey){
-                                        body.events_captured[date.getTime()] = "in_transit";
-                                        body.events_captured = OBJECT.sortByKey(body.events_captured);
-                                    }
-                                
+                                    var _route = getRoute(body.route);
+                                    var transit_time = DATETIME.HH_MM(null,_route.transit_time);
+                                    var hours = transit_time.hour;
+                                    var minutes = transit_time.minute;
+                            
                                     (hours)?date.setHours(date.getHours() + Number(hours)):null;
                                     (minutes)?date.setMinutes(date.getMinutes() + Number(minutes)):null;
                                     
                                     body.destination[0].eta = date.toISOString();
                                 }
-                                body.vehicleChanged = vehicleChanged;
-                                GET.AJAX({
-                                    url,
-                                    method,
-                                    headers: {
-                                        "Content-Type": "application/json; charset=utf-8",
-                                        "Authorization": SESSION_TOKEN
-                                    },
-                                    data: JSON.stringify(body)
-                                }, function(docs){
-                                    $(`#confirm-modal,#overlay`).remove(); 
-                                    if(docs.ok == 1){
-                                        console.log(docs);
-                                        var message,sticky = false;
-                                        if(clientCustom.autoGeneratedId === true){
-                                            message = `<br>Shipment Number: <b>${docs.sequence}</b>`;
-                                            sticky = true;
-                                        }
-                                        (method == "PUT") ? TOASTR.UPDATEDSUCCESSFULLY() : TOASTR.CREATEDSUCCESSFULLY(message,sticky);
-                                        $(`.main-content .clearfix`).css({"pointer-events": ""});
-                                        $(`#overlay`).remove();
-                                    } else {
-                                        console.log(docs.error);
-                                        $(button).html(buttonDefaultText).attr("disabled",false);
-                                        $(`.main-content .clearfix`).css({"pointer-events": ""});
-                                        TOASTR.ERROR({statusText:"Shipment # already exists."},`<br><br><a id="toastr-link" href="javascript:void(0);">Click here to Load Existing Entry</a><br><br>or Tap anywhere to close`,{ timeOut: 0, extendedTimeOut: 0 });
-                                        $("body").on('click', `#toastr-link`,function(e){
-                                            e.stopImmediatePropagation();
-                                            // do not use _id or shipment_number for value of {_id:...}. It will use the previous form ID.
-                                            // should also be before body.append.
-                                            var __id = $(`#shipment_number`).val()._trim();
-                                            $(`#overlay`).remove();
-                                            $(`body`).append(MODAL.CREATE.EMPTY(`View Dispatch Entry`,modalViews.dispatch.form()));
-                                            DISPATCH.FUNCTION.form({ _id: __id });
-                                            $("html, body,#modal").animate({ scrollTop: 0 }, "fast");
-                                        });
+                            }
+                            body.vehicleChanged = vehicleChanged;
+                            GET.AJAX({
+                                url,
+                                method,
+                                headers: {
+                                    "Content-Type": "application/json; charset=utf-8",
+                                    "Authorization": SESSION_TOKEN
+                                },
+                                data: JSON.stringify(body)
+                            }, function(docs){
+                                $(`#confirm-modal,#overlay`).remove(); 
+                                if(docs.ok == 1){
+                                    console.log(docs);
+                                    var message,sticky = false;
+                                    if(clientCustom.autoGeneratedId === true){
+                                        message = `<br>Shipment Number: <b>${docs.sequence}</b>`;
+                                        sticky = true;
                                     }
-                                },function(error){
-                                    console.log(error);
+                                    (method == "PUT") ? TOASTR.UPDATEDSUCCESSFULLY() : TOASTR.CREATEDSUCCESSFULLY(message,sticky);
+                                    $(`.main-content .clearfix`).css({"pointer-events": ""});
+                                    $(`#overlay`).remove();
+                                } else {
+                                    console.log(docs.error);
                                     $(button).html(buttonDefaultText).attr("disabled",false);
                                     $(`.main-content .clearfix`).css({"pointer-events": ""});
-                                    if(error.status == 409){
-                                        TOASTR.ERROR({statusText:"Shipment # already exists."},`<br><br><a id="toastr-link" href="javascript:void(0);">Click here to Load Existing Entry</a><br><br>or Tap anywhere to close`,{ timeOut: 0, extendedTimeOut: 0 });
-                                        $("body").on('click', `#toastr-link`,function(e){
-                                            e.stopImmediatePropagation();
-                                            // do not use _id or shipment_number for value of {_id:...}. It will use the previous form ID.
-                                            // should also be before body.append.
-                                            var __id = $(`#shipment_number`).val()._trim();
-                                            $(`#overlay`).remove();
-                                            $(`body`).append(MODAL.CREATE.EMPTY(`View Dispatch Entry`,modalViews.dispatch.form()));
-                                            DISPATCH.FUNCTION.form({ _id: __id });
-                                            $("html, body,#modal").animate({ scrollTop: 0 }, "fast");
-                                        });
-                                    } else {
-                                        TOASTR.ERROR(error.responseJSON);
-                                    }
-                                });
-                            }
+                                    TOASTR.ERROR({statusText:"Shipment # already exists."},`<br><br><a id="toastr-link" href="javascript:void(0);">Click here to Load Existing Entry</a><br><br>or Tap anywhere to close`,{ timeOut: 0, extendedTimeOut: 0 });
+                                    $("body").on('click', `#toastr-link`,function(e){
+                                        e.stopImmediatePropagation();
+                                        // do not use _id or shipment_number for value of {_id:...}. It will use the previous form ID.
+                                        // should also be before body.append.
+                                        var __id = ($(`#shipment_number`).val()||"")._trim();
+                                        $(`#overlay`).remove();
+                                        $(`body`).append(MODAL.CREATE.EMPTY(`View Dispatch Entry`,modalViews.dispatch.form[CLIENT.id]()));
+                                        DISPATCH.FUNCTION.form({ _id: __id });
+                                        $("html, body,#modal").animate({ scrollTop: 0 }, "fast");
+                                    });
+                                }
+                            },function(error){
+                                console.log(error);
+                                $(button).html(buttonDefaultText).attr("disabled",false);
+                                $(`.main-content .clearfix`).css({"pointer-events": ""});
+                                if(error.status == 409){
+                                    TOASTR.ERROR({statusText:"Shipment # already exists."},`<br><br><a id="toastr-link" href="javascript:void(0);">Click here to Load Existing Entry</a><br><br>or Tap anywhere to close`,{ timeOut: 0, extendedTimeOut: 0 });
+                                    $("body").on('click', `#toastr-link`,function(e){
+                                        e.stopImmediatePropagation();
+                                        // do not use _id or shipment_number for value of {_id:...}. It will use the previous form ID.
+                                        // should also be before body.append.
+                                        var __id = ($(`#shipment_number`).val()||"")._trim();
+                                        $(`#overlay`).remove();
+                                        $(`body`).append(MODAL.CREATE.EMPTY(`View Dispatch Entry`,modalViews.dispatch.form[CLIENT.id]()));
+                                        DISPATCH.FUNCTION.form({ _id: __id });
+                                        $("html, body,#modal").animate({ scrollTop: 0 }, "fast");
+                                    });
+                                } else {
+                                    TOASTR.ERROR(error.responseJSON);
+                                }
+                            });
                         }
-                    // }
+                    }
                 });
                 /******** END SUBMIT ENTRY ********/
             }
@@ -5483,41 +5823,17 @@ var DISPATCH = {
                 if(obj){
                     // check if shipment data is complete
                     obj.destination[0] = obj.destination[0] || {};
-                    var complete = true,
-                        allowTransit = true,
-                        checking = function(x){
-                            var bool = true;
-                            Object.keys(x).forEach(key => {
-                                x[key].forEach(_key => {
-                                    var _obj = obj[_key];
-                                    if(Array.isArray(obj[key])){ // for now, specifically for destination
-                                        _obj = obj[key][0][_key];
-                                    } else if(typeof obj[key] === 'object' && obj[key] !== null){
-                                        _obj = obj[key][_key];
-                                    } 
-                                    if(_obj){
-                                        _obj = _obj.toString() || "";
-                                        if(!_obj.toString()) bool = false;
-                                    } else {
-                                        bool = false;
-                                    }
-                                });
-                            });
-                            return bool;
-                        };
-                    complete = checking({
-                        main: ["origin_id","route","departure_date","vehicle_id"],
-                        destination: ["location_id","eta","etd"],
-                    });
-                    allowTransit = checking({
-                        main: ["origin_id","route","vehicle_id"],
-                        destination: ["location_id"],
+
+                    var allRequiredFields = true;
+                    (clientCustom.requiredFields.dispatch||[]).forEach(val => {
+                        (val == "shipment_number") ? val = "_id" : null;
+                        (!obj[val]) ? allRequiredFields = false : null;
                     });
 
                     $(`[status]`).removeClass("active disabled").addClass("inactive");
                     $(`[status="${obj.status}"]`).removeClass("inactive").addClass("active");
 
-                    if(complete === true || allowTransit === true){
+                    if(allRequiredFields === true){
                         var allowedButtons = `[status=assigned]`,
                             statusSelector = function(arr){
                                 var newArr = [];
@@ -5532,7 +5848,9 @@ var DISPATCH = {
                         if(["plan"].includes(obj.status)){
                             allowedButtons = statusSelector([obj.status,"assigned"]);
                         } else if(["assigned"].includes(obj.status)){
-                            allowedButtons = statusSelector([obj.status,"plan","queueingAtOrigin","processingAtOrigin","idlingAtOrigin","in_transit","incomplete"]);
+                            allowedButtons = statusSelector([obj.status,"plan","dispatched","queueingAtOrigin","processingAtOrigin","idlingAtOrigin","in_transit","incomplete"]);
+                        } else if(["dispatched"].includes(obj.status)){
+                            allowedButtons = statusSelector([obj.status,"plan","assigned","onDelivery","incomplete"]);
                         } else if(["queueingAtOrigin"].includes(obj.status)){
                             allowedButtons = statusSelector([obj.status,"plan","assigned","processingAtOrigin","idlingAtOrigin","in_transit","incomplete"]);
                         } else if(["processingAtOrigin"].includes(obj.status)){
@@ -5541,6 +5859,8 @@ var DISPATCH = {
                             allowedButtons = statusSelector([obj.status,"plan","assigned","queueingAtOrigin","processingAtOrigin","in_transit","incomplete"]);
                         } else if(["in_transit"].includes(obj.status)){
                             allowedButtons = statusSelector([obj.status,"plan","assigned","queueingAtOrigin","processingAtOrigin","idlingAtOrigin","onSite","complete","incomplete"]);
+                        } else if(["onDelivery"].includes(obj.status)){
+                            allowedButtons = statusSelector([obj.status,"plan","assigned","dispatched","complete","incomplete"]);
                         } else if(["onSite"].includes(obj.status)){
                             allowedButtons = statusSelector([obj.status,"plan","assigned","queueingAtOrigin","processingAtOrigin","idlingAtOrigin","in_transit","returning","incomplete"]);
                         } else if(["returning"].includes(obj.status)){
@@ -5560,13 +5880,13 @@ var DISPATCH = {
                                     cancelButtonText: "Cancel",
                                     confirmCallback: function(field_val){
                                         GET.AJAX({
-                                            url: `/api/dispatch/${CLIENT.id}/${USER.username}/${_id}`,
+                                            url: `/api/dispatch/${CLIENT.id}/${USER.username}/status/${_id}`,
                                             method: "PUT",
                                             headers: {
                                                 "Content-Type": "application/json; charset=utf-8",
                                                 "Authorization": SESSION_TOKEN
                                             },
-                                            data: JSON.stringify({status: new_status, i_c_reason: field_val || "", transit_time: route.transit_time, type:"statusUpdate"})
+                                            data: JSON.stringify({ status: new_status, i_c_reason: field_val || "", transit_time: (route||{}).transit_time, statusText: GET.STATUS(new_status).text })
                                         }, function(docs){
                                             if(docs.ok == 1){
                                                 $(`#confirm-modal,#overlay`).remove(); 
@@ -5584,13 +5904,13 @@ var DISPATCH = {
                                     confirmCloseCondition: true,
                                     confirmCallback: function(){
                                         GET.AJAX({
-                                            url: `/api/dispatch/${CLIENT.id}/${USER.username}/${_id}`,
+                                            url: `/api/dispatch/${CLIENT.id}/${USER.username}/status/${_id}`,
                                             method: "PUT",
                                             headers: {
                                                 "Content-Type": "application/json; charset=utf-8",
                                                 "Authorization": SESSION_TOKEN
                                             },
-                                            data: JSON.stringify({status: new_status, transit_time: route.transit_time, type:"statusUpdate"})
+                                            data: JSON.stringify({ status: new_status, transit_time: (route||{}).transit_time })
                                         }, function(docs){
                                             if(docs.ok == 1){
                                                 $(`#confirm-modal,#overlay`).remove(); 
@@ -5621,8 +5941,7 @@ var DISPATCH = {
             var paddingTop = "pt-3";
                 
             const original = history.original;
-            // delete history.original;
-            // delete history.vehicle;
+            
             const sorted = OBJECT.sortByKey(history);
             const ordered = {};
             Object.keys(sorted).reverse().forEach(function(key) {
@@ -5917,270 +6236,39 @@ var DISPATCH = {
                                     if(["plan","scheduled"].includes(obj.status)) {
                                         resolve();
                                     } else {
-                                        function detectVehicleLocation(tries){
-                                            tries = tries || 0;
-                                            console.log(USER.apiKey);
-                                            GET.AJAX({
-                                                "url": `https://${CLIENT.ggsURL}/comGpsGate/api/v.1/applications/${CLIENT.appId}/geofences/${origin.geofence_id}/users?FromIndex=0&PageSize=500`,
-                                                "method": "GET",
-                                                "headers": {
-                                                    "Authorization": USER.apiKey
-                                                },
-                                            }, function(response){
-                                                console.log("Vehicles:",response);
-                                                obj.late_entry = true;
-                                                response.forEach(val => {
-                                                    if(val.username == vehicle.username){
-                                                        obj.late_entry = false;
-                                                    }
+
+                                        DISPATCH.detectStatus({
+                                            geofenceId: origin.geofence_id,
+                                            scheduled_date,
+                                            shift_schedule,
+                                            route,
+                                            __status: obj.status,
+                                            vehicle: {
+                                                _id: vehicle._id,
+                                                username: vehicle.username,
+                                            },
+                                            dGeofence: {
+                                                short_name: destination.short_name
+                                            },
+                                            geofence: {
+                                                short_name: origin.short_name,
+                                            },
+                                        }).then(docs => {
+                                            console.log("docs!!",docs);
+
+                                            if(docs.error){
+                                                reject({
+                                                    message: docs.message
                                                 });
-
-                                                var vehicleAjax = function(le){
-                                                    GET.AJAX({
-                                                        url: `/api/vehicles_history/${CLIENT.id}/${USER.username}/${vehicle._id}`,
-                                                        method: "GET",
-                                                        headers: {
-                                                            "Authorization": SESSION_TOKEN
-                                                        },
-                                                    }, function(docs){
-                                                        if(docs.length > 0){
-                                                            var __tempStat = null;
-                                                            var dgeofenceName = destination.short_name;
-                                                            var ogeofenceName = origin.short_name;
-                
-                                                            var doc = docs[0],
-                                                                loc = doc.location || []; // don't name it 'location', it will refresh page (page.location??)
-                
-                                                            var getIndexOf = function(text,arr,op){
-                                                                var cond = null;
-                                                                arr.forEach(val => {
-                                                                    if(op == "or" && !cond){
-                                                                        cond = (text.indexOf(val) > -1);
-                                                                    }
-                                                                    if(op == "and" && (cond == null || cond == true)){
-                                                                        cond = (text.indexOf(val) > -1);
-                                                                    }
-                                                                });
-                                                                return cond;
-                                                            },
-                                                            getStat_Time = function(oEvents,dEvents){
-                                                                var gStat = "assigned",
-                                                                    gCond = false;
-                                                                    
-                                                                var tempDateTime = new Date().getTime();
-                                                                for(var i = oEvents.length-1; i >= 0; i--){
-                                                                    var val = oEvents[i],
-                                                                        eventDate = new Date(val.timestamp).getTime(),
-                                                                        hourDiff = Math.abs(tempDateTime - eventDate) / 36e5;
-                                                                    // in transit
-                                                                    // do not remove gStat = in_transit.
-                                                                    if(((val.RULE_NAME == "Inside Geofence" && val.stage == "end") || (val.RULE_NAME == "Outside Geofence" && val.stage == "start")) && le == true && gStat != "in_transit" && hourDiff < 24) {
-                                                                            gCond = true;
-                                                                            gStat = "in_transit";
-                                                                            obj.events_captured[eventDate] = "in_transit";
-                                                                            tempDateTime = new Date(val.timestamp).getTime();
-                                                                    }
-                                                                    // idling
-                                                                    if(getIndexOf(val.RULE_NAME,["Inside","Idle"],"and") && !obj.events_captured[eventDate] && hourDiff < 24){
-                                                                        gCond = true;
-                                                                        obj.events_captured[eventDate] = "idlingAtOrigin";
-                                                                    }
-                                                                    // processing
-                                                                    if(getIndexOf(val.RULE_NAME,["Inside","Processing"],"and") && !obj.events_captured[eventDate] && hourDiff < 24){
-                                                                        gCond = true;
-                                                                        obj.events_captured[eventDate] = "processingAtOrigin";
-                                                                    }
-                                                                    // queueing
-                                                                    if(getIndexOf(val.RULE_NAME,["Inside","Queueing"],"and") && !obj.events_captured[eventDate] && hourDiff < 24){
-                                                                        gCond = true;
-                                                                        obj.events_captured[eventDate] = "queueingAtOrigin";
-                                                                    }
-
-                                                                    // temp Status
-                                                                    if(!obj.events_captured[eventDate] && hourDiff < 24){
-                                                                        obj.events_captured[eventDate] = "tempStatus";
-                                                                    }
-                                                                }
-                                                                
-
-                                                                // if late entry and no in_transit timestamp
-                                                                if(le == true && !OBJECT.getKeyByValue(obj.events_captured,"in_transit")){
-                                                                    // last timestamp will be in_transit
-                                                                    obj.events_captured[new Date().getTime()] = "in_transit";
-                                                                }
-
-                                                                // sort events_captured
-                                                                var sortedEvents = OBJECT.sortByKey(obj.events_captured);
-                                                                var i = 0;
-                                                                var lastTimestamp;
-                                                                Object.keys(sortedEvents).forEach(key => {
-                                                                    if(i == 0){
-                                                                        i++;
-                                                                        // if first timestamp is not in transit
-                                                                        if(sortedEvents[key] != "in_transit"){
-                                                                            // change value to entered_origin
-                                                                            sortedEvents[key] = "entered_origin";
-                                                                        }
-                                                                    }
-                                                                    lastTimestamp = key;
-                                                                });
-
-                                                                // loop to delete tempStatus
-                                                                Object.keys(sortedEvents).forEach(key => {
-                                                                    if(sortedEvents[key] == "tempStatus"){
-                                                                        delete sortedEvents[key];
-                                                                    }
-                                                                });
-                                                                obj.events_captured = sortedEvents;
-
-                                                                // status will be last timestamp's value
-                                                                gStat = sortedEvents[lastTimestamp];
-                                                                if(gStat == "entered_origin"){
-                                                                    gStat = "assigned";
-                                                                }
-
-                                                                // CICO AT ORIGIN
-                                                                if(le == true){
-                                                                    var InTransitDateTime = OBJECT.getKeyByValue(obj.events_captured,"in_transit");
-
-                                                                    gStat = "in_transit";
-            
-                                                                    dEvents.forEach(val => {
-                                                                        var eventDate = new Date(val.timestamp).getTime(),
-                                                                            hourDiff = Math.abs(tempDateTime - eventDate) / 36e5;
-            
-                                                                        // in transit (if no datetime)
-                                                                        if(val.stage == "start" && !InTransitDateTime && hourDiff < 24){
-                                                                            gCond = true;
-                                                                            obj.events_captured[eventDate] = "in_transit";
-                                                                        }
-                                                                        // end in transit (if no datetime)
-
-                                                                        // HERE!!!!!!!!!
-
-                                                                        if(clientCustom.roundtrip) {
-                                                                            // onSite
-                                                                            if(!((val.RULE_NAME == "Inside Geofence" && val.stage == "end") || (val.RULE_NAME == "Outside Geofence" && val.stage == "start")) && gStat == "in_transit" && !obj.events_captured[eventDate]){
-                                                                                gStat = "onSite";
-                                                                                gCond = true;
-                                                                                obj.events_captured[eventDate] = "onSite";
-                                                                            }
-                                                                            // end onSite
-                                                                            
-
-                                                                            // returning
-                                                                            if(((val.RULE_NAME == "Inside Geofence" && val.stage == "end") || (val.RULE_NAME == "Outside Geofence" && val.stage == "start")) && gStat == "onSite" && !obj.events_captured[eventDate]){
-                                                                                gStat = "returning";
-                                                                                gCond = true;
-                                                                                obj.events_captured[eventDate] = "returning";
-                                                                            }
-                                                                            // end returning
-
-                                                                            
-                                                                            // complete ORIGINNNNN
-                                                                            // if(gStat == "returning" && isOrigin === true){
-                                                                            //     _ids.complete.push(doc._id);
-                                                                            // }
-                                                                            // end complete
-                                                                        } else {
-                                                                            // complete
-                                                                            if(gStat == "in_transit" && !obj.events_captured[eventDate] && (Number(InTransitDateTime) < eventDate) && hourDiff < 24){
-                                                                                gStat = "complete";
-                                                                                gCond = true;
-                                                                                obj.events_captured[eventDate] = "complete";
-                                                                            }
-                                                                            // end complete
-                                                                        }
-
-                                                                        // HERE!!!!!!!!!
-                                                                    });
-                                                                }
-                
-                                                                return (gCond) ? gStat : null;
-                                                            };
-                
-                                                            if(le) {
-                                                                for(var i = loc.length-1; i >= 0; i--){
-                                                                    if(loc[i].short_name == ogeofenceName){
-                                                                        obj.late_entry = true;
-                                                                        __tempStat = getStat_Time(loc[i].events,[]);
-                                                                        // Truck selected has left the origin. This shipment will be tagged as LATE_DATA_ENTRY and will automatically be saved as IN TRANSIT.
-                                                                        // modalAlert(`Truck selected has left the origin. This shipment will be tagged as <b>LATE_DATA_ENTRY</b> and will automatically be saved as <b>IN TRANSIT</b>.`,"WARNING");
-                                                                        break;
-                                                                    } else {
-                                                                        if(loc[i].short_name == dgeofenceName){
-                                                                            var prevLoc = loc.slice(0, i),
-                                                                                prevHasOrigin = false;
-                                                                            for(var j = prevLoc.length-1; j >= 0; j--){
-                                                                                if(prevLoc[j].short_name == dgeofenceName){
-                                                                                    break;
-                                                                                }
-                                                                                if(prevLoc[j].short_name == ogeofenceName){
-                                                                                    obj.late_entry = true;
-                                                                                    __tempStat = getStat_Time(prevLoc[j].events,loc[i].events);
-                                                                                    prevHasOrigin = true;
-                                                                                    // modalAlert(`Truck selected has left the origin and is already at destination. This shipment will be tagged as <b>LATE_DATA_ENTRY</b>.`,"WARNING");
-                                                                                    // Truck selected has left the origin and is already at destination. This shipment will be tagged as LATE_DATA_ENTRY.
-                                                                                    break;
-                                                                                }
-                                                                            }
-                                                                            if(!prevHasOrigin){
-                                                                                obj.late_entry = false;
-                                                                                __tempStat = "assigned";
-                                                                                // modalAlert(`Truck selected is <u>not</u> within the origin. It is assumed that the truck is enroute to origin.`,"INFO");
-                                                                                // Truck selected is <u>not</u> within the origin. It is assumed that the truck is enroute to origin.
-                                                                            }
-                                                                            break;
-                                                                        }
-                                                                    }
-                                                                }
-                                                                if(__tempStat == null) {
-                                                                    console.log("__tempStat is null");
-                                                                    __tempStat = "assigned";
-                                                                    obj.late_entry = false;
-                                                                    // modalAlert(`Truck selected is <u>not</u> within the origin. It is assumed that the truck is enroute to origin.`,"INFO");
-                                                                    // Truck selected is <u>not</u> within the origin. It is assumed that the truck is enroute to origin.
-                                                                }
-                                                            } else {
-                                                                if(loc[loc.length-1].short_name == ogeofenceName){
-                                                                    __tempStat = getStat_Time(loc[loc.length-1].events);
-                                                                }
-                                                                if(__tempStat == null) {
-                                                                    __tempStat = "assigned";
-                                                                    obj.late_entry = false;
-                                                                    console.log("__tempStat is null but vehicle is inside origin.");
-                                                                }
-                                                                // modalAlert(`Truck selected is within the origin.`,"INFO");
-                                                                // Truck selected is within the origin.
-                                                            }
-            
-                                                            var tempEventsCaptured = OBJECT.sortByKey(obj.events_captured);
-                                                            obj.events_captured = tempEventsCaptured;
-
-                                                            obj.status = __tempStat;
-                                                            console.log("EYOOOEOEOEOOEOEO",le,__tempStat,obj.events_captured);
-
-                                                            resolve();
-                                                        } else {
-                                                            // modalAlert(`Truck selected does not exist.`,"ERROR");
-                                                            reject({
-                                                                message: `Truck selected does not exist.`
-                                                            });
-                                                        }
-                                                    });
-                                                };
+                                            } else {
+                                                (docs.events_captured) ? obj.events_captured = docs.events_captured : null;
+                                                (docs.late_data_entry) ? obj.late_data_entry = docs.late_data_entry : null;
                                                 
-                                                vehicleAjax(obj.late_entry);
-                                            }, function(error){
-                                                if(error.status == 0 && tries < MAX_TRIES){
-                                                    tries++;
-                                                    detectVehicleLocation(tries);
-                                                }
-                                                TOASTR.ERROR(error);
-                                            });
-                                        }
+                                                obj.status = docs.status || "assigned";
 
-                                        detectVehicleLocation();
+                                                resolve();
+                                            }
+                                        });
                                     }
                                 });
                             },
@@ -6706,11 +6794,6 @@ var DISPATCH = {
                                     
                                     TABLE.ROW_LISTENER({table_id,_row,urlPath:urlPath,_id,
                                         additionalListeners: function(){
-                                            // $(table_id).on('click', `[_row="${_row}"] [view],[_row="${_row}"] + tr.child [view]`,function(e){
-                                            //     e.stopImmediatePropagation();
-                                            //     $(`body`).append(modalViews.dispatch.view(data._id));
-                                            //     $("html, body,#modal").animate({ scrollTop: 0 }, "fast");
-                                            // });
                                         }
                                     });
                                 },
@@ -6959,7 +7042,6 @@ var SHIFT_SCHEDULE = {
                             method: "POST"
                         });
                     },
-                    refresh: function(){ table.countRows(); },
                 }
             });
             table.addRow = function(obj){
@@ -7048,6 +7130,276 @@ var SHIFT_SCHEDULE = {
     }
 };
 var REPORTS = {
+    columns: {
+        actualCICO: {
+            name: 'Actual CICO',
+            description: 'Actual duration of stay inside the origin site'
+        },
+        actualCICOAve: {
+            name: 'Actual CICO',
+            description: 'Average of actual duration of stay inside the origin site'
+        },
+
+        baseSite: {
+            name: 'Base Site',
+            description: 'Site where the vehicle was accounted and will serve as its home base'
+        },
+        baseSiteCode: {
+            name: 'Base Site Code',
+            description: 'Numerical identifier of the base site'
+        },
+        baseSiteRegion: {
+            name: 'Base Site Region',
+            description: 'Region where the base site is located'
+        },
+
+        cicoTarget: {
+            name: 'CICO Target',
+            description: 'Maximum duration of stay inside the origin site'
+        },
+        cicoWithCapping: {
+            name: 'CICO with Capping',
+            description: 'Duration of stay inside the origin site that exceeded to 5 hrs will automatically rolled back to 5 hrs'
+        },
+        cicoWithCappingAve: {
+            name: 'CICO with Capping',
+            description: 'Average duration of stay inside the origin site that exceeded to 5 hrs will automatically rolled back to 5 hrs'
+        },
+        cicoVariance: {
+            name: 'CICO Variance',
+            description: 'Excess CICO (with capping) duration from the CICO target'
+        },
+        checkInDate: {
+            name: 'Check In Date',
+            description: 'Actual date of entry to the origin site'
+        },
+        checkInTime: {
+            name: 'Check In Time',
+            description: 'Actual time of entry to the origin site'
+        },
+        checkOutDate: {
+            name: 'Check Out Date',
+            description: 'Actual date of departure to the origin site'
+        },
+        checkOutTime: {
+            name: 'Check Out Time',
+            description: 'Actual time of departure to the origin site'
+        },
+        completionDate: {
+            name: 'Completion Date',
+            description: 'Actual date of arrival to the destination site'
+        },
+        completionTime: {
+            name: 'Completion Time',
+            description: 'Actual time of arrival to the destination site'
+        },
+
+        delay: {
+            name: 'Delay',
+            description: 'Situation that hamper the productivity of the operaton'
+        },
+        destination: {
+            name: 'Destination',
+            description: 'Site to receive the shipment'
+        },
+
+        escalation: {
+            name: 'Escalation',
+            description: 'Level of severety of the delay encountered'
+        },
+        estTransitDuration: {
+            name: 'Est. Transit Duration',
+            description: 'Estimated amount of time in transporting shipment from origin site to destination site'
+        },
+
+        idlingDuration: {
+            name: 'Idling Duration',
+            description: 'Duration of stay inside the idling area geofence'
+        },
+        idlingDurationAve: {
+            name: 'Idling Duration',
+            description: 'Average duration of stay inside the idling area geofence'
+        },
+
+        lapseTime: {
+            name: 'Lapse Time',
+            description: 'Amount of time exceeds to the estimated transit duration'
+        },
+        lapseTimeAve: {
+            name: 'Average Lapse Time',
+            description: 'Average of the amount of time exceeds to the estimated transit duration'
+        },
+        longQueueing: {
+            name: 'Long Queueing',
+            description: 'Count of shipment that encountered Long Queueing Delay'
+        },
+
+        occurrenceDate: {
+            name: 'Occurrence Date',
+            description: 'Actual date of delay encounter'
+        },
+        occurrenceTime: {
+            name: 'Occurrence Time',
+            description: 'Actual time of delay encounter'
+        },
+        origin: {
+            name: 'Origin',
+            description: 'Site where the shipment originates'
+        },
+        origin_1: {
+            name: 'Origin',
+            description: 'Source Name'
+        },
+        originSiteCode: {
+            name: 'Origin Site Code',
+            description: 'Numerical identifier of the origin'
+        },
+        originRegion: {
+            name: 'Origin Region',
+            description: 'Region where the origin site is located'
+        },
+        overTransitDuration: {
+            name: 'Over Transit Duration',
+            description: 'Count of posted shipment that the transporting time exceeds the estimated transit duration'
+        },
+        overCICO: {
+            name: 'Over CICO',
+            description: 'Count of shipment that encountered Over CICO Delay'
+        },
+        overTransit: {
+            name: 'Over Transit',
+            description: 'Count of shipment that encountered Over Transit Delay'
+        },
+        
+        palCap: {
+            name: 'Pal Cap',
+            description: 'Trailer capacity in pallets'
+        },
+        processingDuration: {
+            name: 'Processing Duration',
+            description: 'Duration of stay inside the processing area geofence'
+        },
+        processingDurationAve: {
+            name: 'Processing Duration',
+            description: 'Average duration of stay inside the processing area geofence'
+        },
+
+        queueingDuration: {
+            name: 'Queueing Duration',
+            description: 'Duration of stay inside the queueing area geofence'
+        },
+        queueingDurationAve: {
+            name: 'Queueing Duration',
+            description: 'Average duration of stay inside the queueing area geofence'
+        },
+
+        remarksTransit: {
+            name: 'Remarks',
+            description: 'Identifier if the transit duration is  "Over Transit"'
+        },
+        remarksCico: {
+            name: 'Remarks',
+            description: 'Identifier if the shipment is "In CICO" or "Over CICO"'
+        },
+        remarksCicoAve: {
+            name: 'Remarks',
+            description: 'Identifier if the average duration of stay inside the origin site is "In CICO" or "Over CICO"'
+        },
+        remarksTrippage: {
+            name: 'Remarks',
+            description: 'Identifier if the trippage result hit and surpass the target'
+        },
+        route: {
+            name: 'Route',
+            description: 'Site codes combination of origin and destination'
+        },
+
+        site: {
+            name: 'Site',
+            description: 'Name of site where the delay happen (Over CICO & Long Queueing)'
+        },
+        siteCode: {
+            name: 'Site Code',
+            description: 'Numerical identifier of the site'
+        },
+        siteRegion: {
+            name: 'Site Region',
+            description: 'Region where the site is located'
+        },
+        shipment: {
+            name: 'Shipment',
+            description: 'Numerical identifier of assigned shipment'
+        },
+        shipmentCount_CheckedOut: {
+            name: 'Shipment Count',
+            description: 'Count of posted shipment that already checked out from the origin'
+        },
+        shipmentCount_All: {
+            name: 'Shipment Count',
+            description: 'Count of posted shipment from the origin'
+        },
+
+        trailer: {
+            name: 'Trailer',
+            description: 'Plate number of the trailer coupled to the tractor where the shipment is assigned'
+        },
+        transitDuration: {
+            name: 'Transit Duration',
+            description: 'Amount of time consumed in transporting the shipment from origin site to destination site'
+        },
+        transitDurationAve: {
+            name: 'Average Transit Duration',
+            description: 'Average of the amount of time consumed in transporting the shipment from origin site to destination site'
+        },
+        truckInventory: {
+            name: 'Truck Inventory',
+            description: 'Number of trucks accounted to the site'
+        },
+        trippage: {
+            name: 'Trippage',
+            description: 'A metric that assesses the productivity of trucks by the number of trips catered daily'
+        },
+        trippageTarget: {
+            name: 'Trippage Target',
+            description: 'Aim of site produtivity result'
+        },
+        trippageVariance: {
+            name: 'Trippage Variance',
+            description: 'Difference of trippage from its target'
+        },
+        totalDelays: {
+            name: 'Total Delays',
+            description: 'Sum of shipment that encountered delays'
+        },
+
+        vehicle: {
+            name: 'Vehicle',
+            description: 'Plate number of the tractor where the shipment is assigned'
+        },
+        vehicleBaseSite: {
+            name: 'Vehicle Base Site',
+            description: 'Site where the vehicle was allocated and will serve as its base site'
+        },
+        
+        withinTransitDuration: {
+            name: 'Within Transit Duration',
+            description: 'Count of posted shipment that the transporting time is witin the estimated transit duration'
+        },
+    },
+    columnHtml: ( arr, descriptionStyle, columnNameStyle ) => {
+        var descriptionHtml = "";
+        var columneNameHtml = "";
+        arr.forEach(val => {
+            const column = REPORTS.columns[val];
+
+            descriptionHtml += `<td style="${descriptionStyle||""}">${column.description}</td>`;
+            columneNameHtml += `<td style="${columnNameStyle||""}">${column.name}</td>`;
+        }); 
+        return `
+            ${descriptionStyle ? `<tr>${descriptionHtml}</tr>` : ''}
+            ${columnNameStyle ? `<tr>${columneNameHtml}</tr>` : ''}
+        `;
+    },
     UI: {
         REPORT_MODAL_01: function(title,_siteTitle){
             return `<div id="overlay" class="swal2-container swal2-fade swal2-shown" style="overflow-y: auto;">
@@ -7137,11 +7489,11 @@ var REPORTS = {
                                     </div>
                                     <div class="modal-body row pt-2">
                                         <div class="col-sm-12">
-                                            <small><span class="text-danger">*</span>Select Date:</small>
+                                            <small><span class="text-danger">*</span>${_dateTitle || "Select Date"}:</small>
                                             <input id="daterange" type="input" class="form-control">
                                         </div>
                                         <div class="col-sm-12">
-                                            <small>Plant Site:</small>
+                                            <small>Origin Site:</small>
                                             <select id="_origin_site" class="select-basic" style="width:100%;"></select>
                                         </div>
                                         <div class="col-sm-12">
@@ -7157,7 +7509,7 @@ var REPORTS = {
                         </div>
                     </div>`;
         },
-        REPORT_MODAL_05: function(title,dateTitle="Select Date Range"){
+        REPORT_MODAL_05: function(title,_siteTitle,dateTitle="Select Date Range"){
             return `<div id="overlay" class="swal2-container swal2-fade swal2-shown" style="overflow-y: auto;">
                         <div id="small-modal" class="modal" role="dialog" aria-labelledby="myLargeModalLabel">
                             <div role="document" class="modal-dialog modal-sm">
@@ -7168,7 +7520,7 @@ var REPORTS = {
                                     </div>
                                     <div class="modal-body row pt-2">
                                         <div class="col-sm-12">
-                                            <small><span class="text-danger">*</span>Select Date Range:</small>
+                                            <small><span class="text-danger">*</span>${dateTitle}:</small>
                                             <input id="daterange" type="input" class="form-control">
                                         </div>
                                         <div class="col-sm-12"> 
@@ -7221,34 +7573,35 @@ var REPORTS = {
                     </div>`;
         },
         REPORTS: {
-            CICOR_T1: function(title,docs,originChosen,date_from,date_to){
-                // Legend:
-                //    · GBO - Grouped by Origin
-                //    · GBR - Grouped by Region
+            cicor: {
+                coket1: ( title, docs, originChosen, date_from, date_to ) => {
+                    // Legend:
+                    //    · GBO - Grouped by Origin
+                    //    · GBR - Grouped by Region
+                    //    · NTL - National
 
+                    /****** CSS ******/
+                    const rotateCSS = ` -webkit-transform: rotate(-90deg);
+                                        -moz-transform: rotate(-90deg);
+                                        -ms-transform: rotate(-90deg);
+                                        -o-transform: rotate(-90deg);
+                                        transform: rotate(-90deg);
+                                        mso-rotate: 90;
+                                        -webkit-transform-origin: 50% 50%;
+                                        -moz-transform-origin: 50% 50%;
+                                        -ms-transform-origin: 50% 50%;
+                                        -o-transform-origin: 50% 50%;
+                                        transform-origin: 50% 50%;
+                                        position: absolute;
+                                        filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=3);
+                                        
+                                        color: #595959;
+                                        background-color: #E2EFDA;
+                                        height: 127px;
+                                        border: none;
+                                        border-right: thin dashed #595959;`;
 
-                /****** CSS ******/
-                const rotateCSS = ` -webkit-transform: rotate(-90deg);
-                                    -moz-transform: rotate(-90deg);
-                                    -ms-transform: rotate(-90deg);
-                                    -o-transform: rotate(-90deg);
-                                    transform: rotate(-90deg);
-                                    mso-rotate: 90;
-                                    -webkit-transform-origin: 50% 50%;
-                                    -moz-transform-origin: 50% 50%;
-                                    -ms-transform-origin: 50% 50%;
-                                    -o-transform-origin: 50% 50%;
-                                    transform-origin: 50% 50%;
-                                    position: absolute;
-                                    filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=3);
-                                    
-                                    color: #595959;
-                                    background-color: #E2EFDA;
-                                    height: 127px;
-                                    border: none;
-                                    border-right: thin dashed #595959;`;
-
-                const tblHeaderCSS = `  background-color: #404040;
+                    const tblHeaderCSS = `  background-color: #404040;
                                         color: white;
                                         font-size: 13px;
                                         text-align: center;
@@ -7257,85 +7610,39 @@ var REPORTS = {
                                         vertical-align: middle;
                                         font-family: Franklin Gothic Book;`;
                                     
-                const noBorderCSS = `border: none;
-                                     font-size: 13px;
-                                     vertical-align: middle;
-                                     font-family: Franklin Gothic Book;`;
-                /****** end CSS ******/
-                
-                // var arr = ["destination","origin","route","sn","plate_num","trailer","pal_cap","hauler_name","cico_target","actual_timelapse","remarks1","remarks2","base_plant"];
-                var details = "",
+                    const noBorderCSS = `border: none;
+                                    font-size: 13px;
+                                    vertical-align: middle;
+                                    font-family: Franklin Gothic Book;
+                                    mso-number-format:'\@';`;
+                    /****** end CSS ******/
 
                     // GBO
-                    gboHtml = "",
-                    gboInfo = {},
+                    var gboHtml = "";
+                    var gboInfo = {};
 
                     // GBR
-                    gbrHtml = "",
-                    gbrInfo = {},
-                    detailsHeaderHTML = "",
-                    detailsBodyHTML = "",
-                    textCellStyle = `border:2px solid #404040;mso-number-format:'\@';`,
-                    columns = clientCustom.reports.cicor || [];
-                columns.forEach(_val_ => {
-                    switch (_val_) {
-                        case "origin":
-                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Origin (Plant)</td>`;
-                            break;
-                        case "destination":
-                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Destination (DC)</td>`;
-                            break;
-                        case "route":
-                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Route</td>`;
-                            break;
-                        case "sn":
-                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">SN</td>`;
-                            break;
-                        case "plateNumber":
-                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Plate No.</td>`;
-                            break;
-                        case "trailer":
-                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Trailer</td>`;
-                            break;
-                        case "palCap":
-                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Pal Cap</td>`;
-                            break;
-                        case "haulerName":
-                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Hauler Name</td>`;
-                            break;
-                        case "targetCico":
-                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Target CICO (hrs)</td>`;
-                            break;
-                        case "actualTimelapse":
-                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Actual Time Lapse (hrs)</td>`;
-                            break;
-                        case "remarks1":
-                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Remarks1</td>`;
-                            break;
-                        case "remarks2":
-                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Remarks2</td>`;
-                            break;
-                        case "truckBasePlant":
-                            detailsHeaderHTML += `<td style="background-color:#404040;color:white;">Truck Base Plant</td>`;
-                            break;
-                        default:
-                            break;
-                    }
-                });
+                    var gbrHtml = "";
+                    var gbrInfo = {};
 
-                docs.forEach(function(val,i){
+                    // NTL
+                    var ntlHtml = "";
+                    var ntlInfo = {};
+
+                    // Detailed (Per shipment)
+                    var detailsBodyHTML = "";
+
+                    docs.forEach(function(val,i){
                     val.destination[0] = val.destination[0] || {};
-                    var remarks2Class = "",
-                        origin = getGeofence(val.origin_id) || {},
+                    var origin = getGeofence(val.origin_id) || {},
                         destination = getGeofence(val.destination[0].location_id) || {},
                         vehicle = getVehicle(val.vehicle_id) || {},
                         remarks2 = "In CICO",
                         beforeCheckOutTime = getDateTime("entered_origin",val) || getDateTime("queueingAtOrigin",val) || getDateTime("processingAtOrigin",val) || getDateTime("idlingAtOrigin",val);
-                    
+
                     const queueingDuration = getDuration("queueingAtOrigin",val);
                     const processingDuration = getDuration("processingAtOrigin",val);
                     const idlingDuration = getDuration("idlingAtOrigin",val);
-
 
                     var calcCICO = (beforeCheckOutTime) ?  (getDateTime(clientCustom.status.enrouteToDestination,val,"last") - beforeCheckOutTime) : 0;
 
@@ -7350,22 +7657,35 @@ var REPORTS = {
 
                             cico: 0,
                             cappedCICO: 0,
+                            totalWithCICO: 0,
+
                             over_cico: 0,
                             w_in_cico: 0,
-    
+
                             queueingDuration: 0,
+                            totalWithQueueingDuration: 0,
+
                             processingDuration: 0,
+                            totalWithProcessingDuration: 0,
+
                             idlingDuration: 0,
+                            totalWithIdlingDuration: 0,
                         };
 
                         gboInfo[key].totalShipments++;
 
                         gboInfo[key].cico += cico;
                         gboInfo[key].cappedCICO += cappedCICO;
+                        (cico) ? gboInfo[key].totalWithCICO ++ : null;
 
                         gboInfo[key].queueingDuration += queueingDuration;
+                        (queueingDuration) ? gboInfo[key].totalWithQueueingDuration ++ : null;
+
                         gboInfo[key].processingDuration += processingDuration;
+                        (processingDuration) ? gboInfo[key].totalWithProcessingDuration ++ : null;
+
                         gboInfo[key].idlingDuration += idlingDuration;
+                        (idlingDuration) ? gboInfo[key].totalWithIdlingDuration ++ : null;
 
                         if(cico > origin.cico){
                             remarks2 = "Over CICO";
@@ -7376,13 +7696,14 @@ var REPORTS = {
                     }
 
 
+
                     const cicoDifference = cico - Number(origin.cico);
                     const cicoVariance = (cicoDifference > 0) ? DATETIME.HH_MM(null,cicoDifference).hour_minute : "-";
 
                     detailsBodyHTML += `<tr>
                                             <td style="${noBorderCSS}text-align: left;">${val._id}</td>
                                             <td style="${noBorderCSS}text-align: center;">${(vehicle.name || "")}</td>
-                                            <td style="${noBorderCSS}text-align: center;">${(vehicle["Trailer"] || "")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${(val.trailer || vehicle["Trailer"] || "")}</td>
                                             <td style="${noBorderCSS}text-align: center;">${(vehicle["Pal Cap"] || "")}</td>
                                             <td style="${noBorderCSS}text-align: center;">${origin.short_name}</td>
                                             <td style="${noBorderCSS}text-align: center;">${destination.short_name}</td>
@@ -7394,117 +7715,197 @@ var REPORTS = {
                                             <td style="${noBorderCSS}text-align: center;">${queueingDuration ? DATETIME.HH_MM(queueingDuration).hour_minute : "-"}</td>
                                             <td style="${noBorderCSS}text-align: center;">${processingDuration ? DATETIME.HH_MM(processingDuration).hour_minute : "-"}</td>
                                             <td style="${noBorderCSS}text-align: center;">${idlingDuration ? DATETIME.HH_MM(idlingDuration).hour_minute : "-"}</td>
-                                            <td style="${noBorderCSS}text-align: center;">${DATETIME.HH_MM(null,cico).hour_minute}</td>
-                                            <td style="${noBorderCSS}text-align: center;">${DATETIME.HH_MM(null,cappedCICO).hour_minute}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${cico ? DATETIME.HH_MM(null,cico).hour_minute : "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${cappedCICO ? DATETIME.HH_MM(null,cappedCICO).hour_minute : "-"}</td>
                                             <td style="${noBorderCSS}text-align: center;">${DATETIME.HH_MM(null,origin.cico).hour_minute}</td>
                                             <td style="${noBorderCSS}text-align: center;">${cicoVariance}</td>
                                             <td style="${noBorderCSS}text-align: center;">${vehicle["Base Site"]}</td>
                                             <td style="${noBorderCSS}text-align: center;">${remarks2}</td>
                                         </tr>`;
-                });
+                    });
+                    // GBO
+                    const filteredGeofences = LIST["geofences"].filter(x => x.code);
+                    const sortedGeofences = ARRAY.OBJECT.sort(filteredGeofences,"short_name",{ sortType: "asc" });
+                    sortedGeofences.forEach(gVal => {
 
-                // GBO
-                const filteredGeofences = LIST["geofences"].filter(x => x.code);
-                const sortedGeofences = ARRAY.OBJECT.sort(filteredGeofences,"short_name",{ sortType: "asc" });
-                sortedGeofences.forEach(gVal => {
+                        const val = gboInfo[gVal.short_name] || {};
 
-                    const val = gboInfo[gVal.short_name] || {};
+                        const aveCICO = val.cico/val.totalWithCICO;
+                        const aveCappedCICO = val.cappedCICO/val.totalWithCICO;
+                        const cicoDifference = aveCappedCICO - Number(gVal.cico);
+                        const cicoVariance = (cicoDifference > 0) ? DATETIME.HH_MM(null,cicoDifference).hour_minute : "-";
 
-                    const aveCICO = val.cico/val.totalShipments;
-                    const aveCappedCICO = val.cappedCICO/val.totalShipments;
-                    const cicoDifference = aveCICO - Number(gVal.cico);
-                    const cicoVariance = (cicoDifference > 0) ? DATETIME.HH_MM(null,cicoDifference).hour_minute : "-";
+                        const aveQueueingDuration = val.queueingDuration/val.totalWithQueueingDuration;
+                        const aveProcessingDuration = val.processingDuration/val.totalWithProcessingDuration;
+                        const aveIdlingDuration = val.idlingDuration/val.totalWithIdlingDuration;
 
-                    const aveQueueingDuration = val.queueingDuration/val.totalShipments;
-                    const aveProcessingDuration = val.processingDuration/val.totalShipments;
-                    const aveIdlingDuration = val.idlingDuration/val.totalShipments;
+                        const region = getRegion(gVal.region_id) || {}; 
 
-                    // const origin = getGeofence(key,"short_name") || {};
-                    const region = getRegion(gVal.region_id) || {}; 
+                        const remarks = (aveCICO > Number(gVal.cico)) ? "Over CICO" : "In CICO";
 
-                    const remarks = (aveCICO > Number(gVal.cico)) ? "Over CICO" : "In CICO";
+                        gboHtml += `<tr>
+                                        <td style="${noBorderCSS}">${gVal.short_name}</td>
+                                        <td style="${noBorderCSS}text-align: center;">${gVal.code || "-"}</td>
+                                        <td style="${noBorderCSS}text-align: center;">${region.code || "-"}</td>
+                                        <td style="${noBorderCSS}text-align: center;">${aveCICO ? DATETIME.HH_MM(null,aveCICO).hour_minute : "-"}</td>
+                                        <td style="${noBorderCSS}text-align: center;">${aveCappedCICO ? DATETIME.HH_MM(null,aveCappedCICO).hour_minute : "-"}</td>
+                                        <td style="${noBorderCSS}text-align: center;">${DATETIME.HH_MM(null,gVal.cico,"-").hour_minute}</td>
+                                        <td style="${noBorderCSS}text-align: center;">${cicoVariance}</td>
+                                        <td style="${noBorderCSS}text-align: center;">${aveQueueingDuration ? DATETIME.HH_MM(aveQueueingDuration).hour_minute : "-"}</td>
+                                        <td style="${noBorderCSS}text-align: center;">${aveProcessingDuration ? DATETIME.HH_MM(aveProcessingDuration).hour_minute : "-"}</td>
+                                        <td style="${noBorderCSS}text-align: center;">${aveIdlingDuration ? DATETIME.HH_MM(aveIdlingDuration).hour_minute : "-"}</td>
+                                        <td style="${noBorderCSS}text-align: center;">${val.totalShipments || "-"}</td>
+                                        <td style="${noBorderCSS}text-align: center;">${aveCICO ? remarks : "-"}</td>
+                                    </tr>`;
 
-                    gboHtml += `<tr>
-                                    <td style="${noBorderCSS}">${gVal.short_name}</td>
-                                    <td style="${noBorderCSS}text-align: center;">${gVal.code || "-"}</td>
-                                    <td style="${noBorderCSS}text-align: center;">${region.code || "-"}</td>
-                                    <td style="${noBorderCSS}text-align: center;">${aveCICO ? DATETIME.HH_MM(null,aveCICO).hour_minute : "-"}</td>
-                                    <td style="${noBorderCSS}text-align: center;">${aveCappedCICO ? DATETIME.HH_MM(null,aveCappedCICO).hour_minute : "-"}</td>
-                                    <td style="${noBorderCSS}text-align: center;">${DATETIME.HH_MM(null,gVal.cico,"-").hour_minute}</td>
-                                    <td style="${noBorderCSS}text-align: center;">${cicoVariance}</td>
-                                    <td style="${noBorderCSS}text-align: center;">${aveQueueingDuration ? DATETIME.HH_MM(aveQueueingDuration).hour_minute : "-"}</td>
-                                    <td style="${noBorderCSS}text-align: center;">${aveProcessingDuration ? DATETIME.HH_MM(aveProcessingDuration).hour_minute : "-"}</td>
-                                    <td style="${noBorderCSS}text-align: center;">${aveIdlingDuration ? DATETIME.HH_MM(aveIdlingDuration).hour_minute : "-"}</td>
-                                    <td style="${noBorderCSS}text-align: center;">${val.totalShipments || "-"}</td>
-                                    <td style="${noBorderCSS}text-align: center;">${aveCICO ? remarks : "-"}</td>
-                                </tr>`;
-                    
-                    if(gboInfo[gVal.short_name]) {
+                        if(gboInfo[gVal.short_name]) {
 
-                        gbrInfo[gVal.region_id] = gbrInfo[gVal.region_id] || {
+                            gbrInfo[gVal.region_id] = gbrInfo[gVal.region_id] || {
+                                totalShipments: 0,
+
+                                cico: 0,
+                                cappedCICO: 0,
+                                totalWithCICO: 0,
+
+                                targetCICO: 0,
+
+                                queueingDuration: 0,
+                                totalWithQueueingDuration: 0,
+
+                                processingDuration: 0,
+                                totalWithProcessingDuration: 0,
+
+                                idlingDuration: 0,
+                                totalWithIdlingDuration: 0
+                            };
+
+                            gbrInfo[gVal.region_id].totalShipments += val.totalShipments;
+
+                            gbrInfo[gVal.region_id].cico += aveCICO || 0;
+                            gbrInfo[gVal.region_id].cappedCICO += aveCappedCICO || 0;
+                            (val.cico) ? gbrInfo[gVal.region_id].totalWithCICO ++ : null;
+
+                            gbrInfo[gVal.region_id].targetCICO += Number(gVal.cico) || 0;
+                            
+                            gbrInfo[gVal.region_id].queueingDuration += aveQueueingDuration || 0;
+                            (aveQueueingDuration) ? gbrInfo[gVal.region_id].totalWithQueueingDuration ++ : null;
+                            
+                            gbrInfo[gVal.region_id].processingDuration += aveProcessingDuration || 0;
+                            (aveProcessingDuration) ? gbrInfo[gVal.region_id].totalWithProcessingDuration ++ : null;
+
+                            gbrInfo[gVal.region_id].idlingDuration += aveIdlingDuration || 0;
+                            (aveIdlingDuration) ? gbrInfo[gVal.region_id].totalWithIdlingDuration ++ : null;
+
+                        }
+                    });
+                    // GBR
+                    const sortedRegions = ARRAY.OBJECT.sort(LIST["regions"],"sequence",{ sortType: "asc" });
+                    sortedRegions.forEach(rVal => {
+
+                        const val = gbrInfo[rVal._id] || {};
+
+                        const aveCICO = val.cico/val.totalWithCICO;
+                        const aveCappedCICO = val.cappedCICO/val.totalWithCICO;
+
+                        const aveTargetCICO = val.targetCICO/val.totalWithCICO;
+
+                        const cicoDifference = aveCICO - aveTargetCICO;
+                        const cicoVariance = (cicoDifference > 0) ? DATETIME.HH_MM(null,cicoDifference).hour_minute : "-";
+
+                        const aveQueueingDuration = val.queueingDuration/val.totalWithQueueingDuration;
+                        const aveProcessingDuration = val.processingDuration/val.totalWithProcessingDuration;
+                        const aveIdlingDuration = val.idlingDuration/val.totalWithIdlingDuration;
+
+                        const remarks = (aveCICO > aveTargetCICO) ? "Over CICO" : "In CICO";
+
+                        gbrHtml += `<tr>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;">${rVal.name || "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${rVal.code || "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;"> </td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveCICO ? DATETIME.HH_MM(null,aveCICO).hour_minute : "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveCappedCICO ? DATETIME.HH_MM(null,aveCappedCICO).hour_minute : "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveTargetCICO ? DATETIME.HH_MM(null,aveTargetCICO).hour_minute : "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${cicoVariance}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveQueueingDuration ? DATETIME.HH_MM(aveQueueingDuration).hour_minute : "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveProcessingDuration ? DATETIME.HH_MM(aveProcessingDuration).hour_minute : "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveIdlingDuration ? DATETIME.HH_MM(aveIdlingDuration).hour_minute : "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${val.totalShipments || "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveCICO ? remarks : "-"}</td>
+                                    </tr>`;
+
+                        ntlInfo["ph"] = ntlInfo["ph"] || {
                             totalShipments: 0,
 
                             cico: 0,
                             cappedCICO: 0,
+                            totalWithCICO: 0,
+
                             targetCICO: 0,
-                            over_cico: 0,
-                            w_in_cico: 0,
-    
+
                             queueingDuration: 0,
+                            totalWithQueueingDuration: 0,
+
                             processingDuration: 0,
+                            totalWithProcessingDuration: 0,
+
                             idlingDuration: 0,
+                            totalWithIdlingDuration: 0
                         };
-    
-                        gbrInfo[gVal.region_id].totalShipments += val.totalShipments;
-                        gbrInfo[gVal.region_id].cappedCICO += val.cappedCICO;
-                        gbrInfo[gVal.region_id].over_cico += val.over_cico;
-                        gbrInfo[gVal.region_id].w_in_cico += val.w_in_cico;
-                        gbrInfo[gVal.region_id].targetCICO += Number(gVal.cico) || 0;
+
+                        ntlInfo["ph"].totalShipments += val.totalShipments || 0;
+
+                        ntlInfo["ph"].cico += aveCICO || 0;
+                        ntlInfo["ph"].cappedCICO += aveCappedCICO || 0;
+                        (aveCICO) ? ntlInfo["ph"].totalWithCICO ++ : null;
+
+                        ntlInfo["ph"].targetCICO += aveTargetCICO || 0;
                         
-                        gbrInfo[gVal.region_id].queueingDuration += val.queueingDuration;
-                        gbrInfo[gVal.region_id].processingDuration += val.processingDuration;
-                        gbrInfo[gVal.region_id].idlingDuration += val.idlingDuration;
-    
-                        gbrInfo[gVal.region_id].cico += val.cico;
-                    }
-                });
+                        ntlInfo["ph"].queueingDuration += aveQueueingDuration || 0;
+                        (aveQueueingDuration) ? ntlInfo["ph"].totalWithQueueingDuration ++ : null;
 
-                // GBR
-                const sortedRegions = ARRAY.OBJECT.sort(LIST["regions"],"sequence",{ sortType: "asc" });
-                sortedRegions.forEach(rVal => {
+                        ntlInfo["ph"].processingDuration += aveProcessingDuration || 0;
+                        (aveProcessingDuration) ? ntlInfo["ph"].totalWithProcessingDuration ++ : null;
 
-                    const val = gbrInfo[rVal._id] || {};
+                        ntlInfo["ph"].idlingDuration += aveIdlingDuration || 0;
+                        (aveIdlingDuration) ? ntlInfo["ph"].totalWithIdlingDuration ++ : null;
+                    });
 
-                    const aveCICO = val.cico/val.totalShipments;
-                    const aveCappedCICO = val.cappedCICO/val.totalShipments;
-                    const aveTargetCICO = val.targetCICO/val.totalShipments;
+                    console.log("ntlInfo",ntlInfo);
 
-                    const cicoDifference = aveCICO - aveTargetCICO;
-                    const cicoVariance = (cicoDifference > 0) ? DATETIME.HH_MM(null,cicoDifference).hour_minute : "-";
+                    // NTL
+                    const ntlVal = ntlInfo["ph"] || {};
 
-                    const aveQueueingDuration = val.queueingDuration/val.totalShipments;
-                    const aveProcessingDuration = val.processingDuration/val.totalShipments;
-                    const aveIdlingDuration = val.idlingDuration/val.totalShipments;
+                    const ntlAveCICO = ntlVal.cico/ntlVal.totalWithCICO;
+                    const ntlAveCappedCICO = ntlVal.cappedCICO/ntlVal.totalWithCICO;
+                    const ntlAveTargetCICO = ntlVal.targetCICO/ntlVal.totalWithCICO;
 
-                    const remarks = (aveCICO > aveTargetCICO) ? "Over CICO" : "In CICO";
+                    const ntlCicoDifference = ntlAveCappedCICO - ntlAveTargetCICO;
+                    const ntlCicoVariance = (ntlCicoDifference > 0) ? DATETIME.HH_MM(null,ntlCicoDifference).hour_minute : "-";
 
-                    gbrHtml += `<tr>
-                                    <td style="${noBorderCSS}background-color:#F2F2F2;">${rVal.name || "-"}</td>
-                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${rVal.code || "-"}</td>
-                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;"> </td>
-                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveCICO ? DATETIME.HH_MM(null,aveCICO).hour_minute : "-"}</td>
-                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveCappedCICO ? DATETIME.HH_MM(null,aveCappedCICO).hour_minute : "-"}</td>
-                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveTargetCICO ? DATETIME.HH_MM(null,aveTargetCICO).hour_minute : "-"}</td>
-                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${cicoVariance}</td>
-                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveQueueingDuration ? DATETIME.HH_MM(aveQueueingDuration).hour_minute : "-"}</td>
-                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveProcessingDuration ? DATETIME.HH_MM(aveProcessingDuration).hour_minute : "-"}</td>
-                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveIdlingDuration ? DATETIME.HH_MM(aveIdlingDuration).hour_minute : "-"}</td>
-                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${val.totalShipments || "-"}</td>
-                                    <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveCICO ? remarks : "-"}</td>
-                                </tr>`;
-                });
+                    const ntlAveQueueingDuration = ntlVal.queueingDuration/ntlVal.totalWithQueueingDuration;
+                    const ntlAveProcessingDuration = ntlVal.processingDuration/ntlVal.totalWithProcessingDuration;
+                    const ntlAveIdlingDuration = ntlVal.idlingDuration/ntlVal.totalWithIdlingDuration;
 
-                return `<table id="report-hidden" style="opacity:0;">
+                    const ntlRemarks = (ntlAveCICO > ntlAveTargetCICO) ? "Over CICO" : "In CICO";
+
+                    ntlHtml += `<tr>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;">NATIONAL</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">NAT</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;"> </td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlAveCICO ? DATETIME.HH_MM(null,ntlAveCICO).hour_minute : "-"}</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlAveCappedCICO ? DATETIME.HH_MM(null,ntlAveCappedCICO).hour_minute : "-"}</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlAveTargetCICO ? DATETIME.HH_MM(null,ntlAveTargetCICO).hour_minute : "-"}</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlCicoVariance}</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlAveQueueingDuration ? DATETIME.HH_MM(ntlAveQueueingDuration).hour_minute : "-"}</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlAveProcessingDuration ? DATETIME.HH_MM(ntlAveProcessingDuration).hour_minute : "-"}</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlAveIdlingDuration ? DATETIME.HH_MM(ntlAveIdlingDuration).hour_minute : "-"}</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlVal.totalShipments || "-"}</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlAveCICO ? ntlRemarks : "-"}</td>
+                            </tr>`;
+                            
+
+                    // to be exported to file
+                    return `<table id="report-hidden" style="opacity:0;">
                             <tr>
                                 <td style="${noBorderCSS}" colspan=2>Report name: <b style="color:#c00000;">${title}</b></td>
                             </tr>
@@ -7523,36 +7924,16 @@ var REPORTS = {
                                 </td>
                             </tr>
                             <tr><td style="${noBorderCSS}" colspan=2></td></tr>
-                            <tr>
-                                <td style="${rotateCSS}">Source Name</td>
-                                <td style="${rotateCSS}">Numerical identifier of the origin</td>
-                                <td style="${rotateCSS}">Region where the origin site is located</td>
-                                <td style="${rotateCSS}">Average of actual duration of stay inside the origin site</td>
-                                <td style="${rotateCSS}">Average duration of stay inside the origin site that exceeded to 5 hrs will automatically rolled back to 5 hrs</td>
-                                <td style="${rotateCSS}">Maximum duration of stay inside the origin site</td>
-                                <td style="${rotateCSS}">Excess CICO duration from the CICO target</td>
-                                <td style="${rotateCSS}">Average duration of stay inside the queueing area geofence</td>
-                                <td style="${rotateCSS}">Average duration of stay inside the processing area geofence</td>
-                                <td style="${rotateCSS}">Average duration of stay inside the idling area geofence</td>
-                                <td style="${rotateCSS}">Count of posted shipment from the origin</td>
-                                <td style="${rotateCSS}">Identifier if the average duration of stay inside the origin site is "In CICO" or "Over CICO"</td>
-                            </tr>
-                            <tr>
-                                <td style="${tblHeaderCSS}">Origin</td>
-                                <td style="${tblHeaderCSS}">Origin Site Code</td>
-                                <td style="${tblHeaderCSS}">Origin Region</td>
-                                <td style="${tblHeaderCSS}">CICO Duration</td>
-                                <td style="${tblHeaderCSS}">CICO with Capping</td>
-                                <td style="${tblHeaderCSS}">CICO Target</td>
-                                <td style="${tblHeaderCSS}">CICO Variance</td>
-                                <td style="${tblHeaderCSS}">Queueing Duration</td>
-                                <td style="${tblHeaderCSS}">Processing Duration</td>
-                                <td style="${tblHeaderCSS}">Idling Duration</td>
-                                <td style="${tblHeaderCSS}">Shipment Count</td>
-                                <td style="${tblHeaderCSS}">Remarks</td>
-                            </tr>
+                            ${
+                                REPORTS.columnHtml( 
+                                    ['origin_1','originSiteCode','originRegion','actualCICOAve','cicoWithCappingAve','cicoTarget','cicoVariance','queueingDurationAve','processingDurationAve','idlingDurationAve','shipmentCount_All','remarksCicoAve'],
+                                    rotateCSS,
+                                    tblHeaderCSS
+                                )
+                            }
                             ${gboHtml}
                             <tr><td style="${noBorderCSS}"></td></tr>
+                            ${ntlHtml}
                             ${gbrHtml}
                             <tr><td style="${noBorderCSS}"></td></tr>
                             <tr><td style="${noBorderCSS}"></td></tr>
@@ -7560,483 +7941,967 @@ var REPORTS = {
                                 <td style="${noBorderCSS}"><b>Details:</b></td>
                             </tr>
                             <tr><td style="${noBorderCSS}"></td></tr>
-                            <tr>
-                                <td style="${rotateCSS}">Numerical identifier of assigned shipment</td>
-                                <td style="${rotateCSS}">Plate number of the tractor where the shipment is assigned</td>
-                                <td style="${rotateCSS}">Plate number of the trailer coupled to the tractor where the shipment is assigned</td>
-                                <td style="${rotateCSS}">Trailer capacity in pallets</td>
-                                <td style="${rotateCSS}">Source Name</td>
-                                <td style="${rotateCSS}">Destination Name</td>
-                                <td style="${rotateCSS}">Site codes combination of origin and destination</td>
-                                <td style="${rotateCSS}">Actual date of entry to the origin site</td>
-                                <td style="${rotateCSS}">Actual time of entry to the origin site</td>
-                                <td style="${rotateCSS}">Actual date of departure to the origin site</td>
-                                <td style="${rotateCSS}">Actual time of departure to the origin site</td>
-                                <td style="${rotateCSS}">Duration of stay inside the queueing area geofence</td>
-                                <td style="${rotateCSS}">Duration of stay inside the processing area geofence</td>
-                                <td style="${rotateCSS}">Duration of stay inside the idling area geofence</td>
-                                <td style="${rotateCSS}">Actual duration of stay inside the origin site</td>
-                                <td style="${rotateCSS}">Duration of stay inside the origin site that exceeded to 5 hrs will automatically rolled back to 5 hrs</td>
-                                <td style="${rotateCSS}">Maximum duration of stay inside the origin site</td>
-                                <td style="${rotateCSS}">Difference between the CICO duration and the CICO target</td>
-                                <td style="${rotateCSS}">Site where the vehicle was allocated and will serve as its base site</td>
-                                <td style="${rotateCSS}">Identifier if the shipment is "In CICO" or "Over CICO"</td>
-                            </tr>
-                            <tr>
-                                <td style="${tblHeaderCSS}">Shipment</td>
-                                <td style="${tblHeaderCSS}">Vehicle</td>
-                                <td style="${tblHeaderCSS}">Trailer</td>
-                                <td style="${tblHeaderCSS}">Pal Cap</td>
-                                <td style="${tblHeaderCSS}">Origin</td>
-                                <td style="${tblHeaderCSS}">Destination</td>
-                                <td style="${tblHeaderCSS}">Route</td>
-                                <td style="${tblHeaderCSS}">Check In Date</td>
-                                <td style="${tblHeaderCSS}">Check In Time</td>
-                                <td style="${tblHeaderCSS}">Check Out Date</td>
-                                <td style="${tblHeaderCSS}">Check Out Time</td>
-                                <td style="${tblHeaderCSS}">Queueing Duration</td>
-                                <td style="${tblHeaderCSS}">Processing Duration</td>
-                                <td style="${tblHeaderCSS}">Idling Duration</td>
-                                <td style="${tblHeaderCSS}">CICO Duration</td>
-                                <td style="${tblHeaderCSS}">CICO with Capping</td>
-                                <td style="${tblHeaderCSS}">CICO Target</td>
-                                <td style="${tblHeaderCSS}">CICO Variance</td>
-                                <td style="${tblHeaderCSS}">Vehicle Base Site</td>
-                                <td style="${tblHeaderCSS}">Remarks</td>
-                            </tr>
+                            ${
+                                REPORTS.columnHtml( 
+                                    ['shipment','vehicle','trailer','palCap','origin','destination','route','checkInDate','checkInTime','checkOutDate','checkOutTime','queueingDuration','processingDuration','idlingDuration','actualCICO','cicoWithCapping','cicoTarget','cicoVariance','vehicleBaseSite','remarksCico'],
+                                    rotateCSS,
+                                    tblHeaderCSS
+                                )
+                            }
                             ${detailsBodyHTML}
                         </table> `;
-            },
-            CICOR: function(title,docs,originChosen,date_from,date_to){
-                // var arr = ["destination","origin","route","sn","plate_num","trailer","pal_cap","hauler_name","cico_target","actual_timelapse","remarks1","remarks2","base_plant"];
-                var details = "",
-                    summary = "",
-                    summary_info = {},
-                    summary_total = {
-                        in_site: 0,
-                        over_cico: 0,
-                        w_in_cico: 0,
-                        count_time_lapse: 0,
-                        sum_time_lapse: 0,
-                        count_cico: 0,
-                        sum_cico: 0
-                    },
-                    detailsHeaderHTML = "",
-                    detailsBodyHTML = "",
-                    textCellStyle = `border:2px solid black;mso-number-format:'\@';`,
-                    columns = clientCustom.reports.cicor || [];
-                columns.forEach(_val_ => {
-                    switch (_val_) {
-                        case "origin":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Origin (Plant)</td>`;
-                            break;
-                        case "destination":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Destination (DC)</td>`;
-                            break;
-                        case "route":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Route</td>`;
-                            break;
-                        case "sn":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">SN</td>`;
-                            break;
-                        case "plateNumber":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Plate No.</td>`;
-                            break;
-                        case "trailer":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Trailer</td>`;
-                            break;
-                        case "palCap":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Pal Cap</td>`;
-                            break;
-                        case "haulerName":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Hauler Name</td>`;
-                            break;
-                        case "targetCico":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Target CICO (hrs)</td>`;
-                            break;
-                        case "actualTimelapse":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Actual Time Lapse (hrs)</td>`;
-                            break;
-                        case "remarks1":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Remarks1</td>`;
-                            break;
-                        case "remarks2":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Remarks2</td>`;
-                            break;
-                        case "truckBasePlant":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Truck Base Plant</td>`;
-                            break;
-                        default:
-                            break;
-                    }
-                });
-
-                docs.forEach(function(val,i){
-                    val.destination[0] = val.destination[0] || {};
-                    var cico_time,actual_time_lapse = null,
-                        remarks2Class = "",
-                        origin = getGeofence(val.origin_id) || {},
-                        destination = getGeofence(val.destination[0].location_id) || {},
-                        vehicle = getVehicle(val.vehicle_id) || {},
-                        orig_dest = `${origin.short_name}_${destination.short_name}`,
-                        remarks2 = "w/in CICO Time",
-                        beforeCheckOutTime = getDateTime("entered_origin",val) || getDateTime("queueingAtOrigin",val) || getDateTime("processingAtOrigin",val) || getDateTime("idlingAtOrigin",val);
-
-                    var calcCICO = (beforeCheckOutTime) ?  (getDateTime("in_transit",val,"last") - beforeCheckOutTime) : 0;
-                    cico_time = calcCICO || 0;
-
-                    actual_time_lapse = Number(DATETIME.DH(cico_time,null,"0"));
-
-                    if(!summary_info[orig_dest]){
-                        summary_info[orig_dest] = {
-                            destination:destination.short_name,
-                            origin:origin.short_name,
-                            in_site:1,
-                            over_cico:0,
-                            w_in_cico:0,
-                            sum_time_lapse: actual_time_lapse,
-                            count_time_lapse: (actual_time_lapse != null) ? 1 : 0,
-                            cico_target: destination.cico || 0,
-                        };
-                    } else {
-                        summary_info[orig_dest].in_site++;
-                        if(actual_time_lapse != null){
-                            summary_info[orig_dest].sum_time_lapse = summary_info[orig_dest].sum_time_lapse || 0; // in case value is null
-
-                            summary_info[orig_dest].count_time_lapse++;
-                            summary_info[orig_dest].sum_time_lapse += actual_time_lapse;
-                        }
-                    }
-                    if(actual_time_lapse != null) {
-                        if(actual_time_lapse > destination.cico){
-                            remarks2Class = "background-color:#ffc7ce;color:#9c0006";
-                            remarks2 = "Over CICO Time";
-                            summary_info[orig_dest].over_cico ++;
-                        } else {
-                            summary_info[orig_dest].w_in_cico ++;
-                        }
-                    }
-
-                    detailsBodyHTML += `<tr>`;
+                },
+                coket2: ( title, docs, originChosen, date_from, date_to ) => { 
+                    return REPORTS.UI.REPORTS.cicor.wilcon( title, docs, originChosen, date_from, date_to );
+                },
+                wilcon: ( title, docs, originChosen, date_from, date_to ) => {
+                    // var arr = ["destination","origin","route","sn","plate_num","trailer","pal_cap","hauler_name","cico_target","actual_timelapse","remarks1","remarks2","base_plant"];
+                    var details = "",
+                        summary = "",
+                        summary_info = {},
+                        summary_total = {
+                            in_site: 0,
+                            over_cico: 0,
+                            w_in_cico: 0,
+                            count_time_lapse: 0,
+                            sum_time_lapse: 0,
+                            count_cico: 0,
+                            sum_cico: 0
+                        },
+                        detailsHeaderHTML = "",
+                        detailsBodyHTML = "",
+                        textCellStyle = `border:2px solid black;mso-number-format:'\@';`,
+                        columns = clientCustom.reports.cicor || [];
                     columns.forEach(_val_ => {
                         switch (_val_) {
-                            case "destination":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${destination.short_name}</td>`;
-                                break;
                             case "origin":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${origin.short_name}</td>`;
+                                detailsHeaderHTML += `<td style="background-color:black;color:white;">Origin (Plant)</td>`;
+                                break;
+                            case "destination":
+                                detailsHeaderHTML += `<td style="background-color:black;color:white;">Destination (DC)</td>`;
                                 break;
                             case "route":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${val.route}</td>`;
+                                detailsHeaderHTML += `<td style="background-color:black;color:white;">Route</td>`;
                                 break;
                             case "sn":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${val._id}</td>`;
+                                detailsHeaderHTML += `<td style="background-color:black;color:white;">SN</td>`;
                                 break;
                             case "plateNumber":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle.name || "")}</td>`;
+                                detailsHeaderHTML += `<td style="background-color:black;color:white;">Plate No.</td>`;
                                 break;
                             case "trailer":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle["Trailer"] || "")}</td>`;
+                                detailsHeaderHTML += `<td style="background-color:black;color:white;">Trailer</td>`;
                                 break;
                             case "palCap":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle["Pal Cap"] || "")}</td>`;
+                                detailsHeaderHTML += `<td style="background-color:black;color:white;">Pal Cap</td>`;
                                 break;
                             case "haulerName":
-                                detailsBodyHTML += `<td style="${textCellStyle}"></td>`;
+                                detailsHeaderHTML += `<td style="background-color:black;color:white;">Hauler Name</td>`;
                                 break;
                             case "targetCico":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${DATETIME.HH_MM(null,destination.cico).hour_minute}</td>`;
+                                detailsHeaderHTML += `<td style="background-color:black;color:white;">Target CICO (hrs)</td>`;
                                 break;
                             case "actualTimelapse":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${DATETIME.HH_MM(null,actual_time_lapse).hour_minute}</td>`;
+                                detailsHeaderHTML += `<td style="background-color:black;color:white;">Actual Time Lapse (hrs)</td>`;
                                 break;
                             case "remarks1":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${(val.remarks || "")}</td>`;
+                                detailsHeaderHTML += `<td style="background-color:black;color:white;">Remarks1</td>`;
                                 break;
                             case "remarks2":
-                                detailsBodyHTML += `<td style="${textCellStyle}${remarks2Class}">${remarks2}</td>`;
+                                detailsHeaderHTML += `<td style="background-color:black;color:white;">Remarks2</td>`;
                                 break;
                             case "truckBasePlant":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle["Site"] || "")}</td>`;
+                                detailsHeaderHTML += `<td style="background-color:black;color:white;">Truck Base Plant</td>`;
                                 break;
                             default:
                                 break;
                         }
                     });
-                    detailsBodyHTML += `</tr>`;
-                });
-                Object.values(summary_info).forEach(val => {
-                    var ave_time_lapse = val.sum_time_lapse/val.count_time_lapse;
-                    summary += `<tr>
-                                    <td style="${textCellStyle}">${val.destination}</td>
-                                    <td style="${textCellStyle}">${val.origin}</td>
-                                    <td style="${textCellStyle}">${val.in_site}</td>
-                                    <td style="${textCellStyle}">${val.over_cico}</td>
-                                    <td style="${textCellStyle}">${val.w_in_cico}</td>
-                                    <td style="${textCellStyle}">${DATETIME.HH_MM(null,ave_time_lapse).hour_minute}</td>
-                                    <td style="${textCellStyle}">${DATETIME.HH_MM(null,val.cico_target).hour_minute}</td>
-                                </tr>`;
-                    summary_total.in_site += val.in_site;
-                    summary_total.over_cico += val.over_cico;
-                    summary_total.w_in_cico += val.w_in_cico;
-                    summary_total.count_cico ++;
-                    summary_total.sum_cico += Number(val.cico_target);
-                    if(val.sum_time_lapse != null){
-                        summary_total.count_time_lapse ++;
-                        summary_total.sum_time_lapse += val.sum_time_lapse;
-                    }
-                });
-                summary_total.ave_time_lapse = summary_total.sum_time_lapse/summary_total.count_time_lapse;
-                summary_total.ave_cico = summary_total.sum_cico/summary_total.count_cico;
-                console.log("summary_total",summary_total);
-                summary += `<tr>
-                                <td style="${textCellStyle}font-weight: bold;" colspan=2>TOTAL</td>
-                                <td style="${textCellStyle}font-weight: bold;">${(summary_total.in_site || 0)}</td>
-                                <td style="${textCellStyle}font-weight: bold;">${(summary_total.over_cico || 0)}</td>
-                                <td style="${textCellStyle}font-weight: bold;">${(summary_total.w_in_cico || 0)}</td>
-                                <td style="${textCellStyle}font-weight: bold;">${DATETIME.HH_MM(null,summary_total.ave_time_lapse).hour_minute}</td>
-                                <td style="${textCellStyle}font-weight: bold;">${DATETIME.HH_MM(null,summary_total.ave_cico).hour_minute}</td>
-                            </tr>`;
 
-                return `<table id="report-hidden" style="opacity:0;">
-                            <tr>
-                                <td style="border: none;">Report name: <b style="color:#c00000;">${title}</b></td>
-                            </tr>
-                            <tr><td style="border: none;"></td></tr>
-                            <tr>
-                                <td style="border: none;"><b>Summary:</b></td>
-                            </tr>
-                            <tr>
-                                <td style="border: none;">
-                                    <div>
-                                        <div>Plant Site: ${originChosen}</div>
-                                        <div>Date from: ${moment(new Date(date_from)).format("MM/DD/YYYY hh:mm A")}</div>
-                                        <div>Date to: ${moment(new Date(date_to)).format("MM/DD/YYYY hh:mm A")}</div>
-                                        <div>&nbsp;</div>
-                                        <div>Generated on: ${moment(new Date()).format("MM/DD/YYYY hh:mm A")}</div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr><td style="border: none;"></td></tr>
-                            <tr>
-                                <td style="background-color:black;color:white;">Destination (DC)</td>
-                                <td style="background-color:black;color:white;">Origin (Plant)</td>
-                                <td style="background-color:black;color:white;">In Site</td>
-                                <td style="background-color:#757070;color:white;">Over CICO</td>
-                                <td style="background-color:#757070;color:white;">W/in CICO</td>
-                                <td style="background-color:black;color:white;">Ave. Time Lapse (hrs)</td>
-                                <td style="background-color:black;color:white;">CICO Target (hrs)</td>
-                            </tr>
-                            ${summary}
-                            <tr><td style="border: none;"></td></tr>
-                            <tr>
-                                <td style="border: none;"><b>Details:</b></td>
-                            </tr>
-                            <tr>${detailsHeaderHTML}</tr>
-                            ${detailsBodyHTML}
-                        </table> `;
+                    docs.forEach(function(val,i){
+                        val.destination[0] = val.destination[0] || {};
+                        var cico_time,actual_time_lapse = null,
+                            remarks2Class = "",
+                            origin = getGeofence(val.origin_id) || {},
+                            destination = getGeofence(val.destination[0].location_id) || {},
+                            vehicle = getVehicle(val.vehicle_id) || {},
+                            orig_dest = `${origin.short_name}_${destination.short_name}`,
+                            remarks2 = "w/in CICO Time",
+                            beforeCheckOutTime = getDateTime("entered_origin",val) || getDateTime("queueingAtOrigin",val) || getDateTime("processingAtOrigin",val) || getDateTime("idlingAtOrigin",val);
+
+                        var calcCICO = (beforeCheckOutTime) ?  (getDateTime("in_transit",val,"last") - beforeCheckOutTime) : 0;
+                        cico_time = calcCICO || 0;
+
+                        actual_time_lapse = Number(DATETIME.DH(cico_time,null,"0"));
+
+                        if(!summary_info[orig_dest]){
+                            summary_info[orig_dest] = {
+                                destination:destination.short_name,
+                                origin:origin.short_name,
+                                in_site:1,
+                                over_cico:0,
+                                w_in_cico:0,
+                                sum_time_lapse: actual_time_lapse,
+                                count_time_lapse: (actual_time_lapse != null) ? 1 : 0,
+                                cico_target: destination.cico || 0,
+                            };
+                        } else {
+                            summary_info[orig_dest].in_site++;
+                            if(actual_time_lapse != null){
+                                summary_info[orig_dest].sum_time_lapse = summary_info[orig_dest].sum_time_lapse || 0; // in case value is null
+
+                                summary_info[orig_dest].count_time_lapse++;
+                                summary_info[orig_dest].sum_time_lapse += actual_time_lapse;
+                            }
+                        }
+                        if(actual_time_lapse != null) {
+                            if(actual_time_lapse > destination.cico){
+                                remarks2Class = "background-color:#ffc7ce;color:#9c0006";
+                                remarks2 = "Over CICO Time";
+                                summary_info[orig_dest].over_cico ++;
+                            } else {
+                                summary_info[orig_dest].w_in_cico ++;
+                            }
+                        }
+
+                        detailsBodyHTML += `<tr>`;
+                        columns.forEach(_val_ => {
+                            switch (_val_) {
+                                case "destination":
+                                    detailsBodyHTML += `<td style="${textCellStyle}">${destination.short_name}</td>`;
+                                    break;
+                                case "origin":
+                                    detailsBodyHTML += `<td style="${textCellStyle}">${origin.short_name}</td>`;
+                                    break;
+                                case "route":
+                                    detailsBodyHTML += `<td style="${textCellStyle}">${val.route}</td>`;
+                                    break;
+                                case "sn":
+                                    detailsBodyHTML += `<td style="${textCellStyle}">${val._id}</td>`;
+                                    break;
+                                case "plateNumber":
+                                    detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle.name || "")}</td>`;
+                                    break;
+                                case "trailer":
+                                    detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle["Trailer"] || "")}</td>`;
+                                    break;
+                                case "palCap":
+                                    detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle["Pal Cap"] || "")}</td>`;
+                                    break;
+                                case "haulerName":
+                                    detailsBodyHTML += `<td style="${textCellStyle}"></td>`;
+                                    break;
+                                case "targetCico":
+                                    detailsBodyHTML += `<td style="${textCellStyle}">${DATETIME.HH_MM(null,destination.cico).hour_minute}</td>`;
+                                    break;
+                                case "actualTimelapse":
+                                    detailsBodyHTML += `<td style="${textCellStyle}">${DATETIME.HH_MM(null,actual_time_lapse).hour_minute}</td>`;
+                                    break;
+                                case "remarks1":
+                                    detailsBodyHTML += `<td style="${textCellStyle}">${(val.remarks || "")}</td>`;
+                                    break;
+                                case "remarks2":
+                                    detailsBodyHTML += `<td style="${textCellStyle}${remarks2Class}">${remarks2}</td>`;
+                                    break;
+                                case "truckBasePlant":
+                                    detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle["Site"] || "")}</td>`;
+                                    break;
+                                default:
+                                    break;
+                            }
+                        });
+                        detailsBodyHTML += `</tr>`;
+                    });
+                    Object.values(summary_info).forEach(val => {
+                        var ave_time_lapse = val.sum_time_lapse/val.count_time_lapse;
+                        summary += `<tr>
+                                        <td style="${textCellStyle}">${val.destination}</td>
+                                        <td style="${textCellStyle}">${val.origin}</td>
+                                        <td style="${textCellStyle}">${val.in_site}</td>
+                                        <td style="${textCellStyle}">${val.over_cico}</td>
+                                        <td style="${textCellStyle}">${val.w_in_cico}</td>
+                                        <td style="${textCellStyle}">${DATETIME.HH_MM(null,ave_time_lapse).hour_minute}</td>
+                                        <td style="${textCellStyle}">${DATETIME.HH_MM(null,val.cico_target).hour_minute}</td>
+                                    </tr>`;
+                        summary_total.in_site += val.in_site;
+                        summary_total.over_cico += val.over_cico;
+                        summary_total.w_in_cico += val.w_in_cico;
+                        summary_total.count_cico ++;
+                        summary_total.sum_cico += Number(val.cico_target);
+                        if(val.sum_time_lapse != null){
+                            summary_total.count_time_lapse ++;
+                            summary_total.sum_time_lapse += val.sum_time_lapse;
+                        }
+                    });
+                    summary_total.ave_time_lapse = summary_total.sum_time_lapse/summary_total.count_time_lapse;
+                    summary_total.ave_cico = summary_total.sum_cico/summary_total.count_cico;
+                    console.log("summary_total",summary_total);
+                    summary += `<tr>
+                                    <td style="${textCellStyle}font-weight: bold;" colspan=2>TOTAL</td>
+                                    <td style="${textCellStyle}font-weight: bold;">${(summary_total.in_site || 0)}</td>
+                                    <td style="${textCellStyle}font-weight: bold;">${(summary_total.over_cico || 0)}</td>
+                                    <td style="${textCellStyle}font-weight: bold;">${(summary_total.w_in_cico || 0)}</td>
+                                    <td style="${textCellStyle}font-weight: bold;">${DATETIME.HH_MM(null,summary_total.ave_time_lapse).hour_minute}</td>
+                                    <td style="${textCellStyle}font-weight: bold;">${DATETIME.HH_MM(null,summary_total.ave_cico).hour_minute}</td>
+                                </tr>`;
+
+                    return `<table id="report-hidden" style="opacity:0;">
+                                <tr>
+                                    <td style="border: none;">Report name: <b style="color:#c00000;">${title}</b></td>
+                                </tr>
+                                <tr><td style="border: none;"></td></tr>
+                                <tr>
+                                    <td style="border: none;"><b>Summary:</b></td>
+                                </tr>
+                                <tr>
+                                    <td style="border: none;">
+                                        <div>
+                                            <div>Plant Site: ${originChosen}</div>
+                                            <div>Date from: ${moment(new Date(date_from)).format("MM/DD/YYYY hh:mm A")}</div>
+                                            <div>Date to: ${moment(new Date(date_to)).format("MM/DD/YYYY hh:mm A")}</div>
+                                            <div>&nbsp;</div>
+                                            <div>Generated on: ${moment(new Date()).format("MM/DD/YYYY hh:mm A")}</div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr><td style="border: none;"></td></tr>
+                                <tr>
+                                    <td style="background-color:black;color:white;">Destination (DC)</td>
+                                    <td style="background-color:black;color:white;">Origin (Plant)</td>
+                                    <td style="background-color:black;color:white;">In Site</td>
+                                    <td style="background-color:#757070;color:white;">Over CICO</td>
+                                    <td style="background-color:#757070;color:white;">W/in CICO</td>
+                                    <td style="background-color:black;color:white;">Ave. Time Lapse (hrs)</td>
+                                    <td style="background-color:black;color:white;">CICO Target (hrs)</td>
+                                </tr>
+                                ${summary}
+                                <tr><td style="border: none;"></td></tr>
+                                <tr>
+                                    <td style="border: none;"><b>Details:</b></td>
+                                </tr>
+                                <tr>${detailsHeaderHTML}</tr>
+                                ${detailsBodyHTML}
+                            </table> `;
+                }
             },
-            OTR: function(title,docs,originChosen,date_from,date_to){
-                var summary = "",
-                    summary_info = {},
-                    summary_total = {
-                        in_site: 0,
+            otr: {
+                coket1: ( title, docs, originChosen, date_from, date_to ) => {
+                    // Legend:
+                    //    · GBO - Grouped by Origin
+                    //    · GBR - Grouped by Region
+                    //    · NTL - National
+
+                    /****** CSS ******/
+                    const rotateCSS = ` -webkit-transform: rotate(-90deg);
+                                        -moz-transform: rotate(-90deg);
+                                        -ms-transform: rotate(-90deg);
+                                        -o-transform: rotate(-90deg);
+                                        transform: rotate(-90deg);
+                                        mso-rotate: 90;
+                                        -webkit-transform-origin: 50% 50%;
+                                        -moz-transform-origin: 50% 50%;
+                                        -ms-transform-origin: 50% 50%;
+                                        -o-transform-origin: 50% 50%;
+                                        transform-origin: 50% 50%;
+                                        position: absolute;
+                                        filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=3);
+                                        
+                                        color: #595959;
+                                        background-color: #E2EFDA;
+                                        height: 127px;
+                                        border: none;
+                                        border-right: thin dashed #595959;`;
+
+                    const tblHeaderCSS = `  background-color: #404040;
+                                        color: white;
+                                        font-size: 13px;
+                                        text-align: center;
+                                        border: thin solid #404040;
+                                        font-weight: bold;
+                                        vertical-align: middle;
+                                        font-family: Franklin Gothic Book;`;
+                                    
+                    const noBorderCSS = `border: none;
+                                    font-size: 13px;
+                                    vertical-align: middle;
+                                    font-family: Franklin Gothic Book;
+                                    mso-number-format:'\@';`;
+                    /****** end CSS ******/
+
+                    // GBO
+                    var gboHtml = "";
+                    var gboInfo = {};
+
+                    // GBR
+                    var gbrHtml = "";
+                    var gbrInfo = {};
+
+                    // NTL
+                    var ntlHtml = "";
+                    var ntlInfo = {};
+
+                    // Detailed (Per shipment)
+                    var detailsBodyHTML = "";
+
+                    docs.forEach(function(val,i){
+                    val.destination[0] = val.destination[0] || {};
+                    var origin = getGeofence(val.origin_id) || {},
+                        destination = getGeofence(val.destination[0].location_id) || {},
+                        vehicle = getVehicle(val.vehicle_id) || {};
+
+                    const completeDateTime = getDateTime("complete",val,"last");
+
+                    const transitDuration = getDuration("in_transit",val);
+                    const estTransitDuration = (getRoute(val.route) || {}).transit_time;
+
+                    const dhTransitDuration = DATETIME.DH(transitDuration);
+                    const lapseTime = dhTransitDuration - estTransitDuration;
+
+                    const isOverTransit = dhTransitDuration > estTransitDuration;
+                    const remarks = isOverTransit ? "Over Transit" : "-";
+
+                    const key = vehicle["Base Site Code"];
+
+                    gboInfo[key] = gboInfo[key] || {
+                        totalShipments: 0,
+
                         over_transit: 0,
                         w_in_transit: 0,
-                        sum_time_lapse: 0,
-                        count_time_lapse: 0,
-                        count_transit: 0,
-                        sum_transit: 0
-                    },
-                    textCellStyle = `border:2px solid black;mso-number-format:'\@';`,
-                    detailsHeaderHTML = "",
-                    detailsBodyHTML = "",
-                    columns = clientCustom.reports.otr || [];
-                columns.forEach(_val_ => {
-                    switch (_val_) {
-                        case "origin":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Origin (Plant)</td>`;
-                            break;
-                        case "destination":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Destination (DC)</td>`;
-                            break;
-                        case "route":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Route</td>`;
-                            break;
-                        case "sn":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">SN</td>`;
-                            break;
-                        case "plateNumber":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Plate No.</td>`;
-                            break;
-                        case "trailer":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Trailer</td>`;
-                            break;
-                        case "palCap":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Pal Cap</td>`;
-                            break;
-                        case "haulerName":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Hauler Name</td>`;
-                            break;
-                        case "targetTransit":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Target Transit (hrs)</td>`;
-                            break;
-                        case "actualTimelapse":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Actual Time Lapse (hrs)</td>`;
-                            break;
-                        case "remarks1":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Remarks1</td>`;
-                            break;
-                        case "remarks2":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Remarks2</td>`;
-                            break;
-                        case "truckBasePlant":
-                            detailsHeaderHTML += `<td style="background-color:black;color:white;">Truck Base Plant</td>`;
-                            break;
-                        default:
-                            break;
-                    }
-                });
-                    
-                docs.forEach(function(val,i){
-                    var transit_time = getDuration("in_transit",val),
-                        actual_time_lapse,
-                        remarks2Class = "",
-                        origin = getGeofence(val.origin_id) || {},
-                        destination = getGeofence(val.destination[0].location_id) || {},
-                        route = LIST["routes"].find(x => x.origin_id == origin._id && x.destination_id == destination._id) || {},
-                        vehicle = getVehicle(val.vehicle_id) || {},
-                        orig_dest = `${origin.short_name}_${destination.short_name}`,
-                        remarks2 = "w/in Transit Time";
-                        
-                    if(transit_time){
-                        actual_time_lapse = Number(DATETIME.DH(transit_time,null,"0"));
-                    } else {
-                        actual_time_lapse = null;
-                    }
 
-                    if(!summary_info[orig_dest]){
-                        summary_info[orig_dest] = {
-                            destination:destination.short_name,
-                            origin:origin.short_name,
-                            in_site:1,
-                            over_transit:0,
-                            w_in_transit:0,
-                            count_time_lapse: (actual_time_lapse) ? 1 : 0,
-                            sum_time_lapse: actual_time_lapse,
-                            transit_target:route.transit_time || 0,
+                        transitDuration: 0,
+                        totalWithTransitDuration: 0,
+
+                        lapseTime: 0,
+                        totalWithLapseTime: 0,
+                    };
+
+                    gboInfo[key].totalShipments++;
+                    (isOverTransit) ? gboInfo[key].over_transit ++ :  gboInfo[key].w_in_transit ++;
+
+                    gboInfo[key].transitDuration += transitDuration;
+                    (transitDuration) ? gboInfo[key].totalWithTransitDuration ++ : null;
+
+                    (lapseTime > 0) ? gboInfo[key].lapseTime += lapseTime || 0 : null;
+                    (lapseTime > 0) ? gboInfo[key].totalWithLapseTime ++ : null;
+
+                    detailsBodyHTML += `<tr>
+                                            <td style="${noBorderCSS}text-align: left;">${val._id}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${(vehicle.name || "")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${(val.trailer || vehicle["Trailer"] || "")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${(vehicle["Pal Cap"] || "")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${(vehicle["Base Site"] || "")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${(vehicle["Base Site Code"] || "")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${origin.short_name}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${destination.short_name}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${val.route}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(val.departure_date,"MM/DD/YYYY")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(val.departure_date,"H:mm")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(completeDateTime,"MM/DD/YYYY")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(completeDateTime,"H:mm")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${transitDuration ? DATETIME.HH_MM(transitDuration).hour_minute : "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${estTransitDuration ? DATETIME.HH_MM(null,estTransitDuration).hour_minute : "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${lapseTime > 0 ? DATETIME.HH_MM(null,lapseTime).hour_minute : "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${remarks}</td>
+                                        </tr>`;
+                    });
+
+                    // GBO
+                    const filteredGeofences = LIST["geofences"].filter(x => x.code);
+                    const sortedGeofences = ARRAY.OBJECT.sort(filteredGeofences,"short_name",{ sortType: "asc" });
+                    sortedGeofences.forEach(gVal => {
+
+                        const val = gboInfo[gVal.code] || {};
+
+                        const truckInventory = LIST['vehicles'].filter(x => x['Base Site Code'] == gVal.code).length;
+
+                        const aveTransitDuration = val.transitDuration/val.totalWithTransitDuration;
+                        const aveLapseTime = val.lapseTime/val.totalWithLapseTime;
+
+                        const region = getRegion(gVal.region_id) || {}; 
+
+                        if(truckInventory){
+                            gboHtml += `<tr>
+                                            <td style="${noBorderCSS}">${gVal.short_name}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${gVal.code || "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${region.code || "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${val.totalShipments || "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${val.w_in_transit || 0}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${val.over_transit || 0}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${aveTransitDuration ? DATETIME.HH_MM(aveTransitDuration).hour_minute : "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${aveLapseTime > 0 ? DATETIME.HH_MM(null,aveLapseTime).hour_minute : "-"}</td>
+                                        </tr>`;
+                        }
+
+                        gbrInfo[gVal.region_id] = gbrInfo[gVal.region_id] || {
+                            totalShipments: 0,
+
+                            over_transit: 0,
+                            w_in_transit: 0,
+    
+                            transitDuration: 0,
+                            totalWithTransitDuration: 0,
+    
+                            lapseTime: 0,
+                            totalWithLapseTime: 0,
                         };
-                    } else {
-                        summary_info[orig_dest].in_site++;
-                        if(actual_time_lapse != null){
-                            summary_info[orig_dest].count_time_lapse++;
-                            summary_info[orig_dest].sum_time_lapse += actual_time_lapse;
-                        }
-                    }
-                    if(actual_time_lapse != null) {
-                        if(actual_time_lapse > route.transit_time){
-                            remarks2Class = "background-color:#ffc7ce;color:#9c0006";
-                            remarks2 = "Over Transit Time";
-                            summary_info[orig_dest].over_transit ++;
-                        } else {
-                            summary_info[orig_dest].w_in_transit ++;
-                        }
-                    }
 
-                    detailsBodyHTML += `<tr>`;
+                        gbrInfo[gVal.region_id].totalShipments += val.totalShipments || 0;
+                        
+                        gbrInfo[gVal.region_id].over_transit += val.over_transit || 0;
+                        gbrInfo[gVal.region_id].w_in_transit += val.w_in_transit || 0;
+    
+                        (aveTransitDuration) ? gbrInfo[gVal.region_id].transitDuration += aveTransitDuration || 0 : null;
+                        (aveTransitDuration) ? gbrInfo[gVal.region_id].totalWithTransitDuration ++ : null;
+    
+                        (aveLapseTime > 0) ? gbrInfo[gVal.region_id].lapseTime += aveLapseTime || 0 : null;
+                        (aveLapseTime) ? gbrInfo[gVal.region_id].totalWithLapseTime ++ : null;
+                    });
+
+                    // GBR
+                    const sortedRegions = ARRAY.OBJECT.sort(LIST["regions"],"sequence",{ sortType: "asc" });
+                    sortedRegions.forEach(rVal => {
+
+                        const val = gbrInfo[rVal._id] || {};
+
+                        const aveTransitDuration = val.transitDuration/val.totalWithTransitDuration;
+                        const aveLapseTime = val.lapseTime/val.totalWithLapseTime;
+
+                        gbrHtml += `<tr>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;">${rVal.name || "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${rVal.code || "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;"> </td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${val.totalShipments || "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${val.w_in_transit || "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${val.over_transit || "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveTransitDuration ? DATETIME.HH_MM(aveTransitDuration).hour_minute : "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveLapseTime > 0 ? DATETIME.HH_MM(null,aveLapseTime).hour_minute : "-"}</td>
+                                    </tr>`;
+
+                        ntlInfo["ph"] = ntlInfo["ph"] || {
+                            totalShipments: 0,
+
+                            over_transit: 0,
+                            w_in_transit: 0,
+    
+                            transitDuration: 0,
+                            totalWithTransitDuration: 0,
+    
+                            lapseTime: 0,
+                            totalWithLapseTime: 0,
+                        };
+
+                        ntlInfo["ph"].totalShipments += val.totalShipments || 0;
+                        
+                        ntlInfo["ph"].over_transit += val.over_transit || 0;
+                        ntlInfo["ph"].w_in_transit += val.w_in_transit || 0;
+    
+                        (aveTransitDuration) ? ntlInfo["ph"].transitDuration += aveTransitDuration || 0 : null;
+                        (aveTransitDuration) ? ntlInfo["ph"].totalWithTransitDuration ++ : null;
+    
+                        (aveLapseTime > 0) ? ntlInfo["ph"].lapseTime += aveLapseTime || 0 : null;
+                        (aveLapseTime > 0) ? ntlInfo["ph"].totalWithLapseTime ++ : null;
+                    });
+
+                    console.log("ntlInfo",ntlInfo);
+
+                    // NTL
+                    const ntlVal = ntlInfo["ph"] || {};
+
+                    const aveTransitDuration = ntlVal.transitDuration/ntlVal.totalWithTransitDuration;
+                    const aveLapseTime = ntlVal.lapseTime/ntlVal.totalWithLapseTime;
+
+                    ntlHtml += `<tr>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;">NATIONAL</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">NAT</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;"> </td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlVal.totalShipments || "-"}</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlVal.w_in_transit || "-"}</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlVal.over_transit || "-"}</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${aveTransitDuration ? DATETIME.HH_MM(aveTransitDuration).hour_minute : "-"}</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${aveLapseTime > 0 ? DATETIME.HH_MM(null,aveLapseTime).hour_minute : "-"}</td>
+                            </tr>`;
+                            
+
+                    // to be exported to file
+                    
+                    return `<table id="report-hidden" style="opacity:0;">
+                                <tr>
+                                    <td style="${noBorderCSS}" colspan=2>Report name: <b style="color:#c00000;">${title}</b></td>
+                                </tr>
+                                <tr><td style="${noBorderCSS}" colspan=2></td></tr>
+                                <tr>
+                                    <td style="${noBorderCSS}" colspan=2>Date Info:</td>
+                                </tr>
+                                <tr>
+                                    <td style="${noBorderCSS}" colspan=2>
+                                        <div>
+                                            <div>Date from: ${moment(new Date(date_from)).format("MM/DD/YYYY hh:mm A")}</div>
+                                            <div>Date to: ${moment(new Date(date_to)).format("MM/DD/YYYY hh:mm A")}</div>
+                                            <div>&nbsp;</div>
+                                            <div>Generated on: ${moment(new Date()).format("MM/DD/YYYY hh:mm A")}</div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr><td style="${noBorderCSS}" colspan=2></td></tr>
+                                ${
+                                    REPORTS.columnHtml( 
+                                        ['baseSite','baseSiteCode','baseSiteRegion','shipmentCount_CheckedOut','withinTransitDuration','overTransitDuration','transitDurationAve','lapseTimeAve'],
+                                        rotateCSS,
+                                        tblHeaderCSS
+                                    )
+                                }
+                                ${gboHtml}
+                                <tr><td style="${noBorderCSS}"></td></tr>
+                                ${ntlHtml}
+                                ${gbrHtml}
+                                <tr><td style="${noBorderCSS}"></td></tr>
+                                <tr><td style="${noBorderCSS}"></td></tr>
+                                <tr>
+                                    <td style="${noBorderCSS}"><b>Details:</b></td>
+                                </tr>
+                                <tr><td style="${noBorderCSS}"></td></tr>
+                                ${
+                                    REPORTS.columnHtml( 
+                                        ['shipment','vehicle','trailer','palCap','baseSite','baseSiteCode','origin','destination','route','checkOutDate','checkOutTime','completionDate','completionTime','transitDuration','estTransitDuration','lapseTime','remarksTransit'],
+                                        rotateCSS,
+                                        tblHeaderCSS
+                                    )
+                                }
+                                ${detailsBodyHTML}
+                            </table> `;
+                },
+                coket2: ( title, docs, originChosen, date_from, date_to ) => { 
+                    return REPORTS.UI.REPORTS.otr.wilcon( title, docs, originChosen, date_from, date_to );
+                },
+                wilcon: ( title, docs, originChosen, date_from, date_to ) => {
+                    var summary = "",
+                        summary_info = {},
+                        summary_total = {
+                            in_site: 0,
+                            over_transit: 0,
+                            w_in_transit: 0,
+                            sum_time_lapse: 0,
+                            count_time_lapse: 0,
+                            count_transit: 0,
+                            sum_transit: 0
+                        },
+                        textCellStyle = `border:2px solid black;mso-number-format:'\@';`,
+                        detailsHeaderHTML = "",
+                        detailsBodyHTML = "",
+                        columns = clientCustom.reports.otr || [];
                     columns.forEach(_val_ => {
                         switch (_val_) {
                             case "origin":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${origin.short_name}</td>`;
+                                detailsHeaderHTML += `<td style="background-color:black;color:white;">Origin (Plant)</td>`;
                                 break;
                             case "destination":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${destination.short_name}</td>`;
+                                detailsHeaderHTML += `<td style="background-color:black;color:white;">Destination (DC)</td>`;
                                 break;
                             case "route":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${val.route}</td>`;
+                                detailsHeaderHTML += `<td style="background-color:black;color:white;">Route</td>`;
                                 break;
                             case "sn":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${val._id}</td>`;
+                                detailsHeaderHTML += `<td style="background-color:black;color:white;">SN</td>`;
                                 break;
                             case "plateNumber":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle.name || "")}</td>`;
+                                detailsHeaderHTML += `<td style="background-color:black;color:white;">Plate No.</td>`;
                                 break;
                             case "trailer":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle["Trailer"] || "")}</td>`;
+                                detailsHeaderHTML += `<td style="background-color:black;color:white;">Trailer</td>`;
                                 break;
                             case "palCap":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle["Pal Cap"] || "")}</td>`;
+                                detailsHeaderHTML += `<td style="background-color:black;color:white;">Pal Cap</td>`;
                                 break;
                             case "haulerName":
-                                detailsBodyHTML += `<td style="${textCellStyle}"></td>`;
+                                detailsHeaderHTML += `<td style="background-color:black;color:white;">Hauler Name</td>`;
                                 break;
                             case "targetTransit":
-                                detailsBodyHTML += `<td style="${textCellStyle}mso-number-format:'\@';">${DATETIME.HH_MM(null,route.transit_time).hour_minute}</td>`;
+                                detailsHeaderHTML += `<td style="background-color:black;color:white;">Target Transit (hrs)</td>`;
                                 break;
                             case "actualTimelapse":
-                                detailsBodyHTML += `<td style="${textCellStyle}mso-number-format:'\@';">${DATETIME.HH_MM(null,actual_time_lapse).hour_minute}</td>`;
+                                detailsHeaderHTML += `<td style="background-color:black;color:white;">Actual Time Lapse (hrs)</td>`;
                                 break;
                             case "remarks1":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${(val.remarks || "")}</td>`;
+                                detailsHeaderHTML += `<td style="background-color:black;color:white;">Remarks1</td>`;
                                 break;
                             case "remarks2":
-                                detailsBodyHTML += `<td style="${textCellStyle}${remarks2Class}">${remarks2}</td>`;
+                                detailsHeaderHTML += `<td style="background-color:black;color:white;">Remarks2</td>`;
                                 break;
                             case "truckBasePlant":
-                                detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle["Site"] || "")}</td>`;
+                                detailsHeaderHTML += `<td style="background-color:black;color:white;">Truck Base Plant</td>`;
                                 break;
                             default:
                                 break;
                         }
                     });
-                    detailsBodyHTML += `</tr>`;
-                });
-                Object.values(summary_info).forEach(val => {
-                    var ave_time_lapse = val.sum_time_lapse/val.count_time_lapse;
+                        
+                    docs.forEach(function(val,i){
+                        var transit_time = getDuration("in_transit",val),
+                            actual_time_lapse,
+                            remarks2Class = "",
+                            origin = getGeofence(val.origin_id) || {},
+                            destination = getGeofence(val.destination[0].location_id) || {},
+                            route = LIST["routes"].find(x => x.origin_id == origin._id && x.destination_id == destination._id) || {},
+                            vehicle = getVehicle(val.vehicle_id) || {},
+                            orig_dest = `${origin.short_name}_${destination.short_name}`,
+                            remarks2 = "w/in Transit Time";
+                            
+                        if(transit_time){
+                            actual_time_lapse = Number(DATETIME.DH(transit_time,null,"0"));
+                        } else {
+                            actual_time_lapse = null;
+                        }
+    
+                        if(!summary_info[orig_dest]){
+                            summary_info[orig_dest] = {
+                                destination:destination.short_name,
+                                origin:origin.short_name,
+                                in_site:1,
+                                over_transit:0,
+                                w_in_transit:0,
+                                count_time_lapse: (actual_time_lapse) ? 1 : 0,
+                                sum_time_lapse: actual_time_lapse,
+                                transit_target:route.transit_time || 0,
+                            };
+                        } else {
+                            summary_info[orig_dest].in_site++;
+                            if(actual_time_lapse != null){
+                                summary_info[orig_dest].count_time_lapse++;
+                                summary_info[orig_dest].sum_time_lapse += actual_time_lapse;
+                            }
+                        }
+                        if(actual_time_lapse != null) {
+                            if(actual_time_lapse > route.transit_time){
+                                remarks2Class = "background-color:#ffc7ce;color:#9c0006";
+                                remarks2 = "Over Transit Time";
+                                summary_info[orig_dest].over_transit ++;
+                            } else {
+                                summary_info[orig_dest].w_in_transit ++;
+                            }
+                        }
+    
+                        detailsBodyHTML += `<tr>`;
+                        columns.forEach(_val_ => {
+                            switch (_val_) {
+                                case "origin":
+                                    detailsBodyHTML += `<td style="${textCellStyle}">${origin.short_name}</td>`;
+                                    break;
+                                case "destination":
+                                    detailsBodyHTML += `<td style="${textCellStyle}">${destination.short_name}</td>`;
+                                    break;
+                                case "route":
+                                    detailsBodyHTML += `<td style="${textCellStyle}">${val.route}</td>`;
+                                    break;
+                                case "sn":
+                                    detailsBodyHTML += `<td style="${textCellStyle}">${val._id}</td>`;
+                                    break;
+                                case "plateNumber":
+                                    detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle.name || "")}</td>`;
+                                    break;
+                                case "trailer":
+                                    detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle["Trailer"] || "")}</td>`;
+                                    break;
+                                case "palCap":
+                                    detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle["Pal Cap"] || "")}</td>`;
+                                    break;
+                                case "haulerName":
+                                    detailsBodyHTML += `<td style="${textCellStyle}"></td>`;
+                                    break;
+                                case "targetTransit":
+                                    detailsBodyHTML += `<td style="${textCellStyle}mso-number-format:'\@';">${DATETIME.HH_MM(null,route.transit_time).hour_minute}</td>`;
+                                    break;
+                                case "actualTimelapse":
+                                    detailsBodyHTML += `<td style="${textCellStyle}mso-number-format:'\@';">${DATETIME.HH_MM(null,actual_time_lapse).hour_minute}</td>`;
+                                    break;
+                                case "remarks1":
+                                    detailsBodyHTML += `<td style="${textCellStyle}">${(val.remarks || "")}</td>`;
+                                    break;
+                                case "remarks2":
+                                    detailsBodyHTML += `<td style="${textCellStyle}${remarks2Class}">${remarks2}</td>`;
+                                    break;
+                                case "truckBasePlant":
+                                    detailsBodyHTML += `<td style="${textCellStyle}">${(vehicle["Site"] || "")}</td>`;
+                                    break;
+                                default:
+                                    break;
+                            }
+                        });
+                        detailsBodyHTML += `</tr>`;
+                    });
+                    Object.values(summary_info).forEach(val => {
+                        var ave_time_lapse = val.sum_time_lapse/val.count_time_lapse;
+                        summary += `<tr>
+                                        <td style="${textCellStyle}">${val.origin}</td>
+                                        <td style="${textCellStyle}">${val.destination}</td>
+                                        <td style="${textCellStyle}">${val.in_site}</td>
+                                        <td style="${textCellStyle}">${val.over_transit}</td>
+                                        <td style="${textCellStyle}">${val.w_in_transit}</td>
+                                        <td style="${textCellStyle}">${DATETIME.HH_MM(null,ave_time_lapse).hour_minute}</td>
+                                        <td style="${textCellStyle}">${DATETIME.HH_MM(null,val.transit_target).hour_minute}</td>
+                                    </tr>`;
+                        summary_total.in_site += val.in_site;
+                        summary_total.over_transit += val.over_transit;
+                        summary_total.w_in_transit += val.w_in_transit;
+                        summary_total.count_transit ++;
+                        summary_total.sum_transit += Number(val.transit_target);
+    
+                        if(val.sum_time_lapse != null){
+                            summary_total.count_time_lapse ++;
+                            summary_total.sum_time_lapse += ave_time_lapse;
+                        }
+                    });
+                    summary_total.ave_time_lapse = summary_total.sum_time_lapse/summary_total.count_time_lapse;
+                    summary_total.ave_transit = summary_total.sum_transit/summary_total.count_transit;
+                    
                     summary += `<tr>
-                                    <td style="${textCellStyle}">${val.origin}</td>
-                                    <td style="${textCellStyle}">${val.destination}</td>
-                                    <td style="${textCellStyle}">${val.in_site}</td>
-                                    <td style="${textCellStyle}">${val.over_transit}</td>
-                                    <td style="${textCellStyle}">${val.w_in_transit}</td>
-                                    <td style="${textCellStyle}">${DATETIME.HH_MM(null,ave_time_lapse).hour_minute}</td>
-                                    <td style="${textCellStyle}">${DATETIME.HH_MM(null,val.transit_target).hour_minute}</td>
+                                    <td style="${textCellStyle}font-weight: bold;" colspan=2>TOTAL</td>
+                                    <td style="${textCellStyle}font-weight: bold;">${(summary_total.in_site || 0)}</td>
+                                    <td style="${textCellStyle}font-weight: bold;">${(summary_total.over_transit || 0)}</td>
+                                    <td style="${textCellStyle}font-weight: bold;">${(summary_total.w_in_transit || 0)}</td>
+                                    <td style="${textCellStyle}font-weight: bold;">${DATETIME.HH_MM(null,summary_total.ave_time_lapse).hour_minute}</td>
+                                    <td style="${textCellStyle}font-weight: bold;">${DATETIME.HH_MM(null,summary_total.ave_transit).hour_minute}</td>
                                 </tr>`;
-                    summary_total.in_site += val.in_site;
-                    summary_total.over_transit += val.over_transit;
-                    summary_total.w_in_transit += val.w_in_transit;
-                    summary_total.count_transit ++;
-                    summary_total.sum_transit += Number(val.transit_target);
+    
+                    return `<table id="report-hidden" style="opacity:0;">
+                                <tr>
+                                    <td style="border: none;">Report name: <b style="color:#c00000;">${title}</b></td>
+                                </tr>
+                                <tr><td style="border: none;"></td></tr>
+                                <tr>
+                                    <td style="border: none;"><b>Summary:</b></td>
+                                </tr>
+                                <tr>
+                                    <td style="border: none;">
+                                        <div>
+                                            <div>Plant Site: ${originChosen}</div>
+                                            <div>Date from: ${moment(new Date(date_from)).format("MM/DD/YYYY hh:mm A")}</div>
+                                            <div>Date to: ${moment(new Date(date_to)).format("MM/DD/YYYY hh:mm A")}</div>
+                                            <div>&nbsp;</div>
+                                            <div>Generated on: ${moment(new Date()).format("MM/DD/YYYY hh:mm A")}</div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr><td style="border: none;"></td></tr>
+                                <tr>
+                                    <td style="background-color:black;color:white;">Origin (Plant)</td>
+                                    <td style="background-color:black;color:white;">Destination (DC)</td>
+                                    <td style="background-color:black;color:white;">In Site</td>
+                                    <td style="background-color:#757070;color:white;">Over Transit</td>
+                                    <td style="background-color:#757070;color:white;">W/in Transit</td>
+                                    <td style="background-color:black;color:white;">Ave. Time Lapse (hrs)</td>
+                                    <td style="background-color:black;color:white;">Ave. Transit Target (hrs)</td>
+                                </tr>
+                                ${summary}
+                                <tr><td style="border: none;"></td></tr>
+                                <tr>
+                                    <td style="border: none;"><b>Details:</b></td>
+                                </tr>
+                                <tr>${detailsHeaderHTML}</tr>
+                                ${detailsBodyHTML}
+                            </table> `;
+                }
+            },
+            dr: {
+                coket1: ( title, docs, originChosen, date_from, date_to ) => {
+                    // Legend:
+                    //    · GBO - Grouped by Origin
+                    //    · GBR - Grouped by Region
+                    //    · NTL - National
 
-                    if(val.sum_time_lapse != null){
-                        summary_total.count_time_lapse ++;
-                        summary_total.sum_time_lapse += ave_time_lapse;
-                    }
-                });
-                summary_total.ave_time_lapse = summary_total.sum_time_lapse/summary_total.count_time_lapse;
-                summary_total.ave_transit = summary_total.sum_transit/summary_total.count_transit;
-                
-                summary += `<tr>
-                                <td style="${textCellStyle}font-weight: bold;" colspan=2>TOTAL</td>
-                                <td style="${textCellStyle}font-weight: bold;">${(summary_total.in_site || 0)}</td>
-                                <td style="${textCellStyle}font-weight: bold;">${(summary_total.over_transit || 0)}</td>
-                                <td style="${textCellStyle}font-weight: bold;">${(summary_total.w_in_transit || 0)}</td>
-                                <td style="${textCellStyle}font-weight: bold;">${DATETIME.HH_MM(null,summary_total.ave_time_lapse).hour_minute}</td>
-                                <td style="${textCellStyle}font-weight: bold;">${DATETIME.HH_MM(null,summary_total.ave_transit).hour_minute}</td>
+                    /****** CSS ******/
+                    const rotateCSS = ` -webkit-transform: rotate(-90deg);
+                                        -moz-transform: rotate(-90deg);
+                                        -ms-transform: rotate(-90deg);
+                                        -o-transform: rotate(-90deg);
+                                        transform: rotate(-90deg);
+                                        mso-rotate: 90;
+                                        -webkit-transform-origin: 50% 50%;
+                                        -moz-transform-origin: 50% 50%;
+                                        -ms-transform-origin: 50% 50%;
+                                        -o-transform-origin: 50% 50%;
+                                        transform-origin: 50% 50%;
+                                        position: absolute;
+                                        filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=3);
+                                        
+                                        color: #595959;
+                                        background-color: #E2EFDA;
+                                        height: 127px;
+                                        border: none;
+                                        border-right: thin dashed #595959;`;
+
+                    const tblHeaderCSS = `  background-color: #404040;
+                                        color: white;
+                                        font-size: 13px;
+                                        text-align: center;
+                                        border: thin solid #404040;
+                                        font-weight: bold;
+                                        vertical-align: middle;
+                                        font-family: Franklin Gothic Book;`;
+                                    
+                    const noBorderCSS = `border: none;
+                                    font-size: 13px;
+                                    vertical-align: middle;
+                                    font-family: Franklin Gothic Book;
+                                    mso-number-format:'\@';`;
+                    /****** end CSS ******/
+
+                    // GBO
+                    var gboHtml = "";
+                    var gboInfo = {};
+
+                    // GBR
+                    var gbrHtml = "";
+                    var gbrInfo = {};
+
+                    // NTL
+                    var ntlHtml = "";
+                    var ntlInfo = {};
+
+                    // Detailed (Per shipment)
+                    var detailsBodyHTML = "";
+
+                    docs.forEach(function(val,i){
+                        const dispatch = val.dispatchDetails || {};
+
+                        const vehicle = getVehicle(dispatch.vehicle_id) || {};
+
+                        var lapseTime = null;
+                        if(val.delay_type == "Over CICO"){
+                            const geofence = getGeofence(val.site,'short_name') || {};
+                            lapseTime = val.timelapse - geofence.cico;
+                        }
+                        if(val.delay_type == "Long Queueing"){
+                            lapseTime = val.timelapse - 0.5; // default queueing time is 30 minutes (0.5 dh)
+                        }
+                        if(val.delay_type == "Over Transit"){
+                            const route = getRoute(dispatch.route) || {};
+                            lapseTime = val.timelapse - route.transit_time;
+                        }
+
+                        const key = val.site;
+
+                        gboInfo[key] = gboInfo[key] || {
+                            totalShipments: 0,
+
+                            totalOverCICO: 0,
+                            totalLongQueueing: 0,
+                            totalOverTransit: 0,
+                        };
+
+                        (val.delay_type == "Over CICO") ? gboInfo[key].totalOverCICO ++ : null;
+                        (val.delay_type == "Long Queueing") ? gboInfo[key].totalLongQueueing ++ : null;
+                        (val.delay_type == "Over Transit") ? gboInfo[key].totalOverTransit ++ : null;
+
+                        gboInfo[key].totalShipments++;
+
+                        detailsBodyHTML += `<tr>
+                                                <td style="${noBorderCSS}text-align: left;">${val.dispatch_id}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${(vehicle.name || "")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${(dispatch.trailer || vehicle["Trailer"] || "")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${(vehicle["Pal Cap"] || "")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${val.delay_type}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${val.escalation}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${lapseTime == null ? "-" : DATETIME.HH_MM(null,lapseTime).hour_minute}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(val.timestamp,"MM/DD/YYYY")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(val.timestamp,"H:mm")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${val.site}</td>
+                                            </tr>`;
+                    });
+
+                    // GBO
+                    const filteredGeofences = LIST["geofences"].filter(x => x.code);
+                    const sortedGeofences = ARRAY.OBJECT.sort(filteredGeofences,"short_name",{ sortType: "asc" });
+                    sortedGeofences.forEach(gVal => {
+
+                        const val = gboInfo[gVal.short_name] || {};
+
+                        const region = getRegion(gVal.region_id) || {}; 
+
+                        gboHtml += `<tr>
+                                        <td style="${noBorderCSS}">${gVal.short_name}</td>
+                                        <td style="${noBorderCSS}text-align: center;">${gVal.code || "-"}</td>
+                                        <td style="${noBorderCSS}text-align: center;">${region.code || "-"}</td>
+                                        <td style="${noBorderCSS}text-align: center;">${val.totalOverCICO || "-"}</td>
+                                        <td style="${noBorderCSS}text-align: center;">${val.totalLongQueueing || "-"}</td>
+                                        <td style="${noBorderCSS}text-align: center;">${val.totalOverTransit || "-"}</td>
+                                        <td style="${noBorderCSS}text-align: center;">${val.totalShipments || "-"}</td>
+                                    </tr>`;
+
+                        if(gboInfo[gVal.short_name]) {
+
+                            gbrInfo[gVal.region_id] = gbrInfo[gVal.region_id] || {
+                                totalShipments: 0,
+
+                                totalOverCICO: 0,
+                                totalLongQueueing: 0,
+                                totalOverTransit: 0,
+                            };
+
+                            gbrInfo[gVal.region_id].totalOverCICO += val.totalOverCICO;
+                            gbrInfo[gVal.region_id].totalLongQueueing += val.totalLongQueueing;
+                            gbrInfo[gVal.region_id].totalOverTransit += val.totalOverTransit;
+                            gbrInfo[gVal.region_id].totalShipments += val.totalShipments;
+                        }
+                    });
+
+                    // GBR
+                    const sortedRegions = ARRAY.OBJECT.sort(LIST["regions"],"sequence",{ sortType: "asc" });
+                    sortedRegions.forEach(rVal => {
+
+                        const val = gbrInfo[rVal._id] || {};
+
+                        gbrHtml += `<tr>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;">${rVal.name || "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${rVal.code || "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;"> </td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${val.totalOverCICO || "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${val.totalLongQueueing || "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${val.totalOverTransit || "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${val.totalShipments || "-"}</td>
+                                    </tr>`;
+
+                        ntlInfo["ph"] = ntlInfo["ph"] || {
+                            totalShipments: 0,
+
+                            totalOverCICO: 0,
+                            totalLongQueueing: 0,
+                            totalOverTransit: 0,
+                        };
+
+                        ntlInfo["ph"].totalOverCICO += val.totalOverCICO || 0;
+                        ntlInfo["ph"].totalLongQueueing += val.totalLongQueueing || 0;
+                        ntlInfo["ph"].totalOverTransit += val.totalOverTransit || 0;
+                        ntlInfo["ph"].totalShipments += val.totalShipments || 0;
+                    });
+
+                    console.log("ntlInfo",ntlInfo);
+
+                    // NTL
+                    const ntlVal = ntlInfo["ph"] || {};
+
+                    ntlHtml += `<tr>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;">NATIONAL</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">NAT</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;"> </td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlVal.totalOverCICO || "-"}</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlVal.totalLongQueueing || "-"}</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlVal.totalOverTransit || "-"}</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlVal.totalShipments || "-"}</td>
                             </tr>`;
+                            
 
-                return `<table id="report-hidden" style="opacity:0;">
+                    // to be exported to file
+                    return `<table id="report-hidden" style="opacity:0;">
                             <tr>
-                                <td style="border: none;">Report name: <b style="color:#c00000;">${title}</b></td>
+                                <td style="${noBorderCSS}" colspan=2>Report name: <b style="color:#c00000;">${title}</b></td>
                             </tr>
-                            <tr><td style="border: none;"></td></tr>
+                            <tr><td style="${noBorderCSS}" colspan=2></td></tr>
                             <tr>
-                                <td style="border: none;"><b>Summary:</b></td>
+                                <td style="${noBorderCSS}" colspan=2>Date Info:</td>
                             </tr>
                             <tr>
-                                <td style="border: none;">
+                                <td style="${noBorderCSS}" colspan=2>
                                     <div>
-                                        <div>Plant Site: ${originChosen}</div>
                                         <div>Date from: ${moment(new Date(date_from)).format("MM/DD/YYYY hh:mm A")}</div>
                                         <div>Date to: ${moment(new Date(date_to)).format("MM/DD/YYYY hh:mm A")}</div>
                                         <div>&nbsp;</div>
@@ -8044,24 +8909,34 @@ var REPORTS = {
                                     </div>
                                 </td>
                             </tr>
-                            <tr><td style="border: none;"></td></tr>
+                            <tr><td style="${noBorderCSS}" colspan=2></td></tr>
+                            ${
+                                REPORTS.columnHtml( 
+                                    ['site','siteCode','siteRegion','overCICO','longQueueing','overTransit','totalDelays'],
+                                    rotateCSS,
+                                    tblHeaderCSS
+                                )
+                            }
+                            ${gboHtml}
+                            <tr><td style="${noBorderCSS}"></td></tr>
+                            ${ntlHtml}
+                            ${gbrHtml}
+                            <tr><td style="${noBorderCSS}"></td></tr>
+                            <tr><td style="${noBorderCSS}"></td></tr>
                             <tr>
-                                <td style="background-color:black;color:white;">Origin (Plant)</td>
-                                <td style="background-color:black;color:white;">Destination (DC)</td>
-                                <td style="background-color:black;color:white;">In Site</td>
-                                <td style="background-color:#757070;color:white;">Over Transit</td>
-                                <td style="background-color:#757070;color:white;">W/in Transit</td>
-                                <td style="background-color:black;color:white;">Ave. Time Lapse (hrs)</td>
-                                <td style="background-color:black;color:white;">Ave. Transit Target (hrs)</td>
+                                <td style="${noBorderCSS}"><b>Details:</b></td>
                             </tr>
-                            ${summary}
-                            <tr><td style="border: none;"></td></tr>
-                            <tr>
-                                <td style="border: none;"><b>Details:</b></td>
-                            </tr>
-                            <tr>${detailsHeaderHTML}</tr>
+                            <tr><td style="${noBorderCSS}"></td></tr>
+                            ${
+                                REPORTS.columnHtml( 
+                                    ['shipment','vehicle','trailer','palCap','delay','escalation','lapseTime','occurrenceDate','occurrenceTime','site'],
+                                    rotateCSS,
+                                    tblHeaderCSS
+                                )
+                            }
                             ${detailsBodyHTML}
                         </table> `;
+                },
             },
             PBPA: function(title,docs,originChosen,date_from,date_to){
                 var details = "",
@@ -8547,52 +9422,309 @@ var REPORTS = {
 
                 return overallTableHtml + personnelTableHtml;
             },
-            TR: function(title,location,_date){
-                var empty = "",
-                    width = ["width:100px;","width:100px;","width:100px;","width:100px;"];
+            tr: {
+                coket1: ( title, docs, originChosen, date_from, date_to ) => {
+                    // Legend:
+                    //    · GBO - Grouped by Origin
+                    //    · GBR - Grouped by Region
+                    //    · NTL - National
 
-                for(var i=0; i < 16; i++){
-                    empty += `<tr style="text-align:center">
-                                    <td style="border:2px solid black;"></td>
-                                    <td style="border:2px solid black;"></td>
-                                    <td style="border:2px solid black;"></td>
-                                    <td style="border:2px solid black;"></td>
-                                </tr>`;
-                }
+                    /****** CSS ******/
+                    const rotateCSS = ` -webkit-transform: rotate(-90deg);
+                                        -moz-transform: rotate(-90deg);
+                                        -ms-transform: rotate(-90deg);
+                                        -o-transform: rotate(-90deg);
+                                        transform: rotate(-90deg);
+                                        mso-rotate: 90;
+                                        -webkit-transform-origin: 50% 50%;
+                                        -moz-transform-origin: 50% 50%;
+                                        -ms-transform-origin: 50% 50%;
+                                        -o-transform-origin: 50% 50%;
+                                        transform-origin: 50% 50%;
+                                        position: absolute;
+                                        filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=3);
+                                        
+                                        color: #595959;
+                                        background-color: #E2EFDA;
+                                        height: 127px;
+                                        border: none;
+                                        border-right: thin dashed #595959;`;
 
-                return `<table id="report-hidden" style="opacity:0;">
+                    const tblHeaderCSS = `  background-color: #404040;
+                                        color: white;
+                                        font-size: 13px;
+                                        text-align: center;
+                                        border: thin solid #404040;
+                                        font-weight: bold;
+                                        vertical-align: middle;
+                                        font-family: Franklin Gothic Book;`;
+                                    
+                    const noBorderCSS = `border: none;
+                                    font-size: 13px;
+                                    vertical-align: middle;
+                                    font-family: Franklin Gothic Book;
+                                    mso-number-format:'\@';`;
+                    /****** end CSS ******/
+
+                    // GBO
+                    var gboHtml = "";
+                    var gboInfo = {};
+
+                    // GBR
+                    var gbrHtml = "";
+                    var gbrInfo = {};
+
+                    // NTL
+                    var ntlHtml = "";
+                    var ntlInfo = {};
+
+                    // Detailed (Per shipment)
+                    var detailsBodyHTML = "";
+
+                    docs.forEach(function(val,i){
+                    val.destination[0] = val.destination[0] || {};
+                    var origin = getGeofence(val.origin_id) || {},
+                        destination = getGeofence(val.destination[0].location_id) || {},
+                        vehicle = getVehicle(val.vehicle_id) || {};
+
+                    const key = origin.short_name;
+
+                    gboInfo[key] = gboInfo[key] || {
+                        totalShipments: 0,
+                    };
+
+                    gboInfo[key].totalShipments++;
+
+                    detailsBodyHTML += `<tr>
+                                            <td style="${noBorderCSS}text-align: left;">${val._id}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${(vehicle.name || "")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${(val.trailer || vehicle["Trailer"] || "")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${(vehicle["Pal Cap"] || "")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${origin.short_name}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${destination.short_name}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${val.route}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(val.departure_date,"MM/DD/YYYY")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(val.departure_date,"H:mm")}</td>
+                                        </tr>`;
+                    });
+
+                    // GBO
+                    const filteredGeofences = LIST["geofences"].filter(x => x.code);
+                    const sortedGeofences = ARRAY.OBJECT.sort(filteredGeofences,"short_name",{ sortType: "asc" });
+                    sortedGeofences.forEach(gVal => {
+
+                        const val = gboInfo[gVal.short_name] || {};
+
+                        const region = getRegion(gVal.region_id) || {}; 
+
+                        const totalShipments = val.totalShipments || 0;
+                        const truckInventory = LIST['vehicles'].filter(x => x['Base Site Code'] == gVal.code).length;
+                        const trippage = totalShipments ? GET.ROUND_OFF(totalShipments / truckInventory) : "-";
+
+                        const trippageTarget = gVal.trippage_target || 0;
+                        const trippageVariance = totalShipments ? GET.ROUND_OFF(trippage - trippageTarget) : "-";
+
+                        const remarks = totalShipments ? ((trippage > trippageTarget) ? "Hit" : "Miss") : "Miss";
+
+                        if(truckInventory){
+                            gboHtml += `<tr>
+                                            <td style="${noBorderCSS}">${gVal.short_name}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${gVal.code || "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${region.code || "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${totalShipments || "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${truckInventory}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${trippage || "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${trippageTarget || "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${trippageVariance || "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${remarks}</td>
+                                        </tr>`;
+                            gbrInfo[gVal.region_id] = gbrInfo[gVal.region_id] || {
+                                totalShipments: 0,
+
+                                truckInventory: 0,
+
+                                trippageTarget: 0,
+                                totalWithTrippageTarget: 0
+                            };
+
+                            gbrInfo[gVal.region_id].totalShipments += totalShipments;
+                            gbrInfo[gVal.region_id].truckInventory += truckInventory || 0;
+
+                            gbrInfo[gVal.region_id].trippageTarget += trippageTarget || 0;
+                            (trippageTarget) ? gbrInfo[gVal.region_id].totalWithTrippageTarget ++ : null;
+                        }
+
+                        // if(gboInfo[gVal.short_name]) {
+
+                        // }
+                    });
+
+                    // GBR
+                    const sortedRegions = ARRAY.OBJECT.sort(LIST["regions"],"sequence",{ sortType: "asc" });
+                    sortedRegions.forEach(rVal => {
+
+                        const val = gbrInfo[rVal._id] || {};
+
+                        const totalShipments = val.totalShipments || 0;
+                        const truckInventory = val.truckInventory || 0;
+                        const trippage = totalShipments ? GET.ROUND_OFF(totalShipments / truckInventory) : "-";
+
+                        const trippageTarget = GET.ROUND_OFF(val.trippageTarget / val.totalWithTrippageTarget) || 0;
+                        const trippageVariance = totalShipments ? GET.ROUND_OFF(trippage - trippageTarget) : "-";
+
+                        const remarks = totalShipments ? ((trippage > trippageTarget) ? "Hit" : "Miss") : "Miss";
+
+                        gbrHtml += `<tr>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;">${rVal.name || "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${rVal.code || "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;"> </td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${totalShipments || "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${truckInventory}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${trippage || "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${trippageTarget || "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${trippageVariance || "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${remarks}</td>
+                                    </tr>`;
+
+                        ntlInfo["ph"] = ntlInfo["ph"] || {
+                            totalShipments: 0,
+                            truckInventory: 0,
+
+                            trippageTarget: 0,
+                            totalWithTrippageTarget: 0
+                        };
+
+                        ntlInfo["ph"].totalShipments += totalShipments;
+                        ntlInfo["ph"].truckInventory += truckInventory || 0;
+
+                        ntlInfo["ph"].trippageTarget += trippageTarget || 0;
+                        (trippageTarget) ? ntlInfo["ph"].totalWithTrippageTarget ++ : null;
+                    });
+
+                    console.log("ntlInfo",ntlInfo);
+
+                    // NTL
+                    const ntlVal = ntlInfo["ph"] || {};
+
+                    const ntlTotalShipments = ntlVal.totalShipments || 0;
+                    const ntlTruckInventory = ntlVal.truckInventory;
+                    const ntlTrippage = ntlTotalShipments ? GET.ROUND_OFF(ntlTotalShipments / ntlTruckInventory) : "-";
+
+                    const ntlTrippageTarget = GET.ROUND_OFF(ntlVal.trippageTarget / ntlVal.totalWithTrippageTarget) || 0;
+                    const ntlTrippageVariance = ntlTotalShipments ? GET.ROUND_OFF(ntlTrippage - ntlTrippageTarget) : "-";
+
+                    const ntlRemarks = ntlTotalShipments ? ((ntlTrippage > ntlTrippageTarget) ? "Hit" : "Miss") : "Miss";
+
+                    ntlHtml += `<tr>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;">NATIONAL</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">NAT</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;"> </td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlTotalShipments || "-"}</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlTruckInventory || "-"}</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlTrippage || "-"}</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlTrippageTarget || "-"}</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlTrippageVariance || "-"}</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlRemarks}</td>
+                            </tr>`;
+                            
+
+                    // to be exported to file
+                    return `<table id="report-hidden" style="opacity:0;">
                             <tr>
-                                <td style="border: none;" colspan=4>Report name: <b style="color:#c00000;">${title}</b></td>
+                                <td style="${noBorderCSS}" colspan=2>Report name: <b style="color:#c00000;">${title}</b></td>
                             </tr>
-                            <tr><td style="border: none;"></td></tr>
+                            <tr><td style="${noBorderCSS}" colspan=2></td></tr>
                             <tr>
-                                <td style="border: none;" colspan=4><b>Summary:</b></td>
+                                <td style="${noBorderCSS}" colspan=2>Date Info:</td>
                             </tr>
                             <tr>
-                                <td style="border: none;" colspan=4>
+                                <td style="${noBorderCSS}" colspan=2>
                                     <div>
-                                        <div>Plant Site: ${location.origin}</div>
-                                        <div>Destination Site: ${location.destination}</div>
-                                        <div>Destination Region: ${location.region}</div>
-                                        <div>&nbsp;</div>
-                                        <div>Day: ${moment(new Date(_date)).format("DD")}</div>
-                                        <div>Week: ${moment(new Date(_date)).format("dddd")}</div>
-                                        <div>Month: ${moment(new Date(_date)).format("MMMM")}</div>
+                                        <div>Date from: ${moment(new Date(date_from)).format("MM/DD/YYYY hh:mm A")}</div>
+                                        <div>Date to: ${moment(new Date(date_to)).format("MM/DD/YYYY hh:mm A")}</div>
                                         <div>&nbsp;</div>
                                         <div>Generated on: ${moment(new Date()).format("MM/DD/YYYY hh:mm A")}</div>
                                     </div>
                                 </td>
                             </tr>
-                            <tr><td style="border: none;"></td></tr>
-                            <tr><td style="border: none;"></td></tr>
+                            <tr><td style="${noBorderCSS}" colspan=2></td></tr>
+                            ${
+                                REPORTS.columnHtml( 
+                                    ['origin_1','originSiteCode','originRegion','shipmentCount_CheckedOut','truckInventory','trippage','trippageTarget','trippageVariance','remarksTrippage'],
+                                    rotateCSS,
+                                    tblHeaderCSS
+                                )
+                            }
+                            ${gboHtml}
+                            <tr><td style="${noBorderCSS}"></td></tr>
+                            ${ntlHtml}
+                            ${gbrHtml}
+                            <tr><td style="${noBorderCSS}"></td></tr>
+                            <tr><td style="${noBorderCSS}"></td></tr>
                             <tr>
-                                <td style="background-color:black;color:white;${width[0]}text-align:center;"><b>Period</b></td>
-                                <td style="background-color:black;color:white;text-align:center;${width[1]}"><b>Week</b></td>
-                                <td style="background-color:black;color:white;text-align:center;${width[2]}"><b>Date</b></td>
-                                <td style="background-color:black;color:white;text-align:center;${width[3]}"><b>Trippage</b></td>
+                                <td style="${noBorderCSS}"><b>Details:</b></td>
                             </tr>
-                            ${empty}
-                        </table>`;
+                            <tr><td style="${noBorderCSS}"></td></tr>
+                            ${
+                                REPORTS.columnHtml( 
+                                    ['shipment','vehicle','trailer','palCap','origin','destination','route','checkOutDate','checkOutTime'],
+                                    rotateCSS,
+                                    tblHeaderCSS
+                                )
+                            }
+                            ${detailsBodyHTML}
+                        </table> `;
+                },
+                coket2: ( title, docs, location, date_from, date_to ) => {
+                    return REPORTS.UI.REPORTS.tr.wilcon( title, docs, location, date_from, date_to );
+                },
+                wilcon: ( title, docs, location, date_from, date_to ) => {
+                    var empty = "",
+                        width = ["width:100px;","width:100px;","width:100px;","width:100px;"];
+
+                    for(var i=0; i < 16; i++){
+                        empty += `<tr style="text-align:center">
+                                        <td style="border:2px solid black;"></td>
+                                        <td style="border:2px solid black;"></td>
+                                        <td style="border:2px solid black;"></td>
+                                        <td style="border:2px solid black;"></td>
+                                    </tr>`;
+                    }
+
+                    return `<table id="report-hidden" style="opacity:0;">
+                                <tr>
+                                    <td style="border: none;" colspan=4>Report name: <b style="color:#c00000;">${title}</b></td>
+                                </tr>
+                                <tr><td style="border: none;"></td></tr>
+                                <tr>
+                                    <td style="border: none;" colspan=4><b>Summary:</b></td>
+                                </tr>
+                                <tr>
+                                    <td style="border: none;" colspan=4>
+                                        <div>
+                                            <div>Plant Site: ${location.origin}</div>
+                                            <div>Destination Site: ${location.destination}</div>
+                                            <div>Destination Region: ${location.region}</div>
+                                            <div>&nbsp;</div>
+                                            <div>Day: ${moment(new Date(date_from)).format("DD")}</div>
+                                            <div>Week: ${moment(new Date(date_from)).format("dddd")}</div>
+                                            <div>Month: ${moment(new Date(date_from)).format("MMMM")}</div>
+                                            <div>&nbsp;</div>
+                                            <div>Generated on: ${moment(new Date()).format("MM/DD/YYYY hh:mm A")}</div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr><td style="border: none;"></td></tr>
+                                <tr><td style="border: none;"></td></tr>
+                                <tr>
+                                    <td style="background-color:black;color:white;${width[0]}text-align:center;"><b>Period</b></td>
+                                    <td style="background-color:black;color:white;text-align:center;${width[1]}"><b>Week</b></td>
+                                    <td style="background-color:black;color:white;text-align:center;${width[2]}"><b>Date</b></td>
+                                    <td style="background-color:black;color:white;text-align:center;${width[3]}"><b>Trippage</b></td>
+                                </tr>
+                                ${empty}
+                            </table>`;
+                }
             },
             VCR: function(title,docs,date_from,date_to){
                 var empty = "",
@@ -10340,10 +11472,10 @@ var REPORTS = {
                         _siteText = "All",
                         date_from,
                         date_to,
-                        df_dt_dest = function(title,modal,_siteTitle,callback){
+                        df_dt_dest = function(title,modal,_siteTitle,dateTitle,callback){
                             _siteId = "";
 
-                            $(`body`).append(REPORTS.UI[modal](title,_siteTitle));
+                            $(`body`).append(REPORTS.UI[modal](title,_siteTitle,dateTitle));
                             $(`#date_from,#date_to`).val(DATETIME.FORMAT(new Date(),"YYYY-MM-DD"));
                             $("#_site,#_origin_site,#_destination_site").html(geofencesOptions).select2().val("").change(function(){
                                 _siteId = $(this).find("option:selected").val();
@@ -10354,7 +11486,8 @@ var REPORTS = {
                             });
                         },
                         pagination = function(x){
-                            $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-1"></i> 0%`).attr("disabled",true);
+                            $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-1"></i> Calculating document size...`).attr("disabled",true);
+                            // $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-1"></i> 0%`).attr("disabled",true);
 
                             $.ajax({
                                 url: x.countURL,
@@ -10370,6 +11503,8 @@ var REPORTS = {
                                 var pb = new ProgressBar(count);
                                 var docs = [];
                                 var skip = 0;
+                                var percent = 0;
+
 
                                 function retrieveData(length){
                                     if(length == null || length == LIMIT){
@@ -10390,29 +11525,35 @@ var REPORTS = {
                                                 } else {
                                                     skip += length;
                                                     docs = docs.concat(_docs_);
-                                                    var percent = pb.calculate();
+                                                    percent = pb.calculate();
+                                                    console.log("percent|pb.origPerc",percent,pb.origPerc);
                                                     
                                                     $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-1"></i> ${percent}%`);
-                                                    // $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-2"></i>Generating... ${percent}%`);
+                                                    pb.increase(percent,percent+pb.origPerc,'#generate-btn,#generate-1-btn');
                                                     
                                                     retrieveData(length);
                                                 }
                                             }
                                         });
                                     } else {
-                                        $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-1"></i> 100%`);
-                                        // $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-2"></i>Generating... 100%`);
-                                        x.callback(docs);
-                                        if(!x.doNotRemoveTable){
-                                            $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
-                                        }
+                                        console.log("percent",percent);
+                                        pb.increase(percent,100,'#generate-btn,#generate-1-btn',2);
+                                        setTimeout(function(){
+                                            $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-1"></i> 100%`);
+                                            setTimeout(function(){
+                                                x.callback(docs);
+                                                if(!x.doNotRemoveTable){
+                                                    $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
+                                                }
+                                            },150);
+                                        },300);
                                     }
                                 }
                                 retrieveData();
 
                             });
                         },
-                        cicor_otr_report = function(_filter,callback){
+                        cicor_report = function(_filter,callback){
                             var daterange = $(`#daterange`).val(),
                                 filteredDaterange = FILTER.DATERANGE(daterange);
                                 
@@ -10424,14 +11565,61 @@ var REPORTS = {
                             } else {
                                 var filter = {
                                         status: _filter.status || "complete",
-                                        departure_date: FILTER.DATERANGE(`${DATETIME.FORMAT(date_from,"MM/DD/YYYY")} - ${DATETIME.FORMAT(date_to,"MM/DD/YYYY")}`)
+                                        posting_date: FILTER.DATERANGE(`${DATETIME.FORMAT(date_from,"MM/DD/YYYY")} - ${DATETIME.FORMAT(date_to,"MM/DD/YYYY")}`)
                                     },
                                     filterSite = (_siteId != "") ? _filter : {};
+                                    
                                 filter = $.extend(filter,filterSite);
 
                                 pagination({
                                     countURL: `/api/dispatch/${CLIENT.id}/${USER.username}/all/${JSON.stringify(filter)}/count`,
                                     dataURL: `/api/dispatch/${CLIENT.id}/${USER.username}/all/${JSON.stringify(filter)}`,
+                                    callback
+                                });
+                            }
+                        },
+                        otr_report = function(_filter,callback){
+                            var daterange = $(`#daterange`).val(),
+                                filteredDaterange = FILTER.DATERANGE(daterange);
+                                
+                            date_from = filteredDaterange.$gte;
+                            date_to = filteredDaterange.$lt;
+
+                            if(date_from.isEmpty() || date_to.isEmpty()){
+                                toastr.error("Please fill all the required fields.");
+                            } else {
+                                var filter = {
+                                        status: _filter.status || "complete",
+                                        posting_date: FILTER.DATERANGE(`${DATETIME.FORMAT(date_from,"MM/DD/YYYY")} - ${DATETIME.FORMAT(date_to,"MM/DD/YYYY")}`)
+                                    },
+                                    filterSite = (_siteId != "") ? _filter : {};
+                                    
+                                filter = $.extend(filter,filterSite);
+
+                                pagination({
+                                    countURL: `/api/dispatch/${CLIENT.id}/${USER.username}/all/${JSON.stringify(filter)}/count`,
+                                    dataURL: `/api/dispatch/${CLIENT.id}/${USER.username}/all/${JSON.stringify(filter)}`,
+                                    callback
+                                });
+                            }
+                        },
+                        dr_report = function(_filter,callback){
+                            var daterange = $(`#daterange`).val(),
+                                filteredDaterange = FILTER.DATERANGE(daterange);
+                                
+                            date_from = filteredDaterange.$gte;
+                            date_to = filteredDaterange.$lt;
+
+                            if(date_from.isEmpty() || date_to.isEmpty()){
+                                toastr.error("Please fill all the required fields.");
+                            } else {
+                                var filter = {
+                                    timestamp: FILTER.DATERANGE(`${DATETIME.FORMAT(date_from,"MM/DD/YYYY")} - ${DATETIME.FORMAT(date_to,"MM/DD/YYYY")}`)
+                                };
+
+                                pagination({
+                                    countURL: `/api/notifications/${CLIENT.id}/${USER.username}/all/${JSON.stringify(filter)}/count`,
+                                    dataURL: `/api/notifications/${CLIENT.id}/${USER.username}/dr/${JSON.stringify(filter)}`,
                                     callback
                                 });
                             }
@@ -10536,44 +11724,29 @@ var REPORTS = {
                                 }
                             });
                         },
-                        tr_report = function(callback){
+                        tr_report = function(_filter,callback){
                             var daterange = $(`#daterange`).val(),
                                 filteredDaterange = FILTER.DATERANGE(daterange);
-
+                                
                             date_from = filteredDaterange.$gte;
-                            
-                            var origin = $(`#_origin_site option:selected`).text() || "All",
-                                destination = $(`#_destination_site option:selected`).text() || "All",
-                                destination_id = $(`#_destination_site option:selected`).val() || 0,
-                                region = "-";
+                            date_to = filteredDaterange.$lt;
 
-                            if(date_from.isEmpty()){
+                            if(date_from.isEmpty() || date_to.isEmpty()){
                                 toastr.error("Please fill all the required fields.");
                             } else {
-                                $(`#generate-btn,#generate-1-btn`).html(`<i class="la la-spinner la-spin mr-2"></i>Generate report`).attr("disabled",true);
-                                if(destination != "All"){
-                                    GET.AJAX({
-                                        url: `api/geofences/${CLIENT.id}/${USER.username}/${destination_id}`,
-                                        method: "GET",
-                                        headers: {
-                                            "Authorization": SESSION_TOKEN
-                                        },
-                                    }, function(docs){
-                                        console.log("Geofence:",docs);
-                                        if(docs[0]){
-                                            region = docs[0].region.code || "-";
-                                        }
-                                        callback({origin,destination,region});
-                                        $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
-                                    }, function(error){
-                                        console.log(error);
-                                        callback({origin,destination,region});
-                                        $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
-                                    });
-                                } else {
-                                    callback({origin,destination,region});
-                                    $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
-                                }
+                                var filter = {
+                                        status: _filter.status || "complete",
+                                        posting_date: FILTER.DATERANGE(`${DATETIME.FORMAT(date_from,"MM/DD/YYYY")} - ${DATETIME.FORMAT(date_to,"MM/DD/YYYY")}`)
+                                    };
+
+                                (_filter.destination_id) ? filter.destination_id = _filter.destination_id : null;
+                                (_filter.origin_id) ? filter.origin_id = _filter.origin_id : null;
+                                
+                                pagination({
+                                    countURL: `/api/dispatch/${CLIENT.id}/${USER.username}/all/${JSON.stringify(filter)}/count`,
+                                    dataURL: `/api/dispatch/${CLIENT.id}/${USER.username}/all/${JSON.stringify(filter)}`,
+                                    callback
+                                });
                             }
                         },
                         vcr_report = function(callback){
@@ -10752,11 +11925,11 @@ var REPORTS = {
                     /**************** REPORT LISTENER ****************/
                     $(`[cicor]`).click(function(){
                         var title = "CICO Report";
-                        df_dt_dest(title,"REPORT_MODAL_01","Plant Site",function(){
-                            cicor_otr_report(
-                                { origin_id: _siteId, status: { $in: ["in_transit","complete"] } },
+                        df_dt_dest(title,"REPORT_MODAL_02","Plant Site","Select Posting Date",function(){
+                            cicor_report(
+                                { origin_id: _siteId, status: { $nin: ["plan","scheduled","incomplete"] } },
                                 function(docs){
-                                    $(`body`).append(REPORTS.UI.REPORTS.CICOR(title,docs,_siteText,date_from,date_to));
+                                    $(`body`).append(REPORTS.UI.REPORTS.cicor[CLIENT.id]( title, docs, _siteText, date_from, date_to ));
                                     GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY")}`);
                                 }
                             );
@@ -10767,15 +11940,16 @@ var REPORTS = {
                             }
                         });
                     });
-                    $(`[cicor_t1]`).click(function(){
-                        var title = "CICO Report";
-                        df_dt_dest(title,"REPORT_MODAL_01","Plant Site",function(){
-                            cicor_otr_report(
-                                { origin_id: _siteId, status: { $in: ["in_transit","complete"] } },
+                    $(`[dr]`).click(function(){
+                        var title = "Delay Report";
+                        df_dt_dest(title,"REPORT_MODAL_05",null,"Select Occurence Date",function(){
+                            dr_report(
+                                null,
                                 function(docs){
-                                    $(`body`).append(REPORTS.UI.REPORTS.CICOR_T1(title,docs,_siteText,date_from,date_to));
+                                    console.log("docs",docs);
+                                    $(`body`).append(REPORTS.UI.REPORTS.dr[CLIENT.id](title,docs,_siteText,date_from,date_to));
                                     GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY")}`);
-                                }
+                                } 
                             );
                         });
                         $('#daterange').daterangepicker({
@@ -10785,12 +11959,12 @@ var REPORTS = {
                         });
                     });
                     $(`[otr]`).click(function(){
-                        var title = "Over Transit Report";
-                        df_dt_dest(title,"REPORT_MODAL_01","Plant Site",function(){
-                            cicor_otr_report(
-                                {origin_id: _siteId,status: {$in:["complete"]}},
+                        var title = "Transit Report";
+                        df_dt_dest(title,"REPORT_MODAL_02","Plant Site","Select Posting Date",function(){
+                            otr_report(
+                                {origin_id: _siteId,status: { $nin: ["plan","scheduled","incomplete"] }},
                                 function(docs){
-                                    $(`body`).append(REPORTS.UI.REPORTS.OTR(title,docs,_siteText,date_from,date_to));
+                                    $(`body`).append(REPORTS.UI.REPORTS.otr[CLIENT.id](title,docs,_siteText,date_from,date_to));
                                     GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY")}`);
                                 } 
                             );
@@ -10803,7 +11977,7 @@ var REPORTS = {
                     });
                     $(`[pbpa]`).click(function(){
                         var title = "Per Base Plant Activity";
-                        df_dt_dest(title,"REPORT_MODAL_01","Plant Base",function(){
+                        df_dt_dest(title,"REPORT_MODAL_01","Plant Base",null,function(){
                             pbpa_report(
                                 {origin_id: _siteId},
                                 function(docs){
@@ -10820,7 +11994,7 @@ var REPORTS = {
                     });
                     $(`[hwtr]`).click(function(){
                         var title = "Haulage Window Time Report";
-                        df_dt_dest(title,"REPORT_MODAL_02","Destination Site",function(){
+                        df_dt_dest(title,"REPORT_MODAL_02","Destination Site",null,function(){
                             hwtr_report(
                                 {destination: { $elemMatch: { "location_id": _siteId } }},
                                 function(docs){
@@ -10842,7 +12016,7 @@ var REPORTS = {
                         var customButtons = `<div class="col-sm-12 mt-4 p-0 mb-1">Generate report in:</div>
                                              <div class="col-sm-6 pl-0 pr-1"><button id="generate-btn" type="button" class="btn btn-primary col-sm-12"><b>.xls</b> format</button></div>
                                              <div class="col-sm-6 pl-1 pr-0"><button id="generate-1-btn" type="button" class="btn btn-primary col-sm-12"><b>.ods</b> format</button></div>`;
-                        df_dt_dest(title,"REPORT_MODAL_07",customButtons,function(btnId){
+                        df_dt_dest(title,"REPORT_MODAL_07",customButtons,null,function(btnId){
                             ar_report(function(docs,holidays){
                                     const fileName = `${title}_${DATETIME.FORMAT(date_from,"MM_YYYY")}`;
                                     $(`body`).append(REPORTS.UI.REPORTS.AR(docs,date_from,holidays));
@@ -10890,16 +12064,31 @@ var REPORTS = {
                     });
                     $(`[tr]`).click(function(){
                         var title = "Trippage Report";
-                        df_dt_dest(title,"REPORT_MODAL_04",null,function(){
-                            tr_report(function(location){
-                                    $(`body`).append(REPORTS.UI.REPORTS.TR(title,location,date_from));
+                        df_dt_dest(title,"REPORT_MODAL_04",null,"Select Posting Date",function(){
+                            var origin = $(`#_origin_site option:selected`).text() || "All",
+                                origin_id = $(`#_origin_site option:selected`).val() || null,
+                                destination = $(`#_destination_site option:selected`).text() || "All",
+                                destination_id = $(`#_destination_site option:selected`).val() || null,
+                                
+                                region = "-";
+                            tr_report(
+                                { origin_id, destination_id, status: { $nin: ["plan","scheduled","incomplete"] } }, function(docs){
+                                    
+                                    if(origin != "All"){
+                                        const geofence = getGeofence(origin_id) || {};
+                                        region = (getRegion(geofence.region_id)||{}).code || "-";
+                                    }
+
+                                    const location = { origin, destination, region };
+
+                                    $(`body`).append(REPORTS.UI.REPORTS.tr[CLIENT.id]( title, docs, location, date_from, date_to ));
                                     GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY")}`);
                                     $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
                                 }
                             );
                         });
                         $('#daterange').daterangepicker({
-                            singleDatePicker: true,
+                            // singleDatePicker: true,
                             locale: {
                                 format: 'MM/DD/YYYY'
                             }
@@ -10907,7 +12096,7 @@ var REPORTS = {
                     });
                     $(`[vcr]`).click(function(){
                         var title = "Vehicle CICO Report";
-                        df_dt_dest(title,"REPORT_MODAL_05",null,function(){
+                        df_dt_dest(title,"REPORT_MODAL_05",null,null,function(){
                             vcr_report(function(docs){
                                     $(`body`).append(REPORTS.UI.REPORTS.VCR(title,docs,date_from,date_to));
                                     GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`);
@@ -10924,7 +12113,7 @@ var REPORTS = {
                     });
                     $(`[ular]`).click(function(){
                         var title = "User Login Activity Report";
-                        df_dt_dest(title,"REPORT_MODAL_05",null,function(){
+                        df_dt_dest(title,"REPORT_MODAL_05",null,null,function(){
                             ular_report(function(docs){
                                     $(`body`).append(REPORTS.UI.REPORTS.ULAR(title,docs,date_from,date_to));
                                     GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`);
@@ -10941,7 +12130,7 @@ var REPORTS = {
                     });
                     $(`[desr]`).click(function(){
                         var title = "Dispatch Entries Summary Report";
-                        df_dt_dest(title,"REPORT_MODAL_05",null,function(){
+                        df_dt_dest(title,"REPORT_MODAL_05",null,null,function(){
                             desr_report(function(docs){
                                 $(`body`).append(REPORTS.UI.REPORTS.DESR(title,docs,date_from,date_to));
                                 GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`);
@@ -10957,7 +12146,7 @@ var REPORTS = {
                     });
                     $(`[ser]`).click(function(){
                         var title = "Scheduled Entries Report";
-                        df_dt_dest(title,"REPORT_MODAL_05",null,function(){
+                        df_dt_dest(title,"REPORT_MODAL_05",null,null,function(){
                             ser_report(function(docs){
                                 $(`body`).append(REPORTS.UI.REPORTS.SER(title,docs,date_from,date_to));
                                 GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`);
@@ -10984,7 +12173,7 @@ var REPORTS = {
                         var customButtons = `<div class="col-sm-12 mt-4 p-0 mb-1">Generate report in:</div>
                                              <div class="col-sm-6 pl-0 pr-1"><button id="generate-btn" type="button" class="btn btn-primary col-sm-12"><b>.xls</b> format</button></div>
                                              <div class="col-sm-6 pl-1 pr-0"><button id="generate-1-btn" type="button" class="btn btn-primary col-sm-12"><b>.ods</b> format</button></div>`;
-                        df_dt_dest(title,"REPORT_MODAL_07",customButtons,function(btnId){
+                        df_dt_dest(title,"REPORT_MODAL_07",customButtons,null,function(btnId){
                             mtur_report(function(docs,holidays){
                                 $(`body`).append(REPORTS.UI.REPORTS.MTUR(title,docs,date_from,date_to,holidays));
                                 var fileName = `${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`;
@@ -11029,7 +12218,7 @@ var REPORTS = {
                     });
                     $(`[ci_co_r]`).click(function(){
                         var title = "Check In Check Out Report";
-                        df_dt_dest(title,"REPORT_MODAL_05",null,function(){
+                        df_dt_dest(title,"REPORT_MODAL_05",null,null,function(){
                             ci_co_r_report(function(docs){
                                 REPORTS.UI.REPORTS.CI_CO_R(title,docs,date_from,date_to);
                             });
@@ -11044,7 +12233,7 @@ var REPORTS = {
                     });
                     $(`[otdr]`).click(function(){
                         var title = "On Time Departure";
-                        df_dt_dest(title,"REPORT_MODAL_03",null,function(){
+                        df_dt_dest(title,"REPORT_MODAL_03",null,null,function(){
                             otdr_report(function(docs){
                                 REPORTS.UI.REPORTS.OTDR(title,docs,date_from,date_to);
                             });
@@ -11251,12 +12440,6 @@ var NOTIFICATIONS = {
                                     var docId = data._id;
                                     TABLE.ROW_LISTENER({table_id,_row,urlPath:urlPath,_id:docId,
                                         additionalListeners: function(){
-                                            $(table_id).on('click', `[_row="${_row}"] [view],[_row="${_row}"] + tr.child [view]`,function(e){
-                                                e.stopImmediatePropagation();
-                                                $(`body`).append(MODAL.CREATE.EMPTY(`View Dispatch Entry`,modalViews.dispatch.form()));
-                                                DISPATCH.FUNCTION.form({_id});
-                                                $("html, body,#modal").animate({ scrollTop: 0 }, "fast");
-                                            });
                                             $(table_id).on('click', `[_row="${_row}"] [comment],[_row="${_row}"] + tr.child [comment]`,function(e){
                                                 e.stopImmediatePropagation();
                                                 var __escalation = Number(data["Escalation"]);
@@ -11327,7 +12510,7 @@ var NOTIFICATIONS = {
                                                 });
 
                                                 $(`#${_id}-view`).click(function(){
-                                                    $(`body`).append(modalViews.dispatch.view(_id));
+                                                    $(`body`).append(modalViews.dispatch.view[CLIENT.id](_id));
                                                     $("html, body,#modal").animate({ scrollTop: 0 }, "fast");
                                                 });
                                             });
@@ -11514,13 +12697,13 @@ var NOTIFICATIONS = {
 
                     $("body").on('click', `[_row="${val._row}"] [view]`,function(e){
                         e.stopImmediatePropagation();
-                        $(`body`).append(MODAL.CREATE.EMPTY(`View Dispatch Entry`,modalViews.dispatch.form()));
+                        $(`body`).append(MODAL.CREATE.EMPTY(`View Dispatch Entry`,modalViews.dispatch.form[CLIENT.id]()));
                         DISPATCH.FUNCTION.form({_id:dispatch_id});
                         $("html, body,#modal").animate({ scrollTop: 0 }, "fast");
                     });
                     $("body").on('click', `[_row="${val._row}"] [comment]`,function(e){
                         e.stopImmediatePropagation();
-                        $(`body`).append(MODAL.CREATE.EMPTY(`Add Comment on Dispatch Entry`,modalViews.dispatch.form()));
+                        $(`body`).append(MODAL.CREATE.EMPTY(`Add Comment on Dispatch Entry`,modalViews.dispatch.form[CLIENT.id]()));
                         DISPATCH.FUNCTION.form({_id:dispatch_id,escalation:val.escalation,type:"delay"});
                         $("html, body,#modal").animate({ scrollTop: 0 }, "fast");
                     });
@@ -11570,13 +12753,7 @@ var EVENT_VIEWER = {
                 }
             });
             USER.filters["events"] = (CLIENT.type != 2) ? {timestamp: FILTER.DATERANGE(), shipment_number: {$exists:true}} : {timestamp: FILTER.DATERANGE()};
-            table.setButtons({
-                actions:{
-                    refresh: function(){ table.countRows(); },
-                    filter: function(){ $(`#filter-container`).toggle("slide", {direction:'right'},100); },
-                    report: function(){ $(`#report-container`).toggle("slide", {direction:'right'},100); }, 
-                }
-            });
+            table.setButtons({ });
             table.addRow = function(obj){
                 const self = this;
                 var _class = (obj.stage=="start") ? "text-success" : "text-danger",
@@ -11680,20 +12857,7 @@ var ALL_EVENTS = {
                 }
             });
             USER.filters["events"] = {timestamp: FILTER.DATERANGE()};
-            table.setButtons({
-                actions:{
-                    refresh: function(){ table.countRows(); },
-                    filter: function(){ 
-                        $(`#export-container`).hide("slide", {direction:'right'},100);
-                        $(`#filter-container`).toggle("slide", {direction:'right'},100); 
-                    },
-                    search: function(){ $(`.row-filter`).toggle(); },
-                    export: function(){
-                        $(`#filter-container`).hide("slide", {direction:'right'},100);
-                        $(`#export-container`).toggle("slide", {direction:'right'},100);
-                    }
-                }
-            });
+            table.setButtons({});
             table.addRow = function(obj){
                 const self = this;
                 var _class = (obj.stage=="start") ? "text-success" : "text-danger",
@@ -11819,10 +12983,6 @@ var USERS = {
                             method: "POST",
                         });
                     },
-                    refresh: function(){ table.countRows(); },
-                    export: function(){
-                        $(`#export-container`).toggle("slide", {direction:'right'},100);
-                    }
                 }
             });
             table.addRow = function(obj){
@@ -11846,13 +13006,6 @@ var USERS = {
             table.rowListeners = function(_row,_id){
                 const self = this;
                 TABLE.ROW_LISTENER({table_id:self.id,_row,urlPath,_id,initializeModal});
-            };
-            table.filterListener = function(){
-                $(`.page-box`).append(SLIDER.EXPORT()); 
-                TABLE.TOOLBAR(table.dt);
-                $(`.buttons-copy span`).html("Copy Table");
-                $(`.buttons-csv span`).html("Export Table As CSV File");
-                $(`.buttons-excel span`).html("Export Table As Excel File");
             };
 
             var initializeModal = function(x){
@@ -11939,9 +13092,9 @@ var USERS = {
                 $(`#exemptAutoLogout`).val((x.obj.exemptAutoLogout||"false").toString());
                 
                 $(`#submit`).click(function(){
-                    var name = $(`#name`).val()._trim(),
-                        username = $(`#username`).val()._trim().toLowerCase(),
-                        email = $(`#email`).val()._trim(),
+                    var name = ($(`#name`).val()||"")._trim(),
+                        username = ($(`#username`).val()||"")._trim().toLowerCase(),
+                        email = ($(`#email`).val()||"")._trim(),
                         role = ($(`#role option:selected`).val() || x.obj.role)._trim(),
                         phoneNumber = GET.INTLTELINPUT_VALUE("#phoneNumber"),
                         exemptAutoLogout = $(`#exemptAutoLogout option:selected`).val() || x.obj.exemptAutoLogout || false;
@@ -12042,7 +13195,7 @@ var LOCATIONS = {
                         goto: "regions",
                         dataTableOptions: {
                             columns: TABLE.COL_ROW(CUSTOM.COLUMN.regions).column,
-                            order: [[ 1, "asc" ]],
+                            order: [[ 2, "asc" ]],
                             // sDom: "t" + "<'row'<'col-sm-6'i><'col-sm-6'p>>", // remove all filter container
                             createdRow: function (row, data, dataIndex) {
                                 var _row = data._row;
@@ -12066,10 +13219,6 @@ var LOCATIONS = {
                                 url: `/api/${urlPath}/${CLIENT.id}/${USER.username}`,
                                 method: "POST"
                             });
-                        },
-                        refresh: function(){ table.countRows(); },
-                        column: function(){
-                            $(`#cv-container`).toggle("slide", {direction:'right'},100);
                         },
                     }
                 });
@@ -12101,7 +13250,8 @@ var LOCATIONS = {
                     return TABLE.COL_ROW(null,{
                         '_id': obj._id,
                         '_row':  obj._row,
-                        'Region': obj.region || "-",
+                        'Region Name': obj.name || "-",
+                        'Region Code': obj.code || "-",
                         'Sequence': obj.sequence,
                         'esq1_lq': getEscalationUsers("escalation1","lq"),
                         'esq1_oc': getEscalationUsers("escalation1","oc"),
@@ -12122,33 +13272,14 @@ var LOCATIONS = {
                         deleteModalContent: `All of the clusters and geofences linked to this region will be deleted too. Are you sure you still want to delete this region?`,
                     });
                 };
-                table.filterListener = function(){
-                    $(`.page-box`).append(SLIDER.COLUMN_VISIBILITY(CUSTOM.COLUMN.regions)); 
-                    $('span.toggle-vis').on( 'click', function (e) {
-                        var index = $(this).attr('data-column'),
-                            column = table.dt.column(index);
-
-                        column.visible( ! column.visible() );
-                        CUSTOM.COLUMN.regions[index].visible = column.visible();
-                        CUSTOM.COLUMN.regions[index].bVisible = column.visible();
-                        $(table.id).attr("style","");
-
-                        $(`${table.id} thead tr th`).each((i,el) => {
-                            if(!$(el).is(":visible")){
-                                $(`${table.id} tr:not(.child)`).each((i1,el1) => {
-                                    $(el1).find("td").eq(i).hide();
-                                });
-                            }
-                        });
-                    });
-                }
 
                 var initializeModal = function(x){
                     var title = (x.method == "PUT") ? `Edit Region Data` : `Create New Region`,
                         modalElements = function(obj){
                             obj = obj || {};
                             return [
-                                {title:"Region",id:"region",type:"text",required:true,value:obj.region},
+                                {title:"Region Name",id:"name",type:"text",required:true,value:obj.name},
+                                {title:"Region Code",id:"code",type:"text",required:true,value:obj.code},
                                 {title:"Sequence",id:"sequence",type:"number",required:true,value:obj.sequence,sub_title:"Please enter a number. This refers to the sequence of the tabs in the Deployment Dashboard."},
                             ];
                         };
@@ -12465,11 +13596,6 @@ var LOCATIONS = {
                                 method: "POST"
                             });
                         },
-                        refresh: function(){ table.countRows(); },
-                        search: function(){ $(`.row-filter`).toggle(); },
-                        column: function(){
-                            $(`#cv-container`).toggle("slide", {direction:'right'},100);
-                        },
                     }
                 });
                 table.addRow = function(obj){
@@ -12479,7 +13605,7 @@ var LOCATIONS = {
                     var action = TABLE.ROW_BUTTONS(PAGE.GET(),{loadView:["edit"],readonlyArr:["edit"]});
                     $(`${self.id} th:last-child`).css({"min-width":action.width,"width":action.width});
 
-                    var region = (LIST["regions"]) ? (getRegion(obj.region_id) || {}).region : `<small class="font-italic text-muted">loading...</small>`;
+                    var region = (LIST["regions"]) ? (getRegion(obj.region_id) || {}).code : `<small class="font-italic text-muted">loading...</small>`;
                     var totalGeofences = (GGS.STATUS.GEOFENCES) ? (getGeofence(obj._id,"cluster_id","filter") || {}).length : `<small class="font-italic text-muted">loading...</small>`;
 
                     (LIST["regions"]) ? obj._region = region : null;
@@ -12539,26 +13665,6 @@ var LOCATIONS = {
                         }
                     });
                 };
-                table.filterListener = function(){
-                    $(`.page-box`).append(SLIDER.COLUMN_VISIBILITY(CUSTOM.COLUMN.clusters())); 
-                    $('span.toggle-vis').on( 'click', function (e) {
-                        var index = $(this).attr('data-column'),
-                            column = table.dt.column(index);
-
-                        column.visible( ! column.visible() );
-                        CUSTOM.COLUMN.clusters()[index].visible = column.visible();
-                        CUSTOM.COLUMN.clusters()[index].bVisible = column.visible();
-                        $(table.id).attr("style","");
-
-                        $(`${table.id} thead tr th`).each((i,el) => {
-                            if(!$(el).is(":visible")){
-                                $(`${table.id} tr:not(.child)`).each((i1,el1) => {
-                                    $(el1).find("td").eq(i).hide();
-                                });
-                            }
-                        });
-                    });
-                }
 
                 var initializeModal = function(x){
                     new loadInBackground("regions","REGIONS").g_select_settings();
@@ -12875,7 +13981,7 @@ var LOCATIONS = {
                         goto: "geofences",
                         filterType: "basic",
                         dataTableOptions: {
-                            columns: TABLE.COL_ROW(CUSTOM.COLUMN.geofences).column,
+                            columns: TABLE.COL_ROW(CUSTOM.COLUMN.geofences()).column,
                             order: [[ 0, "desc" ]],
                             createdRow: function (row, data, dataIndex) {
                                 var _row = data._row;
@@ -12895,17 +14001,6 @@ var LOCATIONS = {
                     });
                 table.setButtons({
                     loadView: ["create"],
-                    actions:{
-                        refresh: function(){ table.countRows(); },
-                        filter: function(){
-                            $(`#cv-container`).hide("slide", {direction:'right'},100);
-                            $(`#filter-container`).toggle("slide", {direction:'right'},100);
-                        },
-                        column: function(){
-                            $(`#filter-container`).hide("slide", {direction:'right'},100);
-                            $(`#cv-container`).toggle("slide", {direction:'right'},100);
-                        },
-                    }
                 });
                 table.addRow = function(obj){
                     const self = this;
@@ -12971,6 +14066,7 @@ var LOCATIONS = {
                         'Site Name': obj.site_name || "-",
                         'Short Name': obj.short_name || "-",
                         'CICO': DATETIME.HH_MM(null,obj.cico).hour_minute,
+                        'Trippage Target': obj.trippage_target || "-",
                         'Cluster': cluster.value || "-",
                         'Region': region.value || "-",
                         'Dispatcher': dUsers,
@@ -12991,25 +14087,6 @@ var LOCATIONS = {
                     TABLE.ROW_LISTENER({table_id:self.id,_row,urlPath,_id,initializeModal});
                 };
                 table.filterListener = function(){
-                    $(`.page-box`).append(SLIDER.COLUMN_VISIBILITY(CUSTOM.COLUMN.geofences)); 
-                    $('span.toggle-vis').on( 'click', function (e) {
-                        var index = $(this).attr('data-column'),
-                            column = table.dt.column(index);
-
-                        column.visible( ! column.visible() );
-                        CUSTOM.COLUMN.geofences[index].visible = column.visible();
-                        CUSTOM.COLUMN.geofences[index].bVisible = column.visible();
-                        $(table.id).attr("style","");
-
-                        $(`${table.id} thead tr th`).each((i,el) => {
-                            if(!$(el).is(":visible")){
-                                $(`${table.id} tr:not(.child)`).each((i1,el1) => {
-                                    $(el1).find("td").eq(i).hide();
-                                });
-                            }
-                        });
-                    });
-                    
                     if(table.filter && Object.keys(table.filter).length > 0) {
                         $(`.dt-button[data-original-title="Filter"]`).click();
                         $('.clearable').trigger("input");
@@ -13034,18 +14111,43 @@ var LOCATIONS = {
                     new loadInBackground("regions","REGIONS").g_select_settings();
                     new loadInBackground("clusters","CLUSTERS").g_select_settings();
 
-                    var modalElements = function(obj){
-                        obj = obj || {};
+                    var obj = x.obj || {};
+
+                    function modalElements(){
+                        var arr = [];
                         var readonly = (obj.code) ? true : false;
-                        return [
-                            {title:"Site Name",id:"site_name",type:"text",required:true,value:obj.site_name},
-                            {title:"Short Name",id:"short_name",type:"text",required:true,value:obj.short_name},
-                            {title:"Site Code",id:"code",type:"text",required:true,value:obj.code, readonly, sub_title:"You <u>cannot</u> change the site code once saved."},
-                            {title:"CICO (HH:MM)",id:"cico",type:"time",required:true,value:obj.cico},
-                            {title:"Cluster",id:"cluster_id",type:"select",value:obj.cluster_id,options:G_SELECT["clusters"]},
-                            {title:"Region",id:"region_id",type:"select",required:true,value:obj.region_id,options:G_SELECT["regions"]},
-                            {title:"Dispatcher",id:"dispatcher",type:"select2",multiple:true,value:obj.dispatcher,options:_userData},
-                        ];
+                        
+                        clientCustom.modalFields.geofences.forEach(val => {
+                            switch (val) {
+                                case "site_name":
+                                    arr.push({title:"Site Name",id:"site_name",type:"text",required:true,value:obj.site_name});
+                                    break;
+                                case "short_name":
+                                    arr.push({title:"Short Name",id:"short_name",type:"text",required:true,value:obj.short_name});
+                                    break;
+                                case "code":
+                                    arr.push({title:"Site Code",id:"code",type:"text",required:true,value:obj.code, readonly, sub_title:"You <u>cannot</u> change the site code once saved."});
+                                    break;
+                                case "cico":
+                                    arr.push({title:"CICO (HH:MM)",id:"cico",type:"time",required:true,value:obj.cico});
+                                break;
+                                case "trippage_target":
+                                    arr.push({title:"Trippage Target",id:"trippage_target",type:"text",required:false,value:obj.trippage_target||0});
+                                break;
+                                case "cluster_id":
+                                    arr.push({title:"Cluster",id:"cluster_id",type:"select",value:obj.cluster_id,options:G_SELECT["clusters"]});
+                                    break;
+                                case "region_id":
+                                    arr.push({title:"Region",id:"region_id",type:"select",required:true,value:obj.region_id,options:G_SELECT["regions"]});
+                                    break;
+                                case "dispatcher":
+                                    arr.push({title:"Dispatcher",id:"dispatcher",type:"select2",multiple:true,value:obj.dispatcher,options:_userData});
+                                    break;
+                                default:
+                                    break;
+                            }
+                        });
+                        return arr;
                     };
 
                     var column2Content = `${ALERT.HTML.INFO("This will override the Person In-Charge set in site's region and cluster.","m-0 mb-3",true)}
@@ -13158,7 +14260,6 @@ var LOCATIONS = {
                         column2Content,
                     }));
 
-                    var obj = x.obj || {};
                     var person_in_charge = obj.person_in_charge || {};
                     var options = "";
                     _userData.forEach(op => {
@@ -13172,6 +14273,11 @@ var LOCATIONS = {
                         matcher,
                         templateResult: formatCustom
                     });
+                    $("#trippage_target").on('keypress', function (e) {
+                        return e.metaKey || e.which <= 0 || e.which == 8 || e.which == 46 || /[0-9]/.test(String.fromCharCode(e.which));
+                        //      cmd/ctrl ||  arrow keys  ||   delete key ||   dot key     || numbers
+                    });
+                
                     function populateSelect2(escalation,short,type){
                         if(person_in_charge[escalation]){
                             if(person_in_charge[escalation][type]){
@@ -13285,7 +14391,7 @@ var LOCATIONS = {
                         // regions
                         var regionOptions = `<option value="">&nbsp;</option>`;
                         (LIST["regions"]||[]).forEach(val => {
-                            regionOptions += `<option value="${val._id}">${val.region}</option>`;
+                            regionOptions += `<option value="${val._id}">${val.code}</option>`;
                         });
                         $(`#_region_id`).html(regionOptions).select2().val(table.filter.region_id || "").trigger("change");
 
@@ -13388,8 +14494,6 @@ var LOCATIONS = {
                                 method: "POST"
                             });
                         },
-                        refresh: function(){ table.countRows(); },
-                        search: function(){ $(`.row-filter`).toggle(); }
                     }
                 });
                 table.addRow = function(obj){
@@ -13529,22 +14633,6 @@ var VEHICLES = {
                 });
             table.setButtons({
                 actions:{
-                    refresh: function(){ table.countRows(); },
-                    filter: function(){
-                        $(`#cv-container`).hide("slide", {direction:'right'},100);
-                        $(`#export-container`).hide("slide", {direction:'right'},100);
-                        $(`#filter-container`).toggle("slide", {direction:'right'},100);
-                    },
-                    export: function(){
-                        $(`#filter-container`).hide("slide", {direction:'right'},100);
-                        $(`#cv-container`).hide("slide", {direction:'right'},100);
-                        $(`#export-container`).toggle("slide", {direction:'right'},100);
-                    },
-                    column: function(){
-                        $(`#filter-container`).hide("slide", {direction:'right'},100);
-                        $(`#export-container`).hide("slide", {direction:'right'},100);
-                        $(`#cv-container`).toggle("slide", {direction:'right'},100);
-                    },
                     data_maintenance: function(){
                         var ID = CLIENT.id;
                         var USERNAME = USER.username;
@@ -13827,32 +14915,6 @@ var VEHICLES = {
                     filter = JSON.parse(USER.filters.vehicles);
                 } catch(error){ }
 
-                
-                $(`.page-box`).append(SLIDER.COLUMN_VISIBILITY(CUSTOM.COLUMN[urlPath]())); 
-                $('span.toggle-vis').on( 'click', function (e) {
-                    var index = $(this).attr('data-column'),
-                        column = table.dt.column(index);
-
-                    column.visible( ! column.visible() );
-                    CUSTOM.COLUMN[urlPath]()[index].visible = column.visible();
-                    CUSTOM.COLUMN[urlPath]()[index].bVisible = column.visible();
-                    $(table.id).attr("style","");
-
-                    $(`${table.id} thead tr th`).each((i,el) => {
-                        if(!$(el).is(":visible")){
-                            $(`${table.id} tr:not(.child)`).each((i1,el1) => {
-                                $(el1).find("td").eq(i).hide();
-                            });
-                        }
-                    });
-                });
-                    
-                $(`.page-box`).append(SLIDER.EXPORT()); 
-                TABLE.TOOLBAR(self.dt);
-                $(`.buttons-copy span`).html("Copy Table");
-                $(`.buttons-csv span`).html("Export Table As CSV File");
-                $(`.buttons-excel span`).html("Export Table As Excel File");
-
                 if(filter.site && filter.site != "All"){
                     $(`#filter-container`).toggle("slide", {direction:'right'},100);
                     setTimeout(function(){
@@ -13954,7 +15016,6 @@ var VEHICLE_PERSONNEL = {
                             method: "POST"
                         });
                     },
-                    refresh: function(){ table.countRows(); },
                     data_maintenance: function(){
                         var ID = CLIENT.id;
                         var USERNAME = USER.username;
@@ -14297,15 +15358,11 @@ var FUEL_REFILL = {
             table.setButtons({
                 loadView: ["import"],
                 actions:{
-                    refresh: function(){ table.countRows(); },
                     import: function(){
                         $(`body`).append(MODAL.CREATE.EMPTY(`Import Batch File`,modalViews.fuel_refill.import()));
                         FUEL_REFILL.FUNCTION.import({});
                         PAGE.TOOLTIP();
                     },
-                    column: function(){
-                        $(`#cv-container`).toggle("slide", {direction:'right'},100);
-                    }
                 }
             });
             table.addRow = function(obj){
@@ -14396,26 +15453,6 @@ var FUEL_REFILL = {
                     });
                 });
             };
-            table.filterListener = function(){
-                $(`.page-box`).append(SLIDER.COLUMN_VISIBILITY(CUSTOM.COLUMN.fuel_refill));
-                $('span.toggle-vis').on( 'click', function (e) {
-                    var index = $(this).attr('data-column'),
-                        column = table.dt.column(index);
-
-                    column.visible( ! column.visible() );
-                    CUSTOM.COLUMN.fuel_refill[index].visible = column.visible();
-                    CUSTOM.COLUMN.fuel_refill[index].bVisible = column.visible();
-                    $(table.id).attr("style","");
-
-                    $(`${table.id} thead tr th`).each((i,el) => {
-                        if(!$(el).is(":visible")){
-                            $(`${table.id} tr:not(.child)`).each((i1,el1) => {
-                                $(el1).find("td").eq(i).hide();
-                            });
-                        }
-                    });
-                });
-            }
             table.initialize();
             table.countRows();
             
@@ -14910,10 +15947,6 @@ var TRAILERS = {
                             method: "POST"
                         });
                         },
-                    refresh: function(){ table.countRows(); },
-                    filter: function(){
-                        $(`#filter-container`).toggle("slide", {direction:'right'},100);
-                    }
                 }
             });
             table.addRow = function(obj){
@@ -15058,7 +16091,6 @@ var CHASSIS = {
                             method: "POST"
                         });
                     },
-                    refresh: function(){ table.countRows(); },
                     data_maintenance: function(){
                         var ID = CLIENT.id;
                         var USERNAME = USER.username;
@@ -15456,6 +16488,182 @@ var CALENDAR = {
         });
     }
 };
+const CUSTOMERS = {
+    init: function(){
+        var urlPath = "customers",
+            _new_ = true,  
+            _new1_ = true,  
+            table = new Table({
+                id: "#tbl-customers",
+                urlPath,
+                goto: "customers",
+                dataTableOptions: {
+                    columns: TABLE.COL_ROW(CUSTOM.COLUMN.customers).column,
+                    order: [[ 3, "asc" ]],
+                    createdRow: function (row, data, dataIndex) {
+                        var _row = data._row;
+                        $(row).attr(`_row`, data._row);
+
+                        table.rowListeners(_row,data._id);
+                    },
+                    dom: 'lBfr<"tbl-options">ti<"tbl-progress-bar">p',
+                },
+                initializeCallback: function(){
+                    TABLE.WATCH({urlPath,rowData:table.addRow,options:function(){TABLE.FINISH_LOADING.START_CHECK();}});
+                }
+            });
+        table.setButtons({
+            loadView: ["create"],
+            actions:{
+                create: function(){
+                    initializeModal({
+                        url: `/api/${urlPath}/${CLIENT.id}/${USER.username}`,
+                        method: "POST"
+                    });
+                },
+            }
+        });
+        table.addRow = function(obj){
+            const self = this;
+            var action = TABLE.ROW_BUTTONS(PAGE.GET(),{
+                loadView:["edit"],
+                readonlyArr:["edit"],
+            });
+            $(`${self.id} th:last-child`).css({"min-width":action.width,"width":action.width});
+
+            var region = (LIST["regions"]) ? (getRegion(obj.region_id) || {}).code : `<small class="font-italic text-muted">loading...</small>`;
+            var geofence = (LIST["geofences"]) ? (getGeofence(obj.dc_id) || {}).short_name : `<small class="font-italic text-muted">loading...</small>`;
+
+            return TABLE.COL_ROW(null,{
+                '_id': obj._id,
+                '_row':  obj._row,
+                'Customer Name': obj.name || "-",
+                'Service Model': obj.service_model || "-",
+                'Territory': obj.territory || "-",
+                'Region': region || "-",
+                'DC': geofence || "-",
+                'Mode of Transport': obj.mode_of_transport || "-",
+                'Type': obj.type || "-",
+                'Action': action.buttons,
+            }).row;
+        };
+        table.rowListeners = function(_row,_id){
+            const self = this;
+            TABLE.ROW_LISTENER({table_id:table.id,_row,urlPath,_id,initializeModal});
+        };
+        table.filterListener = function(){
+            const self = this;
+            var filter = USER.filters.customers || {};
+            try {
+                filter = JSON.parse(USER.filters.customers);
+            } catch(error){ }
+
+            if(filter.region_id && filter.region_id != "All"){
+                $(`#filter-container`).toggle("slide", {direction:'right'},100);
+                setTimeout(function(){
+                    $(`#_region_id`).val(filter.region_id);
+                    $(`#filter-btn`).trigger("click");
+                },100);
+            }
+            if(filter.cluster_id && filter.cluster_id != "All"){
+                $(`#filter-container`).toggle("slide", {direction:'right'},100);
+                setTimeout(function(){
+                    $(`#_cluster_id`).val(filter.cluster_id);
+                    $(`#filter-btn`).trigger("click");
+                },100);
+            }
+            
+            function saveFilter(_filter_){
+                var data = {};
+                data[`filter.customers`] = JSON.stringify(_filter_);
+                GET.AJAX({
+                    url: `/api/users/${CLIENT.id}/${USER.username}/${USER.username}`,
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json; charset=utf-8",
+                        "Authorization": SESSION_TOKEN
+                    },
+                    data: JSON.stringify(data)
+                }, function(docs){
+                    console.log("docs1",docs);
+                    self.dt.column(2).search(_filter_.region_id).draw(false);
+                    self.dt.column(3).search(_filter_.cluster_id).draw(false);
+                    USER.filters.customers = _filter_;
+                    filter = _filter_;
+                    $(`#filter-btn`).html("Apply").removeClass("disabled");
+                });
+            }
+            $(`#filter-btn`).click(function(){
+                $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
+                var _region_id = ($(`#_region_id`).val() == "All") ? "" : $(`#_region_id`).val();
+                var _cluster_id = ($(`#_cluster_id`).val() == "All") ? "" : $(`#_cluster_id`).val();
+
+                saveFilter({ region_id: _region_id, cluster_id: _cluster_id });
+            });
+            $(`#reset-btn`).click(function(){
+                $(`#_site`).val("All");
+                $(`#filter-btn`).trigger("click");
+            });
+        };
+
+        var initializeModal = function(x={}){
+            // LOAD SELECT 2 OPTIONS FOR: VEHICLES
+            getSelect2Options();
+            x.obj = x.obj || {};
+            
+            var title = (x.method == "PUT") ? `Edit Customer` : `Add New Customer`,
+                modalElements = function(obj){
+                    var readonly = x.method == "PUT";
+                    return [
+                        {title:"Customer Number",id:"number",type:"text",required:true,value:obj._id,readonly,sub_title:"Once saved, customer number cannot be edited."},
+                        {title:"Customer Name",id:"name",type:"text",value:obj.name,required:true,},
+                        {title:"Service Model",id:"service_model",type:"text",value:obj.service_model,required:true,},
+                        {title:"Territory",id:"territory",type:"text",value:obj.territory,required:true,},
+                        {title:"Region",id:"region_id",type:"select2",attr:"blankStringIfEmpty"},
+                        {title:"DC",id:"dc_id",type:"select2",attr:"blankStringIfEmpty"},
+                        {title:"Mode of Transport",id:"mode_of_transport",type:"select2",attr:"blankStringIfEmpty",required:true,},
+                        {title:"Type",id:"type",type:"select2",attr:"blankStringIfEmpty",required:true,},
+                    ];
+                };
+            $(`body`).append(MODAL.CREATE.BASIC({title, el: modalElements(x.obj)}));
+
+            $(`#region_id`).html(G_SELECT2["form-regions"]).select2().val(x.obj.region_id || "").trigger("change");
+            $(`#dc_id`).html(G_SELECT2["form-geofences"]).select2().val(x.obj.dc_id || "").trigger("change");
+            $(`#mode_of_transport`).html(`
+                <option>OTR</option>
+                <option>Inland</option>
+                <option>Offshore</option>
+            `).select2().val(x.obj.mode_of_transport || "").trigger("change");
+            $(`#type`).html(`
+                <option>Delivery</option>
+                <option>Pick-up</option>
+            `).select2().val(x.obj.type || "").trigger("change");
+
+            MODAL.SUBMIT(x);
+        };
+
+        /******** TABLE CHECK ********/
+        TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
+            isFinishedLoading(["VEHICLES"], _new_, function(){
+                _new_ = false;
+                table.initialize();
+                table.populateRows([]);
+                table.hideProgressBar();
+            });
+            isFinishedLoading(["REGIONS","GEOFENCES"], _new1_, function(){
+                if(table.dt){
+                    _new1_ = false;
+                    table.updateRows(LIST[urlPath]);
+                }
+            });
+            isFinishedLoading(["REGIONS","GEOFENCES"], true, function(){
+                TABLE.FINISH_LOADING.UPDATE();
+            });
+        }
+        TABLE.FINISH_LOADING.START_CHECK();
+        /******** END TABLE CHECK ********/
+    }
+};
 var CHANGELOG = {
     FUNCTION: {
         init:function(){
@@ -15739,6 +16947,10 @@ var PAGE = {
         }, 
         FUNCTION:{
             init:function(){
+                // get page options sent by server
+                ENVIRONMENT = $(`#ENVIRONMENT`).text() || "development";
+                s = $(`#PAGE`).text() || "";
+
                 // VERSION
                 Object.keys(CHANGELOG.FUNCTION.changelogs).forEach((key,i) => { if(i === 0) { VERSION = key; } });
 
@@ -15898,6 +17110,7 @@ var PAGE = {
                 else if(PAGE.GET() == "chassis") loadDataInBackground("CHASSIS",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","VEHICLE_PERSONNEL","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE","SHIFT_SCHEDULE"]);
                 else if(PAGE.GET() == "shift_schedule") loadDataInBackground("SHIFT_SCHEDULE",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
                 else if(PAGE.GET() == "users") loadDataInBackground("USERS",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
+                // else if(PAGE.GET() == "customers") loadDataInBackground("CUSTOMERS",["USERS","REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
                 else loadDataInBackground("VEHICLES",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
 
                 tableWatch("notifications");
@@ -16103,6 +17316,17 @@ var PAGE = {
                 buttons: {
                     table: ["refresh","column","export","filter"],// dispatchTblBtn,
                     row: ["view"]  //dispatchRowBtn
+                }
+            },
+            customers: {
+                title: "Customers",
+                name: "customers",
+                icon: "la la-user-tie",
+                display: function() { return views.customers(); },
+                function: function() { CUSTOMERS.init() },
+                buttons: {
+                    table:["create","refresh","filter"],
+                    row:["edit","delete"]
                 }
             },
             reports: {
@@ -16324,11 +17548,15 @@ GET.STATUS = function(status=""){
     var stat = { color: "label-default", text: "" };
     if(status == "plan") stat = { color: "label-info", text: "Plan" }; // light blue
     if(status == "assigned") stat = { color: "label-brown", text: "Assigned" }; // brown
+    if(status == "dispatched") stat = { color: "label-lime", text: "Dispatched" }; // lime
     if(status == "scheduled") stat = { color: "label-default", text: "Scheduled" }; // default
     if(status == "queueingAtOrigin") stat = { color: "label-warning", text: "Queueing (Origin)" }; // yellow
     if(status == "processingAtOrigin") stat = { color: "label-lime", text: "Processing (Origin)" }; // lime
     if(status == "idlingAtOrigin") stat = { color: "label-purple", text: "Idling (Origin)" }; // purple
+
     if(status == "in_transit") stat = { color: "label-orange", text: "In Transit" }; // orange
+    if(status == "onDelivery") stat = { color: "label-orange", text: "On Delivery" }; // orange
+
     if(status == "onSite") stat = { color: "label-blue", text: "On-Site" }; // blue
     if(status == "returning") stat = { color: "label-pink", text: "Returning" }; // pink
     if(status == "complete") stat = { color: "label-success", text: "Complete" }; // green
@@ -17097,6 +18325,30 @@ var MODAL = {
                 
         };
     },
+    FIELDCHECK: function(id,value,errorCallback){
+        var css_default = {"background-color":"white"},
+            css_error = {"background-color":"#ffe4e4"},
+            condition = false;
+
+        if(value != null){
+            if(typeof value == 'string' && (value||"")._trim()) condition = true;
+            if(typeof value == 'number' && value != null) condition = true;
+            if(typeof value == 'object' && Object.keys(value).length > 0) condition = true;
+            if($.isArray(value) && value.length > 0) condition = true;
+        }
+
+        if(condition === true) {
+            $(`#${id}`).css(css_default);
+            $(`#${id}`).next(".select2-container").find(".select2-selection").css(css_default);
+            $('[name="'+id+'"]').parents('.radio-parent').css(css_default);
+        } else {
+            $(`#${id}`).css(css_error);
+            $(`#${id}`).next(".select2-container").find(".select2-selection").css(css_error);
+            $('[name="'+id+'"]').parents('.radio-parent').css(css_error);
+            try { $(`#${id}`).get(0).scrollIntoView(); } catch(error) {}
+            if (typeof errorCallback === 'function') { errorCallback(); }
+        }
+    },
     SUBMIT: function(x,options,additionalValues){
         $(`#submit`).click(function(){
             $(`#modal-error`).hide();
@@ -17572,6 +18824,7 @@ var TABLE = {
             $(`.main-details,.log-details`).css({"max-height": $(`body`).innerHeight()-200, "overflow-y": "auto"});
             var innerHeight = $(`.main-parent-details`).innerHeight() || $(`.main-details`).innerHeight()-44;
             $(`#history-logs`).css("height",innerHeight);
+            $(`.history-details`).css("max-height",$(`.main-details`).outerHeight() + "px");
             $("html, body,#modal").animate({ scrollTop: 0 }, "fast");
 
             if (typeof x.viewCallback === 'function') { x.viewCallback(); }
@@ -18215,6 +19468,9 @@ function getUser(value="",key="_id",type="find",callback=function(){return true;
 function getShiftSchedule(value="",key="_id",type="find",callback=function(){return true;}){
     return (LIST["shift_schedule"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
 }
+function getCustomer(value="",key="_id",type="find",callback=function(){return true;}){
+    return (LIST["customers"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
+}
 
 /************** VIEWS **************/
 const views = new function(){
@@ -18831,6 +20087,7 @@ const views = new function(){
             /*
                 Deployment Visibility Report - dvr 
                 CICO Report - cicor
+                Delay Report - dr
                 Over Transit Report - otr
                 Per Base Plant Activity - pbpa
                 Haulage Window Time Report - hwtr
@@ -18870,15 +20127,15 @@ const views = new function(){
                             <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
                         </div>`);
             }
-            if(clientCustom.reports.cicor_t1){
-                htmlTags(`<div cicor_t1 class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
-                            <span>CICO Report</span>
+            if(clientCustom.reports.dr){
+                htmlTags(`<div dr class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
+                            <span>Delay Report</span>
                             <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
                         </div>`);
             }
             if(clientCustom.reports.otr){
                 htmlTags(`<div otr class="custom-btn-01 col-sm-12 mt-1 pt-2 pb-2 pr-3 pl-3 disabled">
-                            <span>Over Transit Report</span>
+                            <span>Transit Report</span>
                             <span class="float-right pt-1 pl-3 "><i class="la la-spin la-spinner"></i></span>
                         </div>`);
             }
@@ -19163,6 +20420,30 @@ const views = new function(){
                         </div>
                     </div>`;
         },
+        customers: function(){
+            return `<div class="page-box row">
+                        ${SLIDER.FILTER(`<div class="mt-2">
+                                            <div style="font-size: 10px;">Region:</div>
+                                            <select id="_region_id" class="form-control">
+                                                <option value="All">All</option>
+                                            </select>
+                                        </div>
+                                        <div class="mt-2">
+                                            <div style="font-size: 10px;">Cluster:</div>
+                                            <select id="_cluster_id" class="form-control">
+                                                <option value="All">All</option>
+                                            </select>
+                                        </div>`)}
+                        <div class="col-sm-12 mt-2">
+                            <div class="table-wrapper">
+                                <table id="tbl-customers" class="table table-hover table-bordered">
+                                    <thead></thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>`;
+        },
         chassis: function(){
             return `<div class="page-box row">
                         ${SLIDER.FILTER(`<div class="mt-2">
@@ -19324,7 +20605,45 @@ const modalViews = new function(){
                                         </div>
                                     </div>
                                 </div>`;
-                }
+                },
+                coket2: function(_id){
+                    var obj = getVehicle(_id) || {};
+            
+                    return `<div id="overlay" class="swal2-container swal2-fade swal2-shown" style="overflow-y: auto;z-index:999999 !important;">
+                                    <div id="modal" class="modal" role="dialog" aria-labelledby="myLargeModalLabel">
+                                        <div role="document" class="modal-dialog modal-lg" style="margin:20px auto;width:90%;">
+                                            <div class="modal-content">
+                                                <div class="modal-header pb-2">
+                                                    <button type="button" class="close" id="close" aria-hidden="true">×</button>
+                                                    <div id="title-container" class="float-left">
+                                                        <h4 class="modal-title" id="myModalLabel2"><b>Vehicles</b></h4>
+                                                        <div>Full Details</div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-body row pl-0 pt-0 pb-0">
+                                                    <div class="main-details col-sm-8" style="padding: 15px 0px 10px 30px !important;min-height:350px;">
+                                                        <h5 class="mt-0">Truck Details</h5>
+                                                        <table style="width: 100%;">
+                                                            <tbody>
+                                                                ${MODAL.TABLEVIEW().getTr("Vehicle Name",obj.name || "-")} 
+                                                                ${MODAL.TABLEVIEW().getTr("Trailer",obj["Trailer"]||"-")}
+                                                                ${MODAL.TABLEVIEW().getTr("Equipment Number",obj["Equipment Number"]||"-")}
+                                                                ${MODAL.TABLEVIEW().getTr("Conduction Number",obj["Tractor Conduction"]||"-")}
+                                                                ${MODAL.TABLEVIEW().getTr("Site",obj["Site"]||"-")}
+                                                                ${MODAL.TABLEVIEW().getTr("Availability",obj["Availability"]||"-")}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                    <div class="history-details col-sm-4" style="overflow-y: auto;padding: 0px !important;border-left:1px solid #eee;">
+                                                        <h5 style="border-bottom:1px solid #eee;" class="pl-2 pb-2 border-bottom">Location Logs</h5>
+                                                        <div id="history-logs" class="pl-2 pr-2" style="width: 100%; overflow: auto;white-space: nowrap;">${modalViews.vehicles.location_history(_id)}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>`;
+                },
             },
             location_history: function(_id){
                 var obj = getVehicleHistory(_id) || {};
@@ -19602,234 +20921,400 @@ const modalViews = new function(){
             },
         },
         dispatch: {
-            form: function(){
-                var snVisibility = "";
-                var trailerHTML = "";
-                var previousCheckIns = "";
-                if(clientCustom.editableTrailer === true){
-                    trailerHTML = `<div class="col-sm-12 p-0">
-                                        <div class="col-sm-3">
-                                            <small><span class="text-danger">*</span>Truck:</small>
-                                            <select id="vehicle" class="select-multiple-basic" style="width:100%;"></select>
-                                        </div>
-                                        <div class="col-sm-3">
-                                            <small><span class="text-danger">*</span>Trailer:</small>
-                                            <select id="trailer" class="select-multiple-basic" style="width:100%;"></select>
-                                        </div>
-                                        <div class="col-sm-6" style="word-break: break-word;">
-                                            <table class="table mb-0">
-                                                <tbody>
-                                                    <tr>
-                                                        <td class="pt-0" style="border-color: #fff !important;"><small>Conduction #</small></td>
-                                                        <td class="pt-0" style="border-color: #fff !important;"><small>Cluster</small></td>
-                                                        <td class="pt-0" style="border-color: #fff !important;"><small>Base</small></td>
-                                                        <td class="pt-0" style="border-color: #fff !important;"><small>Region</small></td>
-                                                        <td class="pt-0" style="border-color: #fff !important;"><small>Pallet Type</small></td>
-                                                    </tr>
-                                                <tr>
-                                                    <td class="text-muted" conduction_number>-</td>
-                                                    <td class="text-muted" cluster>-</td>
-                                                    <td class="text-muted" base>-</td>
-                                                    <td class="text-muted" region>-</td>
-                                                    <td class="text-muted" pallet_type>-</td>
-                                                </tr>
-                                                </tbody>
-                                            </table>      
-                                        </div>
-                                    </div>`;
-                    
-                } else if(clientCustom.editableChassis === true){
-                    trailerHTML = `<div class="col-sm-12 p-0">
-                                        <div class="col-sm-3">
-                                            <small><span class="text-danger">*</span>Truck:</small>
-                                            <select id="vehicle" class="select-multiple-basic" style="width:100%;"></select>
-                                        </div>
-                                        <div class="col-sm-3">
-                                            <small>Chassis:</small>
-                                            <select id="chassis" class="select-multiple-basic" style="width:100%;"></select>
-                                        </div>
-                                        <div class="col-sm-6" style="word-break: break-word;">
-                                            <table class="table mb-0">
-                                                <tbody>
-                                                    <tr>
-                                                        <td class="pt-0" style="border-color: #fff !important;"><small>Chassis Type</small></td>
-                                                        <td class="pt-0" style="border-color: #fff !important;"><small>Section</small></td>
-                                                        <td class="pt-0" style="border-color: #fff !important;"><small>Company</small></td>
-                                                    </tr>
-                                                <tr>
-                                                    <td class="text-muted" chassis_type>-</td>
-                                                    <td class="text-muted" section>-</td>
-                                                    <td class="text-muted" company>-</td>
-                                                </tr>
-                                                </tbody>
-                                            </table>      
-                                        </div>
-                                    </div>`;
-                    
-                } else {
-                    trailerHTML = `<div class="col-sm-12 p-0">
-                                        <div class="col-sm-4">
-                                            <small><span class="text-danger">*</span>Truck:</small>
-                                            <select id="vehicle" class="select-multiple-basic" style="width:100%;"></select>
-                                        </div>
-                                        <div class="col-sm-8" style="word-break: break-word;">
-                                            <table class="table mb-0">
-                                                <tbody>
-                                                    <tr>
-                                                        <td class="pt-0" style="border-color: #fff !important;"><small>Trailer</small></td>
-                                                        <td class="pt-0" style="border-color: #fff !important;"><small>Cluster</small></td>
-                                                        <td class="pt-0" style="border-color: #fff !important;"><small>Base</small></td>
-                                                        <td class="pt-0" style="border-color: #fff !important;"><small>Region</small></td>
-                                                        <td class="pt-0" style="border-color: #fff !important;"><small>Pallet Type</small></td>
-                                                    </tr>
-                                                <tr>
-                                                    <td class="text-muted" trailer>-</td>
-                                                    <td class="text-muted" cluster>-</td>
-                                                    <td class="text-muted" base>-</td>
-                                                    <td class="text-muted" region>-</td>
-                                                    <td class="text-muted" pallet_type>-</td>
-                                                </tr>
-                                                </tbody>
-                                            </table>      
-                                        </div>
-                                    </div>`;
-                }
-                if(clientCustom.autoGeneratedId === true){
-                    snVisibility = `display:none;`;
-                }
-                if((clientCustom.previousCheckIns.roles||[]).includes(USER.role)){
-                    previousCheckIns = `<div id="previous-checkins-container" style="word-break: break-word;" class="col-sm-7 mb-2">
-                                            <div>Truck's Previous Check-Ins (Based on Origin)</div>
-                                            <div>
-                                                <table id="previous-checkins" class="table mb-0 mt-2">
-                                                    <thead>
-                                                        <tr>
-                                                            <td class="pt-0" style="border-color: #fff !important;">&nbsp;</td>
-                                                            <td class="pt-0" style="border-color: #fff !important;"><small>Check-In Time</small></td>
-                                                            <td class="pt-0" style="border-color: #fff !important;"><small>Check-Out Time</small></td>
-                                                            <td class="pt-0" style="border-color: #fff !important;"><small>Origin</small></td>
-                                                            <td class="pt-0" style="border-color: #fff !important;"><small>Destination</small></td>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody></tbody>
-                                                </table>
-                                            </div>
-                                        </div>`;
-                }
-                return `<div class="page-box row">
-                            <div id="error" class="ml-3 mr-3" style="display:none;"></div>
-                            <div id="alert" class="col-sm-12"></div>
-                            <div id="loading-text" style="display:none;" class="col-sm-12 pb-3">
-                                <small class="text-danger"><i class="la la-circle-o-notch la-spin mr-2"></i>Loading data...</small>
-                            </div>
-                            <div class="col-sm-12 p-0">
-                                <div class="col-sm-4" style="${snVisibility}">
-                                    <small>Shipment Number:</small>
-                                    <input id="shipment_number" type="text" class="form-control" placeholder="Shipment Number" autocomplete="off">
-                                    <small class="text-muted" style="font-style: italic;">Once saved, shipment number cannot be edited.</small>
+            form: {
+                coket1: function(){
+                    var previousCheckIns = "";
+                    if((clientCustom.previousCheckIns.roles||[]).includes(USER.role)){
+                        previousCheckIns = `<div id="previous-checkins-container" style="word-break: break-word;" class="col-sm-7 mb-2">
+                                                <div>Truck's Previous Check-Ins (Based on Origin)</div>
+                                                <div>
+                                                    <table id="previous-checkins" class="table mb-0 mt-2">
+                                                        <thead>
+                                                            <tr>
+                                                                <td class="pt-0" style="border-color: #fff !important;">&nbsp;</td>
+                                                                <td class="pt-0" style="border-color: #fff !important;"><small>Check-In Time</small></td>
+                                                                <td class="pt-0" style="border-color: #fff !important;"><small>Check-Out Time</small></td>
+                                                                <td class="pt-0" style="border-color: #fff !important;"><small>Origin</small></td>
+                                                                <td class="pt-0" style="border-color: #fff !important;"><small>Destination</small></td>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody></tbody>
+                                                    </table>
+                                                </div>
+                                            </div>`;
+                    }
+                    return `<div class="page-box row">
+                                <div id="modal-error" class="col-sm-12" style="display:none;"></div>
+                                <div id="loading-text" style="display:none;" class="col-sm-12 pb-3">
+                                    <small class="text-danger"><i class="la la-circle-o-notch la-spin mr-2"></i>Loading data...</small>
                                 </div>
-                                <div class="col-sm-4">
-                                    <small><span class="text-danger">*</span>Ticket Number:</small>
-                                    <input id="ticket_number" class="form-control" type="text" placeholder="Ticket Number" autocomplete="off">
-                                    <!--<div class="input-group">
+                                <div class="col-sm-12 p-0">
+                                    <div class="col-sm-4">
+                                        <div class="font-normal"><span class="text-danger">*</span>Shipment Number</div>
+                                        <input id="shipment_number" type="text" class="form-control" placeholder="Shipment Number" autocomplete="off">
+                                        <small class="text-muted" style="font-style: italic;">Once saved, shipment number cannot be edited.</small>
+                                    </div>
+                                    <div class="col-sm-3" id="coket1-shipment_type">
+                                        <div class="font-normal"><span class="text-danger">*</span>Shipment Type</div>
+                                        <div class="radio-parent" style="border: 1px solid #eee;padding: 5px 0px 6px;text-align: center;">
+                                            <label class="radio radio-inline" style="margin: 0;width: 40%;">
+                                                <input type="radio" name="shipment_type" value="Normal" style="margin-top: 2px;" checked> Normal
+                                            </label>
+                                            <label class="radio radio-inline" style="width: 40%;">
+                                                <input type="radio" name="shipment_type" value="Pick-up" style="margin-top: 2px;"> Pick-up
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-12 mt-3 p-0">
+                                    <div class="col-sm-4">
+                                        <div class="font-normal">Origin</div>
+                                        <input id="origin" type="text" class="form-control" autocomplete="off" readonly>
+                                    </div>
+                                    <div class="col-sm-5">
+                                        <div class="font-normal"><span class="text-danger">*</span>Route</div>
+                                        <select id="route" class="select-multiple-basic" style="width:100%;"></select>
+                                        <small class="text-muted">Separate origin and destination by comma (,). e.g., Calasiao,BALANGA</small>
+                                    </div>
+                                </div>
+                                <div class="col-sm-12 mt-2">
+                                    <div class="table-wrapper" style="overflow: auto;">
+                                        <div class="table-title">
+                                            <small style="line-height: 28px;">Destination:</small>
+                                        </div>
+                                        <table id="tbl-destination" class="table table-bordered">
+                                            <thead>
+                                                <tr>
+                                                    <th></th>
+                                                    <th class="col-md-6">Location</th>
+                                                    <th class="col-md-3">Transit Time (HH:MM)</th>
+                                                    <th class="col-md-3">CICO (HH:MM)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody> </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="col-sm-12 p-0">
+                                    <div class="col-sm-3">
+                                        <div class="font-normal"><span class="text-danger">*</span>Truck</div>
+                                        <select id="vehicle_id" class="select-multiple-basic" style="width:100%;"></select>
+                                    </div>
+                                    <div class="col-sm-3">
+                                        <div class="font-normal"><span class="text-danger">*</span>Trailer</div>
+                                        <select id="trailer" class="select-multiple-basic" style="width:100%;"></select>
+                                    </div>
+                                    <div class="col-sm-6" style="word-break: break-word;">
+                                        <table class="table mb-0" trailer-based>
+                                            <tbody>
+                                                <tr>
+                                                    <td class="pt-0" style="border-color: #fff !important;"><small>Conduction #</small></td>
+                                                    <td class="pt-0" style="border-color: #fff !important;"><small>Cluster</small></td>
+                                                    <td class="pt-0" style="border-color: #fff !important;"><small>Base</small></td>
+                                                    <td class="pt-0" style="border-color: #fff !important;"><small>Region</small></td>
+                                                    <td class="pt-0" style="border-color: #fff !important;"><small>Pallet Type</small></td>
+                                                </tr>
+                                            <tr>
+                                                <td class="text-muted" conduction_number>-</td>
+                                                <td class="text-muted" cluster>-</td>
+                                                <td class="text-muted" base>-</td>
+                                                <td class="text-muted" region>-</td>
+                                                <td class="text-muted" pallet_type>-</td>
+                                            </tr>
+                                            </tbody>
+                                        </table>      
+                                    </div>
+                                </div>
+                                ${previousCheckIns}
+                                <div class="col-sm-12 p-0">
+                                    <div class="col-sm-7">
+                                        <div class="font-normal">Comments</div>
+                                        <textarea id="comments" class="form-control" rows="2"></textarea>
+                                    </div>
+                                </div>
+                                <div class="col-sm-7 mt-3">
+                                    <div class="table-wrapper">
+                                        <div class="table-title">
+                                            <div class="font-normal" style="display: inline-block;padding-top: 6px;">Attachments</div>
+                                            <input id="new-file" type="file" class="hide">
+                                            <button id="new-attachment" type="button" class="btn btn-default float-right" style="padding: 4px 10px;top: -3px;position: relative;"><i class="la la-plus"></i> Add Attachment</button>
+                                        </div>
+                                        <table id="tbl-attachment" class="table table-bordered">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width: 35px;">#</th>
+                                                    <th>Filename</th>
+                                                    <th style="width: 50px;">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="col-sm-12"><hr></div>
+                                <div class="col-sm-12"><button id="submit" type="button" class="btn btn-primary">Update</button></div>
+                            </div>`;
+                },
+                wilcon: function(){
+                    return `<div class="page-box row">
+                                <div id="modal-error" class="col-sm-12" style="display:none;"></div>
+                                <div id="loading-text" style="display:none;" class="col-sm-12 pb-3">
+                                    <small class="text-danger"><i class="la la-circle-o-notch la-spin mr-2"></i>Loading data...</small>
+                                </div>
+                                <div class="col-sm-12 p-0">
+                                    <div class="col-sm-4">
+                                        <small><span class="text-danger">*</span>Ticket Number:</small>
                                         <input id="ticket_number" class="form-control" type="text" placeholder="Ticket Number" autocomplete="off">
-                                        <span class="input-group-btn">
-                                            <button id="search-ticket-number" class="btn btn-primary" type="button" style="height: 34px;padding: 0px 12px;"><i class="la la-search mr-0" style="font-size: 13px;"></i></button>
-                                        </span>
-                                    </div>-->
-                                </div>
-                                <div class="col-sm-4">
-                                    <small><span class="text-danger">*</span>Scheduled Date:</small>
-                                    <input id="scheduled_date" class="form-control" type="text" onkeydown="event.preventDefault()">
-                                </div>
-                                <div class="col-sm-4">
-                                    <small><span class="text-danger">*</span>Shift Schedule:</small>
-                                    <select id="shift_schedule" class="select-multiple-basic" style="width:100%;"></select>
-                                </div>
-                            </div>
-                            <div class="col-sm-12 mt-3 p-0">
-                                <div class="col-sm-4">
-                                    <small>Origin:</small>
-                                    <input id="origin" type="text" class="form-control" autocomplete="off" readonly>
-                                </div>
-                                <div class="col-sm-5">
-                                    <small><span class="text-danger">*</span>Route:</small>
-                                    <select id="route" class="select-multiple-basic" style="width:100%;"></select>
-                                    <small class="text-muted">Separate origin and destination by comma (,). e.g., Calasiao,BALANGA</small>
-                                    <!--<input id="route" type="text" class="form-control ui-autocomplete-input" placeholder="Route" autocomplete="off" readonly>-->
-                                </div>
-                            </div>
-                            <div class="col-sm-12 mt-2">
-                                <div class="table-wrapper" style="overflow: auto;">
-                                    <div class="table-title">
-                                        <small style="line-height: 28px;">Destination:</small>
-                                        <!--<button type="button" id="new-destination" class="btn btn-default float-right" style="padding: 4px 10px;top: 0px;position: relative;"><i class="la la-plus"></i> Add Destination</button>-->
                                     </div>
-                                    <table id="tbl-destination" class="table table-bordered">
-                                        <thead>
-                                            <tr>
-                                                <th></th>
-                                                <th class="col-md-6">Location</th>
-                                                <th class="col-md-3">Transit Time (HH:MM)</th>
-                                                <th class="col-md-3">CICO (HH:MM)</th>
-                                                <!--<th>Action</th>-->
-                                            </tr>
-                                        </thead>
-                                        <tbody> </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                            ${trailerHTML}
-                            ${previousCheckIns}
-                            <div class="col-sm-12 p-0 mb-3">
-                                <div class="col-sm-4">
-                                    <small><span class="text-danger">*</span>Driver:</small>
-                                    <select id="driver_id" class="select-multiple-basic" style="width:100%;"></select>
-                                </div>
-                                <div class="col-sm-4">
-                                    <small>Checker:</small>
-                                    <select id="checker_id" class="select-multiple-basic" style="width:100%;"></select>
-                                </div>
-                                <div class="col-sm-4">
-                                    <small>Helper:</small>
-                                    <select id="helper_id" class="select-multiple-basic" style="width:100%;"></select>
-                                </div>
-                            </div>
-                            <div class="col-sm-12 p-0">
-                                <div class="col-sm-7">
-                                    <small>Comments:</small>
-                                    <textarea id="comments" class="form-control" rows="2"></textarea>
-                                </div>
-                            </div>
-                            <div class="col-sm-7 mt-3">
-                                <div class="table-wrapper">
-                                    <div class="table-title">
-                                        <small style="line-height: 28px;">Attachment:</small>
-                                        <input id="new-file" type="file" class="hide">
-                                        <button id="new-attachment" type="button" class="btn btn-default float-right" style="padding: 4px 10px;top: -3px;position: relative;"><i class="la la-plus"></i> Add Attachment</button>
+                                    <div class="col-sm-4">
+                                        <small><span class="text-danger">*</span>Scheduled Date:</small>
+                                        <input id="scheduled_date" class="form-control" type="text" onkeydown="event.preventDefault()">
                                     </div>
-                                    <table id="tbl-attachment" class="table table-bordered">
-                                        <thead>
-                                            <tr>
-                                                <th style="width: 35px;">#</th>
-                                                <th>Filename</th>
-                                                <th style="width: 50px;">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody></tbody>
-                                    </table>
+                                    <div class="col-sm-4">
+                                        <small><span class="text-danger">*</span>Shift Schedule:</small>
+                                        <select id="shift_schedule" class="select-multiple-basic" style="width:100%;"></select>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-sm-12"><hr></div>
-                            <div class="col-sm-12"><button id="submit" type="button" class="btn btn-primary">Update</button></div>
-                        </div>`;
+                                <div class="col-sm-12 mt-3 p-0">
+                                    <div class="col-sm-4">
+                                        <small>Origin:</small>
+                                        <input id="origin" type="text" class="form-control" autocomplete="off" readonly>
+                                    </div>
+                                    <div class="col-sm-5">
+                                        <small><span class="text-danger">*</span>Route:</small>
+                                        <select id="route" class="select-multiple-basic" style="width:100%;"></select>
+                                        <small class="text-muted">Separate origin and destination by comma (,). e.g., Calasiao,BALANGA</small>
+                                    </div>
+                                </div>
+                                <div class="col-sm-12 mt-2">
+                                    <div class="table-wrapper" style="overflow: auto;">
+                                        <div class="table-title">
+                                            <small style="line-height: 28px;">Destination:</small>
+                                        </div>
+                                        <table id="tbl-destination" class="table table-bordered">
+                                            <thead>
+                                                <tr>
+                                                    <th></th>
+                                                    <th class="col-md-6">Location</th>
+                                                    <th class="col-md-3">Transit Time (HH:MM)</th>
+                                                    <th class="col-md-3">CICO (HH:MM)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody> </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="col-sm-12 p-0">
+                                    <div class="col-sm-3">
+                                        <small><span class="text-danger">*</span>Truck:</small>
+                                        <select id="vehicle_id" class="select-multiple-basic" style="width:100%;"></select>
+                                    </div>
+                                    <div class="col-sm-3">
+                                        <small>Chassis:</small>
+                                        <select id="chassis" class="select-multiple-basic" style="width:100%;"></select>
+                                    </div>
+                                    <div class="col-sm-6" style="word-break: break-word;">
+                                        <table class="table mb-0" chassis-based>
+                                            <tbody>
+                                                <tr>
+                                                    <td class="pt-0" style="border-color: #fff !important;"><small>Chassis Type</small></td>
+                                                    <td class="pt-0" style="border-color: #fff !important;"><small>Section</small></td>
+                                                    <td class="pt-0" style="border-color: #fff !important;"><small>Company</small></td>
+                                                </tr>
+                                            <tr>
+                                                <td class="text-muted" chassis_type>-</td>
+                                                <td class="text-muted" section>-</td>
+                                                <td class="text-muted" company>-</td>
+                                            </tr>
+                                            </tbody>
+                                        </table>      
+                                    </div>
+                                </div>
+                                <div class="col-sm-12 p-0 mb-3">
+                                    <div class="col-sm-4">
+                                        <small><span class="text-danger">*</span>Driver:</small>
+                                        <select id="driver_id" class="select-multiple-basic" style="width:100%;"></select>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <small>Checker:</small>
+                                        <select id="checker_id" class="select-multiple-basic" style="width:100%;"></select>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <small>Helper:</small>
+                                        <select id="helper_id" class="select-multiple-basic" style="width:100%;"></select>
+                                    </div>
+                                </div>
+                                <div class="col-sm-12 p-0">
+                                    <div class="col-sm-7">
+                                        <small>Comments:</small>
+                                        <textarea id="comments" class="form-control" rows="2"></textarea>
+                                    </div>
+                                </div>
+                                <div class="col-sm-7 mt-3">
+                                    <div class="table-wrapper">
+                                        <div class="table-title">
+                                            <small style="line-height: 28px;">Attachment:</small>
+                                            <input id="new-file" type="file" class="hide">
+                                            <button id="new-attachment" type="button" class="btn btn-default float-right" style="padding: 4px 10px;top: -3px;position: relative;"><i class="la la-plus"></i> Add Attachment</button>
+                                        </div>
+                                        <table id="tbl-attachment" class="table table-bordered">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width: 35px;">#</th>
+                                                    <th>Filename</th>
+                                                    <th style="width: 50px;">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="col-sm-12"><hr></div>
+                                <div class="col-sm-12"><button id="submit" type="button" class="btn btn-primary">Update</button></div>
+                            </div>`;
+                },
+                coket2: function(){
+                    return `<div class="page-box row">
+                                <div id="modal-error" class="col-sm-12" style="display:none;"></div>
+                                <div id="loading-text" style="display:none;" class="col-sm-12 pb-3">
+                                    <small class="text-danger"><i class="la la-circle-o-notch la-spin mr-2"></i>Loading data...</small>
+                                </div>
+                                <div class="col-sm-12 p-0">
+                                    <div class="col-sm-4">
+                                        <div class="font-normal"><span class="text-danger">*</span>Shipment Number</div>
+                                        <input id="shipment_number" type="text" class="form-control" placeholder="Shipment Number" autocomplete="off">
+                                        <small class="text-muted" style="font-style: italic;">Once saved, shipment number cannot be edited.</small>
+                                    </div>
+                                </div>
+                                <div class="col-sm-12 mt-3 p-0">
+                                    <div class="col-sm-4 p-0">
+                                        <div class="col-sm-12">
+                                            <div class="font-normal"><span class="text-danger">*</span>Origin</div>
+                                            <select id="origin_id" class="select-multiple-basic" style="width:100%;"></select>
+                                        </div>
+                                        <div class="col-sm-12 mt-2">
+                                            <div class="font-normal">Origin Site Code</div>
+                                            <input id="origin_code" type="text" class="form-control" autocomplete="off" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-8">
+                                        <div class="font-normal"><span class="text-danger">*</span>Delivery For (Customer(s))</div>
+                                        <select id="customers" class="select-multiple-basic" multiple="multiple" style="width:100%;"></select>
+                                        <small class="text-muted" style="font-style: italic;">If has multiple customers, use comma in separating each customer name or customer number</small>
+                                    </div>
+                                </div>
+                                <div class="col-sm-12 mt-3">
+                                    <div class="col-sm-12" style="border: 1px solid #eee;padding: 11px 0 4px;">
+                                        <div class="col-sm-3">
+                                            <div class="font-normal"><span class="text-danger">*</span>Truck Plate Number</div>
+                                            <select id="vehicle_id" class="select-multiple-basic" style="width:100%;"></select>
+                                        </div>
+                                        <div class="col-sm-2 p-0">
+                                            <div class="font-normal"><span class="text-danger">*</span>Support Unit?</div>
+                                            <div class="radio-parent" style="border: 1px solid #eee;padding: 5px 0px 6px;text-align: center;">
+                                                <label class="radio radio-inline" style="margin: 0;width: 40%;">
+                                                    <input type="radio" name="support_unit" value="Yes" style="margin-top: 2px;"> Yes
+                                                </label>
+                                                <label class="radio radio-inline" style="width: 40%;">
+                                                    <input type="radio" name="support_unit" value="No" style="margin-top: 2px;"> No
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-7" style="word-break: break-word;">
+                                            <table class="table mb-0" truck-based>
+                                                <tbody>
+                                                    <tr>
+                                                        <td class="pt-0" style="border-color: #fff !important;font-weight: normal;">Truck Base</td>
+                                                        <td class="pt-0" style="border-color: #fff !important;font-weight: normal;">Base Region</td>
+                                                        <td class="pt-0" style="border-color: #fff !important;font-weight: normal;">Cluster</td>
+                                                        <td class="pt-0" style="border-color: #fff !important;font-weight: normal;">Pallet Capacity</td>
+                                                    </tr>
+                                                <tr>
+                                                    <td class="text-muted" base>-</td>
+                                                    <td class="text-muted" region>-</td>
+                                                    <td class="text-muted" cluster>-</td>
+                                                    <td class="text-muted" pallet_capacity>-</td>
+                                                </tr>
+                                                </tbody>
+                                            </table>      
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-4 p-0 mt-3">
+                                    <div class="col-sm-12">
+                                        <div class="font-normal"><span class="text-danger">*</span>Shipment Type</div>
+                                        <div class="radio-parent" style="border: 1px solid #eee;padding: 5px 0px 6px;text-align: center;">
+                                            <label class="radio radio-inline" style="margin: 0;width: 40%;">
+                                                <input type="radio" name="shipment_type" value="Unique" style="margin-top: 2px;"> Unique
+                                            </label>
+                                            <label class="radio radio-inline" style="width: 40%;">
+                                                <input type="radio" name="shipment_type" value="Co-Load" style="margin-top: 2px;"> Co-Load
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-12 mt-2">
+                                        <div class="font-normal"><span class="text-danger">*</span>Delivery Sequence</div>
+                                        <div class="radio-parent" style="border: 1px solid #eee;padding: 5px 0px 6px;text-align: center;">
+                                            <label class="radio radio-inline" style="margin: 0;width: 40%;">
+                                                <input type="radio" name="delivery_sequence" value="Initial" style="margin-top: 2px;"> Initial
+                                            </label>
+                                            <label class="radio radio-inline" style="width: 40%;">
+                                                <input type="radio" name="delivery_sequence" value="Reload" style="margin-top: 2px;"> Reload
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-12 mt-2">
+                                        <div class="font-normal"><span class="text-danger">*</span>MDSD Usage</div>
+                                        <div class="radio-parent" style="border: 1px solid #eee;padding: 5px 0px 6px;text-align: center;">
+                                            <label class="radio radio-inline" style="margin: 0;width: 40%;">
+                                                <input type="radio" name="mdsd_usage" value="Yes" style="margin-top: 2px;"> Yes
+                                            </label>
+                                            <label class="radio radio-inline" style="width: 40%;">
+                                                <input type="radio" name="mdsd_usage" value="No" style="margin-top: 2px;"> No
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-8 p-0 mt-3">
+                                    <div class="col-sm-12">
+                                        <div class="font-normal">Comments</div>
+                                        <textarea id="comments" class="form-control" rows="2"></textarea>
+                                    </div>
+                                    <div class="col-sm-12 mt-3">
+                                        <div class="table-wrapper">
+                                            <div class="table-title">
+                                                <div class="font-normal" style="line-height: 28px;display: unset;">Attachments</div>
+                                                <input id="new-file" type="file" class="hide">
+                                                <button id="new-attachment" type="button" class="btn btn-default float-right" style="padding: 4px 10px;top: -3px;position: relative;"><i class="la la-plus"></i> Add Attachment</button>
+                                            </div>
+                                            <table id="tbl-attachment" class="table table-bordered">
+                                                <thead>
+                                                    <tr>
+                                                        <th style="width: 35px;">#</th>
+                                                        <th>Filename</th>
+                                                        <th style="width: 50px;">Action</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-12 p-0">
+                                    <div style="border-top: 1px solid #eee;" class="col-sm-12 mt-2 pt-3"> 
+                                        <button id="submit" type="button" class="btn btn-primary float-right">Submit</button>
+                                        <button id="cancel" type="button" class="btn btn-default float-right mr-2">Cancel</button>
+                                    </div>
+                                </div>
+                            </div>`;
+                },
             },
             statusUpdate: function(_id){
-                var roundtripHTML = "";
-                if(clientCustom.roundtrip === true){
-                    roundtripHTML = `<span status="onSite" class="col-sm-12 label label-blue label-transparent font-12 cursor-pointer active pb-2 pt-2 mt-1 d-block">ON-SITE</span>
-                                    <span status="returning" class="col-sm-12 label label-pink label-transparent font-12 cursor-pointer active pb-2 pt-2 mt-1 d-block">RETURNING</span>`;
-                }
+                var statusHTML = "";
+                (clientCustom.status.all||[]).forEach(val => {
+                    const stat = GET.STATUS(val);
+                    statusHTML += `<span status="${val}" class="col-sm-12 label ${stat.color} label-transparent font-12 cursor-pointer active pb-2 pt-2 mt-1 d-block">${stat.text.toUpperCase()}</span>`;
+                });
                 return `<div id="overlay" class="swal2-container swal2-fade swal2-shown" style="overflow-y: auto;">
                             <div id="small-modal" class="modal" role="dialog" aria-labelledby="myLargeModalLabel">
                                 <div role="document" class="modal-dialog modal-sm">
@@ -19841,17 +21326,7 @@ const modalViews = new function(){
                                             <small id="incomplete-data" class="text-danger d-block"></small>
                                         </div>
                                         <div class="modal-body row">
-                                            <div class="col-sm-12 mb-3">
-                                                <span status="plan" class="col-sm-12 label label-info label-transparent font-12 inactive cursor-pointer pb-2 pt-2 d-block">PLAN</span>
-                                                <span status="assigned" class="col-sm-12 label label-brown label-transparent font-12 inactive cursor-pointer pb-2 pt-2 mt-1 d-block">ASSIGNED</span>
-                                                <span status="queueingAtOrigin" class="col-sm-12 label label-warning label-transparent font-12 cursor-pointer active pb-2 pt-2 mt-1 d-block">QUEUEING (ORIGIN)</span>
-                                                <span status="processingAtOrigin" class="col-sm-12 label label-lime label-transparent font-12 cursor-pointer active pb-2 pt-2 mt-1 d-block">PROCESSING (ORIGIN)</span>
-                                                <span status="idlingAtOrigin" class="col-sm-12 label label-purple label-transparent font-12 cursor-pointer active pb-2 pt-2 mt-1 d-block">IDLING (ORIGIN)</span>
-                                                <span status="in_transit" class="col-sm-12 label label-orange label-transparent font-12 cursor-pointer active pb-2 pt-2 mt-1 d-block">IN TRANSIT</span>
-                                                ${roundtripHTML}
-                                                <span status="complete" class="col-sm-12 label label-success label-transparent font-12 inactive cursor-pointer pb-2 pt-2 mt-1 d-block">COMPLETE</span>
-                                                <span status="incomplete" class="col-sm-12 label label-danger label-transparent font-12 inactive cursor-pointer pb-2 pt-2 mt-1 d-block">INCOMPLETE</span>
-                                            </div>
+                                            <div class="col-sm-12 mb-3">${statusHTML}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -19882,32 +21357,86 @@ const modalViews = new function(){
                             </div>
                         </div>`;
             },
-            view: function(_id){
-                LIST["dispatch"] = LIST["dispatch"] || [];
-                var id_index = LIST["dispatch"].findIndex(x => x._id == _id);
-                var obj = LIST["dispatch"][id_index];
-
-                if(id_index > -1){
-                    displayModal();
-                } else {
-                    GET.AJAX({
-                        url: `/api/dispatch/${CLIENT.id}/${USER.username}/${_id}`,
-                        method: "GET",
-                        headers: {
-                            "Authorization": SESSION_TOKEN
-                        },
-                    }, function(docs){
-                        obj = docs[0];
+            view: {
+                coket1: function(_id){
+                    LIST["dispatch"] = LIST["dispatch"] || [];
+                    var id_index = LIST["dispatch"].findIndex(x => x._id == _id);
+                    var obj = LIST["dispatch"][id_index];
+    
+                    if(id_index > -1){
                         displayModal();
-                    });
-                }
-
-                function displayModal() {
-                    console.log("view obj",obj);
-                    if(obj){
-                        var de = new Dispatch(obj);
-                        $(`body`).append(de.fullView());
-                        $(`.history-details`).css("max-height",$(`.main-details`).outerHeight() + "px");
+                    } else {
+                        GET.AJAX({
+                            url: `/api/dispatch/${CLIENT.id}/${USER.username}/${_id}`,
+                            method: "GET",
+                            headers: {
+                                "Authorization": SESSION_TOKEN
+                            },
+                        }, function(docs){
+                            obj = docs[0];
+                            displayModal();
+                        });
+                    }
+    
+                    function displayModal() {
+                        if(obj){
+                            var de = new Dispatch(obj);
+                            $(`body`).append(de.fullView());
+                        }
+                    }
+                },
+                coket2: function(_id){
+                    LIST["dispatch"] = LIST["dispatch"] || [];
+                    var id_index = LIST["dispatch"].findIndex(x => x._id == _id);
+                    var obj = LIST["dispatch"][id_index];
+    
+                    if(id_index > -1){
+                        displayModal();
+                    } else {
+                        GET.AJAX({
+                            url: `/api/dispatch/${CLIENT.id}/${USER.username}/${_id}`,
+                            method: "GET",
+                            headers: {
+                                "Authorization": SESSION_TOKEN
+                            },
+                        }, function(docs){
+                            obj = docs[0];
+                            displayModal();
+                        });
+                    }
+    
+                    function displayModal() {
+                        if(obj){
+                            var de = new Dispatch(obj);
+                            $(`body`).append(de.fullView_2());
+                        }
+                    }
+                },
+                wilcon: function(_id){
+                    LIST["dispatch"] = LIST["dispatch"] || [];
+                    var id_index = LIST["dispatch"].findIndex(x => x._id == _id);
+                    var obj = LIST["dispatch"][id_index];
+    
+                    if(id_index > -1){
+                        displayModal();
+                    } else {
+                        GET.AJAX({
+                            url: `/api/dispatch/${CLIENT.id}/${USER.username}/${_id}`,
+                            method: "GET",
+                            headers: {
+                                "Authorization": SESSION_TOKEN
+                            },
+                        }, function(docs){
+                            obj = docs[0];
+                            displayModal();
+                        });
+                    }
+    
+                    function displayModal() {
+                        if(obj){
+                            var de = new Dispatch(obj);
+                            $(`body`).append(de.fullView());
+                        }
                     }
                 }
             }
@@ -20180,7 +21709,7 @@ const mobileOptions = new function(){
 };
 /************** END VIEWS **************/
 
-if(s == "m"){
+if(s == "main"){
     (ENVIRONMENT == "development") ? null : LOGGER.disableLogger();
     WEBSOCKET.connect().then(() => {
         SESSION_FROM_DB(function(){

@@ -100,7 +100,7 @@ router.get('/import/database', (req,res,next)=>{
 router.get('/test/all_events/:skip/:limit', (req,res,next)=>{
     const skip = Number(req.params.skip);
     const limit = Number(req.params.limit);
-    var url1 = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    var url1 = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
 
     var collection = "all_events";
@@ -127,7 +127,7 @@ router.get('/test/export/locations/:skip/:limit', (req,res,next)=>{
     const skip = Number(req.params.skip);
     const limit = Number(req.params.limit);
     const _id = req.params._id;
-    var url1 = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    var url1 = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
     var dbName = "wd-coket1";
@@ -200,7 +200,7 @@ router.get('/test/export/routes/:skip/:limit', (req,res,next)=>{
     const skip = Number(req.params.skip);
     const limit = Number(req.params.limit);
     const _id = req.params._id;
-    var url1 = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    var url1 = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
     var dbName = "wd-coket1";
@@ -257,7 +257,7 @@ router.get('/test/export/users/:skip/:limit', (req,res,next)=>{
     const skip = Number(req.params.skip);
     const limit = Number(req.params.limit);
     const _id = req.params._id;
-    var url1 = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    var url1 = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
     var dbName = "wd-wilcon";
@@ -284,7 +284,7 @@ router.get('/test/addto/notifications', (req,res,next)=>{
     const skip = Number(req.params.skip);
     const limit = Number(req.params.limit);
     const _id = req.params._id;
-    var url1 = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    var url1 = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
     var dbName = "wd-coket1";
@@ -338,7 +338,7 @@ router.get('/test/addto/notifications', (req,res,next)=>{
 // add to notifications db (test)
 router.get('/test/delete/notifications/:_id', (req,res,next)=>{
     const _id = req.params._id;
-    var url1 = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    var url1 = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
     var dbName = "wd-coket1";
@@ -358,7 +358,7 @@ router.get('/test/delete/notifications/:_id', (req,res,next)=>{
 
 // update Transit Times
 router.get('/test/update/transit_times', (req,res,next)=>{
-    var url1 = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    var url1 = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
     var dbName = "wd-coket1";
@@ -397,7 +397,7 @@ router.get('/test/update/transit_times', (req,res,next)=>{
 
 // update CICO
 router.get('/test/update/cico', (req,res,next)=>{
-    var url1 = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    var url1 = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
     var dbName = "wd-coket1";
@@ -423,7 +423,7 @@ router.get('/test/update/cico', (req,res,next)=>{
 
 // check ACP8861 from events
 router.get('/test/check/events', (req,res,next)=>{
-    var url1 = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    var url1 = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
     var dbName = "wd-coket1";
@@ -464,8 +464,8 @@ router.get('/test/check/events', (req,res,next)=>{
 
 /******* IMPORT DATA FROM PROD TO DEV *******/
 router.get('/test/import/prod_dev/:collection', (req,res,next)=>{
-    var prodURL = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
-    var devURL = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+    var prodURL = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    var devURL = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
     const collection = req.params.collection;
@@ -499,7 +499,7 @@ router.get('/test/import/prod_dev/:collection', (req,res,next)=>{
 // insert drivers/checkers
 var drivers_checkers = [];
 router.get('/test/insert/driverchecker', (req,res,next)=>{
-    var url1 = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    var url1 = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
     var dbName = "wd-wilcon";
@@ -570,7 +570,7 @@ router.get('/test/insert/driverchecker', (req,res,next)=>{
 });
 
 router.get('/test/add/ula', (req,res,next)=>{
-    var url1 = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    var url1 = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
     var dbName = "wd-coket1";
@@ -603,7 +603,7 @@ router.get('/test/add/ula', (req,res,next)=>{
 });
 
 router.get('/test/get/dispatch', (req,res,next)=>{
-    var url1 = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    var url1 = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
     var dbName = "wd-wilcon";
@@ -654,7 +654,7 @@ router.get('/test/get/dispatch', (req,res,next)=>{
 
 
 router.get('/test/update/dispatch/:skip/:limit', (req,res,next)=>{
-    var url1 = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    var url1 = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     const skip = Number(req.params.skip);
     const limit = Number(req.params.limit);
@@ -692,7 +692,7 @@ router.get('/test/update/dispatch/:skip/:limit', (req,res,next)=>{
 
 // 12:25 PM
 router.get('/test/update/dispatch_stat/:_id/:save/:le', (req,res,next)=>{
-    var url1 = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    var url1 = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     const save = req.params.save || false;
     const _id = req.params._id;
@@ -1046,7 +1046,7 @@ router.get('/test/update/dispatch_stat/:_id/:save/:le', (req,res,next)=>{
 });
 
 router.post('/test/goooosh/dispatch/:_id', (req,res,next)=>{
-    var url1 = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    var url1 = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
     const _id = req.params._id;
@@ -1098,11 +1098,11 @@ var wdDocs = [];
 router.post('/test/please/makeitwork', (req,res,next)=>{
     
     // PRODUCTION
-    // const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    // const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     // DEVELOPMENT
-    const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+    const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
 
-    // var url1 = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    // var url1 = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     const query = req.query;
     const startDate = query.startDate;
@@ -1547,7 +1547,7 @@ router.post('/test/please/makeitwork', (req,res,next)=>{
 
 router.post('/test/please/help', (req,res,next)=>{
 
-    // var url1 = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    // var url1 = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     const query = req.query;
     const _id = query._id;
@@ -1560,12 +1560,12 @@ router.post('/test/please/help', (req,res,next)=>{
     const view = query.view;
     const db = query.db;
 
-    var url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+    var url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
     if(db == "production"){
-        url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+        url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     }
     // PRODUCTION
-    // const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    // const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     // DEVELOPMENT
     // const url = 
 
@@ -1911,9 +1911,9 @@ router.post('/test/please/help', (req,res,next)=>{
 
 router.get('/test/update/marielle', (req,res,next)=>{
     // PRODUCTION
-    const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     // DEVELOPMENT
-    // const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+    // const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
     var dbName = "wd-coket1";
@@ -1934,7 +1934,7 @@ router.get('/test/update/marielle', (req,res,next)=>{
 });
 
 router.get('/test/get/events', (req,res,next)=>{
-    var url1 = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    var url1 = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
     var dbName = "wd-coket1";
@@ -1956,7 +1956,7 @@ router.get('/test/get/events', (req,res,next)=>{
 });
 
 router.get('/test/get/search', (req,res,next)=>{
-    var url1 = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    var url1 = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
     var dbName = "wd-coket1";
@@ -1993,7 +1993,7 @@ router.get('/test/get/search', (req,res,next)=>{
 });
 
 router.get('/test/user_login_activity/lala', (req,res,next)=>{
-    var url1 = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    var url1 = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
     var dbName = "wm-coket1";
@@ -2033,9 +2033,9 @@ router.get('/test/user_login_activity/lala', (req,res,next)=>{
 
 router.get('/test/delete/after', (req,res,next)=>{
     // PRODUCTION
-    const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     // DEVELOPMENT
-    // const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+    // const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
     var dbName = "wd-coket1";
@@ -2065,7 +2065,7 @@ router.get('/test/delete/after', (req,res,next)=>{
 });
 
 router.get('/test/update/deleted_dispatch/:skip/:limit', (req,res,next)=>{
-    var url1 = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    var url1 = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     const skip = Number(req.params.skip);
     const limit = Number(req.params.limit);
@@ -2111,7 +2111,7 @@ router.get('/test/update/deleted_dispatch/:skip/:limit', (req,res,next)=>{
 });
 
 router.get('/test/delete/deleted_dispatch', (req,res,next)=>{
-    var url1 = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    var url1 = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
     var dbName = "wd-coket1";
@@ -2131,9 +2131,9 @@ router.get('/test/delete/deleted_dispatch', (req,res,next)=>{
 
 router.get('/test/import/escalation/recipients', (req,res,next)=>{
     // PRODUCTION
-    const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     // DEVELOPMENT
-    // const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+    // const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
     var dbName = "wd-coket1";
@@ -2167,9 +2167,9 @@ router.get('/test/update/vehicles', (req,res,next)=>{
     var data = [];
 
     // PRODUCTION
-    const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     // DEVELOPMENT
-    // const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+    // const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
     var dbName = "wd-wilcon";
@@ -2211,9 +2211,9 @@ router.get('/test/update/entryupdates/:skip/:limit', (req,res,next)=>{
     const skip = Number(req.params.skip);
     const limit = Number(req.params.limit);
     // PRODUCTION
-    const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     // DEVELOPMENT
-    // const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+    // const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
     var dbName = "wd-wilcon";
@@ -2246,9 +2246,9 @@ router.get('/test/update/dispatchStatus/:_id/:status', (req,res,next)=>{
     const _id = req.params._id;
     const status = req.params.status;
     // PRODUCTION
-    // const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    // const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     // DEVELOPMENT
-    const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+    const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
     var dbName = "wd-coket1";
@@ -2269,9 +2269,9 @@ var chassis = [];
 // import chassis
 router.get('/test/import/chassis', (req,res,next)=>{
     // PRODUCTION
-    // const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    // const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     // DEVELOPMENT
-    const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+    const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
     var dbName = "wd-wilcon";
@@ -2319,9 +2319,9 @@ router.get('/test/fix/events/:from/:to', (req,res,next)=>{
     const to = Number(req.params.to);
 
     // PRODUCTION
-    const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     // DEVELOPMENT
-    // const url = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+    // const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
     var dbName = "wd-wilcon-logging";
@@ -2362,4 +2362,240 @@ router.get('/test/fix/events/:from/:to', (req,res,next)=>{
     });
     /**************** END OTHER COLLECTIONS */
 });
+
+// import geofence from another db
+router.get('/test/import/geofence', (req,res,next)=>{
+    const from = Number(req.params.from);
+    const to = Number(req.params.to);
+
+    // PRODUCTION
+    const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    // DEVELOPMENT
+    // const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+    var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
+    
+    var dbName = "wd-coket2";
+    
+    MongoClient.connect(url, mongoOptions, (err,client) => {
+        if(err){
+            console.log("ERROR1",err);
+        } else {
+            const childPromise = [];
+            client.db("wd-coket1").collection("geofences").find({}).toArray().then(docs => {
+                docs.forEach(val => {
+                    const set = {
+                        // geofence_id: val.geofence_id,
+                        cico: val.cico,
+                        code: val.code,
+                        site_name: val.site_name,
+                    };
+                    try { set.region_id = db.getPrimaryKey(val.region_id); } catch(eror) {}
+                    try { set.cluster_id = db.getPrimaryKey(val.cluster_id); } catch(eror) {}
+                    
+                    childPromise.push( client.db(dbName).collection("geofences").updateOne(
+                        { short_name: val.short_name }, 
+                        { 
+                            $set: set
+                        },
+                        // { upsert: true }
+                    ) );
+                });
+                if(childPromise.length > 0){
+                    console.log("Start Promise",childPromise.length);
+                    Promise.all(childPromise).then(result => {
+                        client.close();
+    
+                        res.json({ok:1,length:childPromise.length});
+                    });
+                } else {
+                    client.close();
+                    res.json({ok:1,length:childPromise.length});
+                }
+            });
+        }
+    });
+    /**************** END OTHER COLLECTIONS */
+});
+
+// delete geofences
+router.get('/test/delete/geofence', (req,res,next)=>{
+    // PRODUCTION
+    const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    // DEVELOPMENT
+    // const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+    var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
+    
+    var dbName = "wd-coket2";
+    
+    MongoClient.connect(url, mongoOptions, (err,client) => {
+        if(err){
+            console.log("ERROR1",err);
+        } else {
+            client.db(dbName).collection("geofences").deleteMany({}).then(result => {
+                client.close();
+                res.json({ok:1});
+            }).catch(error => {
+                client.close();
+                res.json({error});
+            });
+        }
+    });
+    /**************** END OTHER COLLECTIONS */
+});
+
+// import regions & clusters from another db
+router.get('/test/import/regionsClusters', (req,res,next)=>{
+    const from = Number(req.params.from);
+    const to = Number(req.params.to);
+
+    // PRODUCTION
+    const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    // DEVELOPMENT
+    // const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+    var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
+    
+    var dbName = "wd-coket2";
+    
+    MongoClient.connect(url, mongoOptions, (err,client) => {
+        if(err){
+            console.log("ERROR1",err);
+        } else {
+            const childPromise = [];
+            client.db("wd-coket1").collection("regions").find({}).toArray().then(docs => {
+                childPromise.push( client.db(dbName).collection("regions").insertMany(docs));
+
+                client.db("wd-coket1").collection("clusters").find({}).toArray().then(docs => {
+                    childPromise.push( client.db(dbName).collection("clusters").insertMany(docs));
+
+                    if(childPromise.length > 0){
+                        console.log("Start Promise",childPromise.length);
+                        Promise.all(childPromise).then(result => {
+                            client.close();
+        
+                            res.json({ok:1,length:childPromise.length});
+                        });
+                    } else {
+                        client.close();
+                        res.json({ok:1,length:childPromise.length});
+                    }
+                });
+            });
+        }
+    });
+    /**************** END OTHER COLLECTIONS */
+});
+
+// remove history.vehicle
+router.get('/test/delete/history/vehicle', (req,res,next)=>{
+    // PRODUCTION
+    const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    // DEVELOPMENT
+    // const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+    var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
+    
+    var dbName = "wd-wilcon";
+    
+    MongoClient.connect(url, mongoOptions, (err,client) => {
+        if(err){
+            console.log("ERROR1",err);
+        } else {
+            client.db(dbName).collection("dispatch").updateMany({ "history.vehicle": { $exists: true } }, { $unset: { "history.vehicle": "" } }).then(result => {
+                client.close();
+                res.json({ok:1,result});
+            }).catch(error => {
+                client.close();
+                res.json({error});
+            });
+        }
+    });
+    /**************** END OTHER COLLECTIONS */
+});
+
+// export dispatch entries
+router.get('/test/deleted/dispatch', (req,res,next)=>{
+    // PRODUCTION
+    const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    // DEVELOPMENT
+    // const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+    var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
+    
+    var dbName = "wd-wilcon-logging";
+    
+    MongoClient.connect(url, mongoOptions, (err,client) => {
+        if(err){
+            console.log("ERROR1",err);
+        } else {
+            client.db(dbName).collection("user_action").deleteMany({ collection: "dispatch" }).then(docs => {
+                client.close();
+                res.json(docs);
+            }).catch(error => {
+                client.close();
+                res.json({error});
+            });
+        }
+    });
+    /**************** END OTHER COLLECTIONS */
+});
+
+
+var cData = [];
+// insert customers
+router.get('/test/insert/customers', (req,res,next)=>{
+    var prodURL = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    var devURL = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+
+    var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
+
+    var dbName = "wd-coket2";
+    const childPromise = [];
+
+    MongoClient.connect(prodURL, mongoOptions, (err,client) => {
+        if(err){
+            console.log("ERROR1",err);
+            res.json({error:1,error:err});
+        } else {
+            client.db(dbName).collection("regions").find({}).toArray().then(rDocs => {
+                client.db(dbName).collection("geofences").find({}).toArray().then(gDocs => {
+                    const finalData = [];
+                    cData.forEach(val => {
+                        const regionId = (rDocs.find(x => x.region == val.code) || {})._id;
+                        const geofenceId = (gDocs.find(x => x.short_name == val.dc) || {})._id;
+
+                        if(val. number) {
+                            finalData.push({
+                                number: val.number,
+                                name: val.name,
+                                service_model: val.service_model,
+                                mode_of_transport: val.mode_of_transport,
+                                type: val.type,
+                                region_id: regionId ? db.getPrimaryKey(regionId) : "",
+                                dc_id: geofenceId ? db.getPrimaryKey(geofenceId) : "",
+                            });
+                        }
+                    });
+                    client.db(dbName).collection("customers").insertMany(finalData).then(result => {
+                        client.close();
+                        res.json({ok:1,result});
+                    }).catch(error => {
+                        client.close();
+                        console.log("ERROR2",error);
+                        res.json({error:1,error});
+                    });
+                }).catch(error => {
+                    client.close();
+                    console.log("ERRO3",error);
+                    res.json({error:1,error});
+                });
+            }).catch(error => {
+                client.close();
+                console.log("ERROR4",error);
+                res.json({error:1,error});
+            });
+        }
+    });
+
+   
+});
+
+
 module.exports = router;

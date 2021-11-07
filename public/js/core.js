@@ -1,9 +1,11 @@
 /************** GLOBAL VARIABLES **************/
+var ENVIRONMENT = $(`#ENVIRONMENT`).text() || "development";
+var s = $(`#PAGE`).text() || "main";
+
 const authorizationLevel  = {
     dispatcher: () => { return ["dispatcher"].includes(USER.role); },
     administrator: () => { return ["administrator","developer"].includes(USER.role); },
 };
-const ENVIRONMENT = $(`#ENVIRONMENT`).text() || "development";
 const CUSTOM = {
     COLUMN:{
         settings: [
@@ -105,6 +107,9 @@ const CUSTOM = {
                         case "departureDate":
                             arr.push(objectOptions(val,{ data: "Departure Date", title: "Departure Date", type:"date", visible: true }));
                             break;
+                        case "dispatchDateTime":
+                            arr.push(objectOptions(val,{ data: "Departure Date", title: "Dispatch Date and Time", type:"date", visible: true }));
+                            break;
                         case "_departureDate_":
                             arr.push(objectOptions(val,{ data: "Departure__Date", title: "Departure Date", visible: true }));
                             break;
@@ -119,6 +124,15 @@ const CUSTOM = {
                             break;
                         case "origin":
                             arr.push(objectOptions(val,{ data: "Origin", title: "Origin", visible: true }));
+                            break;
+                        case "originSiteCode":
+                            arr.push(objectOptions(val,{ data: "Origin Site Code", title: "Origin Site Code", visible: true }));
+                            break;
+                        case "origin_id":
+                            arr.push(objectOptions(val,{ data: "Origin", title: "Origin", visible: true }));
+                            break;
+                        case "customers":
+                            arr.push(objectOptions(val,{ data: "Customers", title: "Customer(s)", visible: true }));
                             break;
                         case "route":
                             arr.push(objectOptions(val,{ data: "Route", title: "Route", visible: true }));
@@ -141,6 +155,18 @@ const CUSTOM = {
                         case "vehicle":
                             arr.push(objectOptions(val,{ data: "Vehicle", title: "Vehicle", visible: true }));
                             break;
+                        case "truckName":
+                            arr.push(objectOptions(val,{ data: "Vehicle", title: "Truck Plate Number", visible: true }));
+                            break;
+                        case "truckBase":
+                            arr.push(objectOptions(val,{ data: "Truck Base", title: "Truck Base", visible: true }));
+                            break;
+                        case "truckBaseRegion":
+                            arr.push(objectOptions(val,{ data: "Truck Base Region", title: "Truck Base Region", visible: true }));
+                            break;
+                        case "truckBaseCluster":
+                            arr.push(objectOptions(val,{ data: "Truck Base Cluster", title: "Truck Base Cluster", visible: true }));
+                            break;
                         case "chassis":
                             arr.push(objectOptions(val,{ data: "Chassis", title: "Chassis", visible: false }));
                             break;
@@ -152,6 +178,9 @@ const CUSTOM = {
                             break;
                         case "palCap":
                             arr.push(objectOptions(val,{ data: "Pal Cap", title: "Pal Cap", visible: true }));
+                            break;
+                        case "truckPalCap":
+                            arr.push(objectOptions(val,{ data: "Pal Cap", title: "Truck Pallet Capacity", visible: true }));
                             break;
                         case "plateNumber":
                             arr.push(objectOptions(val,{ data: "Plate Number", title: "Plate Number", visible: true }));
@@ -168,6 +197,18 @@ const CUSTOM = {
                         case "helper":
                             arr.push(objectOptions(val,{ data: "Helper", title: "Helper", visible: true }));
                             break;
+                        case "supportUnit":
+                            arr.push(objectOptions(val,{ data: "Support Unit", title: "Support Truck", visible: false }));
+                            break;
+                        case "shipmentType":
+                            arr.push(objectOptions(val,{ data: "Shipment Type", title: "Shipment Type", visible: false }));
+                            break;
+                        case "deliverySequence":
+                            arr.push(objectOptions(val,{ data: "Delivery Sequence", title: "Delivery Sequence", visible: false }));
+                            break;
+                        case "mdsdUsage":
+                            arr.push(objectOptions(val,{ data: "MDSD Usage", title: "MDSD Usage", visible: false }));
+                            break;
                         case "comments":
                             arr.push(objectOptions(val,{ data: "Comments", title: "Comments", visible: true }));
                             break;
@@ -180,6 +221,9 @@ const CUSTOM = {
                         case "idlingDuration":
                             arr.push(objectOptions(val,{ data: "Idling Duration", title: "Idling Duration", visible: true }));
                             break;
+                        case "cicoTime2":
+                            arr.push(objectOptions(val,{ data: "CICO Time2", title: "CICO", visible: true }));
+                            break;
                         case "cicoTime":
                             arr.push(objectOptions(val,{ data: "CICO Time", title: "CICO Time", visible: true }));
                             break;
@@ -188,6 +232,9 @@ const CUSTOM = {
                             break;
                         case "transitDuration":
                             arr.push(objectOptions(val,{ data: "Transit Duration", title: "Transit Duration", visible: true }));
+                            break;
+                        case "deliveryDuration":
+                            arr.push(objectOptions(val,{ data: "Delivery Duration", title: "Delivery Duration", visible: true }));
                             break;
                         case "status":
                             arr.push(objectOptions(val,{ data: "Status", title: "Status", visible: true }));
@@ -203,6 +250,9 @@ const CUSTOM = {
                             break;
                         case "postingDate":
                             arr.push(objectOptions(val,{ data: "Posting Date", title: "Posting Date", type:"date", visible: true }));
+                            break;
+                        case "postingDateTime":
+                            arr.push(objectOptions(val,{ data: "Posting Date", title: "Posting Date and Time", type:"date", visible: true }));
                             break;
                         case "lateEntry":
                             arr.push(objectOptions(val,{ data: "Late Entry", title: "Late Entry", visible: true }));
@@ -291,7 +341,8 @@ const CUSTOM = {
             { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
         ],
         regions: [
-            { data: "Region", title: "Region", visible: true },
+            { data: "Region Name", title: "Region Name", visible: true },
+            { data: "Region Code", title: "Region Code", visible: true },
             { data: "Sequence", title: "Sequence", width: "50px", visible: true },
             { data: "esq1_lq", title: "Person In-Charge (E-1 Long Queueing)", visible: false },
             { data: "esq1_oc", title: "Person In-Charge (E-1 Over CICO)", visible: false },
@@ -358,25 +409,73 @@ const CUSTOM = {
 
             return arr;
         },
-        geofences: [
-            { data: "Site Code", title: "Site Code", visible: true },
-            { data: "Site Name", title: "Site Name", visible: true },
-            { data: "Short Name", title: "Short Name", visible: true },
-            { data: "CICO", title: "CICO (HH:MM)", visible: true },
-            { data: "Cluster", title: "Cluster", visible: true },
-            { data: "Region", title: "Region", visible: true },
-            { data: "Dispatcher", title: "Dispatcher", visible: true },
-            { data: "esq1_lq", title: "Person In-Charge (E-1 Long Queueing)", visible: false },
-            { data: "esq1_oc", title: "Person In-Charge (E-1 Over CICO)", visible: false },
-            { data: "esq1_ot", title: "Person In-Charge (E-1 Over Transit)", visible: false },
-            { data: "esq2_lq", title: "Person In-Charge (E-2 Long Queueing)", visible: false },
-            { data: "esq2_oc", title: "Person In-Charge (E-2 Over CICO)", visible: false },
-            { data: "esq2_ot", title: "Person In-Charge (E-2 Over Transit)", visible: false },
-            { data: "esq3_lq", title: "Person In-Charge (E-3 Long Queueing)", visible: false },
-            { data: "esq3_oc", title: "Person In-Charge (E-3 Over CICO)", visible: false },
-            { data: "esq3_ot", title: "Person In-Charge (E-3 Over Transit)", visible: false },
-            { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
-        ],
+        geofences: function(){
+            var arr = [];
+            const cicoTitle = (CLIENT.id == "coket2") ? "RCICO Target" : "CICO (HH:MM)";
+
+            clientCustom.columns.geofences.forEach(val => {
+                switch (val) {
+                    case "siteCode":
+                        arr.push({ data: "Site Code", title: "Site Code", visible: true });
+                        break;
+                    case "siteName":
+                        arr.push({ data: "Site Name", title: "Site Name", visible: true });
+                        break;
+                    case "shortName":
+                        arr.push({ data: "Short Name", title: "Short Name", visible: true });
+                        break;
+                    case "cico":
+                        arr.push({ data: "CICO", title: cicoTitle, visible: true });
+                        break;
+                    case "trippageTarget":
+                        arr.push({ data: "Trippage Target", title: "Trippage Target", visible: true });
+                        break;
+                    case "cluster":
+                        arr.push({ data: "Cluster", title: "Cluster", visible: true });
+                        break;
+                    case "region":
+                        arr.push({ data: "Region", title: "Region", visible: true });
+                        break;
+                    case "dispatcher":
+                        arr.push({ data: "Dispatcher", title: "Dispatcher", visible: true });
+                        break;
+                    case "esq1_lq":
+                        arr.push({ data: "esq1_lq", title: "Person In-Charge (E-1 Long Queueing)", visible: false });
+                        break;
+                    case "esq1_oc":
+                        arr.push({ data: "esq1_oc", title: "Person In-Charge (E-1 Over CICO)", visible: false });
+                        break;
+                    case "esq1_ot":
+                        arr.push({ data: "esq1_ot", title: "Person In-Charge (E-1 Over Transit)", visible: false });
+                        break;
+                    case "esq2_lq":
+                        arr.push({ data: "esq2_lq", title: "Person In-Charge (E-2 Long Queueing)", visible: false });
+                        break;
+                    case "esq2_oc":
+                        arr.push({ data: "esq2_oc", title: "Person In-Charge (E-2 Over CICO)", visible: false });
+                        break;
+                    case "esq2_ot":
+                        arr.push({ data: "esq2_ot", title: "Person In-Charge (E-2 Over Transit)", visible: false });
+                        break;
+                    case "esq3_lq":
+                        arr.push({ data: "esq3_lq", title: "Person In-Charge (E-3 Long Queueing)", visible: false });
+                        break;
+                    case "esq3_oc":
+                        arr.push({ data: "esq3_oc", title: "Person In-Charge (E-3 Over CICO)", visible: false });
+                        break;
+                    case "esq3_ot":
+                        arr.push({ data: "esq3_ot", title: "Person In-Charge (E-3 Over Transit)", visible: false });
+                        break;
+                    case "action":
+                        arr.push({ data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true });
+                        break;
+                    default:
+                        break;
+                }
+            });
+
+            return arr;
+        },
         routes: [
             { data: "_id", title: "Route", visible: true },
             { data: "Origin", title: "Origin", visible: true },
@@ -483,6 +582,9 @@ const CUSTOM = {
                     case "site":
                         arr.push({ data: "Site", title: "Site", visible: true });
                         break;
+                    case "truckBase":
+                        arr.push({ data: "Site", title: "Truck Base", visible: true });
+                        break;
                     case "section_id":
                         arr.push({ data: "Section", title: "Section", visible: true });
                         break;
@@ -574,42 +676,58 @@ const CUSTOM = {
             { data: "Company", title: "Company", visible: true },
             { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
         ],
+        customers: [
+            { data: "_id", title: "Customer Number", visible: true },
+            { data: "Customer Name", title: "Customer Name", visible: true },
+            { data: "Service Model", title: "Service Model", visible: true },
+            { data: "Territory", title: "Territory", visible: true },
+            { data: "Region", title: "Region", visible: true },
+            { data: "DC", title: "DC", visible: true },
+            { data: "Mode of Transport", title: "Mode of Transport", visible: true },
+            { data: "Type", title: "Type", visible: true },
+            { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
+        ],
     },
     FORM: {
-        dispatch: function(){
-            return [
-                {id:"#shipment_number",key:"_id",inputType:"val",readonly:true,regex:/^\d{8}$/},
-                {id:"#ticket_number",key:"ticket_number",inputType:"val",remove:true,parent:".col-sm-4"},
-                {id:"#scheduled_date",key:"scheduled_date",inputType:"val",remove:true,parent:".col-sm-4"},
-                {id:"#shift_schedule",key:"shift_schedule",inputType:"val",remove:true,parent:".col-sm-4"},
-                {id:"#origin",key:"origin_id",inputType:"val",required:true},
-                {id:"#route",key:"route",inputType:"val",readonly:true,required:true,trigger:"change",dataType:"select"},
-                {id:"#trailer",key:"trailer",inputType:"val",trigger:"change",required:true,dataType:"select"}, // should be before vehilce
-                {id:"#vehicle",key:"vehicle_id",inputType:"val",trigger:"change",required:true,dataType:"select",typeOf:"number"},
-                {id:"#chassis",key:"chassis",inputType:"val",remove:true,parent:".col-sm-3"},
-                {id:"#driver_id",key:"driver_id",inputType:"val",remove:true,parent:".col-sm-12"},
-                {id:"#checker_id",key:"checker_id",inputType:"val",remove:true,parent:".col-sm-12"},
-                {id:"#helper_id",key:"helper_id",inputType:"val",remove:true,parent:".col-sm-12"},
-                {id:"#comments",key:"comments",inputType:"val"},
-                // {id:"#xxxxxxx",id:"xxxxxxx"},
-            ];
-        },
-        dispatch_mod2: function(){
-            return [
-                {id:"#shipment_number",key:"_id",inputType:"val",readonly:true,regex:/^\d{8}$/},
-                {id:"#ticket_number",key:"ticket_number",inputType:"val",required:true},
-                {id:"#scheduled_date",key:"scheduled_date",inputType:"val",required:true,dataType:"date"},
-                {id:"#shift_schedule",key:"shift_schedule",inputType:"val",trigger:"change",dataType:"select"},
-                {id:"#origin",key:"origin_id",inputType:"val",required:true},
-                {id:"#route",key:"route",inputType:"val",readonly:true,required:true,trigger:"change",dataType:"select"},
-                {id:"#trailer",key:"trailer",inputType:"val",trigger:"change",required:true,dataType:"select"}, // shohul be  before cehicle
-                {id:"#vehicle",key:"vehicle_id",inputType:"val",trigger:"change",required:true,dataType:"select",typeOf:"number"},
-                {id:"#chassis",key:"chassis",inputType:"val",trigger:"change",required:true,dataType:"select"},
-                {id:"#driver_id",key:"driver_id",inputType:"val",trigger:"change",required:true,dataType:"select"},
-                {id:"#checker_id",key:"checker_id",inputType:"val",trigger:"change",required:true,dataType:"select"},
-                {id:"#helper_id",key:"helper_id",inputType:"val",trigger:"change",required:true,dataType:"select"},
-                {id:"#comments",key:"comments",inputType:"val"},
-            ];
+        dispatch: {
+            coket1: function(){
+                return [
+                    {id:"#shipment_number",key:"_id",inputType:"val",readonly:true,regex:/^\d{8}$/},
+                    {id:"shipment_type",key:"shipment_type",inputType:"val",required:true,dataType:"radiobutton"},
+                    {id:"#route",key:"route",inputType:"val",readonly:true,required:true,trigger:"change",dataType:"select"},
+                    {id:"#trailer",key:"trailer",inputType:"val",trigger:"change",required:true,dataType:"select"}, // should be before vehilce
+                    {id:"#vehicle_id",key:"vehicle_id",inputType:"val",trigger:"change",required:true,dataType:"select",typeOf:"number"},
+                    {id:"#comments",key:"comments",inputType:"val"},
+                ];
+            },
+            coket2: function(){
+                return [
+                    {id:"#shipment_number",key:"_id",inputType:"val",readonly:true,regex:/^\d{8}$/},
+                    {id:"#origin_id",key:"origin_id",inputType:"val",required:true,trigger:"change",dataType:"select"},
+                    {id:"#customers",key:"customers",inputType:"val",required:true,trigger:"change",dataType:"select"},
+                    {id:"#vehicle_id",key:"vehicle_id",inputType:"val",trigger:"change",required:true,dataType:"select",typeOf:"number"},
+                    {id:"support_unit",key:"support_unit",inputType:"val",required:true,dataType:"radiobutton"},
+                    {id:"shipment_type",key:"shipment_type",inputType:"val",required:true,dataType:"radiobutton"},
+                    {id:"delivery_sequence",key:"delivery_sequence",inputType:"val",required:true,dataType:"radiobutton"},
+                    {id:"mdsd_usage",key:"mdsd_usage",inputType:"val",required:true,dataType:"radiobutton"},
+                    {id:"#comments",key:"comments",inputType:"val"},
+                ];
+            },
+            wilcon: function(){
+                return [
+                    {id:"#ticket_number",key:"ticket_number",inputType:"val",required:true},
+                    {id:"#scheduled_date",key:"scheduled_date",inputType:"val",required:true,dataType:"date"},
+                    {id:"#shift_schedule",key:"shift_schedule",inputType:"val",trigger:"change",dataType:"select"},
+                    {id:"#route",key:"route",inputType:"val",readonly:true,required:true,trigger:"change",dataType:"select"},
+                    {id:"#trailer",key:"trailer",inputType:"val",trigger:"change",required:true,dataType:"select"}, // shohul be  before cehicle
+                    {id:"#vehicle_id",key:"vehicle_id",inputType:"val",trigger:"change",required:true,dataType:"select",typeOf:"number"},
+                    {id:"#chassis",key:"chassis",inputType:"val",trigger:"change",required:true,dataType:"select"},
+                    {id:"#driver_id",key:"driver_id",inputType:"val",trigger:"change",required:true,dataType:"select"},
+                    {id:"#checker_id",key:"checker_id",inputType:"val",trigger:"change",required:true,dataType:"select"},
+                    {id:"#helper_id",key:"helper_id",inputType:"val",trigger:"change",required:true,dataType:"select"},
+                    {id:"#comments",key:"comments",inputType:"val"},
+                ];
+            }
         },
     },
     IMPORT_TEMPLATE: {
@@ -801,14 +919,12 @@ var USER = null,
     clientCustom = {};
 /************** END GLOBAL VARIABLES **************/
 
-var s = "m";
-var a = function(){};
-
-
 const WEBSOCKET = {
     sendUserInfo: function(){
         return new Promise((resolve,reject) => {
             if(USER && USER.username){
+                s = $(`#PAGE`).text() || "main";
+                
                 WEBSOCKET.resolve = resolve;
                 SOCKET.emit("userInfo",{
                     username: USER.username,
@@ -843,7 +959,9 @@ const WEBSOCKET = {
                     return value || defaultValue;
                 };
 
+                clientCustom.statusAllowedEditable = {};
                 clientCustom.allowExportTable = {};
+                clientCustom.requiredFields = {};
                 clientCustom.calendarView = {};
                 clientCustom.tableButtons = {};
                 clientCustom.columnOrder = {};
@@ -873,6 +991,7 @@ const WEBSOCKET = {
                 clientCustom.columns.vehicles = setValue("custom.vehicles.columns", []);
                 clientCustom.columns.dispatch = setValue("custom.dispatch.columns", {});
                 clientCustom.columns.clusters = setValue("custom.clusters.columns", []);
+                clientCustom.columns.geofences = setValue("custom.geofences.columns", []);
                 
                 // calendarView
                 clientCustom.calendarView.dashboard = setValue("custom.dashboard.calendarView", ["day"]);
@@ -884,7 +1003,7 @@ const WEBSOCKET = {
                 clientCustom.allowExportTable.notifications = setValue("custom.notifications.allowExportTable", false);
                 
                 // dispatch
-                clientCustom.statusWhenTruckEnteredOrigin = setValue("custom.dispatch.statusWhenTruckEnteredOrigin", "assigned");
+                // clientCustom.statusWhenTruckEnteredOrigin = setValue("custom.dispatch.statusWhenTruckEnteredOrigin", "assigned");
                 clientCustom.previousCheckIns = setValue("custom.dispatch.previousCheckIns", { status: [], roles: [] });
                 clientCustom.originDestinationSeparator = setValue("custom.dispatch.originDestinationSeparator", "");
                 clientCustom.editableTrailer = setValue("custom.dispatch.editableTrailer", false);
@@ -896,8 +1015,10 @@ const WEBSOCKET = {
                 // modalFields
                 clientCustom.modalFields.vehicles = setValue("custom.vehicles.modalFields", []);
                 clientCustom.modalFields.clusters = setValue("custom.clusters.modalFields", []);
+                clientCustom.modalFields.geofences = setValue("custom.geofences.modalFields", []);
 
                 // columnOrder
+                clientCustom.columnOrder.dispatch = setValue("custom.dispatch.columnOrder", [[ 0, "asc" ]]);
                 clientCustom.columnOrder.vehicles = setValue("custom.vehicles.columnOrder", [[ 0, "asc" ]]);
                 
                 // tableButtons
@@ -910,6 +1031,9 @@ const WEBSOCKET = {
                 clientCustom.rowButtons.dispatch = setValue("custom.dispatch.rowButtons", { buttons: [] });
                 clientCustom.rowButtons.clusters = setValue("custom.clusters.rowButtons", { buttons: [] });
                 clientCustom.rowButtons.vehicles = setValue("custom.vehicles.rowButtons", { buttons: [] });
+
+                // requiredFields
+                clientCustom.requiredFields.dispatch = setValue("custom.dispatch.create.requiredFields", []);
 
                 // status
                 clientCustom.status.all = setValue("custom.dispatch.status.all", []);

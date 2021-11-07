@@ -1,4 +1,11 @@
 const changelogList = {
+    "2.58.126": {
+        date: "November 07, 2021",
+        feature: ["[Feature][CokeT1] Pick-up/Normal feature",
+                  "[Feature][Coke][T1] Reports: Delay"],
+        improved: ["[Adjustment][Coke][T1] Delay Notifications: Management role has no action button",
+                   "[Update][Coke][T1] Reports: Trippage, Transit, CICO"],
+    },
     "2.57.126": {
         date: "November 05, 2021",
         fix: ["[Update][Coke][T1] CICO Report. Also there doesn't seem to be processing times with the old one."]

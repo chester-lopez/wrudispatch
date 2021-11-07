@@ -117,6 +117,7 @@ router.put('/:dbName/:username/:_id', (req,res,next)=>{
     const username = req.params.username;
     const userInput = req.body;
 
+    (userInput.trippage_target != null) ? userInput.trippage_target = Number(userInput.trippage_target) : null;
     (userInput.region_id && userInput.region_id .length > 0) ? userInput.region_id = db.getPrimaryKey(userInput.region_id) : null;
     (userInput.cluster_id && userInput.cluster_id .length > 0) ? userInput.cluster_id = db.getPrimaryKey(userInput.cluster_id) : null;
     db.getCollection(dbName,collection).findOneAndUpdate({_id: db.getPrimaryKey(_id)},{$set: userInput},{returnOriginal: false,upsert: true},(err,docs)=>{

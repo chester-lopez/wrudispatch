@@ -1,0 +1,12 @@
+Installation:
+npm install -g grunt ???
+npm install -g grunt-cli
+npm install grunt --save-dev
+npm install grunt-contrib-uglify-es --save
+npm install grunt-contrib-cssmin --save
+
+Allow script to run:
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
+
+Usage:
+grunt uglify:wd_app

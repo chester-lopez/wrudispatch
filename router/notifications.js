@@ -78,6 +78,83 @@ router.get('/:dbName/:username/all/:filter/:skip/:limit', (req,res,next)=>{
     });
 });
 
+
+// get all (Delay report)
+router.get('/:dbName/:username/dr/:filter/:skip/:limit', (req,res,next)=>{
+    const dbName = req.params.dbName;
+    const username = req.params.username;
+    const skip = Number(req.params.skip);
+    const limit = Number(req.params.limit);
+    const filter = JSON.parse(req.params.filter) || {};
+
+    defaultFilter.set(filter,{
+        condition: !filter.timestamp,
+        defaultValue: "date",
+        key: "timestamp"
+    }).then(_filter => {
+        const aggregate = [
+            {
+                $match: filter
+            },
+            { 
+                $lookup: {
+                    from: 'dispatch',
+                    localField: 'dispatch_id',
+                    foreignField: '_id',
+                    as: 'dispatchDetails',
+                }
+            },
+            {
+                $unwind: "$dispatchDetails"
+            },
+            {
+                $project: {
+                    "_id": 1,
+                    "escalation": 1,
+                    "delay_type": 1,
+                    "timelapse": 1,
+                    "site": 1,
+                    "timestamp": 1,
+                    "dispatch_id": 1,
+                    "dispatchDetails.vehicle_id": 1,
+                    "dispatchDetails.trailer": 1,
+                    "dispatchDetails.route": 1,
+                }
+            },
+            {
+                $group: {
+                    "_id": {
+                        dispatch_id: "$dispatch_id",
+                        escalation: "$escalation",
+                        delay_type: "$delay_type",
+                    },
+                    escalation: {$max:"$escalation"},
+                    delay_type: {$first: "$delay_type"},
+                    timelapse: {$last: "$timelapse"},
+                    site: {$first: "$site"},
+                    timestamp: {$max: "$timestamp"},
+                    dispatch_id: {$first: "$dispatch_id"},
+                    dispatchDetails: {$first: "$dispatchDetails"},
+                }
+            },
+        ],
+        query = (limit != 0) ? db.getCollection(dbName,collection).aggregate(aggregate).skip(skip).limit(limit) : 
+                                db.getCollection(dbName,collection).aggregate(aggregate);
+        query.toArray((err,docs)=>{
+            if(err) next(_ERROR_.INTERNAL_SERVER(err));
+            else {
+                if(docs.length < auth.LIMIT){
+                    console.log(`CLOSE {${collection}} @`,docs.length);
+                    query.close();
+                }
+                res.json(docs);
+            }
+        });
+    }).catch(error => {
+        next(_ERROR_.BAD_REQUEST(error));
+    });
+});
+
 // get all. de dashboard
 router.get('/:dbName/:username/all/de/:filter/:skip/:limit', (req,res,next)=>{
     const dbName = req.params.dbName;

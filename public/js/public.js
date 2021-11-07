@@ -1278,7 +1278,7 @@ const HISTORY = {
     }
 };
 var PAGE_SETUP = function(){
-    $("body").on('click', `#overlay #close`,function(e){
+    $("body").on('click', `#overlay #close,#overlay #cancel`,function(e){
         $(`.daterangepicker`).hide();
         $(this).parents("#overlay").remove();
     });
@@ -1407,6 +1407,8 @@ class ProgressBar{
         this._totalPerc = 0;
         this.count = count;
 
+        this._textInterval = null;
+
         // initialize loading bar
         $("div.tbl-progress-bar").html(this.html()).css({position:"absolute",left:"0px",bottom:"-6px",width:"160px",height:"20px"});
         // console.log($("div.tbl-progress-bar").html());
@@ -1426,6 +1428,9 @@ class ProgressBar{
 
     get totalPerc(){ return this._totalPerc; }
     set totalPerc(val){ this._totalPerc = val; }
+
+    get textInterval(){ return this._textInterval; }
+    set textInterval(val){ this._textInterval = val; }
 
     calculate(){
         // console.log(this.count);
@@ -1464,6 +1469,35 @@ class ProgressBar{
                 }
             }
         }
+    }
+    // same as move but just as text
+    increase( minCount, maxCount, el, speed ){
+        const _this = this;
+
+        // default value
+        minCount = minCount || 0;
+        (isFinite(minCount)) ? null : minCount = 0;
+
+        // make 100 maximum
+        maxCount = maxCount > 100 ? 100 : maxCount;
+        (isFinite(maxCount)) ? null : maxCount = 100;
+
+        clearInterval(_this.textInterval);
+
+        var i = minCount;
+        _this.textInterval = setInterval(function() {
+
+            if( i < 100){
+                i++;
+                // Display 'i' wherever you want to display it.
+                $(el).html(`<i class="la la-spinner la-spin mr-1"></i> ${i}%`);
+            }
+
+            if (i == maxCount) {
+                // Display a login box
+                clearInterval(_this.textInterval);
+            }
+        }, (speed||150));
     }
     reset(){
         this._minWidth = 1;

@@ -10,13 +10,7 @@ const storage = require("./utils/storage");
 const auth = require("./utils/auth");
 const changestream = require("./utils/changestream");
 const _ERROR_ = require("./utils/error");
-const rateLimit = require("express-rate-limit");
 const jwt = require("jsonwebtoken");
-
-const limiter = rateLimit({
-    windowMs: 5 * 60 * 1000, // 5 minutes
-    max: 100 // limit each IP to 100 requests per windowMs
-});
   
 // apply to all requests
 // app.use(limiter);
@@ -40,7 +34,7 @@ const setup = function(id,page,res,ENVIRONMENT,title){
 
     changestream.connect(null,id,ENVIRONMENT);
 
-    res.render(page, {ENVIRONMENT,title});
+    res.render(page, { ENVIRONMENT, title, page });
 };
 
 app.get('/',(req,res)=>{ res.render("404", {title: mTitle}); });
@@ -260,6 +254,9 @@ app.use(`/api/user_login_activity`, verifyToken, require("./router/user_login_ac
 app.use(`/api/user_action`, verifyToken, require("./router/user_action"));
 app.use(`/api/shift_schedule`, verifyToken, require("./router/shift_schedule"));
 app.use(`/api/calendar`, verifyToken, require("./router/calendar"));
+app.use(`/api/customers`, verifyToken, require("./router/customers"));
+
+// app.use(`/api/shipmentStatus`, verifyToken, require("./router/shipmentStatus"));
 
 app.use(`/api/remarks`, require("./router/remarks"));
 // app.use(`/api/dispatch_anon`, require("./router/dispatch_anonymous"));
