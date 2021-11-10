@@ -677,8 +677,8 @@ const CUSTOM = {
             { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
         ],
         customers: [
-            { data: "_id", title: "Customer Number", visible: true },
-            { data: "Customer Name", title: "Customer Name", visible: true },
+            { data: "Number", title: "Customer Number", visible: true },
+            { data: "Name", title: "Customer Name", visible: true },
             { data: "Service Model", title: "Service Model", visible: true },
             { data: "Territory", title: "Territory", visible: true },
             { data: "Region", title: "Region", visible: true },

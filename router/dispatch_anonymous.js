@@ -2558,10 +2558,10 @@ router.get('/test/insert/customers', (req,res,next)=>{
                 client.db(dbName).collection("geofences").find({}).toArray().then(gDocs => {
                     const finalData = [];
                     cData.forEach(val => {
-                        const regionId = (rDocs.find(x => x.region == val.code) || {})._id;
+                        const regionId = (rDocs.find(x => x.code == val.region) || {})._id;
                         const geofenceId = (gDocs.find(x => x.short_name == val.dc) || {})._id;
 
-                        if(val. number) {
+                        if(val.number) {
                             finalData.push({
                                 number: val.number,
                                 name: val.name,

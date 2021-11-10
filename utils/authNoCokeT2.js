@@ -670,68 +670,68 @@ var LIMIT = 200,
         
         // Coke T2
         user_t2: {
-            dashboard:{
-                read: "all",
-                create: "none",
-                update: "none",
-                delete: "none"
-            },
-            de_dashboard:{
-                read: "all",
-                create: "none",
-                update: "none",
-                delete: "none"
-            },
-            dispatch:{
-                read: "all",
-                create: "none",
-                update: "none",
-                delete: "none"
-            },
+            // dashboard:{
+            //     read: "all",
+            //     create: "none",
+            //     update: "none",
+            //     delete: "none"
+            // },
+            // de_dashboard:{
+            //     read: "all",
+            //     create: "none",
+            //     update: "none",
+            //     delete: "none"
+            // },
+            // dispatch:{
+            //     read: "all",
+            //     create: "none",
+            //     update: "none",
+            //     delete: "none"
+            // },
             reports:{
                 read: "all",
                 create: "none",
                 update: "none",
                 delete: "none"
             },
-            notifications:{
-                read: "all",
-                create: "none",
-                update: "none",
-                delete: "none"
-            },
+            // notifications:{
+            //     read: "all",
+            //     create: "none",
+            //     update: "none",
+            //     delete: "none"
+            // },
         },
         dispatcher_t2: {
-            dashboard:{
-                read: "all",
-                create: "none",
-                update: "none",
-                delete: "none"
-            },
-            de_dashboard:{
-                read: "all",
-                create: "none",
-                update: "none",
-                delete: "none"
-            },
-            dispatch:{
-                read: "all",
-                create: "self",
-                update: "self",
-                delete: "self"
-            },
+            // dashboard:{
+            //     read: "all",
+            //     create: "none",
+            //     update: "none",
+            //     delete: "none"
+            // },
+            // de_dashboard:{
+            //     read: "all",
+            //     create: "none",
+            //     update: "none",
+            //     delete: "none"
+            // },
+            // dispatch:{
+            //     read: "all",
+            //     create: "self",
+            //     update: "self",
+            //     delete: "self"
+            // },
             reports:{
                 read: "all",
                 create: "none",
                 update: "none",
                 delete: "none"
             },
-            notifications:{
-                read: "all",
-                create: "none",
-                update: "self",
-                delete: "none"
-            },
+            // notifications:{
+            //     read: "all",
+            //     create: "none",
+            //     update: "self",
+            //     delete: "none"
+            // },
         },
         management_t2: {
             otd_dashboard: {
@@ -740,42 +740,42 @@ var LIMIT = 200,
                 update: "none",
                 delete: "none"
             },
-            dashboard:{
-                read: "all",
-                create: "none",
-                update: "none",
-                delete: "none"
-            },
-            de_dashboard:{
-                read: "all",
-                create: "none",
-                update: "none",
-                delete: "none"
-            },
-            dispatch:{
-                read: "all",
-                create: "none",
-                update: "none",
-                delete: "none"
-            },
-            customers: {
-                read: "all",
-                create: "none",
-                update: "none",
-                delete: "none"
-            },
+            // dashboard:{
+            //     read: "all",
+            //     create: "none",
+            //     update: "none",
+            //     delete: "none"
+            // },
+            // de_dashboard:{
+            //     read: "all",
+            //     create: "none",
+            //     update: "none",
+            //     delete: "none"
+            // },
+            // dispatch:{
+            //     read: "all",
+            //     create: "none",
+            //     update: "none",
+            //     delete: "none"
+            // },
+            // customers: {
+            //     read: "all",
+            //     create: "none",
+            //     update: "none",
+            //     delete: "none"
+            // },
             reports:{
                 read: "all",
                 create: "none",
                 update: "none",
                 delete: "none"
             },
-            notifications:{
-                read: "all",
-                create: "none",
-                update: "none",
-                delete: "none"
-            },
+            // notifications:{
+            //     read: "all",
+            //     create: "none",
+            //     update: "none",
+            //     delete: "none"
+            // },
             users:{
                 read: "all",
                 create: "none",
@@ -788,30 +788,30 @@ var LIMIT = 200,
                 update: "none",
                 delete: "none",
             },
-            regions:{
-                read: "all",
-                create: "none",
-                update: "none",
-                delete: "none",
-            },
-            clusters:{
-                read: "all",
-                create: "none",
-                update: "none",
-                delete: "none",
-            },
-            geofences:{
-                read: "all",
-                create: "none",
-                update: "none",
-                delete: "none",
-            },
-            routes:{
-                read: "all",
-                create: "none",
-                update: "none",
-                delete: "none",
-            },
+            // regions:{
+            //     read: "all",
+            //     create: "none",
+            //     update: "none",
+            //     delete: "none",
+            // },
+            // clusters:{
+            //     read: "all",
+            //     create: "none",
+            //     update: "none",
+            //     delete: "none",
+            // },
+            // geofences:{
+            //     read: "all",
+            //     create: "none",
+            //     update: "none",
+            //     delete: "none",
+            // },
+            // routes:{
+            //     read: "all",
+            //     create: "none",
+            //     update: "none",
+            //     delete: "none",
+            // },
         },
         administrator_t2: {
             otd_dashboard: {
@@ -820,43 +820,43 @@ var LIMIT = 200,
                 update: "none",
                 delete: "none"
             },
-            dashboard:{
-                read: "all",
-                create: "none",
-                update: "none",
-                delete: "none"
-            },
-            de_dashboard:{
-                read: "all",
-                create: "none",
-                update: "none",
-                delete: "none"
-            },
-            dispatch:{
-                read: "all",
-                create: "all",
-                update: "all",
-                delete: "all",
-                // adminButton: "all"
-            },
-            customers: {
-                read: "all",
-                create: "all",
-                update: "all",
-                delete: "all"
-            },
+            // dashboard:{
+            //     read: "all",
+            //     create: "none",
+            //     update: "none",
+            //     delete: "none"
+            // },
+            // de_dashboard:{
+            //     read: "all",
+            //     create: "none",
+            //     update: "none",
+            //     delete: "none"
+            // },
+            // dispatch:{
+            //     read: "all",
+            //     create: "all",
+            //     update: "all",
+            //     delete: "all",
+            //     // adminButton: "all"
+            // },
+            // customers: {
+            //     read: "all",
+            //     create: "all",
+            //     update: "all",
+            //     delete: "all"
+            // },
             reports:{
                 read: "all",
                 create: "none",
                 update: "none",
                 delete: "none"
             },
-            notifications:{
-                read: "all",
-                create: "none",
-                update: "all",
-                delete: "none"
-            },
+            // notifications:{
+            //     read: "all",
+            //     create: "none",
+            //     update: "all",
+            //     delete: "none"
+            // },
             users:{
                 read: "all",
                 create: "all",
@@ -869,30 +869,30 @@ var LIMIT = 200,
                 update: "all",
                 delete: "none",
             },
-            regions:{
-                read: "all",
-                create: "all",
-                update: "all",
-                delete: "all",
-            },
-            clusters:{
-                read: "all",
-                create: "all",
-                update: "all",
-                delete: "all",
-            },
-            geofences:{
-                read: "all",
-                create: "none",
-                update: "all",
-                delete: "none",
-            },
-            routes:{
-                read: "all",
-                create: "all",
-                update: "all",
-                delete: "all",
-            },
+            // regions:{
+            //     read: "all",
+            //     create: "all",
+            //     update: "all",
+            //     delete: "all",
+            // },
+            // clusters:{
+            //     read: "all",
+            //     create: "all",
+            //     update: "all",
+            //     delete: "all",
+            // },
+            // geofences:{
+            //     read: "all",
+            //     create: "none",
+            //     update: "all",
+            //     delete: "none",
+            // },
+            // routes:{
+            //     read: "all",
+            //     create: "all",
+            //     update: "all",
+            //     delete: "all",
+            // },
         },
         developer_t2: {
             otd_dashboard: {
@@ -901,36 +901,42 @@ var LIMIT = 200,
                 update: "none",
                 delete: "none"
             },
-            dashboard:{
+            // dashboard:{
+            //     read: "all",
+            //     create: "none",
+            //     update: "none",
+            //     delete: "none"
+            // },
+            // de_dashboard:{
+            //     read: "all",
+            //     create: "none",
+            //     update: "none",
+            //     delete: "none"
+            // },
+            // dispatch:{
+            //     read: "all",
+            //     create: "all",
+            //     update: "all",
+            //     delete: "all",
+            //     // adminButton: "all"
+            // },
+            // dispatch_deleted:{
+            //     read: "all",
+            //     create: "all",
+            //     update: "all",
+            //     delete: "all",
+            //     // adminButton: "all"
+            // },
+            // customers: {
+            //     read: "all",
+            //     create: "all",
+            //     update: "all",
+            //     delete: "all"
+            // },
+            events_sn: {
                 read: "all",
                 create: "none",
                 update: "none",
-                delete: "none"
-            },
-            de_dashboard:{
-                read: "all",
-                create: "none",
-                update: "none",
-                delete: "none"
-            },
-            dispatch:{
-                read: "all",
-                create: "all",
-                update: "all",
-                delete: "all",
-                // adminButton: "all"
-            },
-            dispatch_deleted:{
-                read: "all",
-                create: "all",
-                update: "all",
-                delete: "all",
-                // adminButton: "all"
-            },
-            customers: {
-                read: "all",
-                create: "all",
-                update: "all",
                 delete: "all"
             },
             reports:{
@@ -939,18 +945,12 @@ var LIMIT = 200,
                 update: "none",
                 delete: "none"
             },
-            notifications:{
-                read: "all",
-                create: "none",
-                update: "all",
-                delete: "all"
-            },
-            events_sn: {
-                read: "all",
-                create: "none",
-                update: "none",
-                delete: "all"
-            },
+            // notifications:{
+            //     read: "all",
+            //     create: "none",
+            //     update: "all",
+            //     delete: "all"
+            // },
             users:{
                 read: "all",
                 create: "all",
@@ -963,30 +963,30 @@ var LIMIT = 200,
                 update: "all",
                 delete: "none",
             },
-            regions:{
-                read: "all",
-                create: "all",
-                update: "all",
-                delete: "all",
-            },
-            clusters:{
-                read: "all",
-                create: "all",
-                update: "all",
-                delete: "all",
-            },
-            geofences:{
-                read: "all",
-                create: "none",
-                update: "all",
-                delete: "all",
-            },
-            routes:{
-                read: "all",
-                create: "all",
-                update: "all",
-                delete: "all",
-            },
+            // regions:{
+            //     read: "all",
+            //     create: "all",
+            //     update: "all",
+            //     delete: "all",
+            // },
+            // clusters:{
+            //     read: "all",
+            //     create: "all",
+            //     update: "all",
+            //     delete: "all",
+            // },
+            // geofences:{
+            //     read: "all",
+            //     create: "none",
+            //     update: "all",
+            //     delete: "all",
+            // },
+            // routes:{
+            //     read: "all",
+            //     create: "all",
+            //     update: "all",
+            //     delete: "all",
+            // },
             all_events: {
                 read: "all",
                 create: "none",
@@ -1068,20 +1068,20 @@ var LIMIT = 200,
             ggsURL: `coca-cola.server93.com`,
             type: 1,
             tabCloseAutoLogout: true,
-            loginOptions: {
-                buttons: [
-                    {
-                        path: "CokeT1",
-                        logo: "../public/img/coket1-dashboard.png",
-                        active: true
-                    },
-                    {
-                        path: "CokeT2",
-                        logo: "../public/img/coket2-dashboard.png",
-                        active: false
-                    },
-                ]
-            },
+            // loginOptions: {
+            //     buttons: [
+            //         {
+            //             path: "CokeT1",
+            //             logo: "../public/img/coket1-dashboard.png",
+            //             active: true
+            //         },
+            //         {
+            //             path: "CokeT2",
+            //             logo: "../public/img/coket2-dashboard.png",
+            //             active: false
+            //         },
+            //     ]
+            // },
             loadInBackground: ["VEHICLES","REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","USERS","VEHICLES_HISTORY","NOTIFICATIONS","SESSIONS"],
             allowRolesToViewAs: {
                 developer: ["developer","administrator","management","dispatcher","user"],
@@ -1325,20 +1325,20 @@ var LIMIT = 200,
             allowDownloadFromOtherDB: "CokeT1",
             type: 2,
             tabCloseAutoLogout: true,
-            loginOptions: {
-                buttons: [
-                    {
-                        path: "CokeT1",
-                        logo: "../public/img/coket1-dashboard.png",
-                        active: false
-                    },
-                    {
-                        path: "CokeT2",
-                        logo: "../public/img/coket2-dashboard.png",
-                        active: true
-                    },
-                ]
-            },
+            // loginOptions: {
+            //     buttons: [
+            //         {
+            //             path: "CokeT1",
+            //             logo: "../public/img/coket1-dashboard.png",
+            //             active: false
+            //         },
+            //         {
+            //             path: "CokeT2",
+            //             logo: "../public/img/coket2-dashboard.png",
+            //             active: true
+            //         },
+            //     ]
+            // },
             loadInBackground: ["VEHICLES","REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","USERS","VEHICLES_HISTORY","NOTIFICATIONS","SESSIONS","CUSTOMERS"],
             allowRolesToViewAs: {
                 developer: ["developer","administrator","management","dispatcher","user"],

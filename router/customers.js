@@ -9,13 +9,22 @@ const _ERROR_ = require("../utils/error");
 
 const collection = "customers";
 
-// get all
+// get all keyword (pagination)
 router.get('/:dbName/:username/all/:filter/:skip/:limit', (req,res,next)=>{
     const dbName = req.params.dbName;
     const filter = JSON.parse(req.params.filter);
     const skip = Number(req.params.skip);
     const limit = Number(req.params.limit);
-    const query = db.getCollection(dbName,collection).find(filter).skip(skip).limit(limit);
+
+    const term = filter.term;
+    const regex = new RegExp('.*'+term+'.*',"i");
+    
+    const query = db.getCollection(dbName,collection).find({
+        $or: [
+            {  name: regex },
+            {  number: regex },
+        ]
+    }).skip(skip).limit(limit);
 
     query.toArray((err,docs)=>{
         if(err) next(_ERROR_.INTERNAL_SERVER(err));
@@ -29,16 +38,47 @@ router.get('/:dbName/:username/all/:filter/:skip/:limit', (req,res,next)=>{
     });
 });
 
-// get count
+// count keyword (pagination)
 router.get('/:dbName/:username/all/:filter/count', (req,res,next)=>{
     const dbName = req.params.dbName;
-    const username = req.params.username;
-    const filter = JSON.parse(req.params.filter) || {};
+    const filter = JSON.parse(req.params.filter);
+    const term = filter.term;
 
-    db.getCollection(dbName,collection).find(filter).count({}, function(err, numOfDocs){
+    const regex = new RegExp('.*'+term+'.*',"i");
+
+    db.getCollection(dbName,collection).find({
+        $or: [
+            {  name: regex },
+            {  number: regex },
+        ]
+    }).count({}, function(err, numOfDocs){
         if(err) next(_ERROR_.INTERNAL_SERVER(err));
         
         res.json(numOfDocs);
+    });
+});
+
+// get all keyword (with LIMIT)
+router.get('/:dbName/:username/keyword/:term', (req,res,next)=>{
+    const dbName = req.params.dbName;
+    const term = req.params.term;
+
+    const regex = new RegExp('.*'+term+'.*',"i");
+
+    db.getCollection(dbName,collection).find({
+        $or: [
+            {  name: regex },
+            {  number: regex },
+        ]
+    }).limit(300).toArray((err,docs)=>{
+        if(err) next(_ERROR_.INTERNAL_SERVER(err));
+        else {
+            if(docs.length < auth.LIMIT){
+                console.log(`CLOSE {${collection}} @`,docs.length);
+                query.close();
+            }
+            res.json(docs);
+        }
     });
 });
 
