@@ -18671,8 +18671,8 @@ var TABLE = {
                 // }
                 if(val == "create"){ // create-admin
                     var icon = (loadView.includes(val)) ? "la-spin la-spinner" : "la-plus";
-                    var title = (CLIENT.id != "wilcon") ? "Create New Record (v2.0)" : "Create New Record";
-                    var text = (CLIENT.id != "wilcon") ? "Create v2.0" : "Create";
+                    var title = (CLIENT.id != "wilcon") ? "Create New Record" : "Create New Record";
+                    var text = (CLIENT.id != "wilcon") ? "Create" : "Create";
                     dt_buttons.push({
                         text: `<i class="la ${icon}" data-toggle="tooltip" title="${title}"></i> ${text}`,
                         className: `create-btn ${className} ${condClass}`,
