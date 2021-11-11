@@ -18671,9 +18671,8 @@ var TABLE = {
                 // }
                 if(val == "create"){ // create-admin
                     var icon = (loadView.includes(val)) ? "la-spin la-spinner" : "la-plus";
-                    // TODO: Remove conditions for title and text.
-                    var title = (CLIENT.id != "wilcon") ? "Create New Record" : "Create New Record";
-                    var text = (CLIENT.id != "wilcon") ? "Create" : "Create";
+                    var title = "Create New Record";
+                    var text = "Create";
                     dt_buttons.push({
                         text: `<i class="la ${icon}" data-toggle="tooltip" title="${title}"></i> ${text}`,
                         className: `create-btn ${className} ${condClass}`,
