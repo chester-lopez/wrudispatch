@@ -56,7 +56,7 @@ function matcher(query, data,opt) {
         else return null;
     }
 };
-function formatCustom(state) {
+function templateResult(state) {
     return $(state.element).attr('data-subtext') ? 
             $('<div><b>' + state.text + '</b><div class="text-muted">'
             + ($(state.element).attr('data-subtext')||"")
@@ -64,13 +64,22 @@ function formatCustom(state) {
             : 
             $('<div>' + state.text + '</div>');
 };
-function formatCustomGrayed(state) {
-    var condition = false;
-    Object.keys(vehiclePersonnelCalendarOptions).forEach(key => {
-        (state.text.indexOf(vehiclePersonnelCalendarOptions[key].label) > -1) ? condition = true : null;
-    });
-    var _class_ = condition ? "text-muted" : "";
-    return $(`<div class="${_class_}">${state.text}</div>`);
+function formatResult(result, container, query, escapeMarkup) {
+    var markup=[];
+    window.Select2.util.markMatch(result.text, query.term, markup, escapeMarkup);
+    if (result.isNew) {
+        return markup.join("");
+    } else {
+        return '<span class="post-tag">'+markup.join("")+'</span><span class="item-multiplier">×&nbsp;'+result.count+'</span>';
+    }
+};
+function templateResult(state) {
+    return $(state.element).attr('data-subtext') ? 
+            $('<div><b>' + state.text + '</b><div class="text-muted">'
+            + ($(state.element).attr('data-subtext')||"")
+            + '</div></div>') 
+            : 
+            $('<div>' + state.text + '</div>');
 };
 function getSelect2Options(){
     /******** CUSTOMERS ********/
@@ -1081,12 +1090,14 @@ class Table {
         this.filterType = x.filterType || "server";
         
         this.dataTableOptions = {
-            language: { search: '', searchPlaceholder: "Search", sLengthMenu: "_MENU_" },
+            language: { search: '', searchPlaceholder: "Search table", sLengthMenu: "_MENU_" },
             responsive: true
         };
         this.dataTableOptions = $.extend(this.dataTableOptions,x.dataTableOptions);
 
         this._skip = 0;
+
+        this._loadId = null;
     }
 
     get skip(){ return this._skip; }
@@ -1103,6 +1114,9 @@ class Table {
 
     get progressBar(){ return this._progressBar; }
     set progressBar(val){ this._progressBar = val; }
+
+    get loadId(){ return this._loadId; }
+    set loadId(val){ this._loadId = val; }
 
     setButtons(x){ 
         const self = this;
@@ -1364,51 +1378,60 @@ class Table {
                     console.log("self.filter",self.filter);
                 }
             }
+            if(val.dataType == "string"){
+                self.filter[val.field] = val.value;
+            }
         });
     }
-    retrieveData(length){
+    retrieveData(length,loadId){
         var self = this;
 
         self.tableFilter();
 
-        if(length == null && self.progressBar){
-            self.progressBar.reset();
-        }
-        if(length == null || length == LIMIT){
-            var finalFilter = (self.filterType == 'basic') ? {} : self.filter;
-            var filterExtend = (self.filter)?`/${JSON.stringify(finalFilter)}`:``;
+        console.log("loadId",loadId,self.loadId);
 
-            $.ajax({
-                url: `/api/${self.url}${filterExtend}/${self.skip}/${LIMIT}`,
-                method: "get",
-                timeout: 90000, // 1 minute and 30 seconds
-                headers: {
-                    "Authorization": SESSION_TOKEN
-                },
-                async: true
-            }).done(function (docs) {
-                console.log(`${self.goto}:`,docs);
-                if(!docs.error){
-                    length = docs.length;
-
-                    self.display();
-
-                    if(docs.error){
-                        toastr.error(docs.error.message);
-                    } else {
-                        self.skip += length;
-                        
-                        if(self.modal || [self.goto].includes(PAGE.GET())){
-                            if (typeof self.populateRows === 'function') { self.populateRows(docs); }
-                            ($(self.id).length > 0) ? self.retrieveData(length) : null;
+        if(!loadId || loadId == self.loadId){
+            if(length == null && self.progressBar){
+                self.progressBar.reset();
+            }
+            if(length == null || length == LIMIT){
+                var finalFilter = (self.filterType == 'basic') ? {} : self.filter;
+                var filterExtend = (self.filter)?`/${JSON.stringify(finalFilter)}`:``;
+    
+                $.ajax({
+                    url: `/api/${self.url}${filterExtend}/${self.skip}/${LIMIT}`,
+                    method: "get",
+                    timeout: 90000, // 1 minute and 30 seconds
+                    headers: {
+                        "Authorization": SESSION_TOKEN
+                    },
+                    async: true
+                }).done(function (docs) {
+                    console.log(`${self.goto}:`,docs);
+                    if(!docs.error){
+                        length = docs.length;
+    
+                        self.display();
+    
+                        if(docs.error){
+                            toastr.error(docs.error.message);
+                        } else {
+                            self.skip += length;
+                            
+                            if(!loadId || loadId == self.loadId){
+                                if(self.modal || [self.goto].includes(PAGE.GET())){
+                                    if (typeof self.populateRows === 'function') { self.populateRows(docs); }
+                                    ($(self.id).length > 0) ? self.retrieveData(length,loadId) : null;
+                                }
+                            }
                         }
+                        TABLE.FINISH_LOADING.START_CHECK();
                     }
-                    TABLE.FINISH_LOADING.START_CHECK();
-                }
-            });
-        } else {
-            self.hideProgressBar();
-            self.display();
+                });
+            } else {
+                self.hideProgressBar();
+                self.display();
+            }
         }
     }
     display(){
@@ -1422,6 +1445,8 @@ class Table {
         $(`.dt-button .la-refresh`).parents(".dt-button").removeClass("disabled");
         if(FILTER.STATUS == "reset") $(`.cb-container .la-refresh`).removeClass("la-spin");
         else $(`.cb-container .la-refresh`).removeClass("la-spin disabled");
+
+        $('#search,#searchTerm').attr("disabled",false).html(`<i class="la la-search m-0"></i>`);
 
         console.log("self.filterDataExtend",self.filterDataExtend);
         if(self.filterDataExtend !== true) {
@@ -1515,7 +1540,7 @@ class Table {
                 $(".dataTables_empty").text("Loading...");
             }
             
-            self.retrieveData();
+            self.retrieveData(undefined,self.loadId);
         });
     }
     preLoadData(){
@@ -4715,8 +4740,10 @@ var DISPATCH = {
             $(`#_status`).select2();
 
             /******** TABLE CHECK ********/
+            //,"CUSTOMERS"
+            // ,"CUSTOMERS"
             TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
-                isFinishedLoading(["REGIONS","CLUSTERS","GEOFENCES","VEHICLES","TRAILERS","CHASSIS","ROUTES","USERS","VEHICLE_PERSONNEL","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE","CUSTOMERS"], _new_, function(){
+                isFinishedLoading(["REGIONS","CLUSTERS","GEOFENCES","VEHICLES","TRAILERS","CHASSIS","ROUTES","USERS","VEHICLE_PERSONNEL","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"], _new_, function(){
                     if(dt){
                         _new_ = false;
                         
@@ -4728,7 +4755,7 @@ var DISPATCH = {
                     }
                     
                 });
-                isFinishedLoading(["GEOFENCES","VEHICLES","TRAILERS","CHASSIS","ROUTES","VEHICLE_PERSONNEL","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE","CUSTOMERS"], true, function(){
+                isFinishedLoading(["GEOFENCES","VEHICLES","TRAILERS","CHASSIS","ROUTES","VEHICLE_PERSONNEL","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"], true, function(){
                     TABLE.FINISH_LOADING.UPDATE();
                 });
                 isFinishedLoading(["REGIONS","CLUSTERS"], _new2_, function(){
@@ -5037,7 +5064,7 @@ var DISPATCH = {
                 /******** CHASSIS ********/
                 $(`#chassis`).html(G_SELECT2["form-chassis"]).select2({
                     matcher: matcher,
-                    templateResult: formatCustom
+                    templateResult: templateResult
                 }).val("").on("select2:select", function() {
                     // checkSelectedVehicleWithinGeofence(7);
                 }).change(function(){
@@ -5057,7 +5084,7 @@ var DISPATCH = {
                 var originalVehicle;
                 $(`#vehicle_id`).html(vehiclesOptions).select2({
                     matcher: matcher,
-                    templateResult: formatCustom
+                    templateResult: templateResult
                 }).val("").on("select2:select", function() {
                     // checkSelectedVehicleWithinGeofence(7);
                 }).change(function(){
@@ -5114,11 +5141,67 @@ var DISPATCH = {
 
 
                 /******** CUSTOMERS ********/
-                $('#customers').html(G_SELECT2['form-customers']).select2({
+                // $('#customers').html(G_SELECT2['form-customers']).select2({
+                //     tokenSeparators: [","],
+                //     sorter: data => data.sort((a, b) => a.text.localeCompare(b.text)),
+                //     matcher: matcher,
+                //     templateResult: templateResult
+                // });
+                $("#customers").select2({
+                    minimumInputLength: 3,
                     tokenSeparators: [","],
+                    templateResult: (state) => {
+                        var html = $('<span></span>');
+                        if(state.number) {
+                            html = $(`<div>
+                                        <b>${state.name}</b>
+                                        <div class="text-muted">${state.number}</div>
+                                        <div class="text-muted">${state.region}${state.regionCode ? ` (${state.regionCode})` : ''}</div>
+                                        <div class="text-muted">${state.dc}</div>
+                                    </div>`)
+                        }
+                        if(state.loading){
+                            html = $('<span>' + state.text + '</span>');
+                        }
+                        return html;
+                    },
                     sorter: data => data.sort((a, b) => a.text.localeCompare(b.text)),
-                    matcher: matcher,
-                    templateResult: formatCustom
+                    ajax: {
+                        url: function (params) {
+                            return `api/customers/${CLIENT.id}/${USER.username}/keyword/` + params.term;
+                        },
+                        dataType: 'json',
+                        type: "GET",
+                        quietMillis: 1000,
+                        headers: {
+                            "Authorization" : SESSION_TOKEN,
+                            "Content-Type" : "application/json",
+                        },
+                        processResults: function (data, params) {
+                            console.log("data",data);
+                            return {
+                                results: $.map(data, function (item) {
+                                    const term = params.term.toLowerCase();
+                                    const nameHighlighted = item.name.toLowerCase().replace(term,`<u>${term}</u>`);
+                                    const _idHighlighted = item.number.toLowerCase().replace(term,`<u>${term}</u>`);
+                                    const region = (getRegion(item.region_id)||{}).name || "Unknown Region";
+                                    const regionCode = (getRegion(item.region_id)||{}).code || "";
+                                    const dc = (getGeofence(item.dc_id)||{}).short_name || "Unknown DC";
+
+                                    return {
+                                        name: nameHighlighted.toUpperCase(),
+                                        number: _idHighlighted.toUpperCase(),
+                                        region: region,
+                                        regionCode: regionCode,
+                                        dc: dc,
+
+                                        text: item.name,
+                                        id: item._id
+                                    }
+                                })
+                            };
+                        },
+                    }
                 });
                 /******** END CUSTOMERS ********/
 
@@ -5261,7 +5344,7 @@ var DISPATCH = {
                 /******** ROUTES ********/
                 $(`#route`).html(routesOptions).select2({
                     matcher: matcher,
-                    templateResult: formatCustom
+                    templateResult: templateResult
                 }).val("").on("select2:select", function() {
                     // checkSelectedVehicleWithinGeofence(7);
                 }).change(function(){
@@ -10029,6 +10112,7 @@ var REPORTS = {
                                 <td style="${tblBodyStyle}">${data.postedByWithName}</td>
                                 <td style="${tblBodyStyle}">${datetime(data.posting_date).date}</td>
                                 <td style="${tblBodyStyle}">${datetime(data.posting_date).time}</td>
+                                <td style="${tblBodyStyle}">${data.shipment_type}</td>
                                 <td style="${tblBodyStyle}">${data.statusText}</td>
                                 <td style="${tblBodyStyle}">${$(`<span>${data.late_entry}</span>`).text()}</td>
                                 <td style="${tblBodyStyle}">${data.comments}</td>
@@ -10079,6 +10163,7 @@ var REPORTS = {
                                 <td style="${tblHeaderStyle}"><b>Posted By</b></td>
                                 <td style="${tblHeaderStyle}"><b>Posting Date</b></td>
                                 <td style="${tblHeaderStyle}"><b>Posting Time</b></td>
+                                <td style="${tblHeaderStyle}"><b>Shipment Type</b></td>
                                 <td style="${tblHeaderStyle}"><b>Status</b></td>
                                 <td style="${tblHeaderStyle}"><b>Late Entry</b></td>
                                 <td style="${tblHeaderStyle}"><b>Comments</b></td>
@@ -14271,7 +14356,7 @@ var LOCATIONS = {
                         multiple: true,
                         tokenSeparators: [',', ', '],
                         matcher,
-                        templateResult: formatCustom
+                        templateResult: templateResult
                     });
                     $("#trippage_target").on('keypress', function (e) {
                         return e.metaKey || e.which <= 0 || e.which == 8 || e.which == 46 || /[0-9]/.test(String.fromCharCode(e.which));
@@ -14291,7 +14376,7 @@ var LOCATIONS = {
                                     multiple: true,
                                     tokenSeparators: [',', ', '],
                                     matcher,
-                                    templateResult: formatCustom
+                                    templateResult: templateResult
                                 });
                             }
                         }
@@ -14877,7 +14962,7 @@ var VEHICLES = {
     
                             $(`#Trailer`).html(G_SELECT2["form-trailers"]).select2({
                                 matcher: matcher,
-                                templateResult: formatCustom
+                                templateResult: templateResult
                             }).val(obj["Trailer"] || "").trigger("change");
                             
                             $(`#section_id`).html(G_SELECT2["form-vehicles_section"]).select2().val(obj.section_id || "").trigger("change");
@@ -15293,7 +15378,7 @@ var VEHICLE_PERSONNEL = {
                 
                 $(`#vehicle_id`).html(G_SELECT2["form-vehicles"]).select2({
                     matcher: matcher,
-                    templateResult: formatCustom
+                    templateResult: templateResult
                 }).val(x.obj.vehicle_id || "").trigger("change");
 
                 $(`#section_id`).html(G_SELECT2["form-vehicle_personnel_section"]).select2().val(x.obj.section_id || "").trigger("change");
@@ -16205,7 +16290,7 @@ var CHASSIS = {
                 
                 $(`#vehicle_id`).html(G_SELECT2["form-vehicles"]).select2({
                     matcher: matcher,
-                    templateResult: formatCustom
+                    templateResult: templateResult
                 }).val(x.obj.vehicle_id || "").trigger("change");
 
                 $(`#type_id`).html(G_SELECT2["form-chassis_type"]).select2().val(x.obj.type_id || "").trigger("change");
@@ -16506,10 +16591,48 @@ const CUSTOMERS = {
 
                         table.rowListeners(_row,data._id);
                     },
-                    dom: 'lBfr<"tbl-options">ti<"tbl-progress-bar">p',
+                    dom: 'lBr<"tbl-options">ti<"tbl-progress-bar">p',
                 },
                 initializeCallback: function(){
                     TABLE.WATCH({urlPath,rowData:table.addRow,options:function(){TABLE.FINISH_LOADING.START_CHECK();}});
+
+                    // add tbl options elements (1-9 and A-Z)
+                    $('.tbl-options').css({
+                        "width": "235px",
+                        "float": "right",
+                    });
+
+                    $('.tbl-options').html(`
+                        <div>
+                            <div style="width: 100%;" class="input-group">
+                                <input type="text" id="searchTerm" class="form-control" style="width: 100%;height: 31px;" placeholder="Search by Number or Name">
+                                <span class="input-group-btn">
+                                    <button id="search" type="button" style="padding-left: 10px;padding-right: 10px;" class="btn btn-default"><i class="la la-search m-0"></i></button>
+                                </span>
+                            </div>
+                        </div`);
+
+                    function search(){
+                        const term = $('#searchTerm').val();
+
+                        if(term._trim() != ""){
+                            $('#search,#searchTerm').attr("disabled",true).html(`<i class="la la-spin la-spinner m-0"></i>`).blur();
+
+                            table.customFilter = [{
+                                field: "term",
+                                value: term,
+                                dataType: "string",
+                            }];
+                            table.loadId = GENERATE.RANDOM(12);
+                            table.countRows();
+                        }
+                    }
+                    $('#search').click(search);
+                    $('#searchTerm').on('keypress', function (e) {
+                        if(e.which === 13){
+                            search();
+                        }
+                    });
                 }
             });
         table.setButtons({
@@ -16537,7 +16660,8 @@ const CUSTOMERS = {
             return TABLE.COL_ROW(null,{
                 '_id': obj._id,
                 '_row':  obj._row,
-                'Customer Name': obj.name || "-",
+                'Number': obj.number || "-",
+                'Name': obj.name || "-",
                 'Service Model': obj.service_model || "-",
                 'Territory': obj.territory || "-",
                 'Region': region || "-",
@@ -16606,6 +16730,8 @@ const CUSTOMERS = {
             });
         };
 
+        table.filterDataExtend = true;
+
         var initializeModal = function(x={}){
             // LOAD SELECT 2 OPTIONS FOR: VEHICLES
             getSelect2Options();
@@ -16615,7 +16741,7 @@ const CUSTOMERS = {
                 modalElements = function(obj){
                     var readonly = x.method == "PUT";
                     return [
-                        {title:"Customer Number",id:"number",type:"text",required:true,value:obj._id,readonly,sub_title:"Once saved, customer number cannot be edited."},
+                        {title:"Customer Number",id:"number",type:"text",required:true,value:obj.number,readonly},
                         {title:"Customer Name",id:"name",type:"text",value:obj.name,required:true,},
                         {title:"Service Model",id:"service_model",type:"text",value:obj.service_model,required:true,},
                         {title:"Territory",id:"territory",type:"text",value:obj.territory,required:true,},
@@ -16644,7 +16770,7 @@ const CUSTOMERS = {
 
         /******** TABLE CHECK ********/
         TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
-            isFinishedLoading(["VEHICLES"], _new_, function(){
+            isFinishedLoading(["REGIONS"], _new_, function(){
                 _new_ = false;
                 table.initialize();
                 table.populateRows([]);
@@ -17325,7 +17451,7 @@ var PAGE = {
                 display: function() { return views.customers(); },
                 function: function() { CUSTOMERS.init() },
                 buttons: {
-                    table:["create","refresh","filter"],
+                    table:["create","refresh"],
                     row:["edit","delete"]
                 }
             },
@@ -20422,18 +20548,7 @@ const views = new function(){
         },
         customers: function(){
             return `<div class="page-box row">
-                        ${SLIDER.FILTER(`<div class="mt-2">
-                                            <div style="font-size: 10px;">Region:</div>
-                                            <select id="_region_id" class="form-control">
-                                                <option value="All">All</option>
-                                            </select>
-                                        </div>
-                                        <div class="mt-2">
-                                            <div style="font-size: 10px;">Cluster:</div>
-                                            <select id="_cluster_id" class="form-control">
-                                                <option value="All">All</option>
-                                            </select>
-                                        </div>`)}
+                        ${ALERT.HTML.INFO('Please search by filtering the Customer Number or Name from the search box below.','ml-3 mr-3 mt-2 mb-1')}
                         <div class="col-sm-12 mt-2">
                             <div class="table-wrapper">
                                 <table id="tbl-customers" class="table table-hover table-bordered">
