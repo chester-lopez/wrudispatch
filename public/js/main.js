@@ -459,9 +459,8 @@ class Dispatch {
         const customers = [];
         if(obj.customers){
             obj.customers.forEach((val,i) => {
-                const customer = getCustomer(val) || {};
-                customersHTML += `<div style="font-weight: normal;">${i+1}. ${customer.name||val||"-"}</div>`;
-                customers.push(customer.name||val||"-");
+                customersHTML += `<div style="font-weight: normal;">${i+1}. ${val.number||"-"} - ${val.name||"-"}</div>`;
+                customers.push(val.name||"-");
             });
         }
 
@@ -507,7 +506,7 @@ class Dispatch {
         this.mdsd_usage = obj.mdsd_usage || "-";
         this.customers = customers.join(", ");
         
-        this.dispatched_datetime = DATETIME.FORMAT(getDateTime("dispatched",obj));
+        // this.dispatched_datetime = DATETIME.FORMAT(getDateTime("dispatched",obj));
         this.onDelivery_datetime = DATETIME.FORMAT(getDateTime("onDelivery",obj));
         this.entered_datetime = DATETIME.FORMAT(getDateTime(null,obj));
         this.queueing_datetime = DATETIME.FORMAT(getDateTime("queueingAtOrigin",obj));
@@ -938,7 +937,7 @@ class Dispatch {
 
                                                 ${this.tbl().empty} ${this.tbl().empty}
 
-                                                ${this.tbl().getTr("Check In Date & Time",this.dispatched_datetime)} ${this.tbl().empty}
+                                                ${this.tbl().getTr("Check In Date & Time",this.entered_datetime)} ${this.tbl().empty}
                                                 ${this.tbl().getTr("Check Out Date & Time",this.onDelivery_datetime)} ${this.tbl().empty}
                                                 ${this.tbl().getTr("Completion Date & Time",this.complete_datetime)}
 
@@ -3657,7 +3656,7 @@ var DISPATCH = {
     detectStatus: function(body){
         const CLIENT_OPTIONS = {
             "coket1": { ggsURL: "coca-cola.server93.com",    appId: 9,     scheduledEntry: false,     allowTempStatus: true,     allowIncompleteUpdateStatus: true,     ignoreDestinationEvents: false,     statusOption: { default: "assigned", insideOrigin: "assigned",     insideOriginEvent: "entered_origin",    enRouteToDestination: "in_transit" }    },
-            "coket2": { ggsURL: "coca-cola.server93.com",    appId: 4,     scheduledEntry: false,     allowTempStatus: false,    allowIncompleteUpdateStatus: false,    ignoreDestinationEvents: true,      statusOption: { default: "assigned", insideOrigin: "dispatched",   insideOriginEvent: "dispatched",        enRouteToDestination: "onDelivery" }    },
+            "coket2": { ggsURL: "coca-cola.server93.com",    appId: 4,     scheduledEntry: false,     allowTempStatus: false,    allowIncompleteUpdateStatus: false,    ignoreDestinationEvents: true,      statusOption: { default: "assigned", insideOrigin: "assigned",     insideOriginEvent: "entered_origin",    enRouteToDestination: "onDelivery" }    },
             "wilcon": { ggsURL: "wru.server93.com",          appId: 427,   scheduledEntry: true,      allowTempStatus: true,     allowIncompleteUpdateStatus: false,    ignoreDestinationEvents: false,     statusOption: { default: "assigned", insideOrigin: "assigned",     insideOriginEvent: "entered_origin",    enRouteToDestination: "in_transit" }    },
         };
 
@@ -7222,6 +7221,14 @@ var REPORTS = {
             name: 'Actual CICO',
             description: 'Average of actual duration of stay inside the origin site'
         },
+        arrivalDate: {
+            name: 'Arrival Date',
+            description: 'Actual date of return to the origin site after delivery'
+        },
+        arrivalTime: {
+            name: 'Arrival Time',
+            description: 'Actual time of return to the origin site after delivery'
+        },
 
         baseSite: {
             name: 'Base Site',
@@ -7240,13 +7247,17 @@ var REPORTS = {
             name: 'CICO Target',
             description: 'Maximum duration of stay inside the origin site'
         },
-        cicoWithCapping: {
+        cicoWithCapping: { // 5 hours
             name: 'CICO with Capping',
             description: 'Duration of stay inside the origin site that exceeded to 5 hrs will automatically rolled back to 5 hrs'
         },
         cicoWithCappingAve: {
             name: 'CICO with Capping',
             description: 'Average duration of stay inside the origin site that exceeded to 5 hrs will automatically rolled back to 5 hrs'
+        },
+        cicoWithCapping_1: { // 3 hours
+            name: 'CICO with Capping',
+            description: 'Duration of stay inside the origin site that exceeded to 3 hrs will automatically rolled back to 3 hrs'
         },
         cicoVariance: {
             name: 'CICO Variance',
@@ -7276,10 +7287,34 @@ var REPORTS = {
             name: 'Completion Time',
             description: 'Actual time of arrival to the destination site'
         },
+        comments: {
+            name: 'Comments',
+            description: 'Remarks concerning with the shipment'
+        },
+        customerNo: (x) => {
+            return {
+                name: 'Customer No. (' + x + ')',
+                description: 'Identification or reference number of a Coke customer'
+            };
+        },
+        customerName: (x) => {
+            return {
+                name: 'Customer Name (' + x + ')',
+                description: 'Word that identifies the recipient of ordered Coke products'
+            };
+        },
 
         delay: {
             name: 'Delay',
             description: 'Situation that hamper the productivity of the operaton'
+        },
+        deliveryDuration: {
+            name: 'Delivery Duration',
+            description: 'Amount of time spent on shipment delivery'
+        },
+        deliverySequence: {
+            name: 'Delivery Sequence',
+            description: 'Tells if the shipment assigned is initial or re-load'
         },
         destination: {
             name: 'Destination',
@@ -7315,6 +7350,11 @@ var REPORTS = {
         longQueueing: {
             name: 'Long Queueing',
             description: 'Count of shipment that encountered Long Queueing Delay'
+        },
+        
+        mdsdUsage: {
+            name: 'MDSD Usage',
+            description: 'Identifies if the shipment will use MDSD to its transaction or not'
         },
 
         occurrenceDate: {
@@ -7413,6 +7453,10 @@ var REPORTS = {
             name: 'Shipment',
             description: 'Numerical identifier of assigned shipment'
         },
+        shipmentType: {
+            name: 'Shipment Type',
+            description: 'Identfies if the shipment assigned is unique (mother shipment)  or co-load'
+        },
         shipmentCount_CheckedOut: {
             name: 'Shipment Count',
             description: 'Count of posted shipment that already checked out from the origin'
@@ -7420,6 +7464,10 @@ var REPORTS = {
         shipmentCount_All: {
             name: 'Shipment Count',
             description: 'Count of posted shipment from the origin'
+        },
+        supportUnit: {
+            name: 'Support Unit?',
+            description: 'Identifies if the assigned truck is a support unit or not'
         },
 
         trailer: {
@@ -7473,10 +7521,18 @@ var REPORTS = {
         var descriptionHtml = "";
         var columneNameHtml = "";
         arr.forEach(val => {
-            const column = REPORTS.columns[val];
+            var column = REPORTS.columns[val];
+            if(val.indexOf('|') > -1){
+                const valSplit = val.split('|');
+                column = REPORTS.columns[valSplit[0]](valSplit[1]);
+            }
 
-            descriptionHtml += `<td style="${descriptionStyle||""}">${column.description}</td>`;
-            columneNameHtml += `<td style="${columnNameStyle||""}">${column.name}</td>`;
+            if(column){
+                descriptionHtml += `<td style="${descriptionStyle||""}">${column.description}</td>`;
+                columneNameHtml += `<td style="${columnNameStyle||""}">${column.name}</td>`;
+            } else {
+                console.log("Missing column:",val);
+            }
         }); 
         return `
             ${descriptionStyle ? `<tr>${descriptionHtml}</tr>` : ''}
@@ -10019,6 +10075,333 @@ var REPORTS = {
                             ${empty}
                         </table>`;
             },
+            desr:  {
+                coket1: ( title, docs, customers, date_from, date_to ) => {
+                    var rows = "";
+                    var tblHeaderStyle = "font-family:Arial;font-size:15px;background-color:#404040;border-color:#404040;color:white;text-align:center;";
+                    var tblBodyStyle = "font-family:Arial;font-size:15px;border:none;mso-number-format:'\@';vertical-align:top;";
+    
+                    function datetime(date){
+                        var _date =  moment(new Date(date)).format("MM/DD/YYYY");
+                        var _time = moment(new Date(date)).format("H:mm");
+                        
+                        return {
+                            date: (_date == "Invalid date") ? "-" : _date,
+                            time: (_time == "Invalid date") ? "-" : _time
+                        }
+                    }
+    
+                    docs.forEach(val => {
+                        var data = new Dispatch(val);
+    
+                        var history = [];
+                        var delay = { type: "", duration: "" };
+                        Object.keys(data.history).forEach(key => {
+                            var value = data.history[key] || "";
+    
+                            if(value.indexOf("Entry Update") > -1 || value.indexOf("Record updated") > -1){
+                                var formattedDate = DATETIME.FORMAT(Number(key),"MM/DD/YYYY h:mm A");
+                                var newValue = value.replace(/•/g,"-").replace(/Entry Update - /g,"- ").replace(/<br><br>/g,"<br>");
+    
+                                history.push(`${formattedDate}<br>${newValue}`);
+                            }
+    
+                            function getEscalation(text){
+                                const split = text.split(" - ");
+                                const type = split[0]||"";
+                                const escalationSplit = (split[1]||"").split(" ");
+                                const escalationLevel = escalationSplit[1]||"";
+    
+                                var duration = 0;
+    
+                                var enteredOriginTimestamp = getDateTime("entered_origin",val,"last");
+                                var queueingTimestamp = getDateTime("queueingAtOrigin",val,"first");
+                                var processingTimestamp = getDateTime("processingAtOrigin",val,"first");
+                                var idlingTimestamp = getDateTime("idlingAtOrigin",val,"first");
+                                var inTransitTimestamp = getDateTime("in_transit",val,"last");
+                                if(type == "Long Queueing") {
+                                    (queueingTimestamp) ? duration = Number(key) - queueingTimestamp : null;
+                                }
+                                if(type == "Over CICO") {
+                                    var finalTimestamp = [];
+                                    enteredOriginTimestamp ? finalTimestamp.push(enteredOriginTimestamp) : null;
+                                    queueingTimestamp ? finalTimestamp.push(queueingTimestamp) : null;
+                                    processingTimestamp ? finalTimestamp.push(processingTimestamp) : null;
+                                    idlingTimestamp ? finalTimestamp.push(idlingTimestamp) : null;
+                                    finalTimestamp = finalTimestamp.sort()[0];
+                                    (finalTimestamp) ? duration = Number(key) - finalTimestamp : null;
+                                }
+                                if(type == "Over Transit") {
+                                    (inTransitTimestamp) ? duration = Number(key) - inTransitTimestamp : null;
+                                }
+    
+                                return {
+                                    type: type + " " + escalationLevel,
+                                    duration: GET.ROUND_OFF(DATETIME.DH(duration)) + " h" 
+                                }
+                            }
+                            if(value.toLowerCase().indexOf("over cico - escalation") > -1 || 
+                               value.toLowerCase().indexOf("over transit - escalation") > -1 || 
+                               value.toLowerCase().indexOf("long queueing - escalation") > -1){
+                                    delay = getEscalation(value);
+                               }
+                        });
+    
+                        rows += `<tr>
+                                    <td style="${tblBodyStyle}">${data._id}</td>
+                                    <td style="${tblBodyStyle}">${data.vehicle}</td>
+                                    <td style="${tblBodyStyle}">${data.trailer}</td>
+                                    <td style="${tblBodyStyle}">${data.pal_cap}</td>
+                                    <td style="${tblBodyStyle}">${data.origin}</td>
+                                    <td style="${tblBodyStyle}">${data.destination}</td>
+                                    <td style="${tblBodyStyle}">${data.route}</td>
+                                    <td style="${tblBodyStyle}">${datetime(data.entered_datetime).date}</td>
+                                    <td style="${tblBodyStyle}">${datetime(data.entered_datetime).time}</td>
+                                    <td style="${tblBodyStyle}">${datetime(data.departure_date).date}</td>
+                                    <td style="${tblBodyStyle}">${datetime(data.departure_date).time}</td>
+                                    <td style="${tblBodyStyle}">${data.queueingDuration}</td>
+                                    <td style="${tblBodyStyle}">${data.processingDuration}</td>
+                                    <td style="${tblBodyStyle}">${data.idlingDuration}</td>
+                                    <td style="${tblBodyStyle}">${data.cico}</td>
+                                    <td style="${tblBodyStyle}">${data.transitDuration}</td>
+                                    <td style="${tblBodyStyle}">${datetime(data.complete_datetime).date}</td>
+                                    <td style="${tblBodyStyle}">${datetime(data.complete_datetime).time}</td>
+                                    <td style="${tblBodyStyle}">${data.postedByWithName}</td>
+                                    <td style="${tblBodyStyle}">${datetime(data.posting_date).date}</td>
+                                    <td style="${tblBodyStyle}">${datetime(data.posting_date).time}</td>
+                                    <td style="${tblBodyStyle}">${data.shipment_type}</td>
+                                    <td style="${tblBodyStyle}">${data.statusText}</td>
+                                    <td style="${tblBodyStyle}">${$(`<span>${data.late_entry}</span>`).text()}</td>
+                                    <td style="${tblBodyStyle}">${data.comments}</td>
+                                    <td style="${tblBodyStyle}">${delay.type}</td>
+                                    <td style="${tblBodyStyle}">${delay.duration}</td>
+                                    <td style="${tblBodyStyle}width:500px;">${history.join("<br><br>")}</td>
+                                </tr>`;
+                    });
+                    return `<table id="report-hidden" style="opacity:0;">
+                                <tr>
+                                    <td style="font-family:Arial;font-size:15px;border: none;" colspan=22>Report name: <b style="color:#c00000;">${title}</b></td>
+                                </tr>
+                                <tr><td style="border: none;"></td></tr>
+                                <tr>
+                                    <td style="font-family:Arial;font-size:15px;border: none;" colspan=22><b>Date Info:</b></td>
+                                </tr>
+                                <tr>
+                                    <td style="border: none;font-family:Arial;font-size:15px;" colspan=22>
+                                        <div>
+                                            <div>Date from: ${moment(new Date(date_from)).format("MM/DD/YYYY hh:mm A")}</div>
+                                            <div>Date to: ${moment(new Date(date_to)).format("MM/DD/YYYY hh:mm A")}</div>
+                                            <div>&nbsp;</div>
+                                            <div>Generated on: ${moment(new Date()).format("MM/DD/YYYY hh:mm A")}</div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr><td style="border: none;"></td></tr>
+                                <tr><td style="border: none;"></td></tr>
+                                <tr>
+                                    <td style="${tblHeaderStyle}"><b>Shipment</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Vehicle</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Trailer</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Pal Cap</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Origin</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Destination</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Route</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Check In Date</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Check In Time</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Check Out Date</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Check Out Time</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Queueing Duration</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Processing Duration</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Idling Duration</b></td>
+                                    <td style="${tblHeaderStyle}"><b>CICO Duration</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Transit Duration</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Completion Date</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Completion Time</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Posted By</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Posting Date</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Posting Time</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Shipment Type</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Status</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Late Entry</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Comments</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Delay</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Delay Duration</b></td>
+                                    <td style="${tblHeaderStyle}width:500px;"><b>Remarks</b></td>
+                                </tr>
+                                ${rows}
+                            </table>`;
+                },
+                coket2: ( title, docs, customers, date_from, date_to ) => {
+                    // Legend:
+                    //    · GBO - Grouped by Origin
+                    //    · GBR - Grouped by Region
+                    //    · NTL - National
+
+                    /****** CSS ******/
+                    const rotateCSS = ` -webkit-transform: rotate(-90deg);
+                                        -moz-transform: rotate(-90deg);
+                                        -ms-transform: rotate(-90deg);
+                                        -o-transform: rotate(-90deg);
+                                        transform: rotate(-90deg);
+                                        mso-rotate: 90;
+                                        -webkit-transform-origin: 50% 50%;
+                                        -moz-transform-origin: 50% 50%;
+                                        -ms-transform-origin: 50% 50%;
+                                        -o-transform-origin: 50% 50%;
+                                        transform-origin: 50% 50%;
+                                        position: absolute;
+                                        filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=3);
+                                        
+                                        color: #595959;
+                                        background-color: #E2EFDA;
+                                        height: 127px;
+                                        border: none;
+                                        border-right: thin dashed #595959;`;
+
+                    const tblHeaderCSS = `  background-color: #404040;
+                                        color: white;
+                                        font-size: 13px;
+                                        text-align: center;
+                                        border: thin solid #404040;
+                                        font-weight: bold;
+                                        vertical-align: middle;
+                                        font-family: Franklin Gothic Book;`;
+                                    
+                    const noBorderCSS = `border: none;
+                                    font-size: 13px;
+                                    vertical-align: middle;
+                                    font-family: Franklin Gothic Book;
+                                    mso-number-format:'\@';`;
+                    /****** end CSS ******/
+
+                    // Detailed (Per shipment)
+                    var detailsBodyHTML = "";
+
+                    // maximum number of customers per shipment
+                    var customerCount = 0;
+                    var tempCount = 0;
+
+                    // get highest number of customer per shipment
+                    docs.forEach(val => { 
+                        tempCount = (val.customers||[]).length;
+                        
+                        if(tempCount > customerCount){
+                            customerCount = tempCount;
+                        }
+                    });
+
+                    // default number of customer is 1
+                    (customerCount == 0) ? customerCount = 1 : null;
+
+                    // loop docs
+                    docs.forEach(val => {
+
+                        const origin = getGeofence(val.origin_id) || {};
+
+                        const vehicle = getVehicle(val.vehicle_id) || {};
+
+                        const beforeCheckOutTime = getDateTime("entered_origin",val) || getDateTime("dispatched",val);
+                        const completeDateTime = getDateTime("complete",val,"last");
+
+                        const calcCICO = (beforeCheckOutTime) ?  (getDateTime(clientCustom.status.enrouteToDestination,val,"last") - beforeCheckOutTime) : 0;
+                        const cico = Number(DATETIME.DH(calcCICO || 0,null,"0"));
+                        const cappedHours = 3;
+                        const cappedCICO = (cico > cappedHours) ? cappedHours : cico;
+
+                        const cicoDifference = cico - Number(origin.cico);
+                        const cicoVariance = (cicoDifference > 0) ? DATETIME.HH_MM(null,cicoDifference).hour_minute : "-";
+
+                        const transitDuration = getDuration("onDelivery",val);
+
+                        var customersHtml = "";
+                        var count = 0;
+                        (val.customers||[]).forEach(cVal => {
+                            count ++;
+
+                            customersHtml += `
+                                <td style="${noBorderCSS}text-align: center;">${(cVal.number || "")}</td>
+                                <td style="${noBorderCSS}text-align: center;">${(cVal.name || "")}</td>
+                            `;
+                        });
+
+                        // add empty td if this shipment's customer is less than the max customers
+                        for(var i = count; i < customerCount; i++){
+                            customersHtml += `
+                                <td style="${noBorderCSS}text-align: center;"></td>
+                                <td style="${noBorderCSS}text-align: center;"></td>
+                            `;
+                        }
+
+                        detailsBodyHTML += `<tr>
+                                                <td style="${noBorderCSS}text-align: left;">${val._id}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${(vehicle.name || "")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${(vehicle["Pal Cap"] || "")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${origin.short_name}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(beforeCheckOutTime,"MM/DD/YYYY")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(beforeCheckOutTime,"H:mm")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(val.departure_date,"MM/DD/YYYY")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(val.departure_date,"H:mm")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(completeDateTime,"MM/DD/YYYY")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(completeDateTime,"H:mm")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${cico ? DATETIME.HH_MM(null,cico).hour_minute : "-"}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${cappedCICO ? DATETIME.HH_MM(null,cappedCICO).hour_minute : "-"}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${DATETIME.HH_MM(null,origin.cico).hour_minute}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${cicoVariance}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${transitDuration ? DATETIME.HH_MM(transitDuration).hour_minute : "-"}</td>
+                                                ${customersHtml}
+                                                <td style="${noBorderCSS}text-align: center;">${(val.shipment_type || "")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${(val.delivery_sequence || "")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${(val.mdsd_usage || "")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${(val.support_unit || "")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${vehicle["Site"] || ""}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${val.comments||""}</td>
+                                            </tr>`;
+
+                    });
+
+                    const columns = ['shipment','vehicle','palCap','origin','checkInDate','checkInTime','checkOutDate','checkOutTime','arrivalDate','arrivalTime','actualCICO','cicoWithCapping_1','cicoTarget','cicoVariance',
+                                     'deliveryDuration',  /** Insert Customers Here **/ 'shipmentType','deliverySequence','mdsdUsage','supportUnit','vehicleBaseSite','comments'];
+
+                    var startIndex = 14;
+                    for(var i = 0; i < customerCount; i++){
+                        startIndex++;
+                        columns.splice(startIndex, 0, ('customerNo|'+(i+1)));
+
+                        startIndex++;
+                        columns.splice(startIndex, 0, ('customerName|'+(i+1)));
+                    }
+
+                    // to be exported to file
+                    return `<table id="report-hidden" style="opacity:0;">
+                            <tr>
+                                <td style="${noBorderCSS}" colspan=2>Report name: <b style="color:#c00000;">${title}</b></td>
+                            </tr>
+                            <tr><td style="${noBorderCSS}" colspan=2></td></tr>
+                            <tr>
+                                <td style="${noBorderCSS}" colspan=2>Date Info:</td>
+                            </tr>
+                            <tr>
+                                <td style="${noBorderCSS}" colspan=2>
+                                    <div>
+                                        <div>Date from: ${moment(new Date(date_from)).format("MM/DD/YYYY hh:mm A")}</div>
+                                        <div>Date to: ${moment(new Date(date_to)).format("MM/DD/YYYY hh:mm A")}</div>
+                                        <div>&nbsp;</div>
+                                        <div>Generated on: ${moment(new Date()).format("MM/DD/YYYY hh:mm A")}</div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr><td style="${noBorderCSS}"></td></tr>
+                            ${
+                                REPORTS.columnHtml( 
+                                    columns,
+                                    rotateCSS,
+                                    tblHeaderCSS
+                                )
+                            }
+                            ${detailsBodyHTML}
+                        </table> `;
+                },
+            },
             DESR: function(title,docs,date_from,date_to){
                 var rows = "";
                 var tblHeaderStyle = "font-family:Arial;font-size:15px;background-color:#404040;border-color:#404040;color:white;text-align:center;";
@@ -12214,10 +12597,10 @@ var REPORTS = {
                         });
                     });
                     $(`[desr]`).click(function(){
-                        var title = "Dispatch Entries Summary Report";
+                        const title = (CLIENT.id == "coket2") ? "Data Entry Summary Report" : "Dispatch Entries Summary Report";
                         df_dt_dest(title,"REPORT_MODAL_05",null,undefined,function(){
                             desr_report(function(docs){
-                                $(`body`).append(REPORTS.UI.REPORTS.DESR(title,docs,date_from,date_to));
+                                $(`body`).append(REPORTS.UI.REPORTS.desr[CLIENT.id](title,docs,null,date_from,date_to));
                                 GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`);
                                 $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
                             });
@@ -17667,7 +18050,7 @@ GET.STATUS = function(status=""){
     var stat = { color: "label-default", text: "" };
     if(status == "plan") stat = { color: "label-info", text: "Plan" }; // light blue
     if(status == "assigned") stat = { color: "label-brown", text: "Assigned" }; // brown
-    if(status == "dispatched") stat = { color: "label-lime", text: "Dispatched" }; // lime
+    // if(status == "dispatched") stat = { color: "label-lime", text: "Dispatched" }; // lime
     if(status == "scheduled") stat = { color: "label-default", text: "Scheduled" }; // default
     if(status == "queueingAtOrigin") stat = { color: "label-warning", text: "Queueing (Origin)" }; // yellow
     if(status == "processingAtOrigin") stat = { color: "label-lime", text: "Processing (Origin)" }; // lime

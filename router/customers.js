@@ -82,6 +82,42 @@ router.get('/:dbName/:username/keyword/:term', (req,res,next)=>{
     });
 });
 
+// get all from array
+router.get('/:dbName/:username/array/:arr', (req,res,next)=>{
+    const dbName = req.params.dbName;
+    const arr = JSON.parse(req.params.arr);
+
+    const finalArr = [];
+    (arr||[]).forEach(val => {
+        try {
+            const converted = db.getPrimaryKey(val);
+            finalArr.push(converted);
+        } catch(error) {}
+    });
+
+    db.getCollection(dbName,collection).aggregate([
+        {
+            $match: {
+                _id: {
+                    $in: finalArr
+                }
+            }
+        },
+        {
+            $project: {
+                _id: 1,
+                number: 1,
+                name: 1,
+            }
+        }
+    ]).toArray((err,docs)=>{
+        if(err) next(_ERROR_.INTERNAL_SERVER(err));
+        else {
+            res.json(docs);
+        }
+    });
+});
+
 // post
 router.post('/:dbName/:username', (req,res,next)=>{
     const dbName = req.params.dbName;

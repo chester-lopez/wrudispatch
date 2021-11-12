@@ -66,22 +66,22 @@ router.get('/:dbName/:username/all/:filter/:skip/:limit', (req,res,next)=>{
             {
                 $match: _filter
             },
-            // { 
-            //     $lookup: {
-            //         from: 'users',
-            //         localField: 'username',
-            //         foreignField: '_id',
-            //         as: 'userDetails',
-            //     }
-            // },
-            // { $unwind: { path: "$userDetails", preserveNullAndEmptyArrays: true } },
+
+
+            // get customers data from array of customer Ids
+            { $unwind: { path: "$customers", preserveNullAndEmptyArrays: true } },
+            { $lookup: {
+                "from": "customers",
+                "foreignField": "_id",
+                "localField": "customers",
+                "as": "customers"
+            }},
+            { $unwind: { path: "$customers", preserveNullAndEmptyArrays: true } },
+            // end get customers data from array of customer Ids
+
+            
             {
                 $project: {
-                    // "userDetails._id": 0,
-                    // "userDetails.email": 0,
-                    // "userDetails.phoneNumber": 0,
-                    // "userDetails.filter": 0,
-                    // "userDetails.role": 0,
                     "vehicle": 0,
                     "origin": 0,
                     "destination.location": 0,
@@ -89,6 +89,22 @@ router.get('/:dbName/:username/all/:filter/:skip/:limit', (req,res,next)=>{
                     "destination.cico": 0,
                 }
             },
+            {
+                $group: {
+                    "_id": "$_id",
+
+                    // make customers array of objects
+                    "customers": { "$push": "$customers" },
+
+                    // doc will return all data
+                    "doc":{"$first":"$$ROOT"}
+                }
+            },
+
+            // merge doc(all data) and the customers array
+            {
+              "$replaceRoot": { "newRoot": { "$mergeObjects": ["$doc", { customers: "$customers" }]} }
+            }
         ],
         query = (limit != 0) ? db.getCollection(dbName,collection).aggregate(aggregate).skip(skip).limit(limit) : 
                             db.getCollection(dbName,collection).aggregate(aggregate);
