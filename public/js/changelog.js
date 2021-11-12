@@ -1,4 +1,8 @@
 const changelogList = {
+    "2.58.127": {
+        date: "November 12, 2021",
+        improved: ["[Update][Coke][T1] Dispatch Entry Summary Report: Add column after 'posting time' called 'shipment type'"],
+    },
     "2.58.126": {
         date: "November 07, 2021",
         feature: ["[Feature][CokeT1] Pick-up/Normal feature",

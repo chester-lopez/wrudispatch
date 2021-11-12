@@ -12062,7 +12062,7 @@ var REPORTS = {
                     });
                     $(`[pbpa]`).click(function(){
                         var title = "Per Base Plant Activity";
-                        df_dt_dest(title,"REPORT_MODAL_01","Plant Base",null,function(){
+                        df_dt_dest(title,"REPORT_MODAL_01","Plant Base",undefined,function(){
                             pbpa_report(
                                 {origin_id: _siteId},
                                 function(docs){
@@ -12079,7 +12079,7 @@ var REPORTS = {
                     });
                     $(`[hwtr]`).click(function(){
                         var title = "Haulage Window Time Report";
-                        df_dt_dest(title,"REPORT_MODAL_02","Destination Site",null,function(){
+                        df_dt_dest(title,"REPORT_MODAL_02","Destination Site",undefined,function(){
                             hwtr_report(
                                 {destination: { $elemMatch: { "location_id": _siteId } }},
                                 function(docs){
@@ -12101,7 +12101,7 @@ var REPORTS = {
                         var customButtons = `<div class="col-sm-12 mt-4 p-0 mb-1">Generate report in:</div>
                                              <div class="col-sm-6 pl-0 pr-1"><button id="generate-btn" type="button" class="btn btn-primary col-sm-12"><b>.xls</b> format</button></div>
                                              <div class="col-sm-6 pl-1 pr-0"><button id="generate-1-btn" type="button" class="btn btn-primary col-sm-12"><b>.ods</b> format</button></div>`;
-                        df_dt_dest(title,"REPORT_MODAL_07",customButtons,null,function(btnId){
+                        df_dt_dest(title,"REPORT_MODAL_07",customButtons,undefined,function(btnId){
                             ar_report(function(docs,holidays){
                                     const fileName = `${title}_${DATETIME.FORMAT(date_from,"MM_YYYY")}`;
                                     $(`body`).append(REPORTS.UI.REPORTS.AR(docs,date_from,holidays));
@@ -12181,7 +12181,7 @@ var REPORTS = {
                     });
                     $(`[vcr]`).click(function(){
                         var title = "Vehicle CICO Report";
-                        df_dt_dest(title,"REPORT_MODAL_05",null,null,function(){
+                        df_dt_dest(title,"REPORT_MODAL_05",null,undefined,function(){
                             vcr_report(function(docs){
                                     $(`body`).append(REPORTS.UI.REPORTS.VCR(title,docs,date_from,date_to));
                                     GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`);
@@ -12198,7 +12198,7 @@ var REPORTS = {
                     });
                     $(`[ular]`).click(function(){
                         var title = "User Login Activity Report";
-                        df_dt_dest(title,"REPORT_MODAL_05",null,null,function(){
+                        df_dt_dest(title,"REPORT_MODAL_05",null,undefined,function(){
                             ular_report(function(docs){
                                     $(`body`).append(REPORTS.UI.REPORTS.ULAR(title,docs,date_from,date_to));
                                     GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`);
@@ -12215,7 +12215,7 @@ var REPORTS = {
                     });
                     $(`[desr]`).click(function(){
                         var title = "Dispatch Entries Summary Report";
-                        df_dt_dest(title,"REPORT_MODAL_05",null,null,function(){
+                        df_dt_dest(title,"REPORT_MODAL_05",null,undefined,function(){
                             desr_report(function(docs){
                                 $(`body`).append(REPORTS.UI.REPORTS.DESR(title,docs,date_from,date_to));
                                 GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`);
@@ -12231,7 +12231,7 @@ var REPORTS = {
                     });
                     $(`[ser]`).click(function(){
                         var title = "Scheduled Entries Report";
-                        df_dt_dest(title,"REPORT_MODAL_05",null,null,function(){
+                        df_dt_dest(title,"REPORT_MODAL_05",null,undefined,function(){
                             ser_report(function(docs){
                                 $(`body`).append(REPORTS.UI.REPORTS.SER(title,docs,date_from,date_to));
                                 GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`);
@@ -12258,7 +12258,7 @@ var REPORTS = {
                         var customButtons = `<div class="col-sm-12 mt-4 p-0 mb-1">Generate report in:</div>
                                              <div class="col-sm-6 pl-0 pr-1"><button id="generate-btn" type="button" class="btn btn-primary col-sm-12"><b>.xls</b> format</button></div>
                                              <div class="col-sm-6 pl-1 pr-0"><button id="generate-1-btn" type="button" class="btn btn-primary col-sm-12"><b>.ods</b> format</button></div>`;
-                        df_dt_dest(title,"REPORT_MODAL_07",customButtons,null,function(btnId){
+                        df_dt_dest(title,"REPORT_MODAL_07",customButtons,undefined,function(btnId){
                             mtur_report(function(docs,holidays){
                                 $(`body`).append(REPORTS.UI.REPORTS.MTUR(title,docs,date_from,date_to,holidays));
                                 var fileName = `${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`;
@@ -12303,7 +12303,7 @@ var REPORTS = {
                     });
                     $(`[ci_co_r]`).click(function(){
                         var title = "Check In Check Out Report";
-                        df_dt_dest(title,"REPORT_MODAL_05",null,null,function(){
+                        df_dt_dest(title,"REPORT_MODAL_05",null,undefined,function(){
                             ci_co_r_report(function(docs){
                                 REPORTS.UI.REPORTS.CI_CO_R(title,docs,date_from,date_to);
                             });
@@ -12318,7 +12318,7 @@ var REPORTS = {
                     });
                     $(`[otdr]`).click(function(){
                         var title = "On Time Departure";
-                        df_dt_dest(title,"REPORT_MODAL_03",null,null,function(){
+                        df_dt_dest(title,"REPORT_MODAL_03",null,undefined,function(){
                             otdr_report(function(docs){
                                 REPORTS.UI.REPORTS.OTDR(title,docs,date_from,date_to);
                             });
