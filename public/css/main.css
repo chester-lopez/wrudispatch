@@ -15,6 +15,7 @@
  * GENERAL STYLES
  ********************/
  @import url("https://fonts.googleapis.com/css?family=Roboto:300,400,500,700");
+ @import url("https://fonts.googleapis.com/css?family=Montserrat:300,400,500,700");
  html {
    position: relative;
    height: 100%;
@@ -61,10 +62,14 @@
  footer {
    bottom: 0;
    right: 0;
-   padding-top: 15px;
-   padding-bottom: 10px;
+   /* padding-top: 15px;
+   padding-bottom: 10px; */
    background-color: #F5F6F9;
    color: #a0aeba;
+   /* position: absolute; */
+   width: 100%;
+   /* z-index: 7; */
+   line-height: 25px;
  }
  
  @media screen and (max-width: 767px) {
@@ -119,7 +124,7 @@
  }
  
  #wrapper .sidebar {
-   width: 200px;
+   width: 249px;
    height: 100%;
    float: left;
    /* background-color: #fff; */
@@ -134,11 +139,11 @@
    -ms-transition: all 0.3s ease-in-out;
    -o-transition: all 0.3s ease-in-out;
    transition: all 0.3s ease-in-out;
-   width: calc(100% - 200px);
+   width: calc(100% - 249px);
    position: relative;
    float: right;
    left: 0;
-   background-color: #fff;
+   /* background-color: #fff; */
  }
  
  #wrapper #sidebar-nav,
@@ -151,7 +156,7 @@
  }
  
  .layout-fullwidth #wrapper .sidebar {
-   left: -200px;
+   left: -249px;
  }
  
  .layout-fullwidth #wrapper .main {
@@ -192,7 +197,7 @@
  .offcanvas-active #wrapper .main {
    width: 100%;
    position: relative;
-   left: 200px;
+   left: 249px;
  }
  
  .sidebar-minified.layout-fullwidth #wrapper .main {
@@ -211,7 +216,7 @@
  
  @media screen and (max-width: 1024px) {
    #wrapper .sidebar {
-     left: -200px;
+     left: -249px;
    }
    #wrapper .main {
      width: 100%;
@@ -265,7 +270,7 @@
  }
  
  .main-content {
-   padding: 10px 10px 28px 10px;
+   padding: 10px 10px 5px 10px;
    margin: 0;
    background-color: #F5F6F9;
  }
@@ -715,7 +720,7 @@
  
  .navbar-nav > li > .dropdown-menu {
    padding: 0;
-   min-width: 200px;
+   min-width: 249px;
  }
  
  .navbar-nav > li.open > .dropdown-menu {
@@ -991,7 +996,7 @@
  }
  
  .sidebar .nav > li > a {
-   padding: 10px 15px;
+   padding: 10px 10px 10px 15px; /* 10px 15px */
    border-left: 2px solid transparent;
    background-color: transparent;
  }
@@ -1135,7 +1140,7 @@
    -webkit-box-shadow: 2px 2px 2px 0 rgba(0, 0, 0, 0.1);
    box-shadow: 2px 2px 2px 0 rgba(0, 0, 0, 0.1);
    position: absolute;
-   min-width: 200px;
+   min-width: 249px;
    top: 0;
    left: 53px;
    padding-left: 20px;
@@ -1186,7 +1191,7 @@
    box-shadow: 2px 2px 2px -1px rgba(0, 0, 0, 0.1);
    position: absolute;
    left: 59px;
-   min-width: 200px;
+   min-width: 249px;
    height: auto !important;
    background-color: #fff;
    border: 1px solid #eaeaea;
@@ -2128,10 +2133,10 @@
    border: 1px solid #eaeff2;
  }
  
- .datepicker table tr td.active, .datepicker table tr td.active:hover, .datepicker table tr td.active.disabled, .datepicker table tr td.active.disabled:hover {
+ /* .datepicker table tr td.active, .datepicker table tr td.active:hover, .datepicker table tr td.active.disabled, .datepicker table tr td.active.disabled:hover {
    background-color: #609dea !important;
    background-image: none;
- }
+ } */
  
  .datepicker table tr td.selected, .datepicker table tr td.selected.highlighted {
    background-color: #a6b7c5;
@@ -2690,7 +2695,7 @@
    -moz-box-shadow: none;
    -webkit-box-shadow: none;
    box-shadow: none;
-   margin-bottom: 30px;
+   margin-bottom: 0px;
    border: 1px solid #d1d6e6;
    background: #fff;
  }
@@ -3158,14 +3163,29 @@
  }
  
  .label-transparent.label-orange {
-   background-color: rgba(255, 106, 0, 0.1);
-   color: #ff833a;
- }
+  background-color: rgba(255, 106, 0, 0.1);
+  color: #ff833a;
+}
+
+.label-transparent.label-blue {
+  background-color: rgba(20, 0, 255, 0.1);
+  color: #3a59ff;
+}
  
  .label-transparent.label-lime {
    background-color: rgba(157, 213, 0, 0.1);
    color: #98B742;
  }
+
+ .label-transparent.label-purple {
+  background-color: rgba(140, 2, 255, 0.1);
+  color: #884db9;
+}
+
+.label-transparent.label-pink {
+  background-color: rgba(255, 36, 128, 0.1);
+  color: #ff35ba;
+}
  
  .label-transparent.label-warning {
    background-color: rgba(228, 203, 16, 0.1);
