@@ -13409,6 +13409,130 @@ var ALL_EVENTS = {
         }
     }
 };
+var OVERSPEEDING_EVENTS = {
+    FUNCTION: {
+        stream:null,
+        init:function(){
+            var _new_ = true;
+
+            var table = new Table({
+                id: "#tbl-overspeeding-events",
+                urlPath: "overspeeding_events",
+                perColumnSearch: true,
+                goto: "overspeeding_events",
+                dataTableOptions: {
+                    columns: TABLE.COL_ROW(CUSTOM.COLUMN.overspeeding_events).column,
+                    order: [[ 0, "desc" ]],
+                    createdRow: function (row, data, dataIndex) {
+                        var _row = data._row;
+                        $(row).attr(`_row`, _row);
+                        table.rowListeners(_row,data._id);
+                    },
+                    dom: 'lBrti<"tbl-progress-bar">p',
+                }
+            });
+            USER.filters["overspeeding_events"] = {timestamp: FILTER.DATERANGE()};
+            table.setButtons({});
+            table.addRow = function(obj){
+                const self = this;
+                // var action = TABLE.ROW_BUTTONS(PAGE.GET()); 
+                // $(`${self.id} th:last-child`).css({"min-width":action.width,"width":action.width});
+
+                obj.shipment_number = obj.shipment_number || [];
+
+                const vehicle = getVehicle(obj.userID) || {};
+    
+                return TABLE.COL_ROW(null,{
+                    '_id': obj._id,
+                    '_row':  obj._row,
+                    'Date': DATETIME.FORMAT(obj.utc,"MMM D, YYYY, h:mm:ss A"),
+                    'RuleName': obj.RuleName,
+                    'Vehicle Name': vehicle.name || "-",
+                    'State': obj.State || "-",
+                    'Namespace': obj.Namespace || "-",
+                    'LngLat': `${obj.lng} - ${obj.lat}`,
+                    'Alt': obj.alt || "-",
+                    // 'Action': action.buttons,
+                }).row;
+            };
+            table.rowListeners = function(_row,_id){
+                const self = this;
+                $(table.id).on('click', `[_row="${_row}"] [view],[_row="${_row}"] + tr.child [view]`,function(e){
+                    e.stopImmediatePropagation();
+                    var obj = LIST[self.urlPath].find(x => x._id.toString() == _id.toString());
+                    if(obj){
+                        var _show = ["stage","GEOFENCE_NAME","GEOFENCE_ID","RULE_NAME","USER_NAME","USER_USERNAME","ASSIGNED_VEHICLE_ID","Region","Cluster","Site"],
+                            tbody = "";
+                        $(`body`).append(modalViews.events.details(obj._id));
+                        
+                        _show.forEach(key => {
+                            tbody += `<tr>
+                                <td>${key}</td>
+                                <td>${obj[key] || "-"}</td>
+                            </tr>`;
+                        });
+                        $(`#tbl-notification > tbody`).html(tbody);
+                    }
+                });
+            };
+            table.filterListener = function(_row,_id){
+                // initialize filter
+                FILTER.RESET({
+                    dateEl: `#_date`,
+                    populateTable: function(){
+                        var _date = $(`#_date`).val() || DEFAULT_DATE;
+
+                        FILTER.STATUS = "new";
+
+                        $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
+
+                        
+                        USER.filters["events"] = {timestamp: FILTER.DATERANGE(_date)};
+                        table.countRows();
+                    }
+                });
+                $(`#_date`).daterangepicker({
+                    opens: 'left',
+                    autoUpdateInput: false,
+                    singleDatePicker:true,
+                    autoApply: true
+                }, function(start, end, label) {
+                    FILTER.INITIALIZE($(this)["0"].element,start,end);
+                    $('.clearable').trigger("input");
+                }).on('apply.daterangepicker', function (ev, picker) {
+                    FILTER.INITIALIZE($(this),picker.startDate,picker.endDate);
+                    $('.clearable').trigger("input");
+                });
+                $(`#filter-btn`).click(function(){
+                    var _date = $(`#_date`).val() || DEFAULT_DATE;
+
+                    FILTER.STATUS = "new";
+
+                    $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
+
+                    USER.filters["events"] = {timestamp: FILTER.DATERANGE(_date)};
+                    table.countRows();
+                });
+                // initialize filter
+            };
+            table.initialize();
+            table.countRows();
+
+            /******** TABLE CHECK ********/
+            TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
+                isFinishedLoading(["VEHICLES"], _new_, function(){
+                    _new_ = false;
+                    
+                    table.updateRows(LIST['overspeeding_events']);
+                    
+                    TABLE.FINISH_LOADING.UPDATE();
+                });
+            }
+            TABLE.FINISH_LOADING.START_CHECK();
+            /******** END TABLE CHECK ********/
+        }
+    }
+};
 var USERS = {
     FUNCTION: {
         stream: null,
@@ -18004,6 +18128,17 @@ var PAGE = {
                     title: "For Developers",
                 }
             },
+            overspeeding_events: {
+                title: "Overspeeding Events",
+                name: "overspeeding_events",
+                icon: "la la-calendar",
+                display: function() { return views.overspeeding_events(); },
+                function: function() { OVERSPEEDING_EVENTS.FUNCTION.init() },
+                buttons: {
+                    table: ["refresh","export","filter","search"],
+                    row:["view"]
+                },
+            },
             changelog: {
                 title: "Changelog",
                 name: "changelog",
@@ -20786,6 +20921,23 @@ const views = new function(){
                             ${ALERT.HTML.INFO("This page displays all events sent by vehicles to WRU Dispatch. These events are saved regardless of conditions unlike in Event Viewer Page.","ml-0 mr-0 mt-2 mb-3",true)}
                             <div class="table-wrapper">
                                 <table id="tbl-all-events" class="table table-hover table-bordered">
+                                    <thead></thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>`;
+        },
+        overspeeding_events: function(){
+            return `<div class="page-box row">
+                        ${SLIDER.FILTER(`<div>
+                                                <div style="font-size: 10px;">Date:</div>
+                                                <input type="text" id="_date" class="clearable form-control" style="padding-left: 10px;" value="${DEFAULT_DATE}" readonly>
+                                            </div>`)}
+                        <div class="col-sm-12 mt-2">
+                            ${ALERT.HTML.INFO("This page displays all overspeeding events sent by vehicles to WRU Dispatch.","ml-0 mr-0 mt-2 mb-3",true)}
+                            <div class="table-wrapper">
+                                <table id="tbl-overspeeding-events" class="table table-hover table-bordered">
                                     <thead></thead>
                                     <tbody></tbody>
                                 </table>

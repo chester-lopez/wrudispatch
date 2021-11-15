@@ -541,6 +541,17 @@ const CUSTOM = {
             { data: "Geofence Name", title: "Geofence Name", visible: true },
             { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
         ],
+        overspeeding_events: [
+            { data: "_id", title: "ID", visible: true },
+            { data: "Date", title: "Date", type:"date", visible: true },
+            { data: "RuleName", title: "Rule Name", visible: true },
+            { data: "Vehicle Name", title: "Vehicle Name", visible: true },
+            { data: "State", title: "State", visible: true },
+            { data: "Namespace", title: "Namespace", visible: true },
+            { data: "LngLat", title: "Long-Lat", visible: true },
+            { data: "Alt", title: "Altitude", visible: true },
+            // { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
+        ],
         users: function(){
             return [
                 { data: "Name", title: "Name", visible: true },
