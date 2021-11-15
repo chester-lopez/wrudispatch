@@ -13445,7 +13445,7 @@ var OVERSPEEDING_EVENTS = {
                 return TABLE.COL_ROW(null,{
                     '_id': obj._id,
                     '_row':  obj._row,
-                    'Date': DATETIME.FORMAT(obj.utc,"MMM D, YYYY, h:mm:ss A"),
+                    'Date': DATETIME.FORMAT(obj.timestamp,"MMM D, YYYY, h:mm:ss A"),
                     'RuleName': obj.RuleName,
                     'Vehicle Name': vehicle.name || "-",
                     'State': obj.State || "-",
@@ -13457,23 +13457,6 @@ var OVERSPEEDING_EVENTS = {
             };
             table.rowListeners = function(_row,_id){
                 const self = this;
-                $(table.id).on('click', `[_row="${_row}"] [view],[_row="${_row}"] + tr.child [view]`,function(e){
-                    e.stopImmediatePropagation();
-                    var obj = LIST[self.urlPath].find(x => x._id.toString() == _id.toString());
-                    if(obj){
-                        var _show = ["stage","GEOFENCE_NAME","GEOFENCE_ID","RULE_NAME","USER_NAME","USER_USERNAME","ASSIGNED_VEHICLE_ID","Region","Cluster","Site"],
-                            tbody = "";
-                        $(`body`).append(modalViews.events.details(obj._id));
-                        
-                        _show.forEach(key => {
-                            tbody += `<tr>
-                                <td>${key}</td>
-                                <td>${obj[key] || "-"}</td>
-                            </tr>`;
-                        });
-                        $(`#tbl-notification > tbody`).html(tbody);
-                    }
-                });
             };
             table.filterListener = function(_row,_id){
                 // initialize filter
@@ -13487,7 +13470,7 @@ var OVERSPEEDING_EVENTS = {
                         $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
 
                         
-                        USER.filters["events"] = {timestamp: FILTER.DATERANGE(_date)};
+                        USER.filters["overspeeding_events"] = {timestamp: FILTER.DATERANGE(_date)};
                         table.countRows();
                     }
                 });
@@ -13510,7 +13493,7 @@ var OVERSPEEDING_EVENTS = {
 
                     $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
 
-                    USER.filters["events"] = {timestamp: FILTER.DATERANGE(_date)};
+                    USER.filters["overspeeding_events"] = {timestamp: FILTER.DATERANGE(_date)};
                     table.countRows();
                 });
                 // initialize filter
