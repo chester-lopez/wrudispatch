@@ -244,7 +244,16 @@ var streamList = {
             };
         }
     },
-    customers
+    customers: {
+        watch: () => {
+            return {
+                key: 'customers',
+                collection: 'customers',
+                pipeline: [],
+                options: { fullDocument : "updateLookup" }
+            };
+        }
+    },
 };
 /******** END STREAMLIST ********/
 
