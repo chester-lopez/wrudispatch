@@ -13431,29 +13431,46 @@ var OVERSPEEDING_EVENTS = {
                     dom: 'lBrti<"tbl-progress-bar">p',
                 }
             });
-            USER.filters["overspeeding_events"] = {timestamp: FILTER.DATERANGE()};
+            USER.filters["overspeeding_events"] = { timestamp: FILTER.DATERANGE() };
             table.setButtons({});
             table.addRow = function(obj){
-                const self = this;
-                // var action = TABLE.ROW_BUTTONS(PAGE.GET()); 
-                // $(`${self.id} th:last-child`).css({"min-width":action.width,"width":action.width});
-
-                obj.shipment_number = obj.shipment_number || [];
-
-                const vehicle = getVehicle(obj.userID) || {};
+                var value = {};
+                try {
+                    value = JSON.parse("{"+obj.Value+"}");
+                } catch(error){}
     
                 return TABLE.COL_ROW(null,{
                     '_id': obj._id,
                     '_row':  obj._row,
                     'Date': DATETIME.FORMAT(obj.timestamp,"MMM D, YYYY, h:mm:ss A"),
                     'RuleName': obj.RuleName,
-                    'Vehicle Name': vehicle.name || "-",
+                    'Vehicle Name': value['Vehicle Name'] || "-",
+                    'Equipt No': value['Equipt No'] || "-",
+                    'Site': value['Site'] || "-",
+                    'Site Code': value['Site Code'] || "-",
+                    'Duration': value['Duration'] || "-",
+                    'Speed': value['Speed'] || "-",
                     'State': obj.State || "-",
                     'Namespace': obj.Namespace || "-",
-                    'LngLat': `${obj.lng} - ${obj.lat}`,
+                    'Lng': obj.lng || "",
+                    'Lat': obj.lat || "",
                     'Alt': obj.alt || "-",
-                    // 'Action': action.buttons,
                 }).row;
+
+                
+            // { data: "_id", title: "ID", visible: false },
+            // { data: "Date", title: "Date", type:"date", visible: true },
+            // { data: "RuleName", title: "Rule Name", visible: true },
+            // { data: "Vehicle Name", title: "Vehicle Name", visible: true },
+            // { data: "Equipt No", title: "Equipt No", visible: true },
+            // { data: "Site", title: "Site", visible: true },
+            // { data: "Site Code", title: "Site Code", visible: true },
+            // { data: "Duration", title: "Duration", visible: true },
+            // { data: "Speed", title: "Speed", visible: true },
+            // { data: "State", title: "State", visible: false },
+            // { data: "Namespace", title: "Namespace", visible: false },
+            // { data: "LngLat", title: "Long-Lat", visible: true },
+            // { data: "Alt", title: "Altitude", visible: true },
             };
             table.rowListeners = function(_row,_id){
                 const self = this;
@@ -13493,7 +13510,7 @@ var OVERSPEEDING_EVENTS = {
 
                     $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
 
-                    USER.filters["overspeeding_events"] = {timestamp: FILTER.DATERANGE(_date)};
+                    USER.filters["overspeeding_events"] = { timestamp: FILTER.DATERANGE(_date) };
                     table.countRows();
                 });
                 // initialize filter
@@ -13502,16 +13519,16 @@ var OVERSPEEDING_EVENTS = {
             table.countRows();
 
             /******** TABLE CHECK ********/
-            TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
-                isFinishedLoading(["VEHICLES"], _new_, function(){
-                    _new_ = false;
+            // TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
+            //     isFinishedLoading(["VEHICLES"], _new_, function(){
+            //         _new_ = false;
                     
-                    table.updateRows(LIST['overspeeding_events']);
+            //         table.updateRows(LIST['overspeeding_events']);
                     
-                    TABLE.FINISH_LOADING.UPDATE();
-                });
-            }
-            TABLE.FINISH_LOADING.START_CHECK();
+            //         TABLE.FINISH_LOADING.UPDATE();
+            //     });
+            // }
+            // TABLE.FINISH_LOADING.START_CHECK();
             /******** END TABLE CHECK ********/
         }
     }
@@ -19947,9 +19964,12 @@ var TABLE = {
                                         (_data === "You") ? _data = _data.replace("You", USER.fullName) : null; // change "You" to user's full name
                                         try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags
 
-                                        _data = _data.replace('<span class="text-success">', '')  // remove specific html tags
-                                                     .replace('<span class="text-danger">', '')
-                                                     .replace('</span>', '');
+                                        try {
+                                            _data = _data.replace('<span class="text-success">', '')  // remove specific html tags
+                                                         .replace('<span class="text-danger">', '')
+                                                         .replace('</span>', '');
+        
+                                        } catch (error) { }
     
                                         return _data;
                                     }
@@ -19974,10 +19994,12 @@ var TABLE = {
                                         (_data === "You") ? _data = _data.replace("You", USER.fullName) : null; // change "You" to user's full name
                                         try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags 
 
-                                        _data = _data.replace('<span class="text-success">', '')  // remove specific html tags
-                                                     .replace('<span class="text-danger">', '')
-                                                     .replace('</span>', '');
-    
+                                        try {
+                                            _data = _data.replace('<span class="text-success">', '')  // remove specific html tags
+                                                         .replace('<span class="text-danger">', '')
+                                                         .replace('</span>', '');
+        
+                                        } catch (error) { }
                                         return _data;
                                     }
                                 }
@@ -20002,9 +20024,12 @@ var TABLE = {
                                         (_data === "You") ? _data = _data.replace("You", USER.fullName) : null; // change "You" to user's full name
                                         try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags 
 
-                                        _data = _data.replace('<span class="text-success">', '')  // remove specific html tags
-                                                     .replace('<span class="text-danger">', '')
-                                                     .replace('</span>', '');
+                                        try {
+                                            _data = _data.replace('<span class="text-success">', '')  // remove specific html tags
+                                                         .replace('<span class="text-danger">', '')
+                                                         .replace('</span>', '');
+        
+                                        } catch (error) { }
     
                                         return _data;
                                     }
