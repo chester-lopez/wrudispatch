@@ -2599,7 +2599,9 @@ router.get('/test/insert/customers', (req,res,next)=>{
 
 
 // update overspeeding_events
-router.get('/test/update/overspeeding_events', (req,res,next)=>{
+router.get('/test/update/overspeeding_events/:skip/:limit', (req,res,next)=>{
+    const skip = Number(req.params.skip);
+    const limit = Number(req.params.limit);
     var prodURL = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
     var devURL = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
 
@@ -2618,8 +2620,8 @@ router.get('/test/update/overspeeding_events', (req,res,next)=>{
             const deleteArrIds = [];
             const insertArr = [];
 
-            query.find({}).toArray().then(docs => {
-                
+            query.find({ id: { $exists: false } }).skip(skip).limit(limit).toArray().then(docs => {
+                console.log(docs.length);
                 docs.forEach(val => {
                     if(!val.id){
 
@@ -2647,23 +2649,33 @@ router.get('/test/update/overspeeding_events', (req,res,next)=>{
                 });
 
                 // delete
-                childPromise.push(
-                    query.deleteMany({ _id: { $in: deleteArrIds } })
-                );
+                if(deleteArrIds.length > 0){
+                    childPromise.push(
+                        query.deleteMany({ _id: { $in: deleteArrIds } })
+                    );
+                }
 
                 // insert
-                childPromise.push(
-                    query.insertMany(insertArr)
-                );
+                if(insertArr.length > 0){
+                    childPromise.push(
+                        query.insertMany(insertArr)
+                    );
+                }
+                
+                if(childPromise.length > 0){
+                    Promise.all(childPromise).then(result => {
+                        client.close();
+                        res.json({ok:1,result});
+                    }).catch(error => {
+                        client.close();
+                        console.log("ERROR2",error);
+                        res.json({error:1,error});
+                    });
+                } else {
+                    client.close();
+                    res.json({ok:1,empty:1});
+                }
 
-                Promise.all(childPromise).then(result => {
-                    client.close();
-                    res.json({ok:1,result});
-                }).catch(error => {
-                    client.close();
-                    console.log("ERROR2",error);
-                    res.json({error:1,error});
-                });
             }).catch(error => {
                 client.close();
                 console.log("ERROR4",error);
