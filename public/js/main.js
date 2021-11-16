@@ -13420,7 +13420,7 @@ var OVERSPEEDING_EVENTS = {
                 goto: "overspeeding_events",
                 dataTableOptions: {
                     columns: TABLE.COL_ROW(CUSTOM.COLUMN.overspeeding_events).column,
-                    order: [[ 0, "desc" ]],
+                    order: [[ 1, "desc" ]],
                     createdRow: function (row, data, dataIndex) {
                         var _row = data._row;
                         $(row).attr(`_row`, _row);
