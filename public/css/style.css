@@ -381,6 +381,9 @@
 }
 .sidebar .nav li > a[aria-expanded="true"], .sidebar .nav li > a.active {
   color: #00a548 !important;
+  /* color: #0ebd5c !important; */
+  font-weight: bold;
+  /* letter-spacing: 0.5px; */
 }
 .page-box {
   padding: 20px;
@@ -554,11 +557,20 @@ border: 1px solid #9c8660;
 .label-orange.active {
 border: 1px solid #ff833a;
 }
+.label-blue.active {
+border: 1px solid #3a59ff;
+}
 .label-warning.active {
 border: 1px solid #e4cb10;
 }
 .label-lime.active {
 border: 1px solid #98B742;
+}
+.label-purple.active {
+border: 1px solid #884db9;
+}
+.label-pink.active {
+border: 1px solid #ff35ba;
 }
 .label-success.active {
 border: 1px solid rgba(0, 165, 72, 1);
@@ -609,8 +621,8 @@ background-color: #eeeeee61;
 .custom-btn-01.disabled, .custom-btn-01.disabled:hover {
 cursor: not-allowed;
 background-color: transparent !important;
-color: #b9b9b9 !important
-;
+color: #b9b9b9 !important;
+pointer-events: none;
 }
 
 .table.jsTT td {
@@ -659,6 +671,11 @@ color: #d2d2d2;
   margin-bottom: 0px !important;
   display: inline !important;
   border-width: 0.5px !important;
+}
+.action-icon.admin{
+  background-color: #f2fff1;
+  color: #a1dba1 !important;
+  border-color: #a1dba1 !important;
 }
 .action-icon:hover, .action-icon:focus {
 /* border: 1px solid #787878; */
@@ -865,7 +882,7 @@ a.navbar-bottom-button > div {
   border-radius: 0;
   z-index: 99;
   overflow-x: auto;
-  box-shadow: 0px 4px 8px -4px #c6c6c6;
+  /* box-shadow: 0px 4px 8px -4px #c6c6c6; */
 }
 #dashboard-page #_regions.nav-tabs-mobile .summary-tab{
   line-height: 25px !important;
@@ -877,6 +894,21 @@ a.navbar-bottom-button > div {
   color: #00a548 !important;
   text-decoration: underline;
   background-color: whitesmoke !important;
+}
+.border {
+  border: 1px solid #eee;
+}
+.border-top {
+  border-top: 1px solid #eee;
+}
+.border-bottom {
+  border-bottom: 1px solid #eee;
+}
+.border-right {
+  border-right: 1px solid #eee;
+}
+.border-left {
+  border-left: 1px solid #eee;
 }
 .summary-parent {
   display: inline-grid;
@@ -1015,6 +1047,26 @@ a.navbar-bottom-button > div {
   background: none !important;
   color: #367938 !important;
 }
+#export-container.normal-button .dt-button {
+  vertical-align: bottom !important;
+  height: 34px !important;
+  width: unset !important;
+  color: unset !important;
+  margin-bottom: 0px !important;
+  border: 1px solid #e1e3ea !important;
+  text-align: left !important;
+  font-size: unset !important;
+  padding: 5px 10px !important;
+  background-color: #f6f6f9 !important;
+}
+#export-container.normal-button .dt-buttons .dt-button:hover,#export-container.normal-button .dt-buttons .dt-button:focus,#export-container.normal-button .dt-buttons .dt-button:active {
+  background-color: #f6f6f9 !important;
+  color: #3d434a !important;
+}
+#export-container.normal-button .dt-button i {
+  font-size: 17px;
+  vertical-align: middle;
+}
 .switch-toggle input:disabled ~ label {
   cursor: not-allowed;
 }
@@ -1038,12 +1090,149 @@ a.navbar-bottom-button > div {
   align-items: stretch;
   justify-content: space-between;
   width: 100%;
+  height: 100%;
 }
 .flex-container .navbar-bottom-button {
   flex: 0 1 auto;
   list-style-type: none;
   width: 100%;
 }
+.main-content {
+  min-height: calc(100% - 25px);
+}
+.main {
+  height: 100%;
+}
+#wrapper {
+  background-color: #f5f6f9;
+  height: 100%;
+}
+footer .container-fluid {
+  padding-right: 10px !important;
+}
+footer .copyright {
+  margin-right: unset !important;
+  text-align: unset !important;
+}
+.select2-selection__clear {
+  font-size: 17px !important;
+}
 .tooltip.in {
   z-index: 9999;
+}
+.toastr-white-bg .toast {
+  background-color: #2d2d2e  !important;
+  color: white !important;
+  border-radius: 2px !important;
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected]{
+  background-color: #00a5484f !important;
+  color: #5e6773 !important;
+}
+.select2-container--default .select2-results__option--highlighted[aria-selected] .text-muted{
+  color: #49684b !important;
+}
+#tbl-lq_wrapper table.dataTable tbody td, #tbl-lq_wrapper table.dataTable tbody th,
+#tbl-oc_wrapper table.dataTable tbody td, #tbl-lq_wrapper table.dataTable tbody th,
+#tbl-ot_wrapper table.dataTable tbody td, #tbl-lq_wrapper table.dataTable tbody th {
+  padding: 6px 3px !important;
+  text-align: center !important;
+}
+#tbl-lq_wrapper table.dataTable thead > tr > th,
+#tbl-oc_wrapper table.dataTable thead > tr > th,
+#tbl-ot_wrapper table.dataTable thead > tr > th {
+  padding: 10px 2px 0px 2px !important;
+  text-align: center !important;
+}
+#tbl-lq_wrapper table.dataTable thead .sorting::after,
+#tbl-oc_wrapper table.dataTable thead .sorting::after,
+#tbl-ot_wrapper table.dataTable thead .sorting::after {
+  content: '' !important;
+}
+#tbl-lq_wrapper table.dataTable thead > tr > th.sorting,
+#tbl-oc_wrapper table.dataTable thead > tr > th.sorting,
+#tbl-ot_wrapper table.dataTable thead > tr > th.sorting {
+  padding-right: 2px !important;
+}
+/* add clear button in singledate picker */
+/* .daterangepicker.single .drp-buttons { display:block !important; } */
+/* .daterangepicker.single .drp-buttons .applyBtn { display:none !important; } hide apply button */
+
+
+
+/******************* calender **************/
+#wrap {
+  /* width: 1100px; */
+  margin: 0 auto;
+  }
+  
+#external-events {
+  float: left;
+  width: 150px;
+  padding: 0 10px;
+  text-align: left;
+  }
+  
+#external-events h4 {
+  font-size: 16px;
+  margin-top: 0;
+  padding-top: 1em;
+  }
+  
+.external-event { /* try to mimick the look of a real event */
+  margin: 10px 0;
+  padding: 2px 4px;
+  background: #3366CC;
+  color: #fff;
+  font-size: .85em;
+  cursor: pointer;
+  }
+  
+#external-events p {
+  margin: 1.5em 0;
+  font-size: 11px;
+  color: #666;
+  }
+  
+#external-events p input {
+  margin: 0;
+  vertical-align: middle;
+  }
+
+#calendar {
+/* 		float: right; */
+      margin: 0 auto;
+  width: 100%;
+  background-color: #FFFFFF;
+    border-radius: 6px;
+      box-shadow: 0 1px 2px #C3C3C3;
+  -webkit-box-shadow: 0px 0px 21px 2px rgba(0,0,0,0.18);
+-moz-box-shadow: 0px 0px 21px 2px rgba(0,0,0,0.18);
+box-shadow: 0px 0px 21px 2px rgba(0,0,0,0.18);
+}
+.fc-event.custom-event > .fc-event-inner{
+  background-color: #9abd8d !important;
+}
+/******************* calender **************/
+
+
+
+.custom-btn-03 {
+  float: right;
+  font-size: 20px;
+  cursor: pointer;
+  border-radius: 4px;
+  width: 29px;
+  height: 29px;
+  line-height: 29px;
+  text-align: center;
+  padding: 0;
+  -webkit-text-stroke: 0.5px white;
+  transition-property: background,border,box-shadow,color;
+  transition-duration: .2s;
+}
+.custom-btn-03:hover,.custom-btn-03.active {
+  background-color: rgba(21, 7, 38, 0.04);
+  color: #151b26;
 }

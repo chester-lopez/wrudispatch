@@ -1022,6 +1022,12 @@ var LIMIT = 200,
                 update: "none",
                 delete: "all"
             },
+            overspeeding_events: {
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
         },
         developer_fleet: {
             users:{
@@ -1043,6 +1049,12 @@ var LIMIT = 200,
                 delete: "all"
             },
             all_events: {
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "all"
+            },
+            overspeeding_events: {
                 read: "all",
                 create: "none",
                 update: "none",
@@ -1382,7 +1394,7 @@ var LIMIT = 200,
                         requiredFields: ["shipment_number","origin_id","customers","vehicle_id","support_unit","shipment_type","delivery_sequence","mdsd_usage"],
                     },
                     status: {
-                        all: ["plan","assigned","onDelivery","complete","incomplete"], // "dispatched",
+                        all: ["plan","assigned","dispatched","onDelivery","complete","incomplete"],
                         enrouteToDestination: "onDelivery",
                     }
                 },
@@ -1417,20 +1429,20 @@ var LIMIT = 200,
                     columns: ["shipmentNumber","delayType","escalation","timelapse","site","status","dateTime","sentTo","action"],
                 },
                 reports: {
-                    // dvr: true,
-                    // cicor: ["destination","origin","route","sn","plateNumber","trailer","palCap","haulerName","targetCico","actualTimelapse","remarks1","remarks2","truckBasePlant"],
-                    // otr: ["origin","destination","route","sn","plateNumber","trailer","palCap","haulerName","targetTransit","actualTimelapse","remarks1","remarks2","truckBasePlant"],
-                    // pbpa: true,
-                    // hwtr: true,
-                    // ar: "no_function",
-                    // tr: true,
-                    // vcr: true,
-                    // ular: {
-                    //     roles: ["administrator","developer"]
-                    // },
+                    dvr: true,
+                    cicor: ["destination","origin","route","sn","plateNumber","trailer","palCap","haulerName","targetCico","actualTimelapse","remarks1","remarks2","truckBasePlant"],
+                    otr: ["origin","destination","route","sn","plateNumber","trailer","palCap","haulerName","targetTransit","actualTimelapse","remarks1","remarks2","truckBasePlant"],
+                    pbpa: true,
+                    hwtr: true,
+                    ar: "no_function",
+                    tr: true,
+                    vcr: true,
+                    ular: {
+                        roles: ["administrator","developer"]
+                    },
                     
                     desr: true,
-                    // otdr: true
+                    otdr: true
                 },
                 users: {
                     ignoreRolesWithString: ["wilcon","fleet"],
