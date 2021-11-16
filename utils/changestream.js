@@ -254,6 +254,16 @@ var streamList = {
             };
         }
     },
+    oversepeding_events: {
+        watch: () => {
+            return {
+                key: 'oversepeding_events',
+                collection: 'oversepeding_events',
+                pipeline: [],
+                options: { fullDocument : "updateLookup" }
+            };
+        }
+    },
 };
 /******** END STREAMLIST ********/
 

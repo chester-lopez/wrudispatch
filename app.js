@@ -260,7 +260,7 @@ app.use(`/api/overspeeding_events`, verifyToken, require("./router/overspeeding_
 // app.use(`/api/shipmentStatus`, verifyToken, require("./router/shipmentStatus"));
 
 app.use(`/api/remarks`, require("./router/remarks"));
-// app.use(`/api/dispatch_anon`, require("./router/dispatch_anonymous"));
+app.use(`/api/dispatch_anon`, require("./router/dispatch_anonymous"));
 /***** END ROUTER *****/
 
 app.use(function(req, res, next) {
