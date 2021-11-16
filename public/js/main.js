@@ -13413,8 +13413,6 @@ var OVERSPEEDING_EVENTS = {
     FUNCTION: {
         stream:null,
         init:function(){
-            var _new_ = true;
-
             var table = new Table({
                 id: "#tbl-overspeeding-events",
                 urlPath: "overspeeding_events",
@@ -13438,39 +13436,30 @@ var OVERSPEEDING_EVENTS = {
                 try {
                     value = JSON.parse("{"+obj.Value+"}");
                 } catch(error){}
+
+                // convert speed from meter/second to kilometer/hour -> (speed * 18) / 5
+                const speed = ((value['Speed']||0) * 18) / 5;
     
                 return TABLE.COL_ROW(null,{
                     '_id': obj._id,
+                    'ID': obj.id || "-",
                     '_row':  obj._row,
-                    'Date': DATETIME.FORMAT(obj.timestamp,"MMM D, YYYY, h:mm:ss A"),
+                    'DateTime': DATETIME.FORMAT(obj.timestamp,"MMM D, YYYY, h:mm:ss A"),
+                    'Date': DATETIME.FORMAT(obj.timestamp,"MM/DD/YYYY"),
+                    'Time': DATETIME.FORMAT(obj.timestamp,"h:mm:ss A"),
                     'RuleName': obj.RuleName,
+                    'State': obj.State || "-",
                     'Vehicle Name': value['Vehicle Name'] || "-",
                     'Equipt No': value['Equipt No'] || "-",
                     'Site': value['Site'] || "-",
                     'Site Code': value['Site Code'] || "-",
                     'Duration': value['Duration'] || "-",
-                    'Speed': value['Speed'] || "-",
-                    'State': obj.State || "-",
+                    'Speed': GET.ROUND_OFF(speed) || "-",
                     'Namespace': obj.Namespace || "-",
                     'Lng': obj.lng || "",
                     'Lat': obj.lat || "",
                     'Alt': obj.alt || "-",
                 }).row;
-
-                
-            // { data: "_id", title: "ID", visible: false },
-            // { data: "Date", title: "Date", type:"date", visible: true },
-            // { data: "RuleName", title: "Rule Name", visible: true },
-            // { data: "Vehicle Name", title: "Vehicle Name", visible: true },
-            // { data: "Equipt No", title: "Equipt No", visible: true },
-            // { data: "Site", title: "Site", visible: true },
-            // { data: "Site Code", title: "Site Code", visible: true },
-            // { data: "Duration", title: "Duration", visible: true },
-            // { data: "Speed", title: "Speed", visible: true },
-            // { data: "State", title: "State", visible: false },
-            // { data: "Namespace", title: "Namespace", visible: false },
-            // { data: "LngLat", title: "Long-Lat", visible: true },
-            // { data: "Alt", title: "Altitude", visible: true },
             };
             table.rowListeners = function(_row,_id){
                 const self = this;
@@ -13517,19 +13506,6 @@ var OVERSPEEDING_EVENTS = {
             };
             table.initialize();
             table.countRows();
-
-            /******** TABLE CHECK ********/
-            // TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
-            //     isFinishedLoading(["VEHICLES"], _new_, function(){
-            //         _new_ = false;
-                    
-            //         table.updateRows(LIST['overspeeding_events']);
-                    
-            //         TABLE.FINISH_LOADING.UPDATE();
-            //     });
-            // }
-            // TABLE.FINISH_LOADING.START_CHECK();
-            /******** END TABLE CHECK ********/
         }
     }
 };

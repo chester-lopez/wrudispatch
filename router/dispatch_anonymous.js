@@ -2598,4 +2598,82 @@ router.get('/test/insert/customers', (req,res,next)=>{
 });
 
 
+// update overspeeding_events
+router.get('/test/update/overspeeding_events', (req,res,next)=>{
+    var prodURL = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    var devURL = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+
+    var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
+
+    var dbName = "wd-fleet-logging";
+    const childPromise = [];
+
+    MongoClient.connect(devURL, mongoOptions, (err,client) => {
+        if(err){
+            console.log("ERROR1",err);
+            res.json({error:1,error:err});
+        } else {
+            const query = client.db(dbName).collection("overspeeding_events");
+
+            const deleteArrIds = [];
+            const insertArr = [];
+
+            query.find({}).toArray().then(docs => {
+                
+                docs.forEach(val => {
+                    if(!val.id){
+
+                        // add to delete array
+                        deleteArrIds.push(val._id);
+
+
+                        // add to insert array
+                        const obj = {
+                            id: val._id,
+                            userID: val.userID,
+                            RuleName: val.RuleName,
+                            UserName: val.UserName,
+                            Namespace: val.Namespace,
+                            Value: val.Value,
+                            State: val.State,
+                            lng: val.lng,
+                            lat: val.lat,
+                            alt: val.alt,
+                            timestamp: new Date(val.utc).toISOString(),
+                        };
+                        
+                        insertArr.push(obj);
+                    }
+                });
+
+                // delete
+                childPromise.push(
+                    query.deleteMany({ _id: { $in: deleteArrIds } })
+                );
+
+                // insert
+                childPromise.push(
+                    query.insertMany(insertArr)
+                );
+
+                Promise.all(childPromise).then(result => {
+                    client.close();
+                    res.json({ok:1,result});
+                }).catch(error => {
+                    client.close();
+                    console.log("ERROR2",error);
+                    res.json({error:1,error});
+                });
+            }).catch(error => {
+                client.close();
+                console.log("ERROR4",error);
+                res.json({error:1,error});
+            });
+        }
+    });
+
+   
+});
+
+
 module.exports = router;
