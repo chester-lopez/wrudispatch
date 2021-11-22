@@ -13429,7 +13429,7 @@ var OVERSPEEDING_EVENTS = {
                     dom: 'lBrti<"tbl-progress-bar">p',
                 }
             });
-            USER.filters["overspeeding_events"] = { timestamp: FILTER.DATERANGE() };
+            USER.filters["overspeeding_events"] = { timestamp: FILTER.DATERANGE(), RuleName: "Over speeding > 70kph" };
             table.setButtons({});
             table.addRow = function(obj){
                 var value = {};
@@ -13476,7 +13476,7 @@ var OVERSPEEDING_EVENTS = {
                         $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
 
                         
-                        USER.filters["overspeeding_events"] = {timestamp: FILTER.DATERANGE(_date)};
+                        USER.filters["overspeeding_events"] = {timestamp: FILTER.DATERANGE(_date), RuleName: "Over speeding > 70kph"};
                         table.countRows();
                     }
                 });
@@ -13499,7 +13499,7 @@ var OVERSPEEDING_EVENTS = {
 
                     $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
 
-                    USER.filters["overspeeding_events"] = { timestamp: FILTER.DATERANGE(_date) };
+                    USER.filters["overspeeding_events"] = { timestamp: FILTER.DATERANGE(_date), RuleName: "Over speeding > 70kph" };
                     table.countRows();
                 });
                 // initialize filter
