@@ -13613,6 +13613,111 @@ var OTD_EVENTS = {
         }
     }
 };
+var CICO_EVENTS = {
+    FUNCTION: {
+        stream:null,
+        init:function(){
+            var table = new Table({
+                id: "#tbl-cico-events",
+                urlPath: "overspeeding_events",
+                perColumnSearch: true,
+                goto: "cico_events",
+                dataTableOptions: {
+                    columns: TABLE.COL_ROW(CUSTOM.COLUMN.cico_events).column,
+                    order: [[ 1, "desc" ]],
+                    createdRow: function (row, data, dataIndex) {
+                        var _row = data._row;
+                        $(row).attr(`_row`, _row);
+                        table.rowListeners(_row,data._id);
+                    },
+                    dom: 'lBrti<"tbl-progress-bar">p',
+                }
+            });
+            USER.filters["overspeeding_events"] = { timestamp: FILTER.DATERANGE(), RuleName: "Check In, Check Out" };
+            table.setButtons({});
+            table.addRow = function(obj){
+                var value = {};
+                try {
+                    value = JSON.parse("{"+obj.Value+"}");
+                } catch(error){}
+
+                // convert speed from meter/second to kilometer/hour -> (speed * 18) / 5
+                const speed = ((value['Speed']||0) * 18) / 5;
+    
+                return TABLE.COL_ROW(null,{
+                    '_id': obj._id,
+                    'ID': obj.id || "-",
+                    '_row':  obj._row,
+                    'DateTime': DATETIME.FORMAT(obj.timestamp,"MMM D, YYYY, h:mm:ss A"),
+                    'Date': DATETIME.FORMAT(obj.timestamp,"MM/DD/YYYY"),
+                    'Time': DATETIME.FORMAT(obj.timestamp,"h:mm:ss A"),
+                    'RuleName': obj.RuleName,
+                    'State': obj.State || "-",
+                    'Vehicle Name': value['Vehicle Name'] || "-",
+                    'Equipt No': value['Equipment #'] || "-",
+                    'Site': value['Location'] || "-",
+                    'Site Code': value['Site Code'] || "-",
+                    'Duration': value['Duration'] || "-",
+                    'Speed': GET.ROUND_OFF(speed) || "-",
+                    'Namespace': obj.Namespace || "-",
+                    'Lng': obj.lng || "",
+                    'Lat': obj.lat || "",
+                    'Alt': obj.alt || "-",
+                    'Truck Base Code': value['Truck Base Code'] || "-",
+                    'Truck Base Site': value['Truck Base Side'] || "",
+                    'Truck Status': value['Truck Status'] || "",
+                    'Truck Type': value['Truck Type'] || "",
+                    'Event Start Time': value['Event Start'] || "",
+                }).row;
+            };
+            table.rowListeners = function(_row,_id){
+                const self = this;
+            };
+            table.filterListener = function(_row,_id){
+                // initialize filter
+                FILTER.RESET({
+                    dateEl: `#_date`,
+                    populateTable: function(){
+                        var _date = $(`#_date`).val() || DEFAULT_DATE;
+
+                        FILTER.STATUS = "new";
+
+                        $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
+
+                        
+                        USER.filters["overspeeding_events"] = {timestamp: FILTER.DATERANGE(_date), RuleName: "Check In, Check Out"};
+                        table.countRows();
+                    }
+                });
+                $(`#_date`).daterangepicker({
+                    opens: 'left',
+                    autoUpdateInput: false,
+                    singleDatePicker:true,
+                    autoApply: true
+                }, function(start, end, label) {
+                    FILTER.INITIALIZE($(this)["0"].element,start,end);
+                    $('.clearable').trigger("input");
+                }).on('apply.daterangepicker', function (ev, picker) {
+                    FILTER.INITIALIZE($(this),picker.startDate,picker.endDate);
+                    $('.clearable').trigger("input");
+                });
+                $(`#filter-btn`).click(function(){
+                    var _date = $(`#_date`).val() || DEFAULT_DATE;
+
+                    FILTER.STATUS = "new";
+
+                    $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
+
+                    USER.filters["overspeeding_events"] = { timestamp: FILTER.DATERANGE(_date), RuleName: "Check In, Check Out" };
+                    table.countRows();
+                });
+                // initialize filter
+            };
+            table.initialize();
+            table.countRows();
+        }
+    }
+};
 var USERS = {
     FUNCTION: {
         stream: null,
@@ -18223,8 +18328,8 @@ var PAGE = {
                 title: "Check IN, Check Out",
                 name: "cico_events",
                 icon: "la la-calendar",
-                display: function() { return views.overspeeding_events(); },
-                function: function() { OVERSPEEDING_EVENTS.FUNCTION.init() },
+                display: function() { return views.cico_events(); },
+                function: function() { CICO_EVENTS.FUNCTION.init() },
                 buttons: {
                     table: ["refresh","export","filter","search"],
                     row:["view"]
@@ -21068,6 +21173,23 @@ const views = new function(){
                             ${ALERT.HTML.INFO("This page displays all overspeeding events sent by vehicles to WRU Dispatch.","ml-0 mr-0 mt-2 mb-3",true)}
                             <div class="table-wrapper">
                                 <table id="tbl-otd-events" class="table table-hover table-bordered">
+                                    <thead></thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>`;
+        },
+        cico_events: function(){
+            return `<div class="page-box row">
+                        ${SLIDER.FILTER(`<div>
+                                                <div style="font-size: 10px;">Date:</div>
+                                                <input type="text" id="_date" class="clearable form-control" style="padding-left: 10px;" value="${DEFAULT_DATE}" readonly>
+                                            </div>`)}
+                        <div class="col-sm-12 mt-2">
+                            ${ALERT.HTML.INFO("This page displays all overspeeding events sent by vehicles to WRU Dispatch.","ml-0 mr-0 mt-2 mb-3",true)}
+                            <div class="table-wrapper">
+                                <table id="tbl-cico-events" class="table table-hover table-bordered">
                                     <thead></thead>
                                     <tbody></tbody>
                                 </table>
