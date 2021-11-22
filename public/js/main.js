@@ -18090,6 +18090,42 @@ var PAGE = {
                     row:["edit","delete"]
                 }
             },
+            overspeeding_events: {
+                title: "Overspeeding",
+                name: "overspeeding_events",
+                icon: "la la-calendar",
+                display: function() { return views.overspeeding_events(); },
+                function: function() { OVERSPEEDING_EVENTS.FUNCTION.init() },
+                buttons: {
+                    table: ["refresh","export","filter","search"],
+                    row:["view"]
+                },
+                menu_group: {
+                    title: "Events",
+                }
+            },
+            otd_events: {
+                title: "OTD",
+                name: "otd_events",
+                icon: "la la-calendar",
+                display: function() { return views.overspeeding_events(); },
+                function: function() { OVERSPEEDING_EVENTS.FUNCTION.init() },
+                buttons: {
+                    table: ["refresh","export","filter","search"],
+                    row:["view"]
+                },
+            },
+            cico_events: {
+                title: "Check IN, Check Out",
+                name: "cico_events",
+                icon: "la la-calendar",
+                display: function() { return views.overspeeding_events(); },
+                function: function() { OVERSPEEDING_EVENTS.FUNCTION.init() },
+                buttons: {
+                    table: ["refresh","export","filter","search"],
+                    row:["view"]
+                },
+            },
             all_events: {
                 title: "All Events",
                 name: "all_events",
@@ -18103,17 +18139,6 @@ var PAGE = {
                 menu_group: {
                     title: "For Developers",
                 }
-            },
-            overspeeding_events: {
-                title: "Overspeeding Events",
-                name: "overspeeding_events",
-                icon: "la la-calendar",
-                display: function() { return views.overspeeding_events(); },
-                function: function() { OVERSPEEDING_EVENTS.FUNCTION.init() },
-                buttons: {
-                    table: ["refresh","export","filter","search"],
-                    row:["view"]
-                },
             },
             changelog: {
                 title: "Changelog",

@@ -1028,6 +1028,18 @@ var LIMIT = 200,
                 update: "none",
                 delete: "none"
             },
+            otd_events: {
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            cico_events: {
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
         },
         developer_fleet: {
             users:{
@@ -1048,13 +1060,25 @@ var LIMIT = 200,
                 update: "none",
                 delete: "all"
             },
-            all_events: {
+            overspeeding_events: {
                 read: "all",
                 create: "none",
                 update: "none",
                 delete: "all"
             },
-            overspeeding_events: {
+            otd_events: {
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "all"
+            },
+            cico_events: {
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "all"
+            },
+            all_events: {
                 read: "all",
                 create: "none",
                 update: "none",
