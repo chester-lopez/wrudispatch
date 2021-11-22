@@ -13439,6 +13439,7 @@ var OVERSPEEDING_EVENTS = {
 
                 // convert speed from meter/second to kilometer/hour -> (speed * 18) / 5
                 const speed = ((value['Speed']||0) * 18) / 5;
+                const duration = Number(value['Duration']) * (1/3600); // seconds to decimal hour
     
                 return TABLE.COL_ROW(null,{
                     '_id': obj._id,
@@ -13453,7 +13454,7 @@ var OVERSPEEDING_EVENTS = {
                     'Equipt No': value['Equipt No'] || "-",
                     'Site': value['Site'] || "-",
                     'Site Code': value['Site Code'] || "-",
-                    'Duration': value['Duration'] || "-",
+                    'Duration': GET.ROUND_OFF(duration) || "-",
                     'Speed': GET.ROUND_OFF(speed) || "-",
                     'Namespace': obj.Namespace || "-",
                     'Lng': obj.lng || "",
@@ -13654,6 +13655,8 @@ var CICO_EVENTS = {
                     value = JSON.parse("{"+obj.Value+"}");
                 } catch(error){}
     
+                const duration = Number(value['Duration']) * (1/3600); // seconds to decimal hour
+
                 return TABLE.COL_ROW(null,{
                     '_id': obj._id,
                     'ID': obj.id || "-",
@@ -13667,11 +13670,12 @@ var CICO_EVENTS = {
                     'Equipt No': value['Equipt No'] || "-",
                     'Site': value['Site'] || "-",
                     'Site Code': value['Site Code'] || "-",
-                    'Duration': value['Duration'] || "-",
+                    'Duration': GET.ROUND_OFF(duration) || "-",
                     'Namespace': obj.Namespace || "-",
                     'Lng': obj.lng || "",
                     'Lat': obj.lat || "",
                     'Alt': obj.alt || "-",
+                    'Address': value['Address'] || "-",
                     'Truck Base Code': value['Truck Base Code'] || "-",
                     'Truck Base Site': value['Truck Base Site'] || "",
                     'Truck Status': value['Truck Status'] || "",

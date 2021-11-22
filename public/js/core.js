@@ -598,6 +598,7 @@ const CUSTOM = {
             { data: "Lng", title: "Longitude", visible: true },
             { data: "Lat", title: "Latitude", visible: true },
             { data: "Alt", title: "Altitude", visible: true },
+            { data: "Address", title: "Address", visible: false },
             { data: "Truck Base Site", title: "Truck Base Site", visible: true },
             { data: "Truck Base Code", title: "Truck Base Code", visible: false },
             { data: "Truck Status", title: "Truck Status", visible: false },
