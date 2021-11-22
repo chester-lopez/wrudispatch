@@ -13513,6 +13513,9 @@ var OTD_EVENTS = {
     FUNCTION: {
         stream:null,
         init:function(){
+
+            var _new_ = true;
+
             var table = new Table({
                 id: "#tbl-otd-events",
                 urlPath: "overspeeding_events",
@@ -13537,8 +13540,7 @@ var OTD_EVENTS = {
                     value = JSON.parse("{"+obj.Value+"}");
                 } catch(error){}
 
-                // convert speed from meter/second to kilometer/hour -> (speed * 18) / 5
-                const speed = ((value['Speed']||0) * 18) / 5;
+                const vehicle = getVehicle(obj.userID) || {};
     
                 return TABLE.COL_ROW(null,{
                     '_id': obj._id,
@@ -13549,20 +13551,20 @@ var OTD_EVENTS = {
                     'Time': DATETIME.FORMAT(obj.timestamp,"h:mm:ss A"),
                     'RuleName': obj.RuleName,
                     'State': obj.State || "-",
-                    'Vehicle Name': value['Vehicle Name'] || "-",
+                    'Vehicle Name': value['Vehicle Name'] || vehicle.name || '<small class="font-italic text-muted">loading...</small>',
                     'Equipt No': value['Equipment #'] || "-",
                     'Site': value['Location'] || "-",
+                    'ODO': value.ODO || "-",
+                    'Check Out DateTime':  DATETIME.FORMAT(value['Check Out'],"MMM D, YYYY, h:mm:ss A"),
+                    'Check Out Date': DATETIME.FORMAT(value['Check Out'],"MM/DD/YYYY"),
+                    'Check Out Time': DATETIME.FORMAT(value['Check Out'],"h:mm:ss A"),
                     'Site Code': value['Site Code'] || "-",
-                    'Duration': value['Duration'] || "-",
-                    'Speed': GET.ROUND_OFF(speed) || "-",
                     'Namespace': obj.Namespace || "-",
                     'Lng': obj.lng || "",
                     'Lat': obj.lat || "",
                     'Alt': obj.alt || "-",
-                    'ODO': value.ODO || "-",
                     'Moving': value.Moving || "",
                     'Truck Type': value['Truck Type'] || "",
-                    'Check Out': value['Check Out'] || "",
                 }).row;
             };
             table.rowListeners = function(_row,_id){
@@ -13610,6 +13612,16 @@ var OTD_EVENTS = {
             };
             table.initialize();
             table.countRows();
+
+            /******** TABLE CHECK ********/
+            TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
+                isFinishedLoading(["VEHICLES"], _new_, function(){
+                    _new_ = false;
+                    table.updateRows(LIST['overspeeding_events']);
+                });
+            }
+            TABLE.FINISH_LOADING.START_CHECK();
+            /******** END TABLE CHECK ********/
         }
     }
 };
@@ -13640,9 +13652,6 @@ var CICO_EVENTS = {
                 try {
                     value = JSON.parse("{"+obj.Value+"}");
                 } catch(error){}
-
-                // convert speed from meter/second to kilometer/hour -> (speed * 18) / 5
-                const speed = ((value['Speed']||0) * 18) / 5;
     
                 return TABLE.COL_ROW(null,{
                     '_id': obj._id,
@@ -13654,20 +13663,21 @@ var CICO_EVENTS = {
                     'RuleName': obj.RuleName,
                     'State': obj.State || "-",
                     'Vehicle Name': value['Vehicle Name'] || "-",
-                    'Equipt No': value['Equipment #'] || "-",
-                    'Site': value['Location'] || "-",
+                    'Equipt No': value['Equipt No'] || "-",
+                    'Site': value['Site'] || "-",
                     'Site Code': value['Site Code'] || "-",
                     'Duration': value['Duration'] || "-",
-                    'Speed': GET.ROUND_OFF(speed) || "-",
                     'Namespace': obj.Namespace || "-",
                     'Lng': obj.lng || "",
                     'Lat': obj.lat || "",
                     'Alt': obj.alt || "-",
                     'Truck Base Code': value['Truck Base Code'] || "-",
-                    'Truck Base Site': value['Truck Base Side'] || "",
+                    'Truck Base Site': value['Truck Base Site'] || "",
                     'Truck Status': value['Truck Status'] || "",
                     'Truck Type': value['Truck Type'] || "",
-                    'Event Start Time': value['Event Start'] || "",
+                    'Event Start DateTime': DATETIME.FORMAT(value['Event Start'],"MMM D, YYYY, h:mm:ss A"),
+                    'Event Start Date': DATETIME.FORMAT(value['Event Start'],"MM/DD/YYYY"),
+                    'Event Start Time': DATETIME.FORMAT(value['Event Start'],"h:mm:ss A"),
                 }).row;
             };
             table.rowListeners = function(_row,_id){
