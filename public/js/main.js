@@ -13429,10 +13429,10 @@ var OVERSPEEDING_EVENTS = {
                     dom: 'lBrti<"tbl-progress-bar">p',
                 }
             });
-            USER.filters["overspeeding_events"] = { timestamp: FILTER.DATERANGE(), RuleName: "Over speeding > 70kph" };
+            USER.filters["overspeeding_events"] = { 'Value.Event Start': FILTER.DATERANGE(), RuleName: "Over speeding > 70kph" };
             table.setButtons({});
             table.addRow = function(obj){
-                var value = {};
+                var value = obj.Value;
                 try {
                     value = JSON.parse("{"+obj.Value+"}");
                 } catch(error){}
@@ -13445,9 +13445,9 @@ var OVERSPEEDING_EVENTS = {
                     '_id': obj._id,
                     'ID': obj.id || "-",
                     '_row':  obj._row,
-                    'DateTime': DATETIME.FORMAT(obj.timestamp,"MMM D, YYYY, h:mm:ss A"),
-                    'Date': DATETIME.FORMAT(obj.timestamp,"MM/DD/YYYY"),
-                    'Time': DATETIME.FORMAT(obj.timestamp,"h:mm:ss A"),
+                    'DateTime': DATETIME.FORMAT(value['Event Start'],"MMM D, YYYY, h:mm:ss A"),
+                    'Date': DATETIME.FORMAT(value['Event Start'],"MM/DD/YYYY"),
+                    'Time': DATETIME.FORMAT(value['Event Start'],"h:mm:ss A"),
                     'RuleName': obj.RuleName,
                     'State': obj.State || "-",
                     'Vehicle Name': value['Vehicle Name'] || "-",
@@ -13477,7 +13477,7 @@ var OVERSPEEDING_EVENTS = {
                         $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
 
                         
-                        USER.filters["overspeeding_events"] = {timestamp: FILTER.DATERANGE(_date), RuleName: "Over speeding > 70kph"};
+                        USER.filters["overspeeding_events"] = {'Value.Event Start': FILTER.DATERANGE(_date), RuleName: "Over speeding > 70kph"};
                         table.countRows();
                     }
                 });
@@ -13500,7 +13500,7 @@ var OVERSPEEDING_EVENTS = {
 
                     $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
 
-                    USER.filters["overspeeding_events"] = { timestamp: FILTER.DATERANGE(_date), RuleName: "Over speeding > 70kph" };
+                    USER.filters["overspeeding_events"] = { 'Value.Event Start': FILTER.DATERANGE(_date), RuleName: "Over speeding > 70kph" };
                     table.countRows();
                 });
                 // initialize filter
@@ -13519,7 +13519,7 @@ var OTD_EVENTS = {
 
             var table = new Table({
                 id: "#tbl-otd-events",
-                urlPath: "overspeeding_events",
+                urlPath: "otd_events",
                 perColumnSearch: true,
                 goto: "otd_events",
                 dataTableOptions: {
@@ -13533,10 +13533,10 @@ var OTD_EVENTS = {
                     dom: 'lBrti<"tbl-progress-bar">p',
                 }
             });
-            USER.filters["overspeeding_events"] = { timestamp: FILTER.DATERANGE(), RuleName: "Check Out" };
+            USER.filters["otd_events"] = { 'Value.Check Out': FILTER.DATERANGE(), RuleName: "Check Out" };
             table.setButtons({});
             table.addRow = function(obj){
-                var value = {};
+                var value = obj.Value;
                 try {
                     value = JSON.parse("{"+obj.Value+"}");
                 } catch(error){}
@@ -13547,9 +13547,9 @@ var OTD_EVENTS = {
                     '_id': obj._id,
                     'ID': obj.id || "-",
                     '_row':  obj._row,
-                    'DateTime': DATETIME.FORMAT(obj.timestamp,"MMM D, YYYY, h:mm:ss A"),
-                    'Date': DATETIME.FORMAT(obj.timestamp,"MM/DD/YYYY"),
-                    'Time': DATETIME.FORMAT(obj.timestamp,"h:mm:ss A"),
+                    'DateTime': DATETIME.FORMAT(value['Check Out'],"MMM D, YYYY, h:mm:ss A"),
+                    'Date': DATETIME.FORMAT(value['Check Out'],"MM/DD/YYYY"),
+                    'Time': DATETIME.FORMAT(value['Check Out'],"h:mm:ss A"),
                     'RuleName': obj.RuleName,
                     'State': obj.State || "-",
                     'Vehicle Name': value['Vehicle Name'] || vehicle.name || '<small class="font-italic text-muted">loading...</small>',
@@ -13557,9 +13557,6 @@ var OTD_EVENTS = {
                     'Location': value['Location'] || "-",
                     'DC Tag': value['DC Tag'] || "-",
                     'ODO': value.ODO || "-",
-                    'Check Out DateTime':  DATETIME.FORMAT(value['Check Out'],"MMM D, YYYY, h:mm:ss A"),
-                    'Check Out Date': DATETIME.FORMAT(value['Check Out'],"MM/DD/YYYY"),
-                    'Check Out Time': DATETIME.FORMAT(value['Check Out'],"h:mm:ss A"),
                     'Site Code': value['Site Code'] || "-",
                     'Namespace': obj.Namespace || "-",
                     'Lng': obj.lng || "",
@@ -13584,7 +13581,7 @@ var OTD_EVENTS = {
                         $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
 
                         
-                        USER.filters["overspeeding_events"] = {timestamp: FILTER.DATERANGE(_date), RuleName: "Check Out"};
+                        USER.filters["otd_events"] = {'Value.Check Out': FILTER.DATERANGE(_date), RuleName: "Check Out"};
                         table.countRows();
                     }
                 });
@@ -13607,7 +13604,7 @@ var OTD_EVENTS = {
 
                     $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
 
-                    USER.filters["overspeeding_events"] = { timestamp: FILTER.DATERANGE(_date), RuleName: "Check Out" };
+                    USER.filters["otd_events"] = { 'Value.Check Out': FILTER.DATERANGE(_date), RuleName: "Check Out" };
                     table.countRows();
                 });
                 // initialize filter
@@ -13619,7 +13616,7 @@ var OTD_EVENTS = {
             TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
                 isFinishedLoading(["VEHICLES"], _new_, function(){
                     _new_ = false;
-                    table.updateRows(LIST['overspeeding_events']);
+                    table.updateRows(LIST['otd_events']);
                 });
             }
             TABLE.FINISH_LOADING.START_CHECK();
@@ -13633,7 +13630,7 @@ var CICO_EVENTS = {
         init:function(){
             var table = new Table({
                 id: "#tbl-cico-events",
-                urlPath: "overspeeding_events",
+                urlPath: "cico_events",
                 perColumnSearch: true,
                 goto: "cico_events",
                 dataTableOptions: {
@@ -13647,10 +13644,10 @@ var CICO_EVENTS = {
                     dom: 'lBrti<"tbl-progress-bar">p',
                 }
             });
-            USER.filters["overspeeding_events"] = { timestamp: FILTER.DATERANGE(), RuleName: "Check In, Check Out" };
+            USER.filters["cico_events"] = { 'Value.Event Start': FILTER.DATERANGE(), RuleName: "Check In, Check Out" };
             table.setButtons({});
             table.addRow = function(obj){
-                var value = {};
+                var value = obj.Value;
                 try {
                     value = JSON.parse("{"+obj.Value+"}");
                 } catch(error){}
@@ -13661,9 +13658,9 @@ var CICO_EVENTS = {
                     '_id': obj._id,
                     'ID': obj.id || "-",
                     '_row':  obj._row,
-                    'DateTime': DATETIME.FORMAT(obj.timestamp,"MMM D, YYYY, h:mm:ss A"),
-                    'Date': DATETIME.FORMAT(obj.timestamp,"MM/DD/YYYY"),
-                    'Time': DATETIME.FORMAT(obj.timestamp,"h:mm:ss A"),
+                    'DateTime': DATETIME.FORMAT(value['Event Start'],"MMM D, YYYY, h:mm:ss A"),
+                    'Date': DATETIME.FORMAT(value['Event Start'],"MM/DD/YYYY"),
+                    'Time': DATETIME.FORMAT(value['Event Start'],"h:mm:ss A"),
                     'RuleName': obj.RuleName,
                     'State': obj.State || "-",
                     'Vehicle Name': value['Vehicle Name'] || "-",
@@ -13680,9 +13677,6 @@ var CICO_EVENTS = {
                     'Truck Base Site': value['Truck Base Site'] || "",
                     'Truck Status': value['Truck Status'] || "",
                     'Truck Type': value['Truck Type'] || "",
-                    'Event Start DateTime': DATETIME.FORMAT(value['Event Start'],"MMM D, YYYY, h:mm:ss A"),
-                    'Event Start Date': DATETIME.FORMAT(value['Event Start'],"MM/DD/YYYY"),
-                    'Event Start Time': DATETIME.FORMAT(value['Event Start'],"h:mm:ss A"),
                 }).row;
             };
             table.rowListeners = function(_row,_id){
@@ -13700,7 +13694,7 @@ var CICO_EVENTS = {
                         $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
 
                         
-                        USER.filters["overspeeding_events"] = {timestamp: FILTER.DATERANGE(_date), RuleName: "Check In, Check Out"};
+                        USER.filters["cico_events"] = {'Value.Event Start': FILTER.DATERANGE(_date), RuleName: "Check In, Check Out"};
                         table.countRows();
                     }
                 });
@@ -13723,7 +13717,7 @@ var CICO_EVENTS = {
 
                     $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
 
-                    USER.filters["overspeeding_events"] = { timestamp: FILTER.DATERANGE(_date), RuleName: "Check In, Check Out" };
+                    USER.filters["cico_events"] = { 'Value.Event Start': FILTER.DATERANGE(_date), RuleName: "Check In, Check Out" };
                     table.countRows();
                 });
                 // initialize filter

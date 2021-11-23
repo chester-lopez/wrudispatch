@@ -2620,32 +2620,38 @@ router.get('/test/update/overspeeding_events/:skip/:limit', (req,res,next)=>{
             const deleteArrIds = [];
             const insertArr = [];
 
-            query.find({ id: { $exists: false } }).skip(skip).limit(limit).toArray().then(docs => {
+            query.find({ RuleName: 'Check Out', 'Value.Event Start': { $exists: true } }).skip(skip).limit(limit).toArray().then(docs => {
                 console.log(docs.length);
                 docs.forEach(val => {
-                    if(!val.id){
-
-                        // add to delete array
-                        deleteArrIds.push(val._id);
-
+                    // if(typeof val['Value'] == 'string'){
 
                         // add to insert array
-                        const obj = {
-                            id: val._id,
-                            userID: val.userID,
-                            RuleName: val.RuleName,
-                            UserName: val.UserName,
-                            Namespace: val.Namespace,
-                            Value: val.Value,
-                            State: val.State,
-                            lng: val.lng,
-                            lat: val.lat,
-                            alt: val.alt,
-                            timestamp: new Date(val.utc).toISOString(),
-                        };
+                        const obj = val;
                         
+                        obj['Value']['Check Out'] = obj['Value']['Event Start'];
+
+                        // delete obj['Value']['Event Start'];
+
+                        // add to delete array
+                        deleteArrIds.push(db.getPrimaryKey(obj._id));
+
                         insertArr.push(obj);
-                    }
+                        
+                        // try {
+
+    
+    
+
+                        //     // convert Dates to ISO
+                        //     val['Value']['Event Start'] ? val['Value']['Event Start'] = new Date(val['Value']['Event Start']+'Z').toISOString() : null;
+                        //     val['Value']['Check Out'] ? val['Value']['Check Out'] = new Date(val['Value']['Check Out']+'Z').toISOString() : null;
+
+                        // } catch(error) {
+                        //     // console.log('ERror',error,val['Value']['Event Start'],val['Value']['Check Out']);
+                        // }
+
+                        
+                    // }
                 });
 
                 // delete
@@ -2679,6 +2685,44 @@ router.get('/test/update/overspeeding_events/:skip/:limit', (req,res,next)=>{
             }).catch(error => {
                 client.close();
                 console.log("ERROR4",error);
+                res.json({error:1,error});
+            });
+        }
+    });
+
+   
+});
+// update overspeeding_events
+router.get('/test/delete/overspeeding_events/:skip/:limit', (req,res,next)=>{
+    const skip = Number(req.params.skip);
+    const limit = Number(req.params.limit);
+    var prodURL = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+    var devURL = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+
+    var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
+
+    var dbName = "wd-fleet-logging";
+    const childPromise = [];
+
+    MongoClient.connect(prodURL, mongoOptions, (err,client) => {
+        if(err){
+            console.log("ERROR1",err);
+            res.json({error:1,error:err});
+        } else {
+            const query = client.db(dbName).collection("overspeeding_events");
+
+            const deleteArrIds = [];
+            const insertArr = [];
+
+            query.updateMany({},{ $unset: {
+                updated: '',
+                up: '',
+            } }).then(result => {
+                client.close();
+                res.json({ok:1,result});
+            }).catch(error => {
+                client.close();
+                console.log("ERROR2",error);
                 res.json({error:1,error});
             });
         }

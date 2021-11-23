@@ -256,11 +256,13 @@ app.use(`/api/shift_schedule`, verifyToken, require("./router/shift_schedule"));
 app.use(`/api/calendar`, verifyToken, require("./router/calendar"));
 app.use(`/api/customers`, verifyToken, require("./router/customers"));
 app.use(`/api/overspeeding_events`, verifyToken, require("./router/overspeeding_events"));
+app.use(`/api/otd_events`, verifyToken, require("./router/otd_events"));
+app.use(`/api/cico_events`, verifyToken, require("./router/cico_events"));
 
 // app.use(`/api/shipmentStatus`, verifyToken, require("./router/shipmentStatus"));
 
 app.use(`/api/remarks`, require("./router/remarks"));
-// app.use(`/api/dispatch_anon`, require("./router/dispatch_anonymous"));
+app.use(`/api/dispatch_anon`, require("./router/dispatch_anonymous"));
 /***** END ROUTER *****/
 
 app.use(function(req, res, next) {

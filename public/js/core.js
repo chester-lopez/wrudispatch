@@ -572,9 +572,6 @@ const CUSTOM = {
             { data: "DC Tag", title: "DC Tag", visible: true },
             { data: "Site Code", title: "Site Code", visible: false },
             { data: "ODO", title: "ODO", visible: true },
-            { data: "Check Out DateTime", title: "Check Out DateTime", type:"date", className: "notExport", visible: true },
-            { data: "Check Out Date", title: "Check Out Date", visible: false },
-            { data: "Check Out Time", title: "Check Out Time", visible: false },
             { data: "Namespace", title: "Namespace", visible: false },
             { data: "Lng", title: "Longitude", visible: true },
             { data: "Lat", title: "Latitude", visible: true },
@@ -603,9 +600,6 @@ const CUSTOM = {
             { data: "Truck Base Code", title: "Truck Base Code", visible: false },
             { data: "Truck Status", title: "Truck Status", visible: false },
             { data: "Truck Type", title: "Truck Type", visible: false },
-            { data: "Event Start DateTime", type:"date", className: "notExport", title: "Event Start Time", visible: true },
-            { data: "Event Start Date", title: "Event Start Date", visible: false },
-            { data: "Event Start Time", title: "Event Start Time", visible: false },
         ],
         users: function(){
             return [
