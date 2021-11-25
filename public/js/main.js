@@ -9570,7 +9570,8 @@ var REPORTS = {
                         destination = getGeofence(val.destination[0].location_id) || {},
                         vehicle = getVehicle(val.vehicle_id) || {};
 
-                    const key = origin.short_name;
+                    // const key = origin.short_name;
+                    const key = vehicle["Base Site Code"];
 
                     gboInfo[key] = gboInfo[key] || {
                         totalShipments: 0,
@@ -9583,6 +9584,8 @@ var REPORTS = {
                                             <td style="${noBorderCSS}text-align: center;">${(vehicle.name || "")}</td>
                                             <td style="${noBorderCSS}text-align: center;">${(val.trailer || vehicle["Trailer"] || "")}</td>
                                             <td style="${noBorderCSS}text-align: center;">${(vehicle["Pal Cap"] || "")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${(vehicle["Base Site"] || "")}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${(vehicle["Base Site Code"] || "")}</td>
                                             <td style="${noBorderCSS}text-align: center;">${origin.short_name}</td>
                                             <td style="${noBorderCSS}text-align: center;">${destination.short_name}</td>
                                             <td style="${noBorderCSS}text-align: center;">${val.route}</td>
@@ -9593,10 +9596,10 @@ var REPORTS = {
 
                     // GBO
                     const filteredGeofences = LIST["geofences"].filter(x => x.code);
-                    const sortedGeofences = ARRAY.OBJECT.sort(filteredGeofences,"short_name",{ sortType: "asc" });
+                    const sortedGeofences = ARRAY.OBJECT.sort(filteredGeofences,"code",{ sortType: "asc" });
                     sortedGeofences.forEach(gVal => {
 
-                        const val = gboInfo[gVal.short_name] || {};
+                        const val = gboInfo[gVal.code] || {};
 
                         const region = getRegion(gVal.region_id) || {}; 
 
@@ -9636,10 +9639,6 @@ var REPORTS = {
                             gbrInfo[gVal.region_id].trippageTarget += trippageTarget || 0;
                             (trippageTarget) ? gbrInfo[gVal.region_id].totalWithTrippageTarget ++ : null;
                         }
-
-                        // if(gboInfo[gVal.short_name]) {
-
-                        // }
                     });
 
                     // GBR
@@ -9733,7 +9732,7 @@ var REPORTS = {
                             <tr><td style="${noBorderCSS}" colspan=2></td></tr>
                             ${
                                 REPORTS.columnHtml( 
-                                    ['origin_1','originSiteCode','originRegion','shipmentCount_CheckedOut','truckInventory','trippage','trippageTarget','trippageVariance','remarksTrippage'],
+                                    ['baseSite','baseSiteCode','baseSiteRegion','shipmentCount_CheckedOut','truckInventory','trippage','trippageTarget','trippageVariance','remarksTrippage'],
                                     rotateCSS,
                                     tblHeaderCSS
                                 )
@@ -9750,7 +9749,7 @@ var REPORTS = {
                             <tr><td style="${noBorderCSS}"></td></tr>
                             ${
                                 REPORTS.columnHtml( 
-                                    ['shipment','vehicle','trailer','palCap','origin','destination','route','checkOutDate','checkOutTime'],
+                                    ['shipment','vehicle','trailer','palCap','baseSite','baseSiteCode','origin','destination','route','checkOutDate','checkOutTime'],
                                     rotateCSS,
                                     tblHeaderCSS
                                 )
