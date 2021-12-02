@@ -255,7 +255,7 @@ app.use(`/api/user_action`, verifyToken, require("./router/user_action"));
 app.use(`/api/shift_schedule`, verifyToken, require("./router/shift_schedule"));
 app.use(`/api/calendar`, verifyToken, require("./router/calendar"));
 app.use(`/api/customers`, verifyToken, require("./router/customers"));
-app.use(`/api/overspeeding_events`, verifyToken, require("./router/overspeeding_events"));
+app.use(`/api/eco_driving`, verifyToken, require("./router/eco_driving"));
 app.use(`/api/otd_events`, verifyToken, require("./router/otd_events"));
 app.use(`/api/cico_events`, verifyToken, require("./router/cico_events"));
 

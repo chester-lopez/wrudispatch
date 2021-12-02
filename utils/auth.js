@@ -1022,7 +1022,7 @@ var LIMIT = 200,
                 update: "none",
                 delete: "all"
             },
-            overspeeding_events: {
+            eco_driving: {
                 read: "all",
                 create: "none",
                 update: "none",
@@ -1060,7 +1060,7 @@ var LIMIT = 200,
                 update: "none",
                 delete: "all"
             },
-            overspeeding_events: {
+            eco_driving: {
                 read: "all",
                 create: "none",
                 update: "none",

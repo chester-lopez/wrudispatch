@@ -1097,6 +1097,8 @@ class Table {
         this._skip = 0;
 
         this._loadId = null;
+
+        this.autoPopulateData = (x.autoPopulateData == false) ? false : true;
     }
 
     get skip(){ return this._skip; }
@@ -1383,7 +1385,7 @@ class Table {
         });
     }
     retrieveData(length,loadId){
-        var self = this;
+        const self = this;
 
         self.tableFilter();
 
@@ -1430,6 +1432,8 @@ class Table {
             } else {
                 self.hideProgressBar();
                 self.display();
+
+                if (typeof self.customPopulate === 'function') { self.customPopulate(); }
             }
         }
     }
@@ -1447,7 +1451,6 @@ class Table {
 
         $('#search,#searchTerm').attr("disabled",false).html(`<i class="la la-search m-0"></i>`);
 
-        console.log("self.filterDataExtend",self.filterDataExtend);
         if(self.filterDataExtend !== true) {
             $('#filter-container input, #filter-container select, #filter-container button').attr("disabled",false);
             $(`#filter-container button,#filter-container a`).removeClass("disabled");
@@ -1456,7 +1459,7 @@ class Table {
     watch(){
 
     }
-    populateRows(data){
+    populateRows(data,byPass){
         const self = this;
 
         self.tableFilter();
@@ -1488,16 +1491,21 @@ class Table {
                 (val._row) ? null : val._row = GENERATE.RANDOM(36);
                 (index > -1) ? LIST[self.urlPath][index] = val : LIST[self.urlPath].push(val);
 
-                rows.push(self.addRow(val));
+                if(self.autoPopulateData || byPass){
+                    rows.push(self.addRow(val));
+                }
             });
-            self.dt.rows.add(rows).draw(false);
+            if(self.autoPopulateData || byPass){
+                self.dt.rows.add(rows).draw(false);
+            }
 
             TABLE.FINISH_LOADING.START_CHECK();
 
-            
-            $("div.tbl-progress-bar").show();
-
-            self.progressBar ? self.progressBar.calculate() : null;
+            if(!byPass){
+                $("div.tbl-progress-bar").show();
+    
+                self.progressBar ? self.progressBar.calculate() : null;
+            }
         }
         if(data.length == 0){
             $(".dataTables_empty").text("No data available in table");
@@ -13408,7 +13416,7 @@ var ALL_EVENTS = {
         }
     }
 };
-var OVERSPEEDING_EVENTS = {
+var OVERSPEEDING_EVENTS = { //////////////////////////////////////////////////////////////
     FUNCTION: {
         stream:null,
         init:function(){
@@ -13500,6 +13508,155 @@ var OVERSPEEDING_EVENTS = {
                     $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
 
                     USER.filters["overspeeding_events"] = { 'Value.Event Start': FILTER.DATERANGE(_date), RuleName: "Over speeding > 70kph" };
+                    table.countRows();
+                });
+                // initialize filter
+            };
+            table.initialize();
+            table.countRows();
+        }
+    }
+};
+var ECO_DRIVING = {
+    FUNCTION: {
+        stream:null,
+        init:function(){
+            var table = new Table({
+                id: "#tbl-eco_driving",
+                urlPath: "eco_driving",
+                perColumnSearch: true,
+                goto: "eco_driving",
+                autoPopulateData: false,
+                dataTableOptions: {
+                    columns: TABLE.COL_ROW(CUSTOM.COLUMN.eco_driving).column,
+                    order: [[ 0, "asc" ]],
+                    createdRow: function (row, data, dataIndex) {
+                        var _row = data._row;
+                        $(row).attr(`_row`, _row);
+                        table.rowListeners(_row,data._id);
+                    },
+                    dom: 'lBrti<"tbl-progress-bar">p',
+                }
+            });
+            USER.filters["eco_driving"] = { 'Value.Event Start': FILTER.DATERANGE(), RuleName: { $in: ['Over speeding > 70kph','Harsh Braking','Harsh Acceleration'] } };
+            table.setButtons({});
+            table.addRow = function(obj){
+                var value = obj.Value || {};
+                try {
+                    value = JSON.parse("{"+obj.Value+"}");
+                } catch(error){}
+
+                // SPEED
+                // convert speed from meter/second to kilometer/hour -> (speed * 18) / 5
+                const maxSpeed = ((obj['MaxSpeed']||0) * 18) / 5;
+                const totalEvents = obj['Brake'] + obj['Acc'] + obj['O_spd'];
+                const avgSpeed = (((obj['Speed']||0) / totalEvents) * 18) / 5;
+
+                // const oSpdTime = Number(obj['O_spd_Time']) * (1/3600); // seconds to decimal hour
+                const oSpdTime = DATETIME.DURATION_TIME_FORMAT((obj['O_spd_Time']*1000),true,true,true); // Format: HH:MM:SS
+    
+                return TABLE.COL_ROW(null,{
+                    '_id': obj._id,
+                    '_row':  obj._row,
+                    'Name': obj['Name'] || "-",
+                    'Days': Object.keys(obj.Days).length,
+                    'Class': obj.Class || "",
+                    'Score': totalEvents || "",
+                    'Dist': obj.Dist || "",
+                    'Max': (GET.ROUND_OFF(maxSpeed) || "") + ' kph',
+                    'Avg': (GET.ROUND_OFF(avgSpeed) || "") + ' kph',
+                    'Brake': obj.Brake || "",
+                    'Acc': obj.Acc || "",
+                    'O_spd': obj.O_spd || "",
+                    'Trip': obj.Trip || "",
+                    'Idle': obj.Idle || "",
+                    'O_spd_Time': oSpdTime || "",
+                }).row;
+            };
+            table.customPopulate = function(){
+                
+                const filteredArr = {};
+
+
+                LIST['eco_driving'].forEach(val => {
+
+                    if((val.RuleName == 'Over speeding > 70kph' && val.State == 'Finished') || (val.RuleName != 'Over speeding > 70kph' && val.State == 'New')){
+                        var value = val.Value || {};
+                        try {
+                            value = JSON.parse("{"+val.Value+"}");
+                        } catch(error){}
+    
+                        filteredArr[val.userID] = filteredArr[val.userID] || {
+                            '_id': val._id,
+                            'Name': value['Vehicle Name'] || "-",
+                            'Brake': 0,
+                            'Acc': 0,
+                            'O_spd': 0,
+                            'Speed': 0,
+                            'MaxSpeed': 0,
+                            'Days': {},
+                            'O_spd_Time': 0
+                        };
+
+                        // Days
+                        filteredArr[val.userID]['Days'][DATETIME.FORMAT(value['Event Start'],"YYYYMMDD")] = true;
+
+                        // Events
+                        (val.RuleName == 'Harsh Braking') ? filteredArr[val.userID]['Brake'] ++ : null;
+                        (val.RuleName == 'Harsh Acceleration') ? filteredArr[val.userID]['Acc'] ++ : null;
+                        (val.RuleName == 'Over speeding > 70kph') ? filteredArr[val.userID]['O_spd'] ++ : null;
+    
+                        // Speed
+                        filteredArr[val.userID]['Speed'] += Number(value['Speed']) || 0;
+                        (filteredArr[val.userID]['MaxSpeed'] < Number(value['Speed'])) ? filteredArr[val.userID]['MaxSpeed'] = Number(value['Speed']) : null;
+
+                        // Time
+                        filteredArr[val.userID]['O_spd_Time'] += Number(value['Duration']) || 0;
+                    }
+
+                });
+
+                table.populateRows(Object.values(filteredArr),true);
+            };
+            table.rowListeners = function(_row,_id){
+                const self = this;
+            };
+            table.filterListener = function(_row,_id){
+                // initialize filter
+                FILTER.RESET({
+                    dateEl: `#_date`,
+                    populateTable: function(){
+                        var _date = $(`#_date`).val() || DEFAULT_DATE;
+
+                        FILTER.STATUS = "new";
+
+                        $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
+
+                        
+                        USER.filters["eco_driving"] = {'Value.Event Start': FILTER.DATERANGE(_date), RuleName: { $in: ['Over speeding > 70kph','Harsh Braking','Harsh Acceleration'] } };
+                        table.countRows();
+                    }
+                });
+                $(`#_date`).daterangepicker({
+                    opens: 'left',
+                    autoUpdateInput: false,
+                    // singleDatePicker:true,
+                    autoApply: true
+                }, function(start, end, label) {
+                    FILTER.INITIALIZE($(this)["0"].element,start,end);
+                    $('.clearable').trigger("input");
+                }).on('apply.daterangepicker', function (ev, picker) {
+                    FILTER.INITIALIZE($(this),picker.startDate,picker.endDate);
+                    $('.clearable').trigger("input");
+                });
+                $(`#filter-btn`).click(function(){
+                    var _date = $(`#_date`).val() || DEFAULT_DATE;
+
+                    FILTER.STATUS = "new";
+
+                    $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
+
+                    USER.filters["eco_driving"] = { 'Value.Event Start': FILTER.DATERANGE(_date), RuleName: { $in: ['Over speeding > 70kph','Harsh Braking','Harsh Acceleration'] } };
                     table.countRows();
                 });
                 // initialize filter
@@ -18321,6 +18478,20 @@ var PAGE = {
                     title: "Events",
                 }
             },
+            eco_driving: {
+                title: "Eco Driving",
+                name: "eco_driving",
+                icon: "la la-calendar",
+                display: function() { return views.eco_driving(); },
+                function: function() { ECO_DRIVING.FUNCTION.init() },
+                buttons: {
+                    table: ["refresh","export","filter","search"],
+                    row:["view"]
+                },
+                menu_group: {
+                    title: "Events",
+                }
+            },
             otd_events: {
                 title: "OTD",
                 name: "otd_events",
@@ -21148,6 +21319,43 @@ const views = new function(){
                             <div class="table-wrapper">
                                 <table id="tbl-all-events" class="table table-hover table-bordered">
                                     <thead></thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>`;
+        },
+        eco_driving: function(){
+            return `<div class="page-box row">
+                        ${SLIDER.FILTER(`<div>
+                                                <div style="font-size: 10px;">Date:</div>
+                                                <input type="text" id="_date" class="clearable form-control" style="padding-left: 10px;" value="${DEFAULT_DATE}" readonly>
+                                            </div>`)}
+                        <div class="col-sm-12 mt-2">
+                            <div class="table-wrapper">
+                                <table id="tbl-eco_driving" class="table table-hover table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th rowspan="2">Name</th>
+                                            <th rowspan="2">Days</th>
+                                            <th rowspan="2">Class</th>
+                                            <th rowspan="2">Score</th>
+                                            <th rowspan="2">Dist</th>
+                                            <th colspan="2">Speed</th>
+                                            <th colspan="3">Events</th>
+                                            <th colspan="3">Time</th>
+                                        </tr>
+                                        <tr>
+                                            <th>Max</th>
+                                            <th>Avg</th>
+                                            <th>Brake</th>
+                                            <th>Acc</th>
+                                            <th>O-spd</th>
+                                            <th>Trip</th>
+                                            <th>Idle</th>
+                                            <th>O-spd</th>
+                                        </tr>
+                                    </thead>
                                     <tbody></tbody>
                                 </table>
                             </div>

@@ -120,9 +120,12 @@ var DATETIME = {
         const s = Math.floor(m_2_s);
 
         var duration = [];
-        (H) ? duration.push(h) : null;
-        (M) ? duration.push(m) : null;
-        (S) ? duration.push(s) : null;
+        (H) ? ((h.toString().length < 2) ? duration.push('0' + h) : duration.push(h)) : null;
+        (M) ? ((m.toString().length < 2) ? duration.push('0' + m) : duration.push(m)) : null;
+        (S) ? ((s.toString().length < 2) ? duration.push('0' + s) : duration.push(s)) : null;
+        // (H) ? duration.push(h) : null;
+        // (M) ? duration.push(m) : null;
+        // (S) ? duration.push(s) : null;
 
         return duration.join(":");
     }

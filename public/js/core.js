@@ -541,7 +541,7 @@ const CUSTOM = {
             { data: "Geofence Name", title: "Geofence Name", visible: true },
             { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
         ],
-        overspeeding_events: [
+        overspeeding_events: [  //////////////////////////////////////////////////////////////////////////////////////////
             { data: "ID", title: "ID", visible: false },
             { data: "DateTime", title: "DateTime", type:"date", className: "notExport", visible: true },
             { data: "Date", title: "Date", visible: false },
@@ -558,6 +558,21 @@ const CUSTOM = {
             { data: "Lng", title: "Longitude", visible: true },
             { data: "Lat", title: "Latitude", visible: true },
             { data: "Alt", title: "Altitude", visible: true },
+        ],
+        eco_driving: [
+            { data: "Name", title: "Name", visible: true },
+            { data: "Days", title: "Days", visible: true },
+            { data: "Class", title: "Class", visible: true },
+            { data: "Score", title: "Score", visible: true },
+            { data: "Dist", title: "Dist", visible: true },
+            { data: "Max", title: "Max", visible: true },
+            { data: "Avg", title: "Avg", visible: true },
+            { data: "Brake", title: "Brake", visible: true },
+            { data: "Acc", title: "Acc", visible: true },
+            { data: "O_spd", title: "O-spd", visible: true },
+            { data: "Trip", title: "Trip", visible: true },
+            { data: "Idle", title: "Idle", visible: true },
+            { data: "O_spd_Time", title: "O-spd", visible: true },
         ],
         otd_events: [
             { data: "ID", title: "ID", visible: false },
