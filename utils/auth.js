@@ -1488,7 +1488,7 @@ var LIMIT = 200,
             allowDownloadFromOtherDB: "CokeT1",
             type: 2,
             tabCloseAutoLogout: true,
-            loadInBackground: ["VEHICLES","USERS","SESSIONS"],
+            loadInBackground: ["VEHICLES","GEOFENCES","REGIONS","CLUSTERS","USERS","SESSIONS"],
             allowRolesToViewAs: {
                 developer: ["developer","administrator","management","dispatcher","user"],
             },

@@ -573,6 +573,9 @@ const CUSTOM = {
             { data: "Trip", title: "Trip", visible: true },
             { data: "Idle", title: "Idle", visible: true },
             { data: "O_spd_Time", title: "O-spd", visible: true },
+            { data: "Site", title: "Site", visible: true },
+            { data: "Cluster", title: "Cluster", visible: true },
+            { data: "Region", title: "Region", visible: true },
         ],
         otd_events: [
             { data: "ID", title: "ID", visible: false },

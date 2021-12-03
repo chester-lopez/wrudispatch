@@ -13571,6 +13571,9 @@ var ECO_DRIVING = {
                     'Trip': obj.Trip || "",
                     'Idle': obj.Idle || "",
                     'O_spd_Time': oSpdTime || "",
+                    'Site': (Object.keys(obj.Site)||{}).join(", ") || "",
+                    'Cluster': (Object.keys(obj.Cluster)||{}).join(", ") || "",
+                    'Region': (Object.keys(obj.Region)||{}).join(", ") || "",
                 }).row;
             };
             table.customPopulate = function(){
@@ -13595,7 +13598,10 @@ var ECO_DRIVING = {
                             'Speed': 0,
                             'MaxSpeed': 0,
                             'Days': {},
-                            'O_spd_Time': 0
+                            'O_spd_Time': 0,
+                            'Site': {},
+                            'Cluster': {},
+                            'Region': {},
                         };
 
                         // Days
@@ -13612,6 +13618,21 @@ var ECO_DRIVING = {
 
                         // Time
                         filteredArr[val.userID]['O_spd_Time'] += Number(value['Duration']) || 0;
+
+                        // Location
+                        const geofence = getGeofence(value['Site'],'short_name');
+
+                        if(geofence){
+                            filteredArr[val.userID]['Site'][geofence.short_name] = true;
+
+                            const cluster = getCluster(geofence.cluster_id);
+                            cluster ? filteredArr[val.userID]['Cluster'][cluster.cluster] = true : null;
+
+                            const region = getRegion(geofence.region_id);
+                            region ? filteredArr[val.userID]['Region'][region.code] = true : null;
+                        } else {
+                            filteredArr[val.userID]['Site'][value['Site']] = true;
+                        }
                     }
 
                 });
@@ -13637,6 +13658,8 @@ var ECO_DRIVING = {
                         table.countRows();
                     }
                 });
+
+                // Date filter
                 $(`#_date`).daterangepicker({
                     opens: 'left',
                     autoUpdateInput: false,
@@ -13649,6 +13672,16 @@ var ECO_DRIVING = {
                     FILTER.INITIALIZE($(this),picker.startDate,picker.endDate);
                     $('.clearable').trigger("input");
                 });
+
+                // Region filter
+
+                // Cluster filter
+
+                // Site filter
+
+
+
+                // filter button is clicked
                 $(`#filter-btn`).click(function(){
                     var _date = $(`#_date`).val() || DEFAULT_DATE;
 
@@ -13696,8 +13729,6 @@ var OTD_EVENTS = {
                 try {
                     value = JSON.parse("{"+obj.Value+"}");
                 } catch(error){}
-
-                const vehicle = getVehicle(obj.userID) || {};
     
                 return TABLE.COL_ROW(null,{
                     '_id': obj._id,
@@ -13708,7 +13739,7 @@ var OTD_EVENTS = {
                     'Time': DATETIME.FORMAT(value['Check Out'],"h:mm:ss A"),
                     'RuleName': obj.RuleName,
                     'State': obj.State || "-",
-                    'Vehicle Name': value['Vehicle Name'] || vehicle.name || '<small class="font-italic text-muted">loading...</small>',
+                    'Vehicle Name': value['Vehicle Name'] || value['Vehicle'] || "-",
                     'Equipt No': value['Equipment #'] || "-",
                     'Location': value['Location'] || "-",
                     'DC Tag': value['DC Tag'] || "-",
@@ -13769,13 +13800,13 @@ var OTD_EVENTS = {
             table.countRows();
 
             /******** TABLE CHECK ********/
-            TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
-                isFinishedLoading(["VEHICLES"], _new_, function(){
-                    _new_ = false;
-                    table.updateRows(LIST['otd_events']);
-                });
-            }
-            TABLE.FINISH_LOADING.START_CHECK();
+            // TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
+            //     isFinishedLoading(["VEHICLES"], _new_, function(){
+            //         _new_ = false;
+            //         table.updateRows(LIST['otd_events']);
+            //     });
+            // }
+            // TABLE.FINISH_LOADING.START_CHECK();
             /******** END TABLE CHECK ********/
         }
     }
@@ -21326,11 +21357,25 @@ const views = new function(){
                     </div>`;
         },
         eco_driving: function(){
+            
+            // <div class="mt-2">
+            //     <div style="font-size: 10px;">Region:</div>
+            //     <select id="_region" class="form-control"></select>
+            // </div>
+            // <div class="mt-2">
+            //     <div style="font-size: 10px;">Cluster:</div>
+            //     <select id="_cluster" class="form-control"></select>
+            // </div>
+            // <div class="mt-2">
+            //     <div style="font-size: 10px;">Site:</div>
+            //     <select id="_site" class="form-control"></select>
+            // </div>
+            
             return `<div class="page-box row">
                         ${SLIDER.FILTER(`<div>
-                                                <div style="font-size: 10px;">Date:</div>
-                                                <input type="text" id="_date" class="clearable form-control" style="padding-left: 10px;" value="${DEFAULT_DATE}" readonly>
-                                            </div>`)}
+                                            <div style="font-size: 10px;">Date:</div>
+                                            <input type="text" id="_date" class="clearable form-control" style="padding-left: 10px;" value="${DEFAULT_DATE}" readonly>
+                                        </div>`)}
                         <div class="col-sm-12 mt-2">
                             <div class="table-wrapper">
                                 <table id="tbl-eco_driving" class="table table-hover table-bordered">
@@ -21344,6 +21389,7 @@ const views = new function(){
                                             <th colspan="2">Speed</th>
                                             <th colspan="3">Events</th>
                                             <th colspan="3">Time</th>
+                                            <th colspan="3">Location</th>
                                         </tr>
                                         <tr>
                                             <th>Max</th>
@@ -21354,6 +21400,9 @@ const views = new function(){
                                             <th>Trip</th>
                                             <th>Idle</th>
                                             <th>O-spd</th>
+                                            <th>Site</th>
+                                            <th>Cluster</th>
+                                            <th>Region</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>

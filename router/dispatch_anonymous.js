@@ -2374,14 +2374,14 @@ router.get('/test/import/geofence', (req,res,next)=>{
     // const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
-    var dbName = "wd-coket2";
+    var dbName = "wd-fleet";
     
     MongoClient.connect(url, mongoOptions, (err,client) => {
         if(err){
             console.log("ERROR1",err);
         } else {
             const childPromise = [];
-            client.db("wd-coket1").collection("geofences").find({}).toArray().then(docs => {
+            client.db("wd-coket2").collection("geofences").find({}).toArray().then(docs => {
                 docs.forEach(val => {
                     const set = {
                         // geofence_id: val.geofence_id,
@@ -2454,7 +2454,7 @@ router.get('/test/import/regionsClusters', (req,res,next)=>{
     // const url = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
     var mongoOptions = {useNewUrlParser: true, useUnifiedTopology: true, poolSize: 50};
     
-    var dbName = "wd-coket2";
+    var dbName = "wd-fleet";
     
     MongoClient.connect(url, mongoOptions, (err,client) => {
         if(err){
@@ -2598,6 +2598,7 @@ router.get('/test/insert/customers', (req,res,next)=>{
 });
 
 
+
 // update overspeeding_events
 router.get('/test/update/overspeeding_events/:skip/:limit', (req,res,next)=>{
     const skip = Number(req.params.skip);
@@ -2610,78 +2611,90 @@ router.get('/test/update/overspeeding_events/:skip/:limit', (req,res,next)=>{
     var dbName = "wd-fleet-logging";
     const childPromise = [];
 
-    MongoClient.connect(devURL, mongoOptions, (err,client) => {
+    MongoClient.connect(prodURL, mongoOptions, (err,client) => {
         if(err){
             console.log("ERROR1",err);
             res.json({error:1,error:err});
         } else {
             const query = client.db(dbName).collection("overspeeding_events");
+            const vQuery = client.db('wd-fleet').collection("vehicles");
 
             const deleteArrIds = [];
             const insertArr = [];
 
-            query.find({ RuleName: 'Check Out', 'Value.Event Start': { $exists: true } }).skip(skip).limit(limit).toArray().then(docs => {
-                console.log(docs.length);
-                docs.forEach(val => {
-                    // if(typeof val['Value'] == 'string'){
-
-                        // add to insert array
-                        const obj = val;
-                        
-                        obj['Value']['Check Out'] = obj['Value']['Event Start'];
-
-                        // delete obj['Value']['Event Start'];
-
-                        // add to delete array
-                        deleteArrIds.push(db.getPrimaryKey(obj._id));
-
-                        insertArr.push(obj);
-                        
-                        // try {
-
-    
+            vQuery.find({}).toArray().then(vDocs => {
+                query.find({ RuleName:'Check Out', 'Value.Vehicle': { $exists: false } }).skip(skip).limit(limit).toArray().then(docs => {
+                    console.log(docs.length);
+                    docs.forEach(val => {
+                        // if(typeof val['Value'] == 'string'){
     
 
-                        //     // convert Dates to ISO
-                        //     val['Value']['Event Start'] ? val['Value']['Event Start'] = new Date(val['Value']['Event Start']+'Z').toISOString() : null;
-                        //     val['Value']['Check Out'] ? val['Value']['Check Out'] = new Date(val['Value']['Check Out']+'Z').toISOString() : null;
+                            const vehicle = vDocs.find(x => x._id == val.userID);
 
-                        // } catch(error) {
-                        //     // console.log('ERror',error,val['Value']['Event Start'],val['Value']['Check Out']);
+                            if(vehicle) {
+                                
+                                // add to insert array
+                                const obj = val;
+                                
+                                obj['Value']['Vehicle'] = vehicle.name;
+        
+                                // add to delete array
+                                deleteArrIds.push(db.getPrimaryKey(obj._id));
+        
+                                insertArr.push(obj);
+
+                            }
+                            
+                            // try {
+    
+        
+        
+    
+                            //     // convert Dates to ISO
+                            //     val['Value']['Event Start'] ? val['Value']['Event Start'] = new Date(val['Value']['Event Start']+'Z').toISOString() : null;
+                            //     val['Value']['Check Out'] ? val['Value']['Check Out'] = new Date(val['Value']['Check Out']+'Z').toISOString() : null;
+    
+                            // } catch(error) {
+                            //     // console.log('ERror',error,val['Value']['Event Start'],val['Value']['Check Out']);
+                            // }
+    
+                            
                         // }
-
-                        
-                    // }
-                });
-
-                // delete
-                if(deleteArrIds.length > 0){
-                    childPromise.push(
-                        query.deleteMany({ _id: { $in: deleteArrIds } })
-                    );
-                }
-
-                // insert
-                if(insertArr.length > 0){
-                    childPromise.push(
-                        query.insertMany(insertArr)
-                    );
-                }
-                
-                if(childPromise.length > 0){
-                    Promise.all(childPromise).then(result => {
-                        client.close();
-                        res.json({ok:1,result});
-                    }).catch(error => {
-                        client.close();
-                        console.log("ERROR2",error);
-                        res.json({error:1,error});
                     });
-                } else {
+    
+                    // delete
+                    if(deleteArrIds.length > 0){
+                        childPromise.push(
+                            query.deleteMany({ _id: { $in: deleteArrIds } })
+                        );
+                    }
+    
+                    // insert
+                    if(insertArr.length > 0){
+                        childPromise.push(
+                            query.insertMany(insertArr)
+                        );
+                    }
+                    
+                    if(childPromise.length > 0){
+                        Promise.all(childPromise).then(result => {
+                            client.close();
+                            res.json({ok:1,result});
+                        }).catch(error => {
+                            client.close();
+                            console.log("ERROR2",error);
+                            res.json({error:1,error});
+                        });
+                    } else {
+                        client.close();
+                        res.json({ok:1,empty:1});
+                    }
+    
+                }).catch(error => {
                     client.close();
-                    res.json({ok:1,empty:1});
-                }
-
+                    console.log("ERROR4",error);
+                    res.json({error:1,error});
+                });
             }).catch(error => {
                 client.close();
                 console.log("ERROR4",error);
@@ -2714,7 +2727,7 @@ router.get('/test/delete/overspeeding_events/:skip/:limit', (req,res,next)=>{
             const deleteArrIds = [];
             const insertArr = [];
 
-            query.updateMany({},{ $unset: {
+            query.updateMany({ aa: 1 },{ $unset: {
                 updated: '',
                 up: '',
             } }).then(result => {
