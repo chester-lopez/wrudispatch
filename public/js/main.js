@@ -13613,8 +13613,16 @@ var ECO_DRIVING = {
                         (val.RuleName == 'Over speeding > 70kph') ? filteredArr[val.userID]['O_spd'] ++ : null;
     
                         // Speed
-                        filteredArr[val.userID]['Speed'] += Number(value['Speed']) || 0;
-                        (filteredArr[val.userID]['MaxSpeed'] < Number(value['Speed'])) ? filteredArr[val.userID]['MaxSpeed'] = Number(value['Speed']) : null;
+                        var speed = Number(value['Speed']) || 0;
+                        if(val.RuleName == 'Over speeding > 70kph'){
+                            const stateNew = LIST['eco_driving'].find(x => x.id == val.id && x.State == 'New');
+
+                            if(stateNew){
+                                speed = Number(stateNew.Value['Speed']) || 0;
+                            }
+                        }
+                        filteredArr[val.userID]['Speed'] += speed;
+                        (filteredArr[val.userID]['MaxSpeed'] < speed) ? filteredArr[val.userID]['MaxSpeed'] = speed : null;
 
                         // Time
                         filteredArr[val.userID]['O_spd_Time'] += Number(value['Duration']) || 0;
