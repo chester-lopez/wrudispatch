@@ -106,7 +106,7 @@ var streamList = {
         }
     },
     vehicles: {
-        watch: () => {
+        watch: (dbName) => {
             return {
                 key: 'vehicles',
                 collection: 'vehicles',
