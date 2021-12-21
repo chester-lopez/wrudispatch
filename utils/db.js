@@ -43,8 +43,8 @@ const getCollection = (dbName,collection) => {
 // get collection from another project/database
 const getCollectionOtherDB = (clientId,collection,fullDbName) => {
     const db = fullDbName || `${projectInitial}-${clientId}`;
-    (!!collections[`${db}${collection}`]) ? null : collections[`${db}${collection}`] = state.client.db(db).collection(collection);
-    return collections[`${db}${collection}`];
+    // (!!collections[`${fullDbName}${collection}`]) ? null : collections[`${fullDbName}${collection}`] = state.client.db(db).collection(collection);
+    return state.client.db(db).collection(collection);
 };
 
 module.exports = {connect,getPrimaryKey,getCollection,getCollectionOtherDB};

@@ -106,7 +106,7 @@ var streamList = {
         }
     },
     vehicles: {
-        watch: () => {
+        watch: (dbName) => {
             return {
                 key: 'vehicles',
                 collection: 'vehicles',
@@ -444,9 +444,9 @@ const connect = function(io,_ping_,ENVIRONMENT){ //io
     
             socket.emit("*",JSON.stringify({
                 type: "credentials",
-                version: "vv.-2.58.128",
-                forceUpdate: ["coket1"],
-                // ["coket1","coket2","wilcon"]
+                version: "vv.-2.58.128.03",
+                forceUpdate: [],
+                // ["coket1","coket2","wilcon","fleet"]
                 data: auth.getCredentials(dbName)
             }));
         }
