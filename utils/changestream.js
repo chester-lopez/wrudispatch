@@ -75,12 +75,13 @@ var streamList = {
         }
     },
     geofences: {
-        watch: () => {
+        watch: (dbName) => {
             return {
                 key: 'geofences',
                 collection: 'geofences',
                 pipeline: [],
-                options: { fullDocument : "updateLookup" }
+                options: { fullDocument : "updateLookup" },
+                dbName
             };
         }
     },
@@ -110,7 +111,8 @@ var streamList = {
                 key: 'vehicles',
                 collection: 'vehicles',
                 pipeline: [],
-                options: { fullDocument : "updateLookup" }
+                options: { fullDocument : "updateLookup" },
+                dbName
             };
         }
     },
@@ -271,10 +273,20 @@ const connect = function(io,_ping_,ENVIRONMENT){ //io
         
         function watch(x){
             x.options = x.options || {};
-            if(db.getCollection(dbName,x.collection) && !changestreams[`${dbName}_${x.key}`]){
+
+            // set up db query
+            var query = db.getCollection(dbName,x.collection);
+            // if we should listen from another db
+            if(x.dbName){
+                query = db.getCollectionOtherDB(null,x.collection,x.dbName);
+            }
+
+            // checking if db is valid and query is not yet added on changestream list (to avoid duplicate listeners)
+            if(query && !changestreams[`${dbName}_${x.key}`]){
+                
                 function watch_collection(){
                     x.options.resumeAfter = resumeTokens[`${dbName}_${x.key}`] || null;
-                    changestreams[`${dbName}_${x.key}`] = db.getCollection(dbName,x.collection).watch(x.pipeline || [],x.options);
+                    changestreams[`${dbName}_${x.key}`] = query.watch(x.pipeline || [],x.options);
 
                     changestreams[`${dbName}_${x.key}`].on('change', function(event){
                         resumeTokens[`${dbName}_${x.key}`] = event._id;
@@ -398,7 +410,7 @@ const connect = function(io,_ping_,ENVIRONMENT){ //io
             Object.keys(streamList).forEach(key => {
                 var obj = streamList[key];
                 if(!obj.type || (obj.type && obj.type == userInfo.type) || !obj.ignoreInLoop){ // do not delete. Look at Maintenance
-                    watch(obj.watch());
+                    watch(obj.watch(dbName));
                 }
             });
             // END LOOP STREAMLIST
@@ -439,7 +451,7 @@ const connect = function(io,_ping_,ENVIRONMENT){ //io
             }));
         }
 
-        watch(streamList["dispatch_status"].watch());
+        watch(streamList["dispatch_status"].watch(dbName));
         console.log("HELLO PING");
     }
 
