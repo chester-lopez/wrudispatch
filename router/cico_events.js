@@ -6,7 +6,7 @@ const db = require("../utils/db");
 const auth = require("../utils/auth");
 const _ERROR_ = require("../utils/error");
 
-const collection = "overspeeding_events";
+const collection = "events";
 
 // get all
 router.get('/:dbName/:username/all/:filter/:skip/:limit', (req,res,next)=>{
