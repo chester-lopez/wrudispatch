@@ -444,8 +444,8 @@ const connect = function(io,_ping_,ENVIRONMENT){ //io
     
             socket.emit("*",JSON.stringify({
                 type: "credentials",
-                version: "vv.-2.58.128.15",
-                forceUpdate: ["fleet"],
+                version: "vv.-2.58.129.1",
+                forceUpdate: ["coket1"],
                 // ["coket1","coket2","wilcon"]
                 data: auth.getCredentials(dbName)
             }));

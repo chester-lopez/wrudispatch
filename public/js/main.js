@@ -2664,14 +2664,6 @@ var DASHBOARD = {
                 initializeExportButton();
 
                 if(calendarview == "day"){
-                    // $('#_date').datepicker('remove').datepicker({
-                    //     // minViewMode: 0,
-                    //     // maxViewMode: 2,
-                    //     todayHighlight: true,
-                    //     initialDate: new Date(),
-                    //     todayBtn: true,
-                    //     autoclose: true
-                    // });
                     $('#_date').replaceWith(`<input id="_date" class="form-control" type="text" readonly>`);
                     $(`#_date`).daterangepicker({
                         opens: 'left',
@@ -4115,8 +4107,9 @@ var DISPATCH = {
                                             } else {                                                
                                                 // return error
                                                 resolve({
-                                                    error: 1,
-                                                    message: 'Truck selected does not exist.'
+                                                    status: __tempStat,
+                                                    late_data_entry,
+                                                    events_captured,
                                                 });
                                             }
                                         }).fail(error => {
@@ -13420,6 +13413,8 @@ var ECO_DRIVING = {
     FUNCTION: {
         stream:null,
         init:function(){
+            var _new1_ = true;
+
             var table = new Table({
                 id: "#tbl-eco_driving",
                 urlPath: "eco_driving",
@@ -13440,10 +13435,6 @@ var ECO_DRIVING = {
             USER.filters["eco_driving"] = { 'Value.Event Start': FILTER.DATERANGE(), RuleName: { $in: ['Over speeding > 70kph','Harsh Braking','Harsh Acceleration'] } };
             table.setButtons({});
             table.addRow = function(obj){
-                var value = obj.Value || {};
-                try {
-                    value = JSON.parse("{"+obj.Value+"}");
-                } catch(error){}
 
                 // SPEED
                 // convert speed from meter/second to kilometer/hour -> (speed * 18) / 5
@@ -13552,6 +13543,7 @@ var ECO_DRIVING = {
             table.filterListener = function(_row,_id){
                 // initialize filter
                 FILTER.RESET({
+                    selectEl: `#_region_id,#_cluster_id`,
                     dateEl: `#_date`,
                     populateTable: function(){
                         var _date = $(`#_date`).val() || DEFAULT_DATE;
@@ -13566,23 +13558,92 @@ var ECO_DRIVING = {
                     }
                 });
 
+
+                /********* DATE FILTER *********/
+                var selectedDate = new Date();
+                var calendarview = "day";
+
                 // Date filter
-                $(`#_date`).daterangepicker({
-                    opens: 'left',
-                    autoUpdateInput: false,
-                    // singleDatePicker:true,
-                    autoApply: true
-                }, function(start, end, label) {
-                    FILTER.INITIALIZE($(this)["0"].element,start,end);
-                    $('.clearable').trigger("input");
-                }).on('apply.daterangepicker', function (ev, picker) {
-                    FILTER.INITIALIZE($(this),picker.startDate,picker.endDate);
-                    $('.clearable').trigger("input");
+                $(`[calendarview]`).click(function(){
+                    calendarview = $(this).attr("calendarview");
+    
+                    // initializeExportButton();
+    
+                    if(calendarview == "day"){
+                        $('#_date').replaceWith(`<input id="_date" class="form-control" type="text" readonly>`);
+                        
+                        $(`#_date`).daterangepicker({
+                            opens: 'left',
+                            // singleDatePicker:true,
+                            autoUpdateInput: false,
+                            maxDate: new Date(),
+                            startDate: DATETIME.FORMAT(new Date(selectedDate),"MM/DD/YYYY"),
+                            autoApply: true
+                        }, function(start, end, label) {
+                            selectedDate = new Date(start);
+                            
+                            FILTER.INITIALIZE($(this)["0"].element,start,end);
+                        }).on('apply.daterangepicker', function (ev, picker) {
+                            $(this).val(DATETIME.FORMAT(new Date(picker.startDate),"MM/DD/YYYY"));
+                            selectedDate = new Date(picker.startDate);
+                            FILTER.INITIALIZE($(this),picker.startDate,picker.endDate);
+
+                        });
+                        $(`#_date`).trigger('apply.daterangepicker',{ startDate: DATETIME.FORMAT(new Date(selectedDate),"MM/DD/YYYY") });
+                        FILTER.INITIALIZE($(`#_date`),selectedDate,selectedDate);
+                    }
+                    if(calendarview == "month"){
+                        $('#_date').replaceWith(`<input id="_date" class="form-control" type="text" readonly>`);
+                        $('#_date').datepicker('remove').datepicker({
+                            format: "mm/yyyy",
+                            minViewMode: 1,
+                            autoclose: true,
+                            todayHighlight: true,
+                            endDate: new Date()
+                        }).on("changeDate",function (e) {
+                            selectedDate = new Date(e.date);
+                            // saveFilter();
+                            // populatePage(GENERATE.RANDOM(36));
+                            
+                            // FILTER.INITIALIZE($(this)["0"].element,selectedDate,selectedDate);
+                            $('.clearable').trigger("input");
+                        }).datepicker("setDate",new Date(selectedDate));
+                    }
+                    if(calendarview == "year"){
+                        $('#_date').replaceWith(`<input id="_date" class="form-control" type="text" readonly>`);
+                        $('#_date').datepicker('remove').datepicker({
+                            format: "yyyy",
+                            minViewMode: 2,
+                            autoclose: true,
+                            todayHighlight: true,
+                            endDate: new Date()
+                        }).on("changeDate",function (e) {
+                            selectedDate = new Date(e.date);
+                            // saveFilter();
+                            // populatePage(GENERATE.RANDOM(36));
+                            // FILTER.INITIALIZE($(this)["0"].element,selectedDate,selectedDate);
+                            $('.clearable').trigger("input");
+                        }).datepicker("setDate",new Date(selectedDate));
+                    }
+                    $(`[calendarview]`).removeClass("active");
+                    $(`[calendarview="${calendarview}"]`).addClass("active");
+                    $(this).parents(".dropdown").find(".dropdown-toggle b").html(calendarview.toUpperCase());
+    
+                    // saveFilter();
                 });
+                $(`[calendarview="${calendarview}"]`).trigger("click");
+                /********* end DATE FILTER *********/
+
 
                 // Region filter
+                $(`#_region_id`).on("select2:select", function() {
+                    $(`#_cluster_id`).val("").trigger('change');
+                });
 
                 // Cluster filter
+                $(`#_cluster_id`).on("select2:select", function() {
+                    $(`#_region_id`).val("").trigger('change');
+                });
 
                 // Site filter
 
@@ -13590,19 +13651,88 @@ var ECO_DRIVING = {
 
                 // filter button is clicked
                 $(`#filter-btn`).click(function(){
-                    var _date = $(`#_date`).val() || DEFAULT_DATE;
+                    const _date = $(`#_date`).val() || DEFAULT_DATE;
+                    const _region_id = $(`#_region_id`).val();
+                    const _cluster_id = $(`#_cluster_id`).val();
 
                     FILTER.STATUS = "new";
 
                     $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
 
-                    USER.filters["eco_driving"] = { 'Value.Event Start': FILTER.DATERANGE(_date), RuleName: { $in: ['Over speeding > 70kph','Harsh Braking','Harsh Acceleration'] } };
+                    // Day
+                    var finalSelectedDate = DATETIME.FORMAT(new Date(selectedDate),"MM/DD/YYYY");
+
+                    // Month
+                    if(calendarview == "month"){
+                        var monthYear = moment(selectedDate).format("MM/DD/YYYY").split("/");
+                        console.log('selectedDate',selectedDate)
+                        var month = monthYear[0];
+                        var year = monthYear[2];
+
+                        // month in moment is 0 based, so 9 is actually october, subtract 1 to compensate
+                        // array is 'year', 'month', 'day', etc
+                        var startDate = moment([year, month - 1]);
+                    
+                        // Clone the value before .endOf()
+                        var endDate = moment(startDate).endOf('month');
+
+                        finalSelectedDate = `${startDate.format("MM/DD/YYYY")} - ${endDate.format("MM/DD/YYYY")}`;
+                    }
+                    
+                    // Year
+                    if(calendarview == "year"){
+                        // start date of year
+                        var startDate = moment(selectedDate).startOf('year');
+                        // end date of year
+                        var endDate = moment(selectedDate).endOf('year');
+
+                        finalSelectedDate = `${startDate.format("MM/DD/YYYY")} - ${endDate.format("MM/DD/YYYY")}`;
+                    }
+                    console.log("finalSelectedDate",finalSelectedDate);
+
+                    USER.filters["eco_driving"] = { 
+                        'Value.Event Start': FILTER.DATERANGE(finalSelectedDate), 
+                        RuleName: { $in: ['Over speeding > 70kph','Harsh Braking','Harsh Acceleration'] } 
+                    };
+                    
+                    (_region_id) ?  USER.filters["eco_driving"]['_region_id'] = _region_id : null;
+                    (_cluster_id) ?  USER.filters["eco_driving"]['_cluster_id'] = _cluster_id : null;
+                    
                     table.countRows();
                 });
                 // initialize filter
             };
             table.initialize();
             table.countRows();
+
+            
+            /******** TABLE CHECK ********/
+            // always put before POPULATE functions
+            TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
+                isFinishedLoading(["REGIONS","CLUSTERS"], _new1_, function(){
+                    _new1_ = false;
+
+                    var regionOptions = `<option value="">&nbsp;</option>`;
+                    (LIST["regions"]||[]).forEach(val => {
+                        regionOptions += `<option value="${val._id}">${val.code}</option>`;
+                    });
+                    $(`#_region_id`).html(regionOptions).select2({
+                        placeholder: "Select an option",
+                        allowClear: true,
+                    }).val(table.filter.region_id || "").trigger("change");
+
+                    // cluster
+                    var clusterOptions = `<option value="">&nbsp;</option>`;
+                    (LIST["clusters"]||[]).forEach(val => {
+                        clusterOptions += `<option value="${val._id}">${val.cluster}</option>`;
+                    });
+                    $(`#_cluster_id`).html(clusterOptions).select2({
+                        placeholder: "Select an option",
+                        allowClear: true,
+                    }).val(table.filter.cluster_id || "").trigger("change");
+                });
+            }
+                /******** END TABLE CHECK ********/
         }
     }
 };
@@ -18694,11 +18824,40 @@ var FILTER = {
             FILTER.STATUS = "reset";
             // $(`#filter-btn,#reset-btn`).addClass("disabled");
             if(x.dateEl || x.dateElnoVal){
-                $(x.dateEl).data('daterangepicker').setStartDate(DEFAULT_DATE);
-                $(x.dateEl).data('daterangepicker').setEndDate(DEFAULT_DATE);
+                if($(x.dateEl).data('daterangepicker')){
+                    try { $(x.dateEl).data('daterangepicker').setStartDate(DEFAULT_DATE); } catch (error) {}
+                    try { $(x.dateEl).data('daterangepicker').setEndDate(DEFAULT_DATE); } catch (error) {}
+                } else {
+                    try { 
+                        x.dateEl.split(",").forEach(val => {
+                            $(`${val} [name="start"],${val} [name="end"]`).datepicker("setDate",new Date(DEFAULT_DATE));
+                        });
+                    } catch (error) {}
+                }
+                if($(x.dateElnoVal).data('daterangepicker')){
+                    try { $(x.dateElnoVal).data('daterangepicker').setStartDate(DEFAULT_DATE); } catch (error) {}
+                    try { $(x.dateElnoVal).data('daterangepicker').setEndDate(DEFAULT_DATE); } catch (error) {}
+                } else {
+                    try { $(x.dateElnoVal).datepicker("setDate",new Date(DEFAULT_DATE)); } catch (error) {}
+                    try { 
+                        x.dateElnoVal.split(",").forEach(val => {
+                            $(`${val} [name="start"],${val} [name="end"]`).datepicker("setDate","");
+                        });
+                    } catch (error) {}
+                }
+    
                 if(x.dateEl) $(x.dateEl).removeClass('x onX').val(DEFAULT_DATE).change().blur();
                 if(x.dateElnoVal) $(x.dateElnoVal).removeClass('x onX').val('').change().blur();
             }
+
+            $(`[calendarview="day"]`).trigger("click");
+
+            // if(x.dateEl || x.dateElnoVal){
+            //     $(x.dateEl).data('daterangepicker').setStartDate(DEFAULT_DATE);
+            //     $(x.dateEl).data('daterangepicker').setEndDate(DEFAULT_DATE);
+            //     if(x.dateEl) $(x.dateEl).removeClass('x onX').val(DEFAULT_DATE).change().blur();
+            //     if(x.dateElnoVal) $(x.dateElnoVal).removeClass('x onX').val('').change().blur();
+            // }
             if(x.selectEl){
                 $(x.selectEl).val("all").trigger("change");
             }
@@ -19504,8 +19663,8 @@ var TABLE = {
                 // }
                 if(val == "create"){ // create-admin
                     var icon = (loadView.includes(val)) ? "la-spin la-spinner" : "la-plus";
-                    var title = (CLIENT.id == "coket1") ? "Create New Record (v2.0)" : "Create New Record";
-                    var text = (CLIENT.id == "coket1") ? "Create v2.0" : "Create";
+                    var title = "Create New Record";
+                    var text = "Create";
                     dt_buttons.push({
                         text: `<i class="la ${icon}" data-toggle="tooltip" title="${title}"></i> ${text}`,
                         className: `create-btn ${className} ${condClass}`,
@@ -19855,7 +20014,7 @@ var TABLE = {
                 "edit-admin": {
                     permission: "update",
                     icon: "la-pencil",
-                    title: "Edit Record (v2.0)",
+                    title: "Edit Record",
                     attr: "edit-admin",
                     statusCheck: true,
                 },
@@ -21250,25 +21409,38 @@ const views = new function(){
                     </div>`;
         },
         eco_driving: function(){
-            
-            // <div class="mt-2">
-            //     <div style="font-size: 10px;">Region:</div>
-            //     <select id="_region" class="form-control"></select>
-            // </div>
-            // <div class="mt-2">
-            //     <div style="font-size: 10px;">Cluster:</div>
-            //     <select id="_cluster" class="form-control"></select>
-            // </div>
-            // <div class="mt-2">
-            //     <div style="font-size: 10px;">Site:</div>
-            //     <select id="_site" class="form-control"></select>
-            // </div>
-            
             return `<div class="page-box row">
-                        ${SLIDER.FILTER(`<div>
+                        ${SLIDER.FILTER(`<div class="mt-2">
                                             <div style="font-size: 10px;">Date:</div>
-                                            <input type="text" id="_date" class="clearable form-control" style="padding-left: 10px;" value="${DEFAULT_DATE}" readonly>
-                                        </div>`)}
+                                            <span class="d-block"">
+                                                <div class="input-group" style="width: 100%;">
+                                                    <span class="input-group-addon p-0">
+                                                        <ul class="nav navbar-nav navbar-left">
+                                                            <li class="dropdown">
+                                                                <a href="#" data-toggle="dropdown" class="dropdown-toggle p-0" style="line-height:  10px !important;color: unset !important;padding: 6px 12px !important;vertical-align: top;display: inline;" aria-expanded="false">
+                                                                    <span><b>DAY</b></span>
+                                                                </a>
+                                                                <ul class="dropdown-menu logged-user-menu" style="min-width: 65px;z-index: 999999;">
+                                                                    <li><a href="javascript:void(0);" calendarView="day" class="active"><span>Day</span></a></li>
+                                                                    <li><a href="javascript:void(0);" calendarView="month"><span>Month</span></a></li>
+                                                                    <li><a href="javascript:void(0);" calendarView="year"><span>Year</span></a></li>
+                                                                </ul>
+                                                            </li>
+                                                        </ul>
+                                                    </span>
+                                                    <input id="_date" class="form-control" type="text" value="${DEFAULT_DATE}" readonly>
+                                                </div>
+                                            </span>
+                                        </div>
+                                        <div class="mt-2">
+                                            <div style="font-size: 10px;">Region:</div>
+                                            <select id="_region_id" class="form-control" style="width:100%;"> </select>
+                                        </div>
+                                        <div class="mt-2">
+                                            <div style="font-size: 10px;">Cluster:</div>
+                                            <select id="_cluster_id" class="form-control" style="width:100%;"></select>
+                                        </div>
+                                        `)}
                         <div class="col-sm-12 mt-2">
                             <div class="table-wrapper">
                                 <table id="tbl-eco_driving" class="table table-hover table-bordered">
