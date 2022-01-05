@@ -1,4 +1,8 @@
 const changelogList = {
+    "2.58.129": {
+        date: "January 04, 2022",
+        fix: ["[Bug] If no vehicle history yet, returns 'Truck does not exist' error. It should just return empty data."],
+    },
     "2.58.128": {
         date: "November 26, 2021",
         improved: ["[Update][Coke] Trippage report"],

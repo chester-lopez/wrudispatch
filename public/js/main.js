@@ -4105,11 +4105,12 @@ var DISPATCH = {
                                                     events_captured,
                                                 });
 
-                                            } else {                                                
-                                                // return error
+                                            } else {  
+                                                // return data
                                                 resolve({
-                                                    error: 1,
-                                                    message: 'Truck selected does not exist.'
+                                                    status: __tempStat,
+                                                    late_data_entry,
+                                                    events_captured,
                                                 });
                                             }
                                         }).fail(error => {
