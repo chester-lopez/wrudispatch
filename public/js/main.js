@@ -4108,7 +4108,7 @@ var DISPATCH = {
                                                 // return error
                                                 resolve({
                                                     status: __tempStat,
-                                                    late_data_entry,
+                                                    late_data_entry: false,
                                                     events_captured,
                                                 });
                                             }
