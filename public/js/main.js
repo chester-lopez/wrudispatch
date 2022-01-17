@@ -1173,6 +1173,10 @@ class Table {
                 class: "data_maintenance-btn",
                 icon: "la-tasks"
             },
+            summary: {
+                tooltipTitle: "Switch View Mode",
+                icon: "la-eye"
+            },
         };
         var defaultActions = {
             refresh: function(){ 
@@ -5048,7 +5052,7 @@ var DISPATCH = {
                     $(`[${type}-based] td[trailer]`).html(_id || "-");
                     $(`[${type}-based] td[cluster]`).html(cluster.cluster || info["Cluster"] || info.cluster || "-");
                     $(`[${type}-based] td[base]`).html(info["Site"] || info.site || "-");
-                    $(`[${type}-based] td[region]`).html(region.code || info["Region"] || info.region || "-");
+                    $(`[${type}-based] td[region]`).html(cluster.cluster || info["Region"] || info.region || "-");
                     $(`[${type}-based] td[pallet_type],td[pallet_capacity]`).html(info["Pal Cap"] || info.pal_cap || "-");
                 }
                 $(`#trailer`).html(trailersOptions).select2().val("").on("select2:select", function() {
@@ -7886,7 +7890,7 @@ var REPORTS = {
                         gboHtml += `<tr>
                                         <td style="${noBorderCSS}">${gVal.short_name}</td>
                                         <td style="${noBorderCSS}text-align: center;">${gVal.code || "-"}</td>
-                                        <td style="${noBorderCSS}text-align: center;">${region.code || "-"}</td>
+                                        <td style="${noBorderCSS}text-align: center;">${cluster.cluster || "-"}</td>
                                         <td style="${noBorderCSS}text-align: center;">${aveCICO ? DATETIME.HH_MM(null,aveCICO).hour_minute : "-"}</td>
                                         <td style="${noBorderCSS}text-align: center;">${aveCappedCICO ? DATETIME.HH_MM(null,aveCappedCICO).hour_minute : "-"}</td>
                                         <td style="${noBorderCSS}text-align: center;">${DATETIME.HH_MM(null,gVal.cico,"-").hour_minute}</td>
@@ -13432,8 +13436,30 @@ var ECO_DRIVING = {
                     dom: 'lBrti<"tbl-progress-bar">p',
                 }
             });
+
+            var summaryTable = new Table({
+                id: "#tbl-eco_driving_summary",
+                urlPath: "eco_driving",
+                perColumnSearch: true,
+                goto: "eco_driving",
+                autoPopulateData: false,
+                dataTableOptions: {
+                    columns: TABLE.COL_ROW(CUSTOM.COLUMN.eco_driving_summary).column,
+                    order: [[ 0, "asc" ]],
+                    dom: 'lBrti<"tbl-progress-bar">p',
+                    buttons:[]
+                }
+            });
+
             USER.filters["eco_driving"] = { 'Value.Event Start': FILTER.DATERANGE(), RuleName: { $in: ['Over speeding > 70kph','Harsh Braking','Harsh Acceleration'] } };
-            table.setButtons({});
+            table.setButtons({
+                actions: {
+ 
+                    summary: function(){                        
+                        $('#tbl-eco_driving').DataTable().clear().destroy();
+                    },
+                }
+            });
             table.addRow = function(obj){
 
                 // SPEED
@@ -13703,9 +13729,164 @@ var ECO_DRIVING = {
                 // initialize filter
             };
             table.initialize();
-            table.countRows();
+            table.countRows()
+            summaryTable.addRow = function(obj){
+                return TABLE.COL_ROW(null,{
+                    '_id': obj._id,
+                    '_row':  obj._row,
+                    'Cluster': obj.Cluster || "",
+                    'Region': obj.Region || "",
+                    'Brake': obj.Brake || "",
+                    'Acc': obj.Acc || "",
+                    'O_spd': obj.O_spd || "",
+                    'Total': obj.Total || "",
+                }).row;
+            }
+            summaryTable.customPopulate = function(){
+                const filteredArr = {
+                    None : {
+                        '_id': 'None',
+                        'Region': "None",
+                        'Cluster': "None",
+                        'Brake': null,
+                        'Acc': null,
+                        'O_spd': null,
+                        'Total': null,
+                    }
+                };
+                
+                LIST['eco_driving'].forEach(val => {
 
-            
+                    const acc = val.RuleName === "Harsh Acceleration" ? (filteredArr["None"]['Acc'] ? filteredArr["None"]['Acc'] + 1 : 1) : 0
+                    const brake =  val.RuleName === "Harsh Braking" ? (filteredArr["None"]['Brake'] ? filteredArr["None"]['Brake'] + 1 : 1) : 0
+                    const ospeed =  val.RuleName === "Over speeding > 70kph" ? (filteredArr["None"]['O_spd'] ? filteredArr["None"]['O_spd'] + 1 : 1): 0
+                    const total =  acc + brake + ospeed
+
+                    if((val.RuleName == 'Over speeding > 70kph' && val.State == 'Finished') || (val.RuleName != 'Over speeding > 70kph' && val.State == 'New')){
+                        var value = val.Value || {};
+                        try {
+                            value = JSON.parse("{"+val.Value+"}");
+                        } catch(error){}
+
+                        // Location
+                        const geofence = getGeofence(value['Site'],'short_name');
+
+                        if(geofence){
+
+                            const cluster = getCluster(geofence.cluster_id);
+
+                            const region = getRegion(geofence.region_id);
+
+                            const acc = val.RuleName === "Harsh Acceleration" ? (filteredArr["None"]['Acc'] ? filteredArr["None"]['Acc'] + 1 : 1) : 0
+                            const brake =  val.RuleName === "Harsh Braking" ? (filteredArr["None"]['Brake'] ? filteredArr["None"]['Brake'] + 1 : 1) : 0
+                            const ospeed =  val.RuleName === "Over speeding > 70kph" ? (filteredArr["None"]['O_spd'] ? filteredArr["None"]['O_spd'] + 1 : 1) : 0
+                            const total =  acc + brake + ospeed
+
+                            if (region && cluster) {
+
+                                filteredArr[`${region.code}${cluster.cluster}`] = filteredArr[`${region.code}${cluster.cluster}`] || {
+                                    '_id': `${region.code}${cluster.cluster}`,
+                                    'Region': region.name,
+                                    'Cluster': cluster.name,
+                                    'Brake': null,
+                                    'Acc': null,
+                                    'O_spd': null,
+                                    'Total': null,
+                                }
+
+                                const acc = val.RuleName === "Harsh Acceleration" ? (filteredArr[`${region.code}${cluster.cluster}`]['Acc'] ? filteredArr[`${region.code}${cluster.cluster}`]['Acc'] + 1 : 1) : 0
+                                const brake =  val.RuleName === "Harsh Braking" ? (filteredArr[`${region.code}${cluster.cluster}`]['Brake'] ? filteredArr[`${region.code}${cluster.cluster}`]['Brake'] + 1 : 1) : 0
+                                const ospeed =  val.RuleName === "Over speeding > 70kph" ? (filteredArr[`${region.code}${cluster.cluster}`]['O_spd'] ? filteredArr[`${region.code}${cluster.cluster}`]['O_spd'] + 1 : 1) : 0
+                                const total =  acc + brake + ospeed
+
+                                filteredArr[`${region.code}${cluster.cluster}`]['Brake'] = brake;
+                                filteredArr[`${region.code}${cluster.cluster}`]['Acc'] = acc;
+                                filteredArr[`${region.code}${cluster.cluster}`]['O_spd'] =  ospeed,
+                                filteredArr[`${region.code}${cluster.cluster}`]['Total'] = total
+                                
+                            } else if (region && (!cluster)) {
+
+                                filteredArr[region.code] = filteredArr[region.code] || {
+                                    '_id': region.code,
+                                    'Region': region.name,
+                                    'Cluster': "",
+                                    'Brake': null,
+                                    'Acc': null,
+                                    'O_spd': null,
+                                    'Total': null,
+                                }
+
+                                const acc = val.RuleName === "Harsh Acceleration" ? (filteredArr[region.code]['Acc'] ? filteredArr[region.code]['Acc'] + 1 : 1) : 0
+                                const brake =  val.RuleName === "Harsh Braking" ? (filteredArr[region.code]['Brake'] ? filteredArr[region.code]['Brake'] + 1 : 1) : 0
+                                const ospeed =  val.RuleName === "Over speeding > 70kph" ? (filteredArr[region.code]['O_spd'] ? filteredArr[region.code]['O_spd'] + 1 : 1) : 0
+                                const total =  acc + brake + ospeed
+
+                                filteredArr[region.code] = {
+                                    '_id': region.code,
+                                    'Region': region.name,
+                                    'Cluster': "None",
+                                    'Brake': brake,
+                                    'Acc': acc,
+                                    'O_spd': ospeed,
+                                    'Total': total,
+                                }
+                            } else if (cluster && (!region)) {
+
+                                filteredArr[cluster.cluster] = filteredArr[cluster] || {
+                                    '_id': cluster.cluster,
+                                    'Region': "",
+                                    'Cluster': cluster.cluster,
+                                    'Brake': null,
+                                    'Acc': null,
+                                    'O_spd': null,
+                                    'Total': null,
+                                }
+
+                                const acc = val.RuleName === "Harsh Acceleration" ? (filteredArr[cluster.cluster]['Acc'] ? filteredArr[cluster.cluster]['Acc'] + 1 : 1) : 0
+                                const brake =  val.RuleName === "Harsh Braking" ? (filteredArr[cluster.cluster]['Brake'] ? filteredArr[cluster.cluster]['Brake'] + 1 : 1) : 0
+                                const ospeed =  val.RuleName === "Over speeding > 70kph" ? (filteredArr[cluster.cluster]['O_spd'] ? filteredArr[cluster.cluster]['O_spd'] + 1 : 1) : 0
+                                const total =  acc + brake + ospeed
+
+                                filteredArr[cluster.cluster] = {
+                                    '_id': cluster.cluster,
+                                    'Region': "None",
+                                    'Cluster': cluster.cluster,
+                                    'Brake': brake,
+                                    'Acc': acc,
+                                    'O_spd': ospeed,
+                                    'Total': total,
+                                }
+                            } else {
+
+                                filteredArr['None'] = {
+                                    '_id': 'none',
+                                    'Region': "None",
+                                    'Cluster': "None",
+                                    'Brake': brake,
+                                    'Acc': acc,
+                                    'O_spd': ospeed,
+                                    'Total': total,
+                                }
+                            }
+                        } else {
+                            filteredArr['None'] = {
+                                '_id': 'none',
+                                'Region': "None",
+                                'Cluster': "None",
+                                'Brake': brake,
+                                'Acc': acc,
+                                'O_spd': ospeed,
+                                'Total': total,
+                            }
+                        }
+                    }
+                })
+
+                summaryTable.populateRows(Object.values(filteredArr),true);
+            }
+            summaryTable.initialize();
+            summaryTable.countRows();
+
             /******** TABLE CHECK ********/
             // always put before POPULATE functions
             TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
@@ -18539,7 +18720,7 @@ var PAGE = {
                 display: function() { return views.eco_driving(); },
                 function: function() { ECO_DRIVING.FUNCTION.init() },
                 buttons: {
-                    table: ["refresh","export","filter","search"],
+                    table: ["refresh","export","filter","search","summary"],
                     row:["view"]
                 },
                 menu_group: {
@@ -21468,6 +21649,24 @@ const views = new function(){
                                             <th>Site</th>
                                             <th>Cluster</th>
                                             <th>Region</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                            <div class="summary-table-wrapper">
+                                <table id="tbl-eco_driving_summary" class="table table-hover table-bordered">
+                                    <thead>
+                                        <tr>                                            
+                                            <th colspan="2">Region</th>
+                                            <th rowspan="2">Brake</th>
+                                            <th rowspan="2">Acc</th>
+                                            <th rowspan="2" >O-spd</th>
+                                            <th rowspan="2">Total</th>
+                                        </tr>
+                                        <tr>
+                                            <th></th>
+                                            <th>Cluster</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>

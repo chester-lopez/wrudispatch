@@ -559,6 +559,14 @@ const CUSTOM = {
             { data: "Cluster", title: "Cluster", visible: true },
             { data: "Region", title: "Region", visible: true },
         ],
+        eco_driving_summary: [
+            { data: "Region", title: "Region", visible: true },
+            { data: "Cluster", title: "Cluster", visible: true },
+            { data: "Brake", title: "Brake", visible: true },
+            { data: "Acc", title: "Acc", visible: true },
+            { data: "O_spd", title: "O-spd", visible: true },
+            { data: "Total", title: "Total", visible: true },
+        ],
         otd_events: [
             { data: "ID", title: "ID", visible: false },
             { data: "DateTime", title: "DateTime", type:"date", className: "notExport", visible: true },
