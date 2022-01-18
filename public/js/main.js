@@ -94,7 +94,7 @@ function getSelect2Options(){
     /******** VEHICLES ********/
     G_SELECT2["form-vehicles"] = `<option value="">&nbsp;</option>`;
     G_SELECT2["form-vehicles-admin"] = `<option value="">&nbsp;</option>`;
-    (LIST["vehicles"]||[]).forEach(val => {
+    (LIST["vehicles"]||[]).filter(x => !x.underMaintenance).forEach(val => {
         var status = VEHICLES.STATUS.find(x => x.id == (val.status || "")) || {value: "Available"};
         var subtext = "";
         var subtextAdmin = "";
@@ -4109,7 +4109,7 @@ var DISPATCH = {
                                                 // return error
                                                 resolve({
                                                     status: __tempStat,
-                                                    late_data_entry,
+                                                    late_data_entry: false,
                                                     events_captured,
                                                 });
                                             }
