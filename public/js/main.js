@@ -2261,9 +2261,6 @@ var DASHBOARD = {
                             }
                         });
                     }
-
-                   
-                    console.log("summary",summary);
                 },
                 saveFilter = function(setFilter){
                     if(!newlyLoaded){
@@ -13455,8 +13452,9 @@ var ECO_DRIVING = {
             table.setButtons({
                 actions: {
  
-                    summary: function(){                        
-                        $('#tbl-eco_driving').DataTable().clear().destroy();
+                    summary: function(){   
+
+                        $('#tbl-eco_driving').replace()
                     },
                 }
             });
@@ -13743,24 +13741,9 @@ var ECO_DRIVING = {
                 }).row;
             }
             summaryTable.customPopulate = function(){
-                const filteredArr = {
-                    None : {
-                        '_id': 'None',
-                        'Region': "None",
-                        'Cluster': "None",
-                        'Brake': null,
-                        'Acc': null,
-                        'O_spd': null,
-                        'Total': null,
-                    }
-                };
+                const filteredArr = {};
                 
                 LIST['eco_driving'].forEach(val => {
-
-                    const acc = val.RuleName === "Harsh Acceleration" ? (filteredArr["None"]['Acc'] ? filteredArr["None"]['Acc'] + 1 : 1) : 0
-                    const brake =  val.RuleName === "Harsh Braking" ? (filteredArr["None"]['Brake'] ? filteredArr["None"]['Brake'] + 1 : 1) : 0
-                    const ospeed =  val.RuleName === "Over speeding > 70kph" ? (filteredArr["None"]['O_spd'] ? filteredArr["None"]['O_spd'] + 1 : 1): 0
-                    const total =  acc + brake + ospeed
 
                     if((val.RuleName == 'Over speeding > 70kph' && val.State == 'Finished') || (val.RuleName != 'Over speeding > 70kph' && val.State == 'New')){
                         var value = val.Value || {};
@@ -13777,36 +13760,37 @@ var ECO_DRIVING = {
 
                             const region = getRegion(geofence.region_id);
 
-                            const acc = val.RuleName === "Harsh Acceleration" ? (filteredArr["None"]['Acc'] ? filteredArr["None"]['Acc'] + 1 : 1) : 0
-                            const brake =  val.RuleName === "Harsh Braking" ? (filteredArr["None"]['Brake'] ? filteredArr["None"]['Brake'] + 1 : 1) : 0
-                            const ospeed =  val.RuleName === "Over speeding > 70kph" ? (filteredArr["None"]['O_spd'] ? filteredArr["None"]['O_spd'] + 1 : 1) : 0
-                            const total =  acc + brake + ospeed
-
                             if (region && cluster) {
 
-                                filteredArr[`${region.code}${cluster.cluster}`] = filteredArr[`${region.code}${cluster.cluster}`] || {
+                                var regionCluster = filteredArr[`${region.code}${cluster.cluster}`] || {
                                     '_id': `${region.code}${cluster.cluster}`,
                                     'Region': region.name,
-                                    'Cluster': cluster.name,
+                                    'Cluster': cluster.cluster,
                                     'Brake': null,
                                     'Acc': null,
                                     'O_spd': null,
                                     'Total': null,
                                 }
 
-                                const acc = val.RuleName === "Harsh Acceleration" ? (filteredArr[`${region.code}${cluster.cluster}`]['Acc'] ? filteredArr[`${region.code}${cluster.cluster}`]['Acc'] + 1 : 1) : 0
-                                const brake =  val.RuleName === "Harsh Braking" ? (filteredArr[`${region.code}${cluster.cluster}`]['Brake'] ? filteredArr[`${region.code}${cluster.cluster}`]['Brake'] + 1 : 1) : 0
-                                const ospeed =  val.RuleName === "Over speeding > 70kph" ? (filteredArr[`${region.code}${cluster.cluster}`]['O_spd'] ? filteredArr[`${region.code}${cluster.cluster}`]['O_spd'] + 1 : 1) : 0
-                                const total =  acc + brake + ospeed
-
-                                filteredArr[`${region.code}${cluster.cluster}`]['Brake'] = brake;
-                                filteredArr[`${region.code}${cluster.cluster}`]['Acc'] = acc;
-                                filteredArr[`${region.code}${cluster.cluster}`]['O_spd'] =  ospeed,
-                                filteredArr[`${region.code}${cluster.cluster}`]['Total'] = total
+                                switch (val.RuleName) {
+                                    case "Harsh Acceleration":
+                                        regionCluster['Acc'] += 1;
+                                        break;
+                                    case "Harsh Braking":
+                                        regionCluster['Brake'] += 1;
+                                        break;
+                                    case "Over speeding > 70kph":
+                                        regionCluster['O_spd'] += 1;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                                regionCluster['Total'] = regionCluster.Acc + regionCluster.Brake + regionCluster.O_spd;
+                                filteredArr[`${region.code}${cluster.cluster}`] = regionCluster
                                 
                             } else if (region && (!cluster)) {
 
-                                filteredArr[region.code] = filteredArr[region.code] || {
+                                var NoClusterRegion = filteredArr[region.code] || {
                                     '_id': region.code,
                                     'Region': region.name,
                                     'Cluster': "",
@@ -13816,23 +13800,24 @@ var ECO_DRIVING = {
                                     'Total': null,
                                 }
 
-                                const acc = val.RuleName === "Harsh Acceleration" ? (filteredArr[region.code]['Acc'] ? filteredArr[region.code]['Acc'] + 1 : 1) : 0
-                                const brake =  val.RuleName === "Harsh Braking" ? (filteredArr[region.code]['Brake'] ? filteredArr[region.code]['Brake'] + 1 : 1) : 0
-                                const ospeed =  val.RuleName === "Over speeding > 70kph" ? (filteredArr[region.code]['O_spd'] ? filteredArr[region.code]['O_spd'] + 1 : 1) : 0
-                                const total =  acc + brake + ospeed
-
-                                filteredArr[region.code] = {
-                                    '_id': region.code,
-                                    'Region': region.name,
-                                    'Cluster': "None",
-                                    'Brake': brake,
-                                    'Acc': acc,
-                                    'O_spd': ospeed,
-                                    'Total': total,
+                                switch (val.RuleName) {
+                                    case "Harsh Acceleration":
+                                        NoClusterRegion['Acc'] += 1;
+                                        break;
+                                    case "Harsh Braking":
+                                        NoClusterRegion['Brake'] += 1;
+                                        break;
+                                    case "Over speeding > 70kph":
+                                        NoClusterRegion['O_spd'] += 1;
+                                        break;
+                                    default:
+                                        break;
                                 }
+                                NoClusterRegion['Total'] = NoClusterRegion.Acc + NoClusterRegion.Brake + NoClusterRegion.O_spd;
+                                filteredArr[region.code] = NoClusterRegion
                             } else if (cluster && (!region)) {
 
-                                filteredArr[cluster.cluster] = filteredArr[cluster] || {
+                                var noRegionCluster = filteredArr[cluster.cluster] || {
                                     '_id': cluster.cluster,
                                     'Region': "",
                                     'Cluster': cluster.cluster,
@@ -13842,50 +13827,86 @@ var ECO_DRIVING = {
                                     'Total': null,
                                 }
 
-                                const acc = val.RuleName === "Harsh Acceleration" ? (filteredArr[cluster.cluster]['Acc'] ? filteredArr[cluster.cluster]['Acc'] + 1 : 1) : 0
-                                const brake =  val.RuleName === "Harsh Braking" ? (filteredArr[cluster.cluster]['Brake'] ? filteredArr[cluster.cluster]['Brake'] + 1 : 1) : 0
-                                const ospeed =  val.RuleName === "Over speeding > 70kph" ? (filteredArr[cluster.cluster]['O_spd'] ? filteredArr[cluster.cluster]['O_spd'] + 1 : 1) : 0
-                                const total =  acc + brake + ospeed
-
-                                filteredArr[cluster.cluster] = {
-                                    '_id': cluster.cluster,
-                                    'Region': "None",
-                                    'Cluster': cluster.cluster,
-                                    'Brake': brake,
-                                    'Acc': acc,
-                                    'O_spd': ospeed,
-                                    'Total': total,
+                                switch (val.RuleName) {
+                                    case "Harsh Acceleration":
+                                        noRegionCluster['Acc'] += 1;
+                                        break;
+                                    case "Harsh Braking":
+                                        noRegionCluster['Brake'] += 1;
+                                        break;
+                                    case "Over speeding > 70kph":
+                                        noRegionCluster['O_spd'] += 1;
+                                        break;
+                                    default:
+                                        break;
                                 }
+                                noRegionCluster['Total'] = noRegionCluster.Acc + noRegionCluster.Brake + noRegionCluster.O_spd;
+                                filteredArr[cluster.cluster] = noRegionCluster
                             } else {
 
-                                filteredArr['None'] = {
+                                var noClusterNoRegion = filteredArr['None'] || {
                                     '_id': 'none',
                                     'Region': "None",
                                     'Cluster': "None",
-                                    'Brake': brake,
-                                    'Acc': acc,
-                                    'O_spd': ospeed,
-                                    'Total': total,
+                                    'Brake': null,
+                                    'Acc': null,
+                                    'O_spd': null,
+                                    'Total': null,
                                 }
+
+                                switch (val.RuleName) {
+                                    case "Harsh Acceleration":
+                                        noClusterNoRegion['Acc'] += 1;
+                                        break;
+                                    case "Harsh Braking":
+                                        noClusterNoRegion['Brake'] += 1;
+                                        break;
+                                    case "Over speeding > 70kph":
+                                        noClusterNoRegion['O_spd'] += 1;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                                noClusterNoRegion['Total'] = noClusterNoRegion.Acc + noClusterNoRegion.Brake + noClusterNoRegion.O_spd;
+                                filteredArr['None'] = noClusterNoRegion
                             }
                         } else {
-                            filteredArr['None'] = {
+                            var noClusterNoRegion = filteredArr['None'] || {
                                 '_id': 'none',
                                 'Region': "None",
                                 'Cluster': "None",
-                                'Brake': brake,
-                                'Acc': acc,
-                                'O_spd': ospeed,
-                                'Total': total,
+                                'Brake': null,
+                                'Acc': null,
+                                'O_spd': null,
+                                'Total': null,
                             }
+
+                            switch (val.RuleName) {
+                                case "Harsh Acceleration":
+                                    noClusterNoRegion['Acc'] += 1;
+                                    break;
+                                case "Harsh Braking":
+                                    noClusterNoRegion['Brake'] += 1;
+                                    break;
+                                case "Over speeding > 70kph":
+                                    noClusterNoRegion['O_spd'] += 1;
+                                    break;
+                                default:
+                                    break;
+                            }
+                            noClusterNoRegion['Total'] = noClusterNoRegion.Acc + noClusterNoRegion.Brake + noClusterNoRegion.O_spd;
+                            filteredArr['None'] = noClusterNoRegion
                         }
                     }
                 })
-
+                console.log("SUMMARY")
+                console.log(filteredArr)
                 summaryTable.populateRows(Object.values(filteredArr),true);
             }
             summaryTable.initialize();
             summaryTable.countRows();
+
+            
 
             /******** TABLE CHECK ********/
             // always put before POPULATE functions
@@ -18716,6 +18737,20 @@ var PAGE = {
             eco_driving: {
                 title: "Eco Driving",
                 name: "eco_driving",
+                icon: "la la-calendar",
+                display: function() { return views.eco_driving(); },
+                function: function() { ECO_DRIVING.FUNCTION.init() },
+                buttons: {
+                    table: ["refresh","export","filter","search","summary"],
+                    row:["view"]
+                },
+                menu_group: {
+                    title: "Events",
+                }
+            },
+            eco_driving_summary: {
+                title: "Eco Driving Summary",
+                name: "eco_driving_summary",
                 icon: "la la-calendar",
                 display: function() { return views.eco_driving(); },
                 function: function() { ECO_DRIVING.FUNCTION.init() },
