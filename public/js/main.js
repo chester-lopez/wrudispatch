@@ -13415,435 +13415,490 @@ var ECO_DRIVING = {
         stream:null,
         init:function(){
             var _new1_ = true;
+            var isFullview = true
 
-            var table = new Table({
-                id: "#tbl-eco_driving",
-                urlPath: "eco_driving",
-                perColumnSearch: true,
-                goto: "eco_driving",
-                autoPopulateData: false,
-                dataTableOptions: {
-                    columns: TABLE.COL_ROW(CUSTOM.COLUMN.eco_driving).column,
-                    order: [[ 0, "asc" ]],
-                    createdRow: function (row, data, dataIndex) {
-                        var _row = data._row;
-                        $(row).attr(`_row`, _row);
-                        table.rowListeners(_row,data._id);
-                    },
-                    dom: 'lBrti<"tbl-progress-bar">p',
-                }
-            });
+            function fullTable() {
 
-            var summaryTable = new Table({
-                id: "#tbl-eco_driving_summary",
-                urlPath: "eco_driving",
-                perColumnSearch: true,
-                goto: "eco_driving",
-                autoPopulateData: false,
-                dataTableOptions: {
-                    columns: TABLE.COL_ROW(CUSTOM.COLUMN.eco_driving_summary).column,
-                    order: [[ 0, "asc" ]],
-                    dom: 'lBrti<"tbl-progress-bar">p',
-                    buttons:[]
-                }
-            });
+                var table = new Table({
+                    id: "#tbl-eco_driving",
+                    urlPath: "eco_driving",
+                    perColumnSearch: true,
+                    goto: "eco_driving",
+                    autoPopulateData: false,
+                    dataTableOptions: {
+                        columns: TABLE.COL_ROW(CUSTOM.COLUMN.eco_driving).column,
+                        order: [[ 0, "asc" ]],
+                        createdRow: function (row, data, dataIndex) {
+                            var _row = data._row;
+                            $(row).attr(`_row`, _row);
+                            table.rowListeners(_row,data._id);
+                        },
+                        dom: 'lBrti<"tbl-progress-bar">p',
+                    }
+                });
 
-            USER.filters["eco_driving"] = { 'Value.Event Start': FILTER.DATERANGE(), RuleName: { $in: ['Over speeding > 70kph','Harsh Braking','Harsh Acceleration'] } };
-            table.setButtons({
-                actions: {
- 
-                    summary: function(){   
+                USER.filters["eco_driving"] = { 'Value.Event Start': FILTER.DATERANGE(), RuleName: { $in: ['Over speeding > 70kph','Harsh Braking','Harsh Acceleration'] } };
 
-                        $('#tbl-eco_driving').replace()
-                    },
-                }
-            });
-            table.addRow = function(obj){
+                table.setButtons({
+                    actions: {
 
-                // SPEED
-                // convert speed from meter/second to kilometer/hour -> (speed * 18) / 5
-                const maxSpeed = ((obj['MaxSpeed']||0) * 18) / 5;
-                const totalEvents = obj['Brake'] + obj['Acc'] + obj['O_spd'];
-                const avgSpeed = (((obj['Speed']||0) / totalEvents) * 18) / 5;
-
-                // const oSpdTime = Number(obj['O_spd_Time']) * (1/3600); // seconds to decimal hour
-                const oSpdTime = DATETIME.DURATION_TIME_FORMAT((obj['O_spd_Time']*1000),true,true,true); // Format: HH:MM:SS
+                        summary: function(){
+                            if (isFullview) {
+                                summaryTable()
+                            } else {
+                                fullTable()
+                            }
+                            isFullview = false
+                            $("#tbl-eco_driving").hide()
+                            $("#tbl-eco_driving_summary").show()
+                        },
+                    }
+                });
+                table.addRow = function(obj){
     
-                return TABLE.COL_ROW(null,{
-                    '_id': obj._id,
-                    '_row':  obj._row,
-                    'Name': obj['Name'] || "-",
-                    'Days': Object.keys(obj.Days).length,
-                    'Class': obj.Class || "",
-                    'Score': totalEvents || "",
-                    'Dist': obj.Dist || "",
-                    'Max': (GET.ROUND_OFF(maxSpeed) || "") + ' kph',
-                    'Avg': (GET.ROUND_OFF(avgSpeed) || "") + ' kph',
-                    'Brake': obj.Brake || "",
-                    'Acc': obj.Acc || "",
-                    'O_spd': obj.O_spd || "",
-                    'Trip': obj.Trip || "",
-                    'Idle': obj.Idle || "",
-                    'O_spd_Time': oSpdTime || "",
-                    'Site': (Object.keys(obj.Site)||{}).join(", ") || "",
-                    'Cluster': (Object.keys(obj.Cluster)||{}).join(", ") || "",
-                    'Region': (Object.keys(obj.Region)||{}).join(", ") || "",
-                }).row;
-            };
-            table.customPopulate = function(){
-                
-                const filteredArr = {};
-
-
-                LIST['eco_driving'].forEach(val => {
-
-                    if((val.RuleName == 'Over speeding > 70kph' && val.State == 'Finished') || (val.RuleName != 'Over speeding > 70kph' && val.State == 'New')){
-                        var value = val.Value || {};
-                        try {
-                            value = JSON.parse("{"+val.Value+"}");
-                        } catch(error){}
+                    // SPEED
+                    // convert speed from meter/second to kilometer/hour -> (speed * 18) / 5
+                    const maxSpeed = ((obj['MaxSpeed']||0) * 18) / 5;
+                    const totalEvents = obj['Brake'] + obj['Acc'] + obj['O_spd'];
+                    const avgSpeed = (((obj['Speed']||0) / totalEvents) * 18) / 5;
     
-                        filteredArr[val.userID] = filteredArr[val.userID] || {
-                            '_id': val._id,
-                            'Name': value['Vehicle Name'] || "-",
-                            'Brake': 0,
-                            'Acc': 0,
-                            'O_spd': 0,
-                            'Speed': 0,
-                            'MaxSpeed': 0,
-                            'Days': {},
-                            'O_spd_Time': 0,
-                            'Site': {},
-                            'Cluster': {},
-                            'Region': {},
-                        };
-
-                        // Days
-                        filteredArr[val.userID]['Days'][DATETIME.FORMAT(value['Event Start'],"YYYYMMDD")] = true;
-
-                        // Events
-                        (val.RuleName == 'Harsh Braking') ? filteredArr[val.userID]['Brake'] ++ : null;
-                        (val.RuleName == 'Harsh Acceleration') ? filteredArr[val.userID]['Acc'] ++ : null;
-                        (val.RuleName == 'Over speeding > 70kph') ? filteredArr[val.userID]['O_spd'] ++ : null;
+                    // const oSpdTime = Number(obj['O_spd_Time']) * (1/3600); // seconds to decimal hour
+                    const oSpdTime = DATETIME.DURATION_TIME_FORMAT((obj['O_spd_Time']*1000),true,true,true); // Format: HH:MM:SS
+        
+                    return TABLE.COL_ROW(null,{
+                        '_id': obj._id,
+                        '_row':  obj._row,
+                        'Name': obj['Name'] || "-",
+                        'Days': Object.keys(obj.Days).length,
+                        'Class': obj.Class || "",
+                        'Score': totalEvents || "",
+                        'Dist': obj.Dist || "",
+                        'Max': (GET.ROUND_OFF(maxSpeed) || "") + ' kph',
+                        'Avg': (GET.ROUND_OFF(avgSpeed) || "") + ' kph',
+                        'Brake': obj.Brake || "",
+                        'Acc': obj.Acc || "",
+                        'O_spd': obj.O_spd || "",
+                        'Trip': obj.Trip || "",
+                        'Idle': obj.Idle || "",
+                        'O_spd_Time': oSpdTime || "",
+                        'Site': (Object.keys(obj.Site)||{}).join(", ") || "",
+                        'Cluster': (Object.keys(obj.Cluster)||{}).join(", ") || "",
+                        'Region': (Object.keys(obj.Region)||{}).join(", ") || "",
+                    }).row;
+                };
+                table.customPopulate = function(){
+                    
+                    const filteredArr = {};
     
-                        // Speed
-                        var speed = Number(value['Speed']) || 0;
-                        if(val.RuleName == 'Over speeding > 70kph'){
-                            const stateNew = LIST['eco_driving'].find(x => x.id == val.id && x.State == 'New');
-
-                            if(stateNew){
-                                speed = Number(stateNew.Value['Speed']) || 0;
+    
+                    LIST['eco_driving'].forEach(val => {
+    
+                        if((val.RuleName == 'Over speeding > 70kph' && val.State == 'Finished') || (val.RuleName != 'Over speeding > 70kph' && val.State == 'New')){
+                            var value = val.Value || {};
+                            try {
+                                value = JSON.parse("{"+val.Value+"}");
+                            } catch(error){}
+        
+                            filteredArr[val.userID] = filteredArr[val.userID] || {
+                                '_id': val._id,
+                                'Name': value['Vehicle Name'] || "-",
+                                'Brake': 0,
+                                'Acc': 0,
+                                'O_spd': 0,
+                                'Speed': 0,
+                                'MaxSpeed': 0,
+                                'Days': {},
+                                'O_spd_Time': 0,
+                                'Site': {},
+                                'Cluster': {},
+                                'Region': {},
+                            };
+    
+                            // Days
+                            filteredArr[val.userID]['Days'][DATETIME.FORMAT(value['Event Start'],"YYYYMMDD")] = true;
+    
+                            // Events
+                            (val.RuleName == 'Harsh Braking') ? filteredArr[val.userID]['Brake'] ++ : null;
+                            (val.RuleName == 'Harsh Acceleration') ? filteredArr[val.userID]['Acc'] ++ : null;
+                            (val.RuleName == 'Over speeding > 70kph') ? filteredArr[val.userID]['O_spd'] ++ : null;
+        
+                            // Speed
+                            var speed = Number(value['Speed']) || 0;
+                            if(val.RuleName == 'Over speeding > 70kph'){
+                                const stateNew = LIST['eco_driving'].find(x => x.id == val.id && x.State == 'New');
+    
+                                if(stateNew){
+                                    speed = Number(stateNew.Value['Speed']) || 0;
+                                }
+                            }
+                            filteredArr[val.userID]['Speed'] += speed;
+                            (filteredArr[val.userID]['MaxSpeed'] < speed) ? filteredArr[val.userID]['MaxSpeed'] = speed : null;
+    
+                            // Time
+                            filteredArr[val.userID]['O_spd_Time'] += Number(value['Duration']) || 0;
+    
+                            // Location
+                            const geofence = getGeofence(value['Site'],'short_name');
+    
+                            if(geofence){
+                                filteredArr[val.userID]['Site'][geofence.short_name] = true;
+    
+                                const cluster = getCluster(geofence.cluster_id);
+                                cluster ? filteredArr[val.userID]['Cluster'][cluster.cluster] = true : null;
+    
+                                const region = getRegion(geofence.region_id);
+                                region ? filteredArr[val.userID]['Region'][region.code] = true : null;
+                            } else {
+                                filteredArr[val.userID]['Site'][value['Site']] = true;
                             }
                         }
-                        filteredArr[val.userID]['Speed'] += speed;
-                        (filteredArr[val.userID]['MaxSpeed'] < speed) ? filteredArr[val.userID]['MaxSpeed'] = speed : null;
+    
+                    });
+    
+                    table.populateRows(Object.values(filteredArr),true);
+                };
+                table.rowListeners = function(_row,_id){
+                    const self = this;
+                };
+                table.filterListener = function(_row,_id){
+                    // initialize filter
+                    FILTER.RESET({
+                        selectEl: `#_region_id,#_cluster_id`,
+                        dateEl: `#_date`,
+                        populateTable: function(){
+                            var _date = $(`#_date`).val() || DEFAULT_DATE;
+    
+                            FILTER.STATUS = "new";
+    
+                            $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
+    
+                            
+                            USER.filters["eco_driving"] = {'Value.Event Start': FILTER.DATERANGE(_date), RuleName: { $in: ['Over speeding > 70kph','Harsh Braking','Harsh Acceleration'] } };
+                            table.countRows();
+                        }
+                    });
+    
+    
+                    /********* DATE FILTER *********/
+                    var selectedDate = new Date();
+                    var calendarview = "day";
+    
+                    // Date filter
+                    $(`[calendarview]`).click(function(){
+                        calendarview = $(this).attr("calendarview");
+        
+                        // initializeExportButton();
+        
+                        if(calendarview == "day"){
+                            $('#_date').replaceWith(`<input id="_date" class="form-control" type="text" readonly>`);
+                            
+                            $(`#_date`).daterangepicker({
+                                opens: 'left',
+                                // singleDatePicker:true,
+                                autoUpdateInput: false,
+                                maxDate: new Date(),
+                                startDate: DATETIME.FORMAT(new Date(selectedDate),"MM/DD/YYYY"),
+                                autoApply: true
+                            }, function(start, end, label) {
+                                selectedDate = new Date(start);
+                                
+                                FILTER.INITIALIZE($(this)["0"].element,start,end);
+                            }).on('apply.daterangepicker', function (ev, picker) {
+                                $(this).val(DATETIME.FORMAT(new Date(picker.startDate),"MM/DD/YYYY"));
+                                selectedDate = new Date(picker.startDate);
+                                FILTER.INITIALIZE($(this),picker.startDate,picker.endDate);
+    
+                            });
+                            $(`#_date`).trigger('apply.daterangepicker',{ startDate: DATETIME.FORMAT(new Date(selectedDate),"MM/DD/YYYY") });
+                            FILTER.INITIALIZE($(`#_date`),selectedDate,selectedDate);
+                        }
+                        if(calendarview == "month"){
+                            $('#_date').replaceWith(`<input id="_date" class="form-control" type="text" readonly>`);
+                            $('#_date').datepicker('remove').datepicker({
+                                format: "mm/yyyy",
+                                minViewMode: 1,
+                                autoclose: true,
+                                todayHighlight: true,
+                                endDate: new Date()
+                            }).on("changeDate",function (e) {
+                                selectedDate = new Date(e.date);
+                                // saveFilter();
+                                // populatePage(GENERATE.RANDOM(36));
+                                
+                                // FILTER.INITIALIZE($(this)["0"].element,selectedDate,selectedDate);
+                                $('.clearable').trigger("input");
+                            }).datepicker("setDate",new Date(selectedDate));
+                        }
+                        if(calendarview == "year"){
+                            $('#_date').replaceWith(`<input id="_date" class="form-control" type="text" readonly>`);
+                            $('#_date').datepicker('remove').datepicker({
+                                format: "yyyy",
+                                minViewMode: 2,
+                                autoclose: true,
+                                todayHighlight: true,
+                                endDate: new Date()
+                            }).on("changeDate",function (e) {
+                                selectedDate = new Date(e.date);
+                                // saveFilter();
+                                // populatePage(GENERATE.RANDOM(36));
+                                // FILTER.INITIALIZE($(this)["0"].element,selectedDate,selectedDate);
+                                $('.clearable').trigger("input");
+                            }).datepicker("setDate",new Date(selectedDate));
+                        }
+                        $(`[calendarview]`).removeClass("active");
+                        $(`[calendarview="${calendarview}"]`).addClass("active");
+                        $(this).parents(".dropdown").find(".dropdown-toggle b").html(calendarview.toUpperCase());
+        
+                        // saveFilter();
+                    });
+                    $(`[calendarview="${calendarview}"]`).trigger("click");
+                    /********* end DATE FILTER *********/
+    
+    
+                    // Region filter
+                    $(`#_region_id`).on("select2:select", function() {
+                        $(`#_cluster_id`).val("").trigger('change');
+                    });
+    
+                    // Cluster filter
+                    $(`#_cluster_id`).on("select2:select", function() {
+                        $(`#_region_id`).val("").trigger('change');
+                    });
+    
+                    // Site filter
+    
+    
+    
+                    // filter button is clicked
+                    $(`#filter-btn`).click(function(){
+                        const _date = $(`#_date`).val() || DEFAULT_DATE;
+                        const _region_id = $(`#_region_id`).val();
+                        const _cluster_id = $(`#_cluster_id`).val();
+    
+                        FILTER.STATUS = "new";
+    
+                        $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
+    
+                        // Day
+                        var finalSelectedDate = DATETIME.FORMAT(new Date(selectedDate),"MM/DD/YYYY");
+    
+                        // Month
+                        if(calendarview == "month"){
+                            var monthYear = moment(selectedDate).format("MM/DD/YYYY").split("/");
+                            console.log('selectedDate',selectedDate)
+                            var month = monthYear[0];
+                            var year = monthYear[2];
+    
+                            // month in moment is 0 based, so 9 is actually october, subtract 1 to compensate
+                            // array is 'year', 'month', 'day', etc
+                            var startDate = moment([year, month - 1]);
+                        
+                            // Clone the value before .endOf()
+                            var endDate = moment(startDate).endOf('month');
+    
+                            finalSelectedDate = `${startDate.format("MM/DD/YYYY")} - ${endDate.format("MM/DD/YYYY")}`;
+                        }
+                        
+                        // Year
+                        if(calendarview == "year"){
+                            // start date of year
+                            var startDate = moment(selectedDate).startOf('year');
+                            // end date of year
+                            var endDate = moment(selectedDate).endOf('year');
+    
+                            finalSelectedDate = `${startDate.format("MM/DD/YYYY")} - ${endDate.format("MM/DD/YYYY")}`;
+                        }
+                        console.log("finalSelectedDate",finalSelectedDate);
+    
+                        USER.filters["eco_driving"] = { 
+                            'Value.Event Start': FILTER.DATERANGE(finalSelectedDate), 
+                            RuleName: { $in: ['Over speeding > 70kph','Harsh Braking','Harsh Acceleration'] } 
+                        };
+                        
+                        (_region_id) ?  USER.filters["eco_driving"]['_region_id'] = _region_id : null;
+                        (_cluster_id) ?  USER.filters["eco_driving"]['_cluster_id'] = _cluster_id : null;
+                        
+                        table.countRows();
+                    });
+                    // initialize filter
+                };
+                table.initialize();
+                table.countRows()
+            }
 
-                        // Time
-                        filteredArr[val.userID]['O_spd_Time'] += Number(value['Duration']) || 0;
+            function summaryTable() {
+                var summaryTable = new Table({
+                    id: "#tbl-eco_driving_summary",
+                    urlPath: "eco_driving",
+                    perColumnSearch: true,
+                    goto: "eco_driving",
+                    autoPopulateData: false,
+                    dataTableOptions: {
+                        columns: TABLE.COL_ROW(CUSTOM.COLUMN.eco_driving_summary).column,
+                        order: [[ 0, "asc" ]],
+                        dom: 'lBrti<"tbl-progress-bar">p',
+                    }
+                });
 
-                        // Location
-                        const geofence = getGeofence(value['Site'],'short_name');
+                summaryTable.setButtons({
+                    actions: {
 
-                        if(geofence){
-                            filteredArr[val.userID]['Site'][geofence.short_name] = true;
-
-                            const cluster = getCluster(geofence.cluster_id);
-                            cluster ? filteredArr[val.userID]['Cluster'][cluster.cluster] = true : null;
-
-                            const region = getRegion(geofence.region_id);
-                            region ? filteredArr[val.userID]['Region'][region.code] = true : null;
-                        } else {
-                            filteredArr[val.userID]['Site'][value['Site']] = true;
+                        summary: function(){
+                            if (isFullview) {
+                                summaryTable()
+                            } else {
+                                fullTable()
+                            }
+                            isFullview = true
+                            $("#tbl-eco_driving").show()
+                            $("#tbl-eco_driving_summary").hide()
                         }
                     }
-
                 });
-
-                table.populateRows(Object.values(filteredArr),true);
-            };
-            table.rowListeners = function(_row,_id){
-                const self = this;
-            };
-            table.filterListener = function(_row,_id){
-                // initialize filter
-                FILTER.RESET({
-                    selectEl: `#_region_id,#_cluster_id`,
-                    dateEl: `#_date`,
-                    populateTable: function(){
-                        var _date = $(`#_date`).val() || DEFAULT_DATE;
-
-                        FILTER.STATUS = "new";
-
-                        $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
-
-                        
-                        USER.filters["eco_driving"] = {'Value.Event Start': FILTER.DATERANGE(_date), RuleName: { $in: ['Over speeding > 70kph','Harsh Braking','Harsh Acceleration'] } };
-                        table.countRows();
-                    }
-                });
-
-
-                /********* DATE FILTER *********/
-                var selectedDate = new Date();
-                var calendarview = "day";
-
-                // Date filter
-                $(`[calendarview]`).click(function(){
-                    calendarview = $(this).attr("calendarview");
     
-                    // initializeExportButton();
+                summaryTable.addRow = function(obj){
+                    return TABLE.COL_ROW(null,{
+                        '_id': obj._id,
+                        '_row':  obj._row,
+                        'Cluster': obj.Cluster || "",
+                        'Region': obj.Region || "",
+                        'Brake': obj.Brake || "",
+                        'Acc': obj.Acc || "",
+                        'O_spd': obj.O_spd || "",
+                        'Total': obj.Total || "",
+                    }).row;
+                }
+                summaryTable.customPopulate = function(){
+                    const filteredArr = {};
+                    
+                    LIST['eco_driving'].forEach(val => {
     
-                    if(calendarview == "day"){
-                        $('#_date').replaceWith(`<input id="_date" class="form-control" type="text" readonly>`);
-                        
-                        $(`#_date`).daterangepicker({
-                            opens: 'left',
-                            // singleDatePicker:true,
-                            autoUpdateInput: false,
-                            maxDate: new Date(),
-                            startDate: DATETIME.FORMAT(new Date(selectedDate),"MM/DD/YYYY"),
-                            autoApply: true
-                        }, function(start, end, label) {
-                            selectedDate = new Date(start);
-                            
-                            FILTER.INITIALIZE($(this)["0"].element,start,end);
-                        }).on('apply.daterangepicker', function (ev, picker) {
-                            $(this).val(DATETIME.FORMAT(new Date(picker.startDate),"MM/DD/YYYY"));
-                            selectedDate = new Date(picker.startDate);
-                            FILTER.INITIALIZE($(this),picker.startDate,picker.endDate);
-
-                        });
-                        $(`#_date`).trigger('apply.daterangepicker',{ startDate: DATETIME.FORMAT(new Date(selectedDate),"MM/DD/YYYY") });
-                        FILTER.INITIALIZE($(`#_date`),selectedDate,selectedDate);
-                    }
-                    if(calendarview == "month"){
-                        $('#_date').replaceWith(`<input id="_date" class="form-control" type="text" readonly>`);
-                        $('#_date').datepicker('remove').datepicker({
-                            format: "mm/yyyy",
-                            minViewMode: 1,
-                            autoclose: true,
-                            todayHighlight: true,
-                            endDate: new Date()
-                        }).on("changeDate",function (e) {
-                            selectedDate = new Date(e.date);
-                            // saveFilter();
-                            // populatePage(GENERATE.RANDOM(36));
-                            
-                            // FILTER.INITIALIZE($(this)["0"].element,selectedDate,selectedDate);
-                            $('.clearable').trigger("input");
-                        }).datepicker("setDate",new Date(selectedDate));
-                    }
-                    if(calendarview == "year"){
-                        $('#_date').replaceWith(`<input id="_date" class="form-control" type="text" readonly>`);
-                        $('#_date').datepicker('remove').datepicker({
-                            format: "yyyy",
-                            minViewMode: 2,
-                            autoclose: true,
-                            todayHighlight: true,
-                            endDate: new Date()
-                        }).on("changeDate",function (e) {
-                            selectedDate = new Date(e.date);
-                            // saveFilter();
-                            // populatePage(GENERATE.RANDOM(36));
-                            // FILTER.INITIALIZE($(this)["0"].element,selectedDate,selectedDate);
-                            $('.clearable').trigger("input");
-                        }).datepicker("setDate",new Date(selectedDate));
-                    }
-                    $(`[calendarview]`).removeClass("active");
-                    $(`[calendarview="${calendarview}"]`).addClass("active");
-                    $(this).parents(".dropdown").find(".dropdown-toggle b").html(calendarview.toUpperCase());
+                        if((val.RuleName == 'Over speeding > 70kph' && val.State == 'Finished') || (val.RuleName != 'Over speeding > 70kph' && val.State == 'New')){
+                            var value = val.Value || {};
+                            try {
+                                value = JSON.parse("{"+val.Value+"}");
+                            } catch(error){}
     
-                    // saveFilter();
-                });
-                $(`[calendarview="${calendarview}"]`).trigger("click");
-                /********* end DATE FILTER *********/
-
-
-                // Region filter
-                $(`#_region_id`).on("select2:select", function() {
-                    $(`#_cluster_id`).val("").trigger('change');
-                });
-
-                // Cluster filter
-                $(`#_cluster_id`).on("select2:select", function() {
-                    $(`#_region_id`).val("").trigger('change');
-                });
-
-                // Site filter
-
-
-
-                // filter button is clicked
-                $(`#filter-btn`).click(function(){
-                    const _date = $(`#_date`).val() || DEFAULT_DATE;
-                    const _region_id = $(`#_region_id`).val();
-                    const _cluster_id = $(`#_cluster_id`).val();
-
-                    FILTER.STATUS = "new";
-
-                    $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
-
-                    // Day
-                    var finalSelectedDate = DATETIME.FORMAT(new Date(selectedDate),"MM/DD/YYYY");
-
-                    // Month
-                    if(calendarview == "month"){
-                        var monthYear = moment(selectedDate).format("MM/DD/YYYY").split("/");
-                        console.log('selectedDate',selectedDate)
-                        var month = monthYear[0];
-                        var year = monthYear[2];
-
-                        // month in moment is 0 based, so 9 is actually october, subtract 1 to compensate
-                        // array is 'year', 'month', 'day', etc
-                        var startDate = moment([year, month - 1]);
-                    
-                        // Clone the value before .endOf()
-                        var endDate = moment(startDate).endOf('month');
-
-                        finalSelectedDate = `${startDate.format("MM/DD/YYYY")} - ${endDate.format("MM/DD/YYYY")}`;
-                    }
-                    
-                    // Year
-                    if(calendarview == "year"){
-                        // start date of year
-                        var startDate = moment(selectedDate).startOf('year');
-                        // end date of year
-                        var endDate = moment(selectedDate).endOf('year');
-
-                        finalSelectedDate = `${startDate.format("MM/DD/YYYY")} - ${endDate.format("MM/DD/YYYY")}`;
-                    }
-                    console.log("finalSelectedDate",finalSelectedDate);
-
-                    USER.filters["eco_driving"] = { 
-                        'Value.Event Start': FILTER.DATERANGE(finalSelectedDate), 
-                        RuleName: { $in: ['Over speeding > 70kph','Harsh Braking','Harsh Acceleration'] } 
-                    };
-                    
-                    (_region_id) ?  USER.filters["eco_driving"]['_region_id'] = _region_id : null;
-                    (_cluster_id) ?  USER.filters["eco_driving"]['_cluster_id'] = _cluster_id : null;
-                    
-                    table.countRows();
-                });
-                // initialize filter
-            };
-            table.initialize();
-            table.countRows()
-            summaryTable.addRow = function(obj){
-                return TABLE.COL_ROW(null,{
-                    '_id': obj._id,
-                    '_row':  obj._row,
-                    'Cluster': obj.Cluster || "",
-                    'Region': obj.Region || "",
-                    'Brake': obj.Brake || "",
-                    'Acc': obj.Acc || "",
-                    'O_spd': obj.O_spd || "",
-                    'Total': obj.Total || "",
-                }).row;
-            }
-            summaryTable.customPopulate = function(){
-                const filteredArr = {};
-                
-                LIST['eco_driving'].forEach(val => {
-
-                    if((val.RuleName == 'Over speeding > 70kph' && val.State == 'Finished') || (val.RuleName != 'Over speeding > 70kph' && val.State == 'New')){
-                        var value = val.Value || {};
-                        try {
-                            value = JSON.parse("{"+val.Value+"}");
-                        } catch(error){}
-
-                        // Location
-                        const geofence = getGeofence(value['Site'],'short_name');
-
-                        if(geofence){
-
-                            const cluster = getCluster(geofence.cluster_id);
-
-                            const region = getRegion(geofence.region_id);
-
-                            if (region && cluster) {
-
-                                var regionCluster = filteredArr[`${region.code}${cluster.cluster}`] || {
-                                    '_id': `${region.code}${cluster.cluster}`,
-                                    'Region': region.name,
-                                    'Cluster': cluster.cluster,
-                                    'Brake': null,
-                                    'Acc': null,
-                                    'O_spd': null,
-                                    'Total': null,
+                            // Location
+                            const geofence = getGeofence(value['Site'],'short_name');
+    
+                            if(geofence){
+    
+                                const cluster = getCluster(geofence.cluster_id);
+    
+                                const region = getRegion(geofence.region_id);
+    
+                                if (region && cluster) {
+    
+                                    var regionCluster = filteredArr[`${region.code}${cluster.cluster}`] || {
+                                        '_id': `${region.code}${cluster.cluster}`,
+                                        'Region': region.name,
+                                        'Cluster': cluster.cluster,
+                                        'Brake': null,
+                                        'Acc': null,
+                                        'O_spd': null,
+                                        'Total': null,
+                                    }
+    
+                                    switch (val.RuleName) {
+                                        case "Harsh Acceleration":
+                                            regionCluster['Acc'] += 1;
+                                            break;
+                                        case "Harsh Braking":
+                                            regionCluster['Brake'] += 1;
+                                            break;
+                                        case "Over speeding > 70kph":
+                                            regionCluster['O_spd'] += 1;
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    regionCluster['Total'] = regionCluster.Acc + regionCluster.Brake + regionCluster.O_spd;
+                                    filteredArr[`${region.code}${cluster.cluster}`] = regionCluster
+                                    
+                                } else if (region && (!cluster)) {
+    
+                                    var NoClusterRegion = filteredArr[region.code] || {
+                                        '_id': region.code,
+                                        'Region': region.name,
+                                        'Cluster': "",
+                                        'Brake': null,
+                                        'Acc': null,
+                                        'O_spd': null,
+                                        'Total': null,
+                                    }
+    
+                                    switch (val.RuleName) {
+                                        case "Harsh Acceleration":
+                                            NoClusterRegion['Acc'] += 1;
+                                            break;
+                                        case "Harsh Braking":
+                                            NoClusterRegion['Brake'] += 1;
+                                            break;
+                                        case "Over speeding > 70kph":
+                                            NoClusterRegion['O_spd'] += 1;
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    NoClusterRegion['Total'] = NoClusterRegion.Acc + NoClusterRegion.Brake + NoClusterRegion.O_spd;
+                                    filteredArr[region.code] = NoClusterRegion
+                                } else if (cluster && (!region)) {
+    
+                                    var noRegionCluster = filteredArr[cluster.cluster] || {
+                                        '_id': cluster.cluster,
+                                        'Region': "",
+                                        'Cluster': cluster.cluster,
+                                        'Brake': null,
+                                        'Acc': null,
+                                        'O_spd': null,
+                                        'Total': null,
+                                    }
+    
+                                    switch (val.RuleName) {
+                                        case "Harsh Acceleration":
+                                            noRegionCluster['Acc'] += 1;
+                                            break;
+                                        case "Harsh Braking":
+                                            noRegionCluster['Brake'] += 1;
+                                            break;
+                                        case "Over speeding > 70kph":
+                                            noRegionCluster['O_spd'] += 1;
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    noRegionCluster['Total'] = noRegionCluster.Acc + noRegionCluster.Brake + noRegionCluster.O_spd;
+                                    filteredArr[cluster.cluster] = noRegionCluster
+                                } else {
+    
+                                    var noClusterNoRegion = filteredArr['None'] || {
+                                        '_id': 'none',
+                                        'Region': "None",
+                                        'Cluster': "None",
+                                        'Brake': null,
+                                        'Acc': null,
+                                        'O_spd': null,
+                                        'Total': null,
+                                    }
+    
+                                    switch (val.RuleName) {
+                                        case "Harsh Acceleration":
+                                            noClusterNoRegion['Acc'] += 1;
+                                            break;
+                                        case "Harsh Braking":
+                                            noClusterNoRegion['Brake'] += 1;
+                                            break;
+                                        case "Over speeding > 70kph":
+                                            noClusterNoRegion['O_spd'] += 1;
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    noClusterNoRegion['Total'] = noClusterNoRegion.Acc + noClusterNoRegion.Brake + noClusterNoRegion.O_spd;
+                                    filteredArr['None'] = noClusterNoRegion
                                 }
-
-                                switch (val.RuleName) {
-                                    case "Harsh Acceleration":
-                                        regionCluster['Acc'] += 1;
-                                        break;
-                                    case "Harsh Braking":
-                                        regionCluster['Brake'] += 1;
-                                        break;
-                                    case "Over speeding > 70kph":
-                                        regionCluster['O_spd'] += 1;
-                                        break;
-                                    default:
-                                        break;
-                                }
-                                regionCluster['Total'] = regionCluster.Acc + regionCluster.Brake + regionCluster.O_spd;
-                                filteredArr[`${region.code}${cluster.cluster}`] = regionCluster
-                                
-                            } else if (region && (!cluster)) {
-
-                                var NoClusterRegion = filteredArr[region.code] || {
-                                    '_id': region.code,
-                                    'Region': region.name,
-                                    'Cluster': "",
-                                    'Brake': null,
-                                    'Acc': null,
-                                    'O_spd': null,
-                                    'Total': null,
-                                }
-
-                                switch (val.RuleName) {
-                                    case "Harsh Acceleration":
-                                        NoClusterRegion['Acc'] += 1;
-                                        break;
-                                    case "Harsh Braking":
-                                        NoClusterRegion['Brake'] += 1;
-                                        break;
-                                    case "Over speeding > 70kph":
-                                        NoClusterRegion['O_spd'] += 1;
-                                        break;
-                                    default:
-                                        break;
-                                }
-                                NoClusterRegion['Total'] = NoClusterRegion.Acc + NoClusterRegion.Brake + NoClusterRegion.O_spd;
-                                filteredArr[region.code] = NoClusterRegion
-                            } else if (cluster && (!region)) {
-
-                                var noRegionCluster = filteredArr[cluster.cluster] || {
-                                    '_id': cluster.cluster,
-                                    'Region': "",
-                                    'Cluster': cluster.cluster,
-                                    'Brake': null,
-                                    'Acc': null,
-                                    'O_spd': null,
-                                    'Total': null,
-                                }
-
-                                switch (val.RuleName) {
-                                    case "Harsh Acceleration":
-                                        noRegionCluster['Acc'] += 1;
-                                        break;
-                                    case "Harsh Braking":
-                                        noRegionCluster['Brake'] += 1;
-                                        break;
-                                    case "Over speeding > 70kph":
-                                        noRegionCluster['O_spd'] += 1;
-                                        break;
-                                    default:
-                                        break;
-                                }
-                                noRegionCluster['Total'] = noRegionCluster.Acc + noRegionCluster.Brake + noRegionCluster.O_spd;
-                                filteredArr[cluster.cluster] = noRegionCluster
                             } else {
-
                                 var noClusterNoRegion = filteredArr['None'] || {
                                     '_id': 'none',
                                     'Region': "None",
@@ -13853,7 +13908,7 @@ var ECO_DRIVING = {
                                     'O_spd': null,
                                     'Total': null,
                                 }
-
+    
                                 switch (val.RuleName) {
                                     case "Harsh Acceleration":
                                         noClusterNoRegion['Acc'] += 1;
@@ -13870,43 +13925,18 @@ var ECO_DRIVING = {
                                 noClusterNoRegion['Total'] = noClusterNoRegion.Acc + noClusterNoRegion.Brake + noClusterNoRegion.O_spd;
                                 filteredArr['None'] = noClusterNoRegion
                             }
-                        } else {
-                            var noClusterNoRegion = filteredArr['None'] || {
-                                '_id': 'none',
-                                'Region': "None",
-                                'Cluster': "None",
-                                'Brake': null,
-                                'Acc': null,
-                                'O_spd': null,
-                                'Total': null,
-                            }
-
-                            switch (val.RuleName) {
-                                case "Harsh Acceleration":
-                                    noClusterNoRegion['Acc'] += 1;
-                                    break;
-                                case "Harsh Braking":
-                                    noClusterNoRegion['Brake'] += 1;
-                                    break;
-                                case "Over speeding > 70kph":
-                                    noClusterNoRegion['O_spd'] += 1;
-                                    break;
-                                default:
-                                    break;
-                            }
-                            noClusterNoRegion['Total'] = noClusterNoRegion.Acc + noClusterNoRegion.Brake + noClusterNoRegion.O_spd;
-                            filteredArr['None'] = noClusterNoRegion
                         }
-                    }
-                })
-                console.log("SUMMARY")
-                console.log(filteredArr)
-                summaryTable.populateRows(Object.values(filteredArr),true);
+                    })
+                    console.log("SUMMARY")
+                    console.log(filteredArr)
+                    summaryTable.populateRows(Object.values(filteredArr),true);
+                }
+                summaryTable.initialize();
+                summaryTable.countRows();
             }
-            summaryTable.initialize();
-            summaryTable.countRows();
 
-            
+            fullTable()
+            $("#tbl-eco_driving_summary").hide()
 
             /******** TABLE CHECK ********/
             // always put before POPULATE functions
@@ -21693,15 +21723,12 @@ const views = new function(){
                                 <table id="tbl-eco_driving_summary" class="table table-hover table-bordered">
                                     <thead>
                                         <tr>                                            
-                                            <th colspan="2">Region</th>
-                                            <th rowspan="2">Brake</th>
-                                            <th rowspan="2">Acc</th>
-                                            <th rowspan="2" >O-spd</th>
-                                            <th rowspan="2">Total</th>
-                                        </tr>
-                                        <tr>
-                                            <th></th>
+                                            <th>Region</th>
                                             <th>Cluster</th>
+                                            <th>Brake</th>
+                                            <th>Acc</th>
+                                            <th>O-spd</th>
+                                            <th>Total</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>
