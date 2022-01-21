@@ -311,6 +311,16 @@ function getDateTime(status,obj,type="first"){
     });
     return datetime;
 }
+function getNextDateTime(key, obj){
+    key = JSON.stringify(key);
+    obj.events_captured = obj.events_captured || {};
+    var events_captured = OBJECT.sortByKey(obj.events_captured);
+
+    var keys = Object.keys(events_captured);
+    var nextIndex = keys.indexOf(key) +1;
+
+    return Number(keys[nextIndex] || key);
+}
 function withinSchedule(date,minMaxTime,allowAllGreaterMinTime){
     date = moment(new Date(date)).format("MM/DD/YYYY");
 
@@ -512,6 +522,8 @@ class Dispatch {
         this.queueing_datetime = DATETIME.FORMAT(getDateTime("queueingAtOrigin",obj));
         this.queueingDuration = DATETIME.HH_MM(queueingAtOrigin).hour_minute;
         this.processing_datetime = DATETIME.FORMAT(getDateTime("processingAtOrigin",obj));
+        var processing_out_datetime = getDateTime("processingAtOrigin",obj,"last");
+        this.processing_out_datetime = DATETIME.FORMAT(getNextDateTime(processing_out_datetime, obj));
         this.processingDuration = DATETIME.HH_MM(processingAtOrigin).hour_minute;
         this.idling_datetime = DATETIME.FORMAT(getDateTime("idlingAtOrigin",obj));
         this.idlingDuration = DATETIME.HH_MM(idlingAtOrigin).hour_minute;
@@ -10158,6 +10170,10 @@ var REPORTS = {
                                     <td style="${tblBodyStyle}">${data.route}</td>
                                     <td style="${tblBodyStyle}">${datetime(data.entered_datetime).date}</td>
                                     <td style="${tblBodyStyle}">${datetime(data.entered_datetime).time}</td>
+                                    <td style="${tblBodyStyle}">${datetime(data.processing_datetime).date}</td>
+                                    <td style="${tblBodyStyle}">${datetime(data.processing_datetime).time}</td>
+                                    <td style="${tblBodyStyle}">${datetime(data.processing_out_datetime).date}</td>
+                                    <td style="${tblBodyStyle}">${datetime(data.processing_out_datetime).time}</td>
                                     <td style="${tblBodyStyle}">${datetime(data.departure_date).date}</td>
                                     <td style="${tblBodyStyle}">${datetime(data.departure_date).time}</td>
                                     <td style="${tblBodyStyle}">${data.queueingDuration}</td>
@@ -10209,6 +10225,10 @@ var REPORTS = {
                                     <td style="${tblHeaderStyle}"><b>Route</b></td>
                                     <td style="${tblHeaderStyle}"><b>Check In Date</b></td>
                                     <td style="${tblHeaderStyle}"><b>Check In Time</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Check In Processing Date</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Check In Processing Time</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Check Out Processing Date</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Check Out Processing Time</b></td>
                                     <td style="${tblHeaderStyle}"><b>Check Out Date</b></td>
                                     <td style="${tblHeaderStyle}"><b>Check Out Time</b></td>
                                     <td style="${tblHeaderStyle}"><b>Queueing Duration</b></td>
