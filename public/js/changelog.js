@@ -1,4 +1,8 @@
 const changelogList = {
+    "2.58.130": {
+        date: "January 21, 2022",
+        improved: ["[Adjustment] DESR - Show check in and check out time of processing geofence."],
+    },
     "2.58.129": {
         date: "January 04, 2022",
         fix: ["[Bug] If no vehicle history yet, returns 'Truck does not exist' error. It should just return empty data."],
