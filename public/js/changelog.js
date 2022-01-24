@@ -1,4 +1,8 @@
 const changelogList = {
+    "2.58.131": {
+        date: "January 24, 2022",
+        improved: ["[Adjustment] Dispatch Entry Summary Report: All time durations should be in decimal"],
+    },
     "2.58.130": {
         date: "January 21, 2022",
         improved: ["[Adjustment] DESR - Show check in and check out time of processing geofence."],
