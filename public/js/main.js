@@ -7799,7 +7799,7 @@ var REPORTS = {
 
 
                     const cicoDifference = cico - Number(origin.cico);
-                    const cicoVariance = (cicoDifference > 0) ? DATETIME.HH_MM(null,cicoDifference).hour_minute : "-";
+                    const cicoVariance = (cicoDifference > 0) ? GET.ROUND_OFF(cicoDifference) + ' h' : "-";
 
                     detailsBodyHTML += `<tr>
                                             <td style="${noBorderCSS}text-align: left;">${val._id}</td>
@@ -7813,12 +7813,12 @@ var REPORTS = {
                                             <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(beforeCheckOutTime,"H:mm")}</td>
                                             <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(val.departure_date,"MM/DD/YYYY")}</td>
                                             <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(val.departure_date,"H:mm")}</td>
-                                            <td style="${noBorderCSS}text-align: center;">${queueingDuration ? DATETIME.HH_MM(queueingDuration).hour_minute : "-"}</td>
-                                            <td style="${noBorderCSS}text-align: center;">${processingDuration ? DATETIME.HH_MM(processingDuration).hour_minute : "-"}</td>
-                                            <td style="${noBorderCSS}text-align: center;">${idlingDuration ? DATETIME.HH_MM(idlingDuration).hour_minute : "-"}</td>
-                                            <td style="${noBorderCSS}text-align: center;">${cico ? DATETIME.HH_MM(null,cico).hour_minute : "-"}</td>
-                                            <td style="${noBorderCSS}text-align: center;">${cappedCICO ? DATETIME.HH_MM(null,cappedCICO).hour_minute : "-"}</td>
-                                            <td style="${noBorderCSS}text-align: center;">${DATETIME.HH_MM(null,origin.cico).hour_minute}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${queueingDuration ? GET.ROUND_OFF(DATETIME.DH(queueingDuration)) + ' h' : "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${processingDuration ? GET.ROUND_OFF(DATETIME.DH(processingDuration)) + ' h' : "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${idlingDuration ? GET.ROUND_OFF(DATETIME.DH(idlingDuration)) + ' h' : "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${cico ? GET.ROUND_OFF(cico) + ' h' : "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${cappedCICO ? GET.ROUND_OFF(cappedCICO) + ' h' : "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${GET.ROUND_OFF(origin.cico)} h</td>
                                             <td style="${noBorderCSS}text-align: center;">${cicoVariance}</td>
                                             <td style="${noBorderCSS}text-align: center;">${vehicle["Base Site"]}</td>
                                             <td style="${noBorderCSS}text-align: center;">${remarks2}</td>
@@ -7834,7 +7834,7 @@ var REPORTS = {
                         const aveCICO = val.cico/val.totalWithCICO;
                         const aveCappedCICO = val.cappedCICO/val.totalWithCICO;
                         const cicoDifference = aveCappedCICO - Number(gVal.cico);
-                        const cicoVariance = (cicoDifference > 0) ? DATETIME.HH_MM(null,cicoDifference).hour_minute : "-";
+                        const cicoVariance = (cicoDifference > 0) ? GET.ROUND_OFF(cicoDifference) + ' h' : "-";
 
                         const aveQueueingDuration = val.queueingDuration/val.totalWithQueueingDuration;
                         const aveProcessingDuration = val.processingDuration/val.totalWithProcessingDuration;
@@ -7848,13 +7848,13 @@ var REPORTS = {
                                         <td style="${noBorderCSS}">${gVal.short_name}</td>
                                         <td style="${noBorderCSS}text-align: center;">${gVal.code || "-"}</td>
                                         <td style="${noBorderCSS}text-align: center;">${region.code || "-"}</td>
-                                        <td style="${noBorderCSS}text-align: center;">${aveCICO ? DATETIME.HH_MM(null,aveCICO).hour_minute : "-"}</td>
-                                        <td style="${noBorderCSS}text-align: center;">${aveCappedCICO ? DATETIME.HH_MM(null,aveCappedCICO).hour_minute : "-"}</td>
-                                        <td style="${noBorderCSS}text-align: center;">${DATETIME.HH_MM(null,gVal.cico,"-").hour_minute}</td>
+                                        <td style="${noBorderCSS}text-align: center;">${aveCICO ? GET.ROUND_OFF(aveCICO) + ' h' : "-"}</td>
+                                        <td style="${noBorderCSS}text-align: center;">${aveCappedCICO ? GET.ROUND_OFF(aveCappedCICO) + ' h' : "-"}</td>
+                                        <td style="${noBorderCSS}text-align: center;">${GET.ROUND_OFF(gVal.cico) + ' h'}</td>
                                         <td style="${noBorderCSS}text-align: center;">${cicoVariance}</td>
-                                        <td style="${noBorderCSS}text-align: center;">${aveQueueingDuration ? DATETIME.HH_MM(aveQueueingDuration).hour_minute : "-"}</td>
-                                        <td style="${noBorderCSS}text-align: center;">${aveProcessingDuration ? DATETIME.HH_MM(aveProcessingDuration).hour_minute : "-"}</td>
-                                        <td style="${noBorderCSS}text-align: center;">${aveIdlingDuration ? DATETIME.HH_MM(aveIdlingDuration).hour_minute : "-"}</td>
+                                        <td style="${noBorderCSS}text-align: center;">${aveQueueingDuration ? GET.ROUND_OFF(DATETIME.DH(aveQueueingDuration)) + ' h' : "-"}</td>
+                                        <td style="${noBorderCSS}text-align: center;">${aveProcessingDuration ? GET.ROUND_OFF(DATETIME.DH(aveProcessingDuration)) + ' h' : "-"}</td>
+                                        <td style="${noBorderCSS}text-align: center;">${aveIdlingDuration ? GET.ROUND_OFF(DATETIME.DH(aveIdlingDuration)) + ' h' : "-"}</td>
                                         <td style="${noBorderCSS}text-align: center;">${val.totalShipments || "-"}</td>
                                         <td style="${noBorderCSS}text-align: center;">${aveCICO ? remarks : "-"}</td>
                                     </tr>`;
@@ -7911,7 +7911,7 @@ var REPORTS = {
                         const aveTargetCICO = val.targetCICO/val.totalWithCICO;
 
                         const cicoDifference = aveCICO - aveTargetCICO;
-                        const cicoVariance = (cicoDifference > 0) ? DATETIME.HH_MM(null,cicoDifference).hour_minute : "-";
+                        const cicoVariance = (cicoDifference > 0) ? GET.ROUND_OFF(cicoDifference) + ' h' : "-";
 
                         const aveQueueingDuration = val.queueingDuration/val.totalWithQueueingDuration;
                         const aveProcessingDuration = val.processingDuration/val.totalWithProcessingDuration;
@@ -7923,13 +7923,13 @@ var REPORTS = {
                                         <td style="${noBorderCSS}background-color:#F2F2F2;">${rVal.name || "-"}</td>
                                         <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${rVal.code || "-"}</td>
                                         <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;"> </td>
-                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveCICO ? DATETIME.HH_MM(null,aveCICO).hour_minute : "-"}</td>
-                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveCappedCICO ? DATETIME.HH_MM(null,aveCappedCICO).hour_minute : "-"}</td>
-                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveTargetCICO ? DATETIME.HH_MM(null,aveTargetCICO).hour_minute : "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveCICO ? GET.ROUND_OFF(aveCICO) + ' h' : "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveCappedCICO ? GET.ROUND_OFF(aveCappedCICO) + ' h' : "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveTargetCICO ? GET.ROUND_OFF(aveTargetCICO) + ' h' : "-"}</td>
                                         <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${cicoVariance}</td>
-                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveQueueingDuration ? DATETIME.HH_MM(aveQueueingDuration).hour_minute : "-"}</td>
-                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveProcessingDuration ? DATETIME.HH_MM(aveProcessingDuration).hour_minute : "-"}</td>
-                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveIdlingDuration ? DATETIME.HH_MM(aveIdlingDuration).hour_minute : "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveQueueingDuration ? GET.ROUND_OFF(DATETIME.DH(aveQueueingDuration)) + ' h' : "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveProcessingDuration ? GET.ROUND_OFF(DATETIME.DH(aveProcessingDuration)) + ' h' : "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveIdlingDuration ? GET.ROUND_OFF(DATETIME.DH(aveIdlingDuration)) + ' h' : "-"}</td>
                                         <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${val.totalShipments || "-"}</td>
                                         <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveCICO ? remarks : "-"}</td>
                                     </tr>`;
@@ -7981,7 +7981,7 @@ var REPORTS = {
                     const ntlAveTargetCICO = ntlVal.targetCICO/ntlVal.totalWithCICO;
 
                     const ntlCicoDifference = ntlAveCappedCICO - ntlAveTargetCICO;
-                    const ntlCicoVariance = (ntlCicoDifference > 0) ? DATETIME.HH_MM(null,ntlCicoDifference).hour_minute : "-";
+                    const ntlCicoVariance = (ntlCicoDifference > 0) ? GET.ROUND_OFF(ntlCicoDifference) + ' h' : "-";
 
                     const ntlAveQueueingDuration = ntlVal.queueingDuration/ntlVal.totalWithQueueingDuration;
                     const ntlAveProcessingDuration = ntlVal.processingDuration/ntlVal.totalWithProcessingDuration;
@@ -7993,13 +7993,13 @@ var REPORTS = {
                                 <td style="${noBorderCSS}background-color:#FFE1E1;">NATIONAL</td>
                                 <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">NAT</td>
                                 <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;"> </td>
-                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlAveCICO ? DATETIME.HH_MM(null,ntlAveCICO).hour_minute : "-"}</td>
-                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlAveCappedCICO ? DATETIME.HH_MM(null,ntlAveCappedCICO).hour_minute : "-"}</td>
-                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlAveTargetCICO ? DATETIME.HH_MM(null,ntlAveTargetCICO).hour_minute : "-"}</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlAveCICO ? GET.ROUND_OFF(ntlAveCICO) + ' h' : "-"}</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlAveCappedCICO ? GET.ROUND_OFF(ntlAveCappedCICO) + ' h' : "-"}</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlAveTargetCICO ? GET.ROUND_OFF(ntlAveTargetCICO) + ' h' : "-"}</td>
                                 <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlCicoVariance}</td>
-                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlAveQueueingDuration ? DATETIME.HH_MM(ntlAveQueueingDuration).hour_minute : "-"}</td>
-                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlAveProcessingDuration ? DATETIME.HH_MM(ntlAveProcessingDuration).hour_minute : "-"}</td>
-                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlAveIdlingDuration ? DATETIME.HH_MM(ntlAveIdlingDuration).hour_minute : "-"}</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlAveQueueingDuration ? GET.ROUND_OFF(DATETIME.DH(ntlAveQueueingDuration)) + ' h' : "-"}</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlAveProcessingDuration ? GET.ROUND_OFF(DATETIME.DH(ntlAveProcessingDuration)) + ' h' : "-"}</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlAveIdlingDuration ? GET.ROUND_OFF(DATETIME.DH(ntlAveIdlingDuration)) + ' h' : "-"}</td>
                                 <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlVal.totalShipments || "-"}</td>
                                 <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlAveCICO ? ntlRemarks : "-"}</td>
                             </tr>`;
@@ -8399,9 +8399,9 @@ var REPORTS = {
                                             <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(val.departure_date,"H:mm")}</td>
                                             <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(completeDateTime,"MM/DD/YYYY")}</td>
                                             <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(completeDateTime,"H:mm")}</td>
-                                            <td style="${noBorderCSS}text-align: center;">${transitDuration ? DATETIME.HH_MM(transitDuration).hour_minute : "-"}</td>
-                                            <td style="${noBorderCSS}text-align: center;">${estTransitDuration ? DATETIME.HH_MM(null,estTransitDuration).hour_minute : "-"}</td>
-                                            <td style="${noBorderCSS}text-align: center;">${lapseTime > 0 ? DATETIME.HH_MM(null,lapseTime).hour_minute : "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${transitDuration ? GET.ROUND_OFF(DATETIME.DH(transitDuration)) + ' h' : "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${estTransitDuration ? GET.ROUND_OFF(estTransitDuration) + ' h' : "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${lapseTime > 0 ? GET.ROUND_OFF(lapseTime) + ' h' : "-"}</td>
                                             <td style="${noBorderCSS}text-align: center;">${remarks}</td>
                                         </tr>`;
                     });
@@ -8428,8 +8428,8 @@ var REPORTS = {
                                             <td style="${noBorderCSS}text-align: center;">${val.totalShipments || "-"}</td>
                                             <td style="${noBorderCSS}text-align: center;">${val.w_in_transit || 0}</td>
                                             <td style="${noBorderCSS}text-align: center;">${val.over_transit || 0}</td>
-                                            <td style="${noBorderCSS}text-align: center;">${aveTransitDuration ? DATETIME.HH_MM(aveTransitDuration).hour_minute : "-"}</td>
-                                            <td style="${noBorderCSS}text-align: center;">${aveLapseTime > 0 ? DATETIME.HH_MM(null,aveLapseTime).hour_minute : "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${aveTransitDuration ? GET.ROUND_OFF(DATETIME.DH(aveTransitDuration)) + ' h' : "-"}</td>
+                                            <td style="${noBorderCSS}text-align: center;">${aveLapseTime > 0 ? GET.ROUND_OFF(aveLapseTime) + ' h' : "-"}</td>
                                         </tr>`;
                         }
 
@@ -8474,8 +8474,8 @@ var REPORTS = {
                                         <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${val.totalShipments || "-"}</td>
                                         <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${val.w_in_transit || "-"}</td>
                                         <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${val.over_transit || "-"}</td>
-                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveTransitDuration ? DATETIME.HH_MM(aveTransitDuration).hour_minute : "-"}</td>
-                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveLapseTime > 0 ? DATETIME.HH_MM(null,aveLapseTime).hour_minute : "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveTransitDuration ? GET.ROUND_OFF(DATETIME.DH(aveTransitDuration)) + ' h' : "-"}</td>
+                                        <td style="${noBorderCSS}background-color:#F2F2F2;text-align: center;">${aveLapseTime > 0 ? GET.ROUND_OFF(aveLapseTime) + ' h' : "-"}</td>
                                     </tr>`;
 
                         ntlInfo["ph"] = ntlInfo["ph"] || {
@@ -8518,8 +8518,8 @@ var REPORTS = {
                                 <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlVal.totalShipments || "-"}</td>
                                 <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlVal.w_in_transit || "-"}</td>
                                 <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${ntlVal.over_transit || "-"}</td>
-                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${aveTransitDuration ? DATETIME.HH_MM(aveTransitDuration).hour_minute : "-"}</td>
-                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${aveLapseTime > 0 ? DATETIME.HH_MM(null,aveLapseTime).hour_minute : "-"}</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${aveTransitDuration ? GET.ROUND_OFF(DATETIME.DH(aveTransitDuration)) + ' h' : "-"}</td>
+                                <td style="${noBorderCSS}background-color:#FFE1E1;text-align: center;">${aveLapseTime > 0 ? GET.ROUND_OFF(aveLapseTime) + ' h' : "-"}</td>
                             </tr>`;
                             
 
@@ -8902,7 +8902,7 @@ var REPORTS = {
                                                 <td style="${noBorderCSS}text-align: center;">${(vehicle["Pal Cap"] || "")}</td>
                                                 <td style="${noBorderCSS}text-align: center;">${val.delay_type}</td>
                                                 <td style="${noBorderCSS}text-align: center;">${val.escalation}</td>
-                                                <td style="${noBorderCSS}text-align: center;">${lapseTime == null ? "-" : DATETIME.HH_MM(null,lapseTime).hour_minute}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${lapseTime == null ? "-" : GET.ROUND_OFF(lapseTime) + ' h'}</td>
                                                 <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(val.timestamp,"MM/DD/YYYY")}</td>
                                                 <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(val.timestamp,"H:mm")}</td>
                                                 <td style="${noBorderCSS}text-align: center;">${val.site}</td>
@@ -9883,7 +9883,7 @@ var REPORTS = {
                                     endDate = DATETIME.FORMAT(endAddressTimestamp,"D-M"),
                                     endTime = DATETIME.FORMAT(endAddressTimestamp,"hh:mm A"),
                                     status = "Finished",
-                                    _duration_ = (duration != null) ? GET.ROUND_OFF(DATETIME.DH(duration,null,"0"))  : "-";
+                                    _duration_ = (duration != null) ? GET.ROUND_OFF(DATETIME.DH(duration,null,"0")) + ' h'  : "-";
                                 if(new Date(date_to).getTime() > new Date().getTime() && duration == null){
                                     endDate = "-";
                                     endTime = "-";
@@ -9990,13 +9990,13 @@ var REPORTS = {
 
                 docs.forEach((val,i) => {
                     var user = getUser(val.username) || {};
-                    var duration = (val.logout_date) ? new Date(val.logout_date).getTime() - new Date(val.login_date).getTime() : "-";
+                    var duration = (val.logout_date) ? new Date(val.logout_date).getTime() - new Date(val.login_date).getTime() : null;
                     empty += `<tr style="text-align:center">
                                 <td style="font-family:Arial;font-size:15px;border:none;border-bottom:1px solid #eee;mso-number-format:'\@';text-align:left;">${val.username}</td>
                                 <td style="font-family:Arial;font-size:15px;border:none;border-bottom:1px solid #eee;mso-number-format:'\@';text-align:left;">${user.name || "-"}</td>
                                 <td style="font-family:Arial;font-size:15px;border:none;border-bottom:1px solid #eee;mso-number-format:'\@';text-align:left;">${DATETIME.FORMAT(val.login_date)}</td>
                                 <td style="font-family:Arial;font-size:15px;border:none;border-bottom:1px solid #eee;mso-number-format:'\@';text-align:left;">${DATETIME.FORMAT(val.logout_date)}</td>
-                                <td style="font-family:Arial;font-size:15px;border:none;border-bottom:1px solid #eee;mso-number-format:'\@';text-align:left;">${DATETIME.HH_MM(duration).hour_minute}</td>
+                                <td style="font-family:Arial;font-size:15px;border:none;border-bottom:1px solid #eee;mso-number-format:'\@';text-align:left;">${duration ? GET.ROUND_OFF(DATETIME.DH(duration)) + ' h' : '-'}</td>
                                 <td style="font-family:Arial;font-size:15px;border:none;mso-number-format:'\@';">&nbsp;</td>
                                 <td style="font-family:Arial;font-size:15px;border:none;border-bottom:1px solid #eee;mso-number-format:'\@';text-align:left;">${val.ip || "-"}</td>
                                 <td style="font-family:Arial;font-size:15px;border:none;border-bottom:1px solid #eee;mso-number-format:'\@';text-align:left;">${val.location || "-"}</td>

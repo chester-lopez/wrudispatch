@@ -1,4 +1,8 @@
 const changelogList = {
+    "2.58.132": {
+        date: "February 03, 2022",
+        improved: ["[Adjustment][CokeT1] Updated all reports duration format to decimal hour."],
+    },
     "2.58.131": {
         date: "January 24, 2022",
         improved: ["[Adjustment] Dispatch Entry Summary Report: All time durations should be in decimal"],
