@@ -1520,6 +1520,14 @@ var LIMIT = 200,
                 }
             }
         },
+        cemex: {
+            id: "cemex",
+            name: "Cemex",
+            dsName: "wd-cemex", // database & storage name = dsName
+            appId: 449,
+            ggsURL: `wru.server93.com`,
+            loginPath: ''
+        }
     },
     CLIENT_OPTIONS = [
         {

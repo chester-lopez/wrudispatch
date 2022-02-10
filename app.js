@@ -39,6 +39,10 @@ const setup = function(id,page,res,ENVIRONMENT,title){
 
 app.get('/',(req,res)=>{ res.render("404", {title: mTitle}); });
 app.get('/remarks',(req,res)=>{ setup("coket1","linkRemarks",res,ENVIRONMENT,mTitle); });
+
+// https://blog.minhazav.dev/QR-and-barcode-scanner-using-html-and-javascript/
+app.get('/Cemex',(req,res)=>{ setup("cemex","fuelRefillScanner",res,ENVIRONMENT,mTitle); });
+
 app.get('/CokeT1/login',(req,res)=>{ setup("coket1","login",res,ENVIRONMENT,lTitle); });
 app.get('/CokeT1',(req,res)=>{ setup("coket1","main",res,ENVIRONMENT,mTitle); });
 app.get('/Wilcon/login',(req,res)=>{ setup("wilcon","login",res,ENVIRONMENT,lTitle); });

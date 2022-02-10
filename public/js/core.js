@@ -1193,12 +1193,16 @@ function SESSION_FROM_DB(existCallback,notExistCallback){
             } else {
                 var user = docs[0].userDetails;
                 if(!user.name || !user.email){
-                    $(`body`).append(modalViews.notice.emptyProfile());
-                    $(`#empty_profile`).click(function(){
-                        window.history.pushState({}, null, `/${CLIENT.name}#profile`);
-                        PAGE.GO_TO();
-                        $(this).parents("#overlay").remove();
-                    });
+                    try {
+                        $(`body`).append(modalViews.notice.emptyProfile());
+                        $(`#empty_profile`).click(function(){
+                            window.history.pushState({}, null, `/${CLIENT.name}#profile`);
+                            PAGE.GO_TO();
+                            $(this).parents("#overlay").remove();
+                        });
+                    } catch(error){
+                        console.log('Try/Catch', error);
+                    }
                 }
                 if(CLIENT.tabCloseAutoLogout && !user.exemptAutoLogout) {
                     _SESSION_.window_tab_close(CLIENT.id,"THISISME",SESSION_TOKEN);
@@ -1248,8 +1252,12 @@ function SESSION_FROM_DB(existCallback,notExistCallback){
             }
         });
     } catch (error) {
-        $('#body-main').html(modalViews.notice.browserNotSupported());
-        console.log("NOT SUUPORTTED")
+        try {
+            $('#body-main').html(modalViews.notice.browserNotSupported());
+            console.log("NOT SUUPORTTED")
+        } catch(error){
+            console.log('Try/Catch', error);
+        }
     }
 };
 function LOGOUT(){
@@ -1270,7 +1278,7 @@ function LOGOUT(){
             Cookies.remove("tabs");
             Cookies.remove("GKEY");
             Cookies.remove("session_token");
-            location.href = `../${CLIENT.name}/login`;
+            location.href = `../${CLIENT.name}${CLIENT.loginPath || '/login'}`;
         }).fail(function(error){
             console.log("Error:",error);
         });
@@ -1278,6 +1286,6 @@ function LOGOUT(){
         Cookies.remove("tabs");
         Cookies.remove("GKEY");
         Cookies.remove("session_token");
-        location.href = `../${CLIENT.name}/login`;
+        location.href = `../${CLIENT.name}${CLIENT.loginPath || '/login'}`;
     }
 };
