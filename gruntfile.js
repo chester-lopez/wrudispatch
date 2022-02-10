@@ -72,6 +72,26 @@ module.exports = function(grunt){
                     ]
                 }
             },
+            wd_fuelRefillScanner_pkg:{
+                files:{
+                    'public/dest/js/fuelRefillScanner_pkg.min.js': [
+                        'public/vendor/jquery/jquery.min.js',
+                        'public/vendor/hideshowpassword/hideShowPassword.min.js',
+                        'public/vendor/js.cookie/js.cookie.min.js',
+                        'public/vendor/socket.io/socket.io.min.js',
+                        'public/vendor/html5-qrcode@2.0.9/html5-qrcode.min.js',
+                    ]
+                }
+            },
+            wd_fuelRefillScanner:{
+                files:{
+                    'public/dest/fuelRefillScanner.min.js': [
+                        'public/js/public.js',
+                        'public/js/core.js',
+                        'public/js/fuelRefillScanner.js',
+                    ]
+                }
+            },
         },
 
         cssmin: {
