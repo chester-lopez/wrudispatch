@@ -80,6 +80,7 @@ module.exports = function(grunt){
                         'public/vendor/js.cookie/js.cookie.min.js',
                         'public/vendor/socket.io/socket.io.min.js',
                         'public/vendor/html5-qrcode@2.0.9/html5-qrcode.min.js',
+                        'public/vendor/moment/moment.min.js',
                     ]
                 }
             },
