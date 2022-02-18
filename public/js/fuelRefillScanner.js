@@ -3,7 +3,7 @@
 WEBSOCKET.connect().then(() => {
 
     SESSION_FROM_DB(function(){
-        new fuelRefillScanner().plateNumberScreen();
+        new fuelRefillScanner().homeScreen();
     },function(){
     
         USER = new login();
@@ -136,7 +136,7 @@ class login {
             // remove loading image
             $("#body-main").remove();
 
-            new fuelRefillScanner().plateNumberScreen();
+            new fuelRefillScanner().homeScreen();
         }).fail(function(error){
             console.log("Error:",error);
             toastr.error("Something went wrong</br></br>Error Code - ec001/01");
@@ -150,15 +150,22 @@ class login {
 
 class fuelRefillScanner {
     constructor() {
+        // Vehicle
         this.vehicle_id = null;
+        this.plate_number = null;
+
+        // Volume
         this.volume = 0;
+        
+        // Timestamp refill was sent
+        this.timestamp = null;
 
         this.containerWidth = window.matchMedia("only screen and (max-width: 760px)").matches ? '100%' : '50%';
 
         this.logoStyle = 'width: 35%;margin: auto;display: block;padding: 2em 0px 2em;';
     } 
 
-    plateNumberScreen(){
+    homeScreen(){
 
         const self = this;
 
@@ -205,6 +212,12 @@ class fuelRefillScanner {
                 </div>
             </div>
         `);
+        
+
+        // Automatic Uppercase
+        $('#plate_number').keyup (function () {
+            return $(this).val(this.value.toUpperCase());
+        });
 
 
         // Error handling (display)
@@ -223,7 +236,7 @@ class fuelRefillScanner {
 
         // Home Button Listener
         $('#home').click(function(){
-            new fuelRefillScanner().plateNumberScreen();
+            new fuelRefillScanner().homeScreen();
         });
     }
 
@@ -388,6 +401,9 @@ class fuelRefillScanner {
                 // set vehicle_id
                 self.vehicle_id = docs[0]._id;
 
+                // set vehicle name or plate number
+                self.plate_number = docs[0].name;
+
                 self.enterVolumeScreen();
             } else {
                 if(checkType == 1){
@@ -431,6 +447,7 @@ class fuelRefillScanner {
                 <img src="public/img/logo-gfm.png" style="${self.logoStyle}">
                 <div style="width: inherit;position: fixed;margin-top: 20px;">
                     <div style="width: 270px;margin: 20px auto 80px;">
+                        <div style="font-size: 20px;color: white;margin-bottom: 8px;">Plate Number: <b>${self.plate_number}</b></div>
                         <input type="text" id="volume" placeholder="Enter fuel volume (Number)" style="width: 100%;height: 55px;font-size: 20px;padding: 10px;">
                         <button id="submit" style="${btnCss}" class="btn">Submit</button>
                     </div>
@@ -464,11 +481,11 @@ class fuelRefillScanner {
 
         self.loadingScreen( 'Submitting...' );
 
-        const vehicle_id = Number(self.vehicle_id);
-        const timestamp = new Date().toISOString().split('.')[0];
-        const volume = Number(self.volume);
+        self.timestamp = new Date().toISOString();
 
-        console.log('USER.apiKey',USER.apiKey);
+        const vehicle_id = Number(self.vehicle_id);
+        const timestamp = self.timestamp.split('.')[0];
+        const volume = Number(self.volume);
 
         // DOUBLE CHECK FOR DUPLICATE ENTRIES
         $.ajax({
@@ -504,8 +521,13 @@ class fuelRefillScanner {
                 <img src="public/img/logo-gfm.png" style="${self.logoStyle}">
                 <div style="width: 100%;margin-top: 20px;">
                     <div style="width: max-content;margin: auto;text-align: center;">
-                        <i class="la la-check" style="font-size: 130px;color: #97c15b;"></i>
+                        <i class="la la-check" style="font-size: 100px;color: #97c15b;"></i>
                         <div style="font-size: 20px;color: white;margin-top: 10px;">Refill sent!</div>
+                        <div style="font-size: 20px;color: white;width: 100%;margin: 20px auto 0;border: 1px solid white;border-radius: 6px;padding: 10px;text-align: left;">
+                            <div>Date &amp; Time: <b>${moment(self.timestamp).format('MMM DD, YYYY, hh:mm A')}</b></div>
+                            <div>Plate Number: <b>${self.plate_number}</b></div>
+                            <div>Volume: <b>${self.volume}</b></div>
+                        </div>
                     </div>
                 </div>
                 <div style="width: inherit;position: fixed;bottom: 15px;">
@@ -519,7 +541,7 @@ class fuelRefillScanner {
 
         // Home Button Listener
         $('#home').click(function(){
-            new fuelRefillScanner().plateNumberScreen();
+            new fuelRefillScanner().homeScreen();
         });
     }
 
@@ -550,7 +572,7 @@ class fuelRefillScanner {
 
         // Home Button Listener
         $('#home').click(function(){
-            new fuelRefillScanner().plateNumberScreen();
+            new fuelRefillScanner().homeScreen();
         });
 
         // Retry Button Listener
