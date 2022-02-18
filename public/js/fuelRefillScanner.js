@@ -212,13 +212,6 @@ class fuelRefillScanner {
                 </div>
             </div>
         `);
-        
-
-        // Automatic Uppercase
-        $('#plate_number').keyup (function () {
-            return $(this).val(this.value.toUpperCase());
-        });
-
 
         // Error handling (display)
         if(plate_number) $('#error').html('<b>Plate number does not exist.</b><br>').show();
