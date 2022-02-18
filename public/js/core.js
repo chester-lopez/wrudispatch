@@ -1265,6 +1265,8 @@ function LOGOUT(){
                         <h3 style="text-align: center;margin-top: 40vh;font-weight: 100;">Logging out...</h3>
                       </div>`);
 
+    const loginPath = [null,undefined].includes(CLIENT.loginPath) ? '/login' : CLIENT.loginPath;
+
     if(SESSION_TOKEN && USER){
         $.ajax({ 
             url: `/api/sessions/${CLIENT.id}/${USER.username}/${SESSION_TOKEN}`, 
@@ -1278,7 +1280,7 @@ function LOGOUT(){
             Cookies.remove("tabs");
             Cookies.remove("GKEY");
             Cookies.remove("session_token");
-            location.href = `../${CLIENT.name}${CLIENT.loginPath || '/login'}`;
+            location.href = `../${CLIENT.name}${loginPath}`;
         }).fail(function(error){
             console.log("Error:",error);
         });
@@ -1286,6 +1288,6 @@ function LOGOUT(){
         Cookies.remove("tabs");
         Cookies.remove("GKEY");
         Cookies.remove("session_token");
-        location.href = `../${CLIENT.name}${CLIENT.loginPath || '/login'}`;
+        location.href = `../${CLIENT.name}${loginPath}`;
     }
 };
