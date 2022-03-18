@@ -39,6 +39,10 @@ const setup = function(id,page,res,ENVIRONMENT,title){
 
 app.get('/',(req,res)=>{ res.render("404", {title: mTitle}); });
 app.get('/remarks',(req,res)=>{ setup("coket1","linkRemarks",res,ENVIRONMENT,mTitle); });
+
+// https://blog.minhazav.dev/QR-and-barcode-scanner-using-html-and-javascript/
+app.get('/Cemex',(req,res)=>{ setup("cemex","fuelRefillScanner",res,ENVIRONMENT,mTitle); });
+
 app.get('/CokeT1/login',(req,res)=>{ setup("coket1","login",res,ENVIRONMENT,lTitle); });
 app.get('/CokeT1',(req,res)=>{ setup("coket1","main",res,ENVIRONMENT,mTitle); });
 app.get('/Wilcon/login',(req,res)=>{ setup("wilcon","login",res,ENVIRONMENT,lTitle); });
@@ -237,17 +241,11 @@ app.use(`/api/geofences`, verifyToken, require("./router/geofences"));
 app.use(`/api/routes`, verifyToken, require("./router/routes"));
 app.use(`/api/vehicles`, verifyToken, require("./router/vehicles"));
 app.use(`/api/vehicles_history`, verifyToken, require("./router/vehicles_history"));
-app.use(`/api/vehicles_section`, verifyToken, require("./router/vehicles_section"));
-app.use(`/api/vehicles_company`, verifyToken, require("./router/vehicles_company"));
 app.use(`/api/vehicle_personnel`, verifyToken, require("./router/vehicle_personnel"));
-app.use(`/api/vehicle_personnel_section`, verifyToken, require("./router/vehicle_personnel_section"));
-app.use(`/api/vehicle_personnel_company`, verifyToken, require("./router/vehicle_personnel_company"));
 app.use(`/api/fuel_refill`, verifyToken, require("./router/fuel_refill"));
 app.use(`/api/trailers`, verifyToken, require("./router/trailers"));
 app.use(`/api/chassis`, verifyToken, require("./router/chassis"));
-app.use(`/api/chassis_section`, verifyToken, require("./router/chassis_section"));
-app.use(`/api/chassis_company`, verifyToken, require("./router/chassis_company"));
-app.use(`/api/chassis_type`, verifyToken, require("./router/chassis_type"));
+app.use(`/api/body_type`, verifyToken, require("./router/body_type"));
 app.use(`/api/events`, verifyToken, require("./router/events"));
 app.use(`/api/notifications`, verifyToken, require("./router/notifications"));
 app.use(`/api/user_login_activity`, verifyToken, require("./router/user_login_activity"));
@@ -255,11 +253,16 @@ app.use(`/api/user_action`, verifyToken, require("./router/user_action"));
 app.use(`/api/shift_schedule`, verifyToken, require("./router/shift_schedule"));
 app.use(`/api/calendar`, verifyToken, require("./router/calendar"));
 app.use(`/api/customers`, verifyToken, require("./router/customers"));
+app.use(`/api/eco_driving`, verifyToken, require("./router/eco_driving"));
+app.use(`/api/otd_events`, verifyToken, require("./router/otd_events"));
+app.use(`/api/cico_events`, verifyToken, require("./router/cico_events"));
+app.use(`/api/company`, verifyToken, require("./router/company"));
+app.use(`/api/section`, verifyToken, require("./router/section"));
 
 // app.use(`/api/shipmentStatus`, verifyToken, require("./router/shipmentStatus"));
 
 app.use(`/api/remarks`, require("./router/remarks"));
-// app.use(`/api/dispatch_anon`, require("./router/dispatch_anonymous"));
+app.use(`/api/dispatch_anon`, require("./router/dispatch_anonymous"));
 /***** END ROUTER *****/
 
 app.use(function(req, res, next) {

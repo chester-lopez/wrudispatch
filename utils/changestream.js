@@ -126,51 +126,11 @@ var streamList = {
             };
         }
     },
-    vehicles_section: {
-        watch: () => {
-            return {
-                key: 'vehicles_section',
-                collection: 'vehicles_section',
-                pipeline: [],
-                options: { fullDocument : "updateLookup" }
-            };
-        }
-    },
-    vehicles_company: {
-        watch: () => {
-            return {
-                key: 'vehicles_company',
-                collection: 'vehicles_company',
-                pipeline: [],
-                options: { fullDocument : "updateLookup" }
-            };
-        }
-    },
     vehicle_personnel: {
         watch: () => {
             return {
                 key: 'vehicle_personnel',
                 collection: 'vehicle_personnel',
-                pipeline: [],
-                options: { fullDocument : "updateLookup" }
-            };
-        }
-    },
-    vehicle_personnel_section: {
-        watch: () => {
-            return {
-                key: 'vehicle_personnel_section',
-                collection: 'vehicle_personnel_section',
-                pipeline: [],
-                options: { fullDocument : "updateLookup" }
-            };
-        }
-    },
-    vehicle_personnel_company: {
-        watch: () => {
-            return {
-                key: 'vehicle_personnel_company',
-                collection: 'vehicle_personnel_company',
                 pipeline: [],
                 options: { fullDocument : "updateLookup" }
             };
@@ -186,31 +146,31 @@ var streamList = {
             };
         }
     },
-    chassis_section: {
+    section: {
         watch: () => {
             return {
-                key: 'chassis_section',
-                collection: 'chassis_section',
+                key: 'section',
+                collection: 'section',
                 pipeline: [],
                 options: { fullDocument : "updateLookup" }
             };
         }
     },
-    chassis_company: {
+    company: {
         watch: () => {
             return {
-                key: 'chassis_company',
-                collection: 'chassis_company',
+                key: 'company',
+                collection: 'company',
                 pipeline: [],
                 options: { fullDocument : "updateLookup" }
             };
         }
     },
-    chassis_type: {
+    body_type: {
         watch: () => {
             return {
-                key: 'chassis_type',
-                collection: 'chassis_type',
+                key: 'body_type',
+                collection: 'body_type',
                 pipeline: [],
                 options: { fullDocument : "updateLookup" }
             };
@@ -445,7 +405,7 @@ const connect = function(io,_ping_,ENVIRONMENT){ //io
             socket.emit("*",JSON.stringify({
                 type: "credentials",
                 version: "vv.-2.58.132",
-                forceUpdate: ["coket1"],
+                forceUpdate: [],
                 // ["coket1","coket2","wilcon","fleet"]
                 data: auth.getCredentials(dbName)
             }));
@@ -473,6 +433,9 @@ const connect = function(io,_ping_,ENVIRONMENT){ //io
             } else if (pathname.toLowerCase().indexOf('/fleet') > -1) {
                 console.log("Hello there, Coke Fleet!");
                 conn("fleet",socket);
+            } else if (pathname.toLowerCase().indexOf('/cemex') > -1) {
+                console.log("Hello there, Cemex!");
+                conn("cemex",socket);
             } else {
                 // socket.destroy();
             }

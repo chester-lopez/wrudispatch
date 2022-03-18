@@ -16,7 +16,6 @@ router.get('/:clientId/:username/all/:filter/:skip/:limit', (req,res,next)=>{
     
     const query = (limit != 0) ? db.getCollectionOtherDB(null,collection,clientId).find(filter).skip(skip).limit(limit) : 
                                  db.getCollectionOtherDB(null,collection,clientId).find(filter);
-
     query.toArray((err,docs)=>{
         if(err) next(_ERROR_.INTERNAL_SERVER(err));
         else res.json(docs);

@@ -1022,6 +1022,24 @@ var LIMIT = 200,
                 update: "none",
                 delete: "all"
             },
+            eco_driving: {
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            otd_events: {
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            cico_events: {
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
         },
         developer_fleet: {
             users:{
@@ -1039,6 +1057,24 @@ var LIMIT = 200,
             fuel_refill: {
                 read: "all",
                 create: "all",
+                update: "none",
+                delete: "all"
+            },
+            eco_driving: {
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "all"
+            },
+            otd_events: {
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "all"
+            },
+            cico_events: {
+                read: "all",
+                create: "none",
                 update: "none",
                 delete: "all"
             },
@@ -1186,7 +1222,7 @@ var LIMIT = 200,
             appId: 427, //process.env.APP_ID_WILCON
             ggsURL: `wru.server93.com`,
             type: 1,
-            loadInBackground: ["VEHICLES","REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE","NOTIFICATIONS","SESSIONS"],
+            loadInBackground: ["VEHICLES","REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_HISTORY","CHASSIS","SECTION","COMPANY","BODY_TYPE","NOTIFICATIONS","SESSIONS"],
             allowRolesToViewAs: {
                 developer: ["developer","administrator","management","dispatcher","user"],
                 administrator: ["administrator","management","dispatcher","user"],
@@ -1452,7 +1488,7 @@ var LIMIT = 200,
             allowDownloadFromOtherDB: "CokeT1",
             type: 2,
             tabCloseAutoLogout: true,
-            loadInBackground: ["VEHICLES","USERS","SESSIONS"],
+            loadInBackground: ["VEHICLES","GEOFENCES","REGIONS","CLUSTERS","USERS","SESSIONS"],
             allowRolesToViewAs: {
                 developer: ["developer","administrator","management","dispatcher","user"],
             },
@@ -1484,6 +1520,14 @@ var LIMIT = 200,
                 }
             }
         },
+        cemex: {
+            id: "cemex",
+            name: "Cemex",
+            dsName: "wd-cemex", // database & storage name = dsName
+            appId: 449,
+            ggsURL: `wru.server93.com`,
+            loginPath: ''
+        }
     },
     CLIENT_OPTIONS = [
         {

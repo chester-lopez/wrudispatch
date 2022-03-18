@@ -94,7 +94,7 @@ function getSelect2Options(){
     /******** VEHICLES ********/
     G_SELECT2["form-vehicles"] = `<option value="">&nbsp;</option>`;
     G_SELECT2["form-vehicles-admin"] = `<option value="">&nbsp;</option>`;
-    (LIST["vehicles"]||[]).forEach(val => {
+    (LIST["vehicles"]||[]).filter(x => !x.underMaintenance).forEach(val => {
         var status = VEHICLES.STATUS.find(x => x.id == (val.status || "")) || {value: "Available"};
         var subtext = "";
         var subtextAdmin = "";
@@ -137,20 +137,6 @@ function getSelect2Options(){
     });
     /******** END VEHICLES ********/
 
-    /******** VEHICLES SECTION ********/
-    G_SELECT2["form-vehicles_section"] = `<option value="">&nbsp;</option>`;
-    (LIST["vehicles_section"]||[]).forEach(val => {
-        (!val.delete) ? G_SELECT2["form-vehicles_section"] += `<option value="${val._id}">${val.section}</option>` : null;
-    });
-    /******** END VEHICLES SECTION ********/
-
-    /******** VEHICLES COMPANY ********/
-    G_SELECT2["form-vehicles_company"] = `<option value="">&nbsp;</option>`;
-    (LIST["vehicles_company"]||[]).forEach(val => {
-        (!val.delete) ? G_SELECT2["form-vehicles_company"] += `<option value="${val._id}">${val.company}</option>` : null;
-    });
-    /******** END VEHICLES COMPANY ********/
-
     /******** REGIONS ********/
     G_SELECT2["form-regions"] = `<option value="">&nbsp;</option>`;
     const sortedRegions = ARRAY.OBJECT.sort((LIST["regions"]||[]),"sequence",{sortType:"asc"});
@@ -166,60 +152,38 @@ function getSelect2Options(){
     });
     /******** END CLUSTERS ********/
     
-    /******** VEHICLE PERSONNEL ********/
-    // G_SELECT2["form-vehicle_personnel"] = `<option value="">&nbsp;</option>`;
-    // (LIST["vehicle_personnel"]||[]).forEach(val => {
-    //     var subtext = `Occupation: ${val.occupation||"-"}<br>ID Number: ${val.id_number||"-"}`;
-    //     G_SELECT2["form-vehicle_personnel"] += `<option value="${val._id}" data-subtext="${subtext}">${val.name}</option>`;
-    // });
-    /******** END VEHICLE PERSONNEL ********/
-
-    /******** VEHICLE PERSONNEL SECTION ********/
-    G_SELECT2["form-vehicle_personnel_section"] = `<option value="">&nbsp;</option>`;
-    (LIST["vehicle_personnel_section"]||[]).forEach(val => {
-        (!val.delete) ? G_SELECT2["form-vehicle_personnel_section"] += `<option value="${val._id}">${val.section}</option>` : null;
-    });
-    /******** END VEHICLE PERSONNEL SECTION ********/
-
-    /******** VEHICLE PERSONNEL COMPANY ********/
-    G_SELECT2["form-vehicle_personnel_company"] = `<option value="">&nbsp;</option>`;
-    (LIST["vehicle_personnel_company"]||[]).forEach(val => {
-        (!val.delete) ? G_SELECT2["form-vehicle_personnel_company"] += `<option value="${val._id}">${val.company}</option>` : null;
-    });
-    /******** END VEHICLE PERSONNEL COMPANY ********/
-    
     /******** CHASSIS ********/
     G_SELECT2["form-chassis"] = `<option value="">&nbsp;</option>`;
     (LIST["chassis"]||[]).forEach(val => {
-        var type = (getChassisType(val.type_id)||{}).type;
-        var section = (getChassisSection(val.section_id)||{}).section;
-        var company = (getChassisCompany(val.company_id)||{}).company;
+        var type = (getBodyType(val.body_type_id)||{}).type;
+        var section = (getSection(val.section_id)||{}).section;
+        var company = (getCompany(val.company_id)||{}).company;
 
-        var subtext = `Chassis Type: ${type||"-"}<br>Section: ${section||"-"}<br>Company: ${company||"-"}`;
+        var subtext = `Body Type: ${type||"-"}<br>Section: ${section||"-"}<br>Company: ${company||"-"}`;
         G_SELECT2["form-chassis"] += `<option value="${val._id}" data-subtext="${subtext}">${val._id}</option>`;
     });
     /******** END CHASSIS ********/
 
-    /******** CHASSIS SECTION ********/
-    G_SELECT2["form-chassis_section"] = `<option value="">&nbsp;</option>`;
-    (LIST["chassis_section"]||[]).forEach(val => {
-        (!val.delete) ? G_SELECT2["form-chassis_section"] += `<option value="${val._id}">${val.section}</option>` : null;
+    /******** SECTION ********/
+    G_SELECT2["form-section"] = `<option value="">&nbsp;</option>`;
+    (LIST["section"]||[]).forEach(val => {
+        (!val.delete) ? G_SELECT2["form-section"] += `<option value="${val._id}">${val.section}</option>` : null;
     });
-    /******** END CHASSIS SECTION ********/
+    /******** END SECTION ********/
 
-    /******** CHASSIS COMPANY ********/
-    G_SELECT2["form-chassis_company"] = `<option value="">&nbsp;</option>`;
-    (LIST["chassis_company"]||[]).forEach(val => {
-        (!val.delete) ? G_SELECT2["form-chassis_company"] += `<option value="${val._id}">${val.company}</option>` : null;
+    /******** COMPANY ********/
+    G_SELECT2["form-company"] = `<option value="">&nbsp;</option>`;
+    (LIST["company"]||[]).forEach(val => {
+        (!val.delete) ? G_SELECT2["form-company"] += `<option value="${val._id}">${val.company}</option>` : null;
     });
-    /******** END CHASSIS COMPANY ********/
+    /******** END COMPANY ********/
 
-    /******** CHASSIS TYPE ********/
-    G_SELECT2["form-chassis_type"] = `<option value="">&nbsp;</option>`;
-    (LIST["chassis_type"]||[]).forEach(val => {
-        (!val.delete) ? G_SELECT2["form-chassis_type"] += `<option value="${val._id}">${val.type}</option>` : null;
+    /******** BODY TYPE ********/
+    G_SELECT2["form-body_type"] = `<option value="">&nbsp;</option>`;
+    (LIST["body_type"]||[]).forEach(val => {
+        (!val.delete) ? G_SELECT2["form-body_type"] += `<option value="${val._id}">${val.type}</option>` : null;
     });
-    /******** END CHASSIS TYPE ********/
+    /******** END BODY TYPE ********/
     
     /******** SHIFT SCHEDULE ********/
     G_SELECT2["form-shift_schedule"] = ``;
@@ -469,9 +433,8 @@ class Dispatch {
         const customers = [];
         if(obj.customers){
             obj.customers.forEach((val,i) => {
-                const customer = getCustomer(val) || {};
-                customersHTML += `<div style="font-weight: normal;">${i+1}. ${customer.name||val||"-"}</div>`;
-                customers.push(customer.name||val||"-");
+                customersHTML += `<div style="font-weight: normal;">${i+1}. ${val.number||"-"} - ${val.name||"-"}</div>`;
+                customers.push(val.name||"-");
             });
         }
 
@@ -517,7 +480,7 @@ class Dispatch {
         this.mdsd_usage = obj.mdsd_usage || "-";
         this.customers = customers.join(", ");
         
-        this.dispatched_datetime = DATETIME.FORMAT(getDateTime("dispatched",obj));
+        // this.dispatched_datetime = DATETIME.FORMAT(getDateTime("dispatched",obj));
         this.onDelivery_datetime = DATETIME.FORMAT(getDateTime("onDelivery",obj));
         this.entered_datetime = DATETIME.FORMAT(getDateTime(null,obj));
         this.queueing_datetime = DATETIME.FORMAT(getDateTime("queueingAtOrigin",obj));
@@ -955,7 +918,7 @@ class Dispatch {
 
                                                 ${this.tbl().empty} ${this.tbl().empty}
 
-                                                ${this.tbl().getTr("Check In Date & Time",this.dispatched_datetime)} ${this.tbl().empty}
+                                                ${this.tbl().getTr("Check In Date & Time",this.entered_datetime)} ${this.tbl().empty}
                                                 ${this.tbl().getTr("Check Out Date & Time",this.onDelivery_datetime)} ${this.tbl().empty}
                                                 ${this.tbl().getTr("Completion Date & Time",this.complete_datetime)}
 
@@ -1115,6 +1078,8 @@ class Table {
         this._skip = 0;
 
         this._loadId = null;
+
+        this.autoPopulateData = (x.autoPopulateData == false) ? false : true;
     }
 
     get skip(){ return this._skip; }
@@ -1188,6 +1153,10 @@ class Table {
                 text: "Data Maintenance",
                 class: "data_maintenance-btn",
                 icon: "la-tasks"
+            },
+            summary: {
+                tooltipTitle: "Switch View Mode",
+                icon: "la-eye"
             },
         };
         var defaultActions = {
@@ -1401,7 +1370,7 @@ class Table {
         });
     }
     retrieveData(length,loadId){
-        var self = this;
+        const self = this;
 
         self.tableFilter();
 
@@ -1448,6 +1417,8 @@ class Table {
             } else {
                 self.hideProgressBar();
                 self.display();
+
+                if (typeof self.customPopulate === 'function') { self.customPopulate(); }
             }
         }
     }
@@ -1465,7 +1436,6 @@ class Table {
 
         $('#search,#searchTerm').attr("disabled",false).html(`<i class="la la-search m-0"></i>`);
 
-        console.log("self.filterDataExtend",self.filterDataExtend);
         if(self.filterDataExtend !== true) {
             $('#filter-container input, #filter-container select, #filter-container button').attr("disabled",false);
             $(`#filter-container button,#filter-container a`).removeClass("disabled");
@@ -1474,7 +1444,7 @@ class Table {
     watch(){
 
     }
-    populateRows(data){
+    populateRows(data,byPass){
         const self = this;
 
         self.tableFilter();
@@ -1506,16 +1476,21 @@ class Table {
                 (val._row) ? null : val._row = GENERATE.RANDOM(36);
                 (index > -1) ? LIST[self.urlPath][index] = val : LIST[self.urlPath].push(val);
 
-                rows.push(self.addRow(val));
+                if(self.autoPopulateData || byPass){
+                    rows.push(self.addRow(val));
+                }
             });
-            self.dt.rows.add(rows).draw(false);
+            if(self.autoPopulateData || byPass){
+                self.dt.rows.add(rows).draw(false);
+            }
 
             TABLE.FINISH_LOADING.START_CHECK();
 
-            
-            $("div.tbl-progress-bar").show();
-
-            self.progressBar ? self.progressBar.calculate() : null;
+            if(!byPass){
+                $("div.tbl-progress-bar").show();
+    
+                self.progressBar ? self.progressBar.calculate() : null;
+            }
         }
         if(data.length == 0){
             $(".dataTables_empty").text("No data available in table");
@@ -2267,9 +2242,6 @@ var DASHBOARD = {
                             }
                         });
                     }
-
-                   
-                    console.log("summary",summary);
                 },
                 saveFilter = function(setFilter){
                     if(!newlyLoaded){
@@ -2674,14 +2646,6 @@ var DASHBOARD = {
                 initializeExportButton();
 
                 if(calendarview == "day"){
-                    // $('#_date').datepicker('remove').datepicker({
-                    //     // minViewMode: 0,
-                    //     // maxViewMode: 2,
-                    //     todayHighlight: true,
-                    //     initialDate: new Date(),
-                    //     todayBtn: true,
-                    //     autoclose: true
-                    // });
                     $('#_date').replaceWith(`<input id="_date" class="form-control" type="text" readonly>`);
                     $(`#_date`).daterangepicker({
                         opens: 'left',
@@ -3674,7 +3638,7 @@ var DISPATCH = {
     detectStatus: function(body){
         const CLIENT_OPTIONS = {
             "coket1": { ggsURL: "coca-cola.server93.com",    appId: 9,     scheduledEntry: false,     allowTempStatus: true,     allowIncompleteUpdateStatus: true,     ignoreDestinationEvents: false,     statusOption: { default: "assigned", insideOrigin: "assigned",     insideOriginEvent: "entered_origin",    enRouteToDestination: "in_transit" }    },
-            "coket2": { ggsURL: "coca-cola.server93.com",    appId: 4,     scheduledEntry: false,     allowTempStatus: false,    allowIncompleteUpdateStatus: false,    ignoreDestinationEvents: true,      statusOption: { default: "assigned", insideOrigin: "dispatched",   insideOriginEvent: "dispatched",        enRouteToDestination: "onDelivery" }    },
+            "coket2": { ggsURL: "coca-cola.server93.com",    appId: 4,     scheduledEntry: false,     allowTempStatus: false,    allowIncompleteUpdateStatus: false,    ignoreDestinationEvents: true,      statusOption: { default: "assigned", insideOrigin: "assigned",     insideOriginEvent: "entered_origin",    enRouteToDestination: "onDelivery" }    },
             "wilcon": { ggsURL: "wru.server93.com",          appId: 427,   scheduledEntry: true,      allowTempStatus: true,     allowIncompleteUpdateStatus: false,    ignoreDestinationEvents: false,     statusOption: { default: "assigned", insideOrigin: "assigned",     insideOriginEvent: "entered_origin",    enRouteToDestination: "in_transit" }    },
         };
 
@@ -4761,7 +4725,7 @@ var DISPATCH = {
             //,"CUSTOMERS"
             // ,"CUSTOMERS"
             TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
-                isFinishedLoading(["REGIONS","CLUSTERS","GEOFENCES","VEHICLES","TRAILERS","CHASSIS","ROUTES","USERS","VEHICLE_PERSONNEL","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"], _new_, function(){
+                isFinishedLoading(["REGIONS","CLUSTERS","GEOFENCES","VEHICLES","TRAILERS","CHASSIS","ROUTES","USERS","VEHICLE_PERSONNEL","SECTION","COMPANY","BODY_TYPE"], _new_, function(){
                     if(dt){
                         _new_ = false;
                         
@@ -4773,7 +4737,7 @@ var DISPATCH = {
                     }
                     
                 });
-                isFinishedLoading(["GEOFENCES","VEHICLES","TRAILERS","CHASSIS","ROUTES","VEHICLE_PERSONNEL","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"], true, function(){
+                isFinishedLoading(["GEOFENCES","VEHICLES","TRAILERS","CHASSIS","ROUTES","VEHICLE_PERSONNEL","SECTION","COMPANY","BODY_TYPE"], true, function(){
                     TABLE.FINISH_LOADING.UPDATE();
                 });
                 isFinishedLoading(["REGIONS","CLUSTERS"], _new2_, function(){
@@ -5066,7 +5030,7 @@ var DISPATCH = {
                     $(`[${type}-based] td[trailer]`).html(_id || "-");
                     $(`[${type}-based] td[cluster]`).html(cluster.cluster || info["Cluster"] || info.cluster || "-");
                     $(`[${type}-based] td[base]`).html(info["Site"] || info.site || "-");
-                    $(`[${type}-based] td[region]`).html(region.code || info["Region"] || info.region || "-");
+                    $(`[${type}-based] td[region]`).html(cluster.cluster || info["Region"] || info.region || "-");
                     $(`[${type}-based] td[pallet_type],td[pallet_capacity]`).html(info["Pal Cap"] || info.pal_cap || "-");
                 }
                 $(`#trailer`).html(trailersOptions).select2().val("").on("select2:select", function() {
@@ -5088,10 +5052,10 @@ var DISPATCH = {
                 }).change(function(){
                     if($(this).val() != null){
                         var chassis = getChassis( $(this).val() || "" ) || {};
-                        var type = (getChassisType(chassis.type_id)||{}).type;
-                        var section = (getChassisSection(chassis.section_id)||{}).section;
-                        var company = (getChassisCompany(chassis.company_id)||{}).company;
-                        $(`td[chassis_type]`).html(type || "-");
+                        var type = (getBodyType(chassis.body_type_id)||{}).type;
+                        var section = (getSection(chassis.section_id)||{}).section;
+                        var company = (getCompany(chassis.company_id)||{}).company;
+                        $(`td[body_type]`).html(type || "-");
                         $(`td[section]`).html(section || "-");
                         $(`td[company]`).html(company || "-");
                     }
@@ -7240,6 +7204,14 @@ var REPORTS = {
             name: 'Actual CICO',
             description: 'Average of actual duration of stay inside the origin site'
         },
+        arrivalDate: {
+            name: 'Arrival Date',
+            description: 'Actual date of return to the origin site after delivery'
+        },
+        arrivalTime: {
+            name: 'Arrival Time',
+            description: 'Actual time of return to the origin site after delivery'
+        },
 
         baseSite: {
             name: 'Base Site',
@@ -7258,13 +7230,17 @@ var REPORTS = {
             name: 'CICO Target',
             description: 'Maximum duration of stay inside the origin site'
         },
-        cicoWithCapping: {
+        cicoWithCapping: { // 5 hours
             name: 'CICO with Capping',
             description: 'Duration of stay inside the origin site that exceeded to 5 hrs will automatically rolled back to 5 hrs'
         },
         cicoWithCappingAve: {
             name: 'CICO with Capping',
             description: 'Average duration of stay inside the origin site that exceeded to 5 hrs will automatically rolled back to 5 hrs'
+        },
+        cicoWithCapping_1: { // 3 hours
+            name: 'CICO with Capping',
+            description: 'Duration of stay inside the origin site that exceeded to 3 hrs will automatically rolled back to 3 hrs'
         },
         cicoVariance: {
             name: 'CICO Variance',
@@ -7294,10 +7270,34 @@ var REPORTS = {
             name: 'Completion Time',
             description: 'Actual time of arrival to the destination site'
         },
+        comments: {
+            name: 'Comments',
+            description: 'Remarks concerning with the shipment'
+        },
+        customerNo: (x) => {
+            return {
+                name: 'Customer No. (' + x + ')',
+                description: 'Identification or reference number of a Coke customer'
+            };
+        },
+        customerName: (x) => {
+            return {
+                name: 'Customer Name (' + x + ')',
+                description: 'Word that identifies the recipient of ordered Coke products'
+            };
+        },
 
         delay: {
             name: 'Delay',
             description: 'Situation that hamper the productivity of the operaton'
+        },
+        deliveryDuration: {
+            name: 'Delivery Duration',
+            description: 'Amount of time spent on shipment delivery'
+        },
+        deliverySequence: {
+            name: 'Delivery Sequence',
+            description: 'Tells if the shipment assigned is initial or re-load'
         },
         destination: {
             name: 'Destination',
@@ -7333,6 +7333,11 @@ var REPORTS = {
         longQueueing: {
             name: 'Long Queueing',
             description: 'Count of shipment that encountered Long Queueing Delay'
+        },
+        
+        mdsdUsage: {
+            name: 'MDSD Usage',
+            description: 'Identifies if the shipment will use MDSD to its transaction or not'
         },
 
         occurrenceDate: {
@@ -7431,6 +7436,10 @@ var REPORTS = {
             name: 'Shipment',
             description: 'Numerical identifier of assigned shipment'
         },
+        shipmentType: {
+            name: 'Shipment Type',
+            description: 'Identfies if the shipment assigned is unique (mother shipment)  or co-load'
+        },
         shipmentCount_CheckedOut: {
             name: 'Shipment Count',
             description: 'Count of posted shipment that already checked out from the origin'
@@ -7438,6 +7447,10 @@ var REPORTS = {
         shipmentCount_All: {
             name: 'Shipment Count',
             description: 'Count of posted shipment from the origin'
+        },
+        supportUnit: {
+            name: 'Support Unit?',
+            description: 'Identifies if the assigned truck is a support unit or not'
         },
 
         trailer: {
@@ -7491,10 +7504,18 @@ var REPORTS = {
         var descriptionHtml = "";
         var columneNameHtml = "";
         arr.forEach(val => {
-            const column = REPORTS.columns[val];
+            var column = REPORTS.columns[val];
+            if(val.indexOf('|') > -1){
+                const valSplit = val.split('|');
+                column = REPORTS.columns[valSplit[0]](valSplit[1]);
+            }
 
-            descriptionHtml += `<td style="${descriptionStyle||""}">${column.description}</td>`;
-            columneNameHtml += `<td style="${columnNameStyle||""}">${column.name}</td>`;
+            if(column){
+                descriptionHtml += `<td style="${descriptionStyle||""}">${column.description}</td>`;
+                columneNameHtml += `<td style="${columnNameStyle||""}">${column.name}</td>`;
+            } else {
+                console.log("Missing column:",val);
+            }
         }); 
         return `
             ${descriptionStyle ? `<tr>${descriptionHtml}</tr>` : ''}
@@ -9072,7 +9093,7 @@ var REPORTS = {
                                 <td style="${textCellStyle}${width[7]}">${origin.short_name}</td>
                                 <td style="${textCellStyle}${width[8]}">${destination.short_name}</td>
                                 <td style="${textCellStyle}${width[9]}">${val.route}</td>
-                                <td style="${textCellStyle}${width[10]}">${DATETIME.HH_MM(null,actual_time_lapse).hour_minute}</td>
+                                <td style="${textCellStyle}${width[10]}">${GET.ROUND_OFF(actual_time_lapse) + ' h'}</td>
                             </tr>`;
             });
 
@@ -10035,6 +10056,341 @@ var REPORTS = {
                             </tr>
                             ${empty}
                         </table>`;
+            },
+            desr:  {
+                coket1: ( title, docs, customers, date_from, date_to ) => {
+                    var rows = "";
+                    var tblHeaderStyle = "font-family:Arial;font-size:15px;background-color:#404040;border-color:#404040;color:white;text-align:center;";
+                    var tblBodyStyle = "font-family:Arial;font-size:15px;border:none;mso-number-format:'\@';vertical-align:top;";
+    
+                    function datetime(date){
+                        var _date =  moment(new Date(date)).format("MM/DD/YYYY");
+                        var _time = moment(new Date(date)).format("H:mm");
+                        
+                        return {
+                            date: (_date == "Invalid date") ? "-" : _date,
+                            time: (_time == "Invalid date") ? "-" : _time
+                        }
+                    }
+    
+                    docs.forEach(val => {
+                        var data = new Dispatch(val);
+    
+                        var history = [];
+                        var delay = { type: "", duration: "" };
+                        Object.keys(data.history).forEach(key => {
+                            var value = data.history[key] || "";
+    
+                            if(value.indexOf("Entry Update") > -1 || value.indexOf("Record updated") > -1){
+                                var formattedDate = DATETIME.FORMAT(Number(key),"MM/DD/YYYY h:mm A");
+                                var newValue = value.replace(/•/g,"-").replace(/Entry Update - /g,"- ").replace(/<br><br>/g,"<br>");
+    
+                                history.push(`${formattedDate}<br>${newValue}`);
+                            }
+    
+                            function getEscalation(text){
+                                const split = text.split(" - ");
+                                const type = split[0]||"";
+                                const escalationSplit = (split[1]||"").split(" ");
+                                const escalationLevel = escalationSplit[1]||"";
+    
+                                var duration = 0;
+    
+                                var enteredOriginTimestamp = getDateTime("entered_origin",val,"last");
+                                var queueingTimestamp = getDateTime("queueingAtOrigin",val,"first");
+                                var processingTimestamp = getDateTime("processingAtOrigin",val,"first");
+                                var idlingTimestamp = getDateTime("idlingAtOrigin",val,"first");
+                                var inTransitTimestamp = getDateTime("in_transit",val,"last");
+                                if(type == "Long Queueing") {
+                                    (queueingTimestamp) ? duration = Number(key) - queueingTimestamp : null;
+                                }
+                                if(type == "Over CICO") {
+                                    var finalTimestamp = [];
+                                    enteredOriginTimestamp ? finalTimestamp.push(enteredOriginTimestamp) : null;
+                                    queueingTimestamp ? finalTimestamp.push(queueingTimestamp) : null;
+                                    processingTimestamp ? finalTimestamp.push(processingTimestamp) : null;
+                                    idlingTimestamp ? finalTimestamp.push(idlingTimestamp) : null;
+                                    finalTimestamp = finalTimestamp.sort()[0];
+                                    (finalTimestamp) ? duration = Number(key) - finalTimestamp : null;
+                                }
+                                if(type == "Over Transit") {
+                                    (inTransitTimestamp) ? duration = Number(key) - inTransitTimestamp : null;
+                                }
+    
+                                return {
+                                    type: type + " " + escalationLevel,
+                                    duration: GET.ROUND_OFF(DATETIME.DH(duration)) + " h" 
+                                }
+                            }
+                            if(value.toLowerCase().indexOf("over cico - escalation") > -1 || 
+                               value.toLowerCase().indexOf("over transit - escalation") > -1 || 
+                               value.toLowerCase().indexOf("long queueing - escalation") > -1){
+                                    delay = getEscalation(value);
+                               }
+                        });
+    
+                        rows += `<tr>
+                                    <td style="${tblBodyStyle}">${data._id}</td>
+                                    <td style="${tblBodyStyle}">${data.vehicle}</td>
+                                    <td style="${tblBodyStyle}">${data.trailer}</td>
+                                    <td style="${tblBodyStyle}">${data.pal_cap}</td>
+                                    <td style="${tblBodyStyle}">${data.origin}</td>
+                                    <td style="${tblBodyStyle}">${data.destination}</td>
+                                    <td style="${tblBodyStyle}">${data.route}</td>
+                                    <td style="${tblBodyStyle}">${datetime(data.entered_datetime).date}</td>
+                                    <td style="${tblBodyStyle}">${datetime(data.entered_datetime).time}</td>
+                                    <td style="${tblBodyStyle}">${datetime(data.processing_datetime).date}</td>
+                                    <td style="${tblBodyStyle}">${datetime(data.processing_datetime).time}</td>
+                                    <td style="${tblBodyStyle}">${datetime(data.processing_out_datetime).date}</td>
+                                    <td style="${tblBodyStyle}">${datetime(data.processing_out_datetime).time}</td>
+                                    <td style="${tblBodyStyle}">${datetime(data.departure_date).date}</td>
+                                    <td style="${tblBodyStyle}">${datetime(data.departure_date).time}</td>
+                                    <td style="${tblBodyStyle}">${data.queueingDurationDh}</td>
+                                    <td style="${tblBodyStyle}">${data.processingDurationDh}</td>
+                                    <td style="${tblBodyStyle}">${data.idlingDurationDh}</td>
+                                    <td style="${tblBodyStyle}">${data.cicoDh}</td>
+                                    <td style="${tblBodyStyle}">${data.transitDurationDh}</td>
+                                    <td style="${tblBodyStyle}">${datetime(data.complete_datetime).date}</td>
+                                    <td style="${tblBodyStyle}">${datetime(data.complete_datetime).time}</td>
+                                    <td style="${tblBodyStyle}">${data.postedByWithName}</td>
+                                    <td style="${tblBodyStyle}">${datetime(data.posting_date).date}</td>
+                                    <td style="${tblBodyStyle}">${datetime(data.posting_date).time}</td>
+                                    <td style="${tblBodyStyle}">${data.shipment_type}</td>
+                                    <td style="${tblBodyStyle}">${data.statusText}</td>
+                                    <td style="${tblBodyStyle}">${$(`<span>${data.late_entry}</span>`).text()}</td>
+                                    <td style="${tblBodyStyle}">${data.comments}</td>
+                                    <td style="${tblBodyStyle}">${delay.type}</td>
+                                    <td style="${tblBodyStyle}">${delay.duration}</td>
+                                    <td style="${tblBodyStyle}width:500px;">${history.join("<br><br>")}</td>
+                                </tr>`;
+                    });
+                    return `<table id="report-hidden" style="opacity:0;">
+                                <tr>
+                                    <td style="font-family:Arial;font-size:15px;border: none;" colspan=22>Report name: <b style="color:#c00000;">${title}</b></td>
+                                </tr>
+                                <tr><td style="border: none;"></td></tr>
+                                <tr>
+                                    <td style="font-family:Arial;font-size:15px;border: none;" colspan=22><b>Date Info:</b></td>
+                                </tr>
+                                <tr>
+                                    <td style="border: none;font-family:Arial;font-size:15px;" colspan=22>
+                                        <div>
+                                            <div>Date from: ${moment(new Date(date_from)).format("MM/DD/YYYY hh:mm A")}</div>
+                                            <div>Date to: ${moment(new Date(date_to)).format("MM/DD/YYYY hh:mm A")}</div>
+                                            <div>&nbsp;</div>
+                                            <div>Generated on: ${moment(new Date()).format("MM/DD/YYYY hh:mm A")}</div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr><td style="border: none;"></td></tr>
+                                <tr><td style="border: none;"></td></tr>
+                                <tr>
+                                    <td style="${tblHeaderStyle}"><b>Shipment</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Vehicle</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Trailer</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Pal Cap</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Origin</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Destination</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Route</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Check In Date</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Check In Time</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Check In Processing Date</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Check In Processing Time</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Check Out Processing Date</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Check Out Processing Time</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Check Out Date</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Check Out Time</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Queueing Duration</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Processing Duration</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Idling Duration</b></td>
+                                    <td style="${tblHeaderStyle}"><b>CICO Duration</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Transit Duration</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Completion Date</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Completion Time</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Posted By</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Posting Date</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Posting Time</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Shipment Type</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Status</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Late Entry</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Comments</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Delay</b></td>
+                                    <td style="${tblHeaderStyle}"><b>Delay Duration</b></td>
+                                    <td style="${tblHeaderStyle}width:500px;"><b>Remarks</b></td>
+                                </tr>
+                                ${rows}
+                            </table>`;
+                },
+                coket2: ( title, docs, customers, date_from, date_to ) => {
+                    // Legend:
+                    //    · GBO - Grouped by Origin
+                    //    · GBR - Grouped by Region
+                    //    · NTL - National
+
+                    /****** CSS ******/
+                    const rotateCSS = ` -webkit-transform: rotate(-90deg);
+                                        -moz-transform: rotate(-90deg);
+                                        -ms-transform: rotate(-90deg);
+                                        -o-transform: rotate(-90deg);
+                                        transform: rotate(-90deg);
+                                        mso-rotate: 90;
+                                        -webkit-transform-origin: 50% 50%;
+                                        -moz-transform-origin: 50% 50%;
+                                        -ms-transform-origin: 50% 50%;
+                                        -o-transform-origin: 50% 50%;
+                                        transform-origin: 50% 50%;
+                                        position: absolute;
+                                        filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=3);
+                                        
+                                        color: #595959;
+                                        background-color: #E2EFDA;
+                                        height: 127px;
+                                        border: none;
+                                        border-right: thin dashed #595959;`;
+
+                    const tblHeaderCSS = `  background-color: #404040;
+                                        color: white;
+                                        font-size: 13px;
+                                        text-align: center;
+                                        border: thin solid #404040;
+                                        font-weight: bold;
+                                        vertical-align: middle;
+                                        font-family: Franklin Gothic Book;`;
+                                    
+                    const noBorderCSS = `border: none;
+                                    font-size: 13px;
+                                    vertical-align: middle;
+                                    font-family: Franklin Gothic Book;
+                                    mso-number-format:'\@';`;
+                    /****** end CSS ******/
+
+                    // Detailed (Per shipment)
+                    var detailsBodyHTML = "";
+
+                    // maximum number of customers per shipment
+                    var customerCount = 0;
+                    var tempCount = 0;
+
+                    // get highest number of customer per shipment
+                    docs.forEach(val => { 
+                        tempCount = (val.customers||[]).length;
+                        
+                        if(tempCount > customerCount){
+                            customerCount = tempCount;
+                        }
+                    });
+
+                    // default number of customer is 1
+                    (customerCount == 0) ? customerCount = 1 : null;
+
+                    // loop docs
+                    docs.forEach(val => {
+
+                        const origin = getGeofence(val.origin_id) || {};
+
+                        const vehicle = getVehicle(val.vehicle_id) || {};
+
+                        const beforeCheckOutTime = getDateTime("entered_origin",val) || getDateTime("dispatched",val);
+                        const completeDateTime = getDateTime("complete",val,"last");
+
+                        const calcCICO = (beforeCheckOutTime) ?  (getDateTime(clientCustom.status.enrouteToDestination,val,"last") - beforeCheckOutTime) : 0;
+                        const cico = Number(DATETIME.DH(calcCICO || 0,null,"0"));
+                        const cappedHours = 3;
+                        const cappedCICO = (cico > cappedHours) ? cappedHours : cico;
+
+                        const cicoDifference = cico - Number(origin.cico);
+                        const cicoVariance = (cicoDifference > 0) ? DATETIME.HH_MM(null,cicoDifference).hour_minute : "-";
+
+                        const transitDuration = getDuration("onDelivery",val);
+
+                        var customersHtml = "";
+                        var count = 0;
+                        (val.customers||[]).forEach(cVal => {
+                            count ++;
+
+                            customersHtml += `
+                                <td style="${noBorderCSS}text-align: center;">${(cVal.number || "")}</td>
+                                <td style="${noBorderCSS}text-align: center;">${(cVal.name || "")}</td>
+                            `;
+                        });
+
+                        // add empty td if this shipment's customer is less than the max customers
+                        for(var i = count; i < customerCount; i++){
+                            customersHtml += `
+                                <td style="${noBorderCSS}text-align: center;"></td>
+                                <td style="${noBorderCSS}text-align: center;"></td>
+                            `;
+                        }
+
+                        detailsBodyHTML += `<tr>
+                                                <td style="${noBorderCSS}text-align: left;">${val._id}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${(vehicle.name || "")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${(vehicle["Pal Cap"] || "")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${origin.short_name}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(beforeCheckOutTime,"MM/DD/YYYY")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(beforeCheckOutTime,"H:mm")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(val.departure_date,"MM/DD/YYYY")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(val.departure_date,"H:mm")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(completeDateTime,"MM/DD/YYYY")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${DATETIME.FORMAT(completeDateTime,"H:mm")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${cico ? DATETIME.HH_MM(null,cico).hour_minute : "-"}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${cappedCICO ? DATETIME.HH_MM(null,cappedCICO).hour_minute : "-"}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${DATETIME.HH_MM(null,origin.cico).hour_minute}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${cicoVariance}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${transitDuration ? DATETIME.HH_MM(transitDuration).hour_minute : "-"}</td>
+                                                ${customersHtml}
+                                                <td style="${noBorderCSS}text-align: center;">${(val.shipment_type || "")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${(val.delivery_sequence || "")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${(val.mdsd_usage || "")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${(val.support_unit || "")}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${vehicle["Site"] || ""}</td>
+                                                <td style="${noBorderCSS}text-align: center;">${val.comments||""}</td>
+                                            </tr>`;
+
+                    });
+
+                    const columns = ['shipment','vehicle','palCap','origin','checkInDate','checkInTime','checkOutDate','checkOutTime','arrivalDate','arrivalTime','actualCICO','cicoWithCapping_1','cicoTarget','cicoVariance',
+                                     'deliveryDuration',  /** Insert Customers Here **/ 'shipmentType','deliverySequence','mdsdUsage','supportUnit','vehicleBaseSite','comments'];
+
+                    var startIndex = 14;
+                    for(var i = 0; i < customerCount; i++){
+                        startIndex++;
+                        columns.splice(startIndex, 0, ('customerNo|'+(i+1)));
+
+                        startIndex++;
+                        columns.splice(startIndex, 0, ('customerName|'+(i+1)));
+                    }
+
+                    // to be exported to file
+                    return `<table id="report-hidden" style="opacity:0;">
+                            <tr>
+                                <td style="${noBorderCSS}" colspan=2>Report name: <b style="color:#c00000;">${title}</b></td>
+                            </tr>
+                            <tr><td style="${noBorderCSS}" colspan=2></td></tr>
+                            <tr>
+                                <td style="${noBorderCSS}" colspan=2>Date Info:</td>
+                            </tr>
+                            <tr>
+                                <td style="${noBorderCSS}" colspan=2>
+                                    <div>
+                                        <div>Date from: ${moment(new Date(date_from)).format("MM/DD/YYYY hh:mm A")}</div>
+                                        <div>Date to: ${moment(new Date(date_to)).format("MM/DD/YYYY hh:mm A")}</div>
+                                        <div>&nbsp;</div>
+                                        <div>Generated on: ${moment(new Date()).format("MM/DD/YYYY hh:mm A")}</div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr><td style="${noBorderCSS}"></td></tr>
+                            ${
+                                REPORTS.columnHtml( 
+                                    columns,
+                                    rotateCSS,
+                                    tblHeaderCSS
+                                )
+                            }
+                            ${detailsBodyHTML}
+                        </table> `;
+                },
             },
             DESR: function(title,docs,date_from,date_to){
                 var rows = "";
@@ -12242,7 +12598,7 @@ var REPORTS = {
                         var title = "Dispatch Entries Summary Report";
                         df_dt_dest(title,"REPORT_MODAL_05",null,undefined,function(){
                             desr_report(function(docs){
-                                $(`body`).append(REPORTS.UI.REPORTS.DESR(title,docs,date_from,date_to));
+                                $(`body`).append(REPORTS.UI.REPORTS.desr[CLIENT.id](title,docs,null,date_from,date_to));
                                 GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`);
                                 $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
                             });
@@ -13049,6 +13405,779 @@ var ALL_EVENTS = {
                     $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
 
                     USER.filters["events"] = {timestamp: FILTER.DATERANGE(_date)};
+                    table.countRows();
+                });
+                // initialize filter
+            };
+            table.initialize();
+            table.countRows();
+        }
+    }
+};
+var ECO_DRIVING = {
+    FUNCTION: {
+        stream:null,
+        init:function(){
+            var _new1_ = true;
+            var isFullview = true
+
+            function fullTable() {
+
+                var table = new Table({
+                    id: "#tbl-eco_driving",
+                    urlPath: "eco_driving",
+                    perColumnSearch: true,
+                    goto: "eco_driving",
+                    autoPopulateData: false,
+                    dataTableOptions: {
+                        columns: TABLE.COL_ROW(CUSTOM.COLUMN.eco_driving).column,
+                        order: [[ 0, "asc" ]],
+                        createdRow: function (row, data, dataIndex) {
+                            var _row = data._row;
+                            $(row).attr(`_row`, _row);
+                            table.rowListeners(_row,data._id);
+                        },
+                        dom: 'lBrti<"tbl-progress-bar">p',
+                    }
+                });
+
+                USER.filters["eco_driving"] = { 'Value.Event Start': FILTER.DATERANGE(), RuleName: { $in: ['Over speeding > 70kph','Harsh Braking','Harsh Acceleration'] } };
+
+                table.setButtons({
+                    actions: {
+
+                        summary: function(){
+                            if (isFullview) {
+                                summaryTable()
+                            } else {
+                                fullTable()
+                            }
+                            isFullview = false
+                            $("#tbl-eco_driving").hide()
+                            $("#tbl-eco_driving_summary").show()
+                        },
+                    }
+                });
+                table.addRow = function(obj){
+    
+                    // SPEED
+                    // convert speed from meter/second to kilometer/hour -> (speed * 18) / 5
+                    const maxSpeed = ((obj['MaxSpeed']||0) * 18) / 5;
+                    const totalEvents = obj['Brake'] + obj['Acc'] + obj['O_spd'];
+                    const avgSpeed = (((obj['Speed']||0) / totalEvents) * 18) / 5;
+    
+                    // const oSpdTime = Number(obj['O_spd_Time']) * (1/3600); // seconds to decimal hour
+                    const oSpdTime = DATETIME.DURATION_TIME_FORMAT((obj['O_spd_Time']*1000),true,true,true); // Format: HH:MM:SS
+        
+                    return TABLE.COL_ROW(null,{
+                        '_id': obj._id,
+                        '_row':  obj._row,
+                        'Name': obj['Name'] || "-",
+                        'Days': Object.keys(obj.Days).length,
+                        'Class': obj.Class || "",
+                        'Score': totalEvents || "",
+                        'Dist': obj.Dist || "",
+                        'Max': (GET.ROUND_OFF(maxSpeed) || "") + ' kph',
+                        'Avg': (GET.ROUND_OFF(avgSpeed) || "") + ' kph',
+                        'Brake': obj.Brake || "",
+                        'Acc': obj.Acc || "",
+                        'O_spd': obj.O_spd || "",
+                        'Trip': obj.Trip || "",
+                        'Idle': obj.Idle || "",
+                        'O_spd_Time': oSpdTime || "",
+                        'Site': (Object.keys(obj.Site)||{}).join(", ") || "",
+                        'Cluster': (Object.keys(obj.Cluster)||{}).join(", ") || "",
+                        'Region': (Object.keys(obj.Region)||{}).join(", ") || "",
+                    }).row;
+                };
+                table.customPopulate = function(){
+                    
+                    const filteredArr = {};
+    
+    
+                    LIST['eco_driving'].forEach(val => {
+    
+                        if((val.RuleName == 'Over speeding > 70kph' && val.State == 'Finished') || (val.RuleName != 'Over speeding > 70kph' && val.State == 'New')){
+                            var value = val.Value || {};
+                            try {
+                                value = JSON.parse("{"+val.Value+"}");
+                            } catch(error){}
+        
+                            filteredArr[val.userID] = filteredArr[val.userID] || {
+                                '_id': val._id,
+                                'Name': value['Vehicle Name'] || "-",
+                                'Brake': 0,
+                                'Acc': 0,
+                                'O_spd': 0,
+                                'Speed': 0,
+                                'MaxSpeed': 0,
+                                'Days': {},
+                                'O_spd_Time': 0,
+                                'Site': {},
+                                'Cluster': {},
+                                'Region': {},
+                            };
+    
+                            // Days
+                            filteredArr[val.userID]['Days'][DATETIME.FORMAT(value['Event Start'],"YYYYMMDD")] = true;
+    
+                            // Events
+                            (val.RuleName == 'Harsh Braking') ? filteredArr[val.userID]['Brake'] ++ : null;
+                            (val.RuleName == 'Harsh Acceleration') ? filteredArr[val.userID]['Acc'] ++ : null;
+                            (val.RuleName == 'Over speeding > 70kph') ? filteredArr[val.userID]['O_spd'] ++ : null;
+        
+                            // Speed
+                            var speed = Number(value['Speed']) || 0;
+                            if(val.RuleName == 'Over speeding > 70kph'){
+                                const stateNew = LIST['eco_driving'].find(x => x.id == val.id && x.State == 'New');
+    
+                                if(stateNew){
+                                    speed = Number(stateNew.Value['Speed']) || 0;
+                                }
+                            }
+                            filteredArr[val.userID]['Speed'] += speed;
+                            (filteredArr[val.userID]['MaxSpeed'] < speed) ? filteredArr[val.userID]['MaxSpeed'] = speed : null;
+    
+                            // Time
+                            filteredArr[val.userID]['O_spd_Time'] += Number(value['Duration']) || 0;
+    
+                            // Location
+                            const geofence = getGeofence(value['Site'],'short_name');
+    
+                            if(geofence){
+                                filteredArr[val.userID]['Site'][geofence.short_name] = true;
+    
+                                const cluster = getCluster(geofence.cluster_id);
+                                cluster ? filteredArr[val.userID]['Cluster'][cluster.cluster] = true : null;
+    
+                                const region = getRegion(geofence.region_id);
+                                region ? filteredArr[val.userID]['Region'][region.code] = true : null;
+                            } else {
+                                filteredArr[val.userID]['Site'][value['Site']] = true;
+                            }
+                        }
+    
+                    });
+    
+                    table.populateRows(Object.values(filteredArr),true);
+                };
+                table.rowListeners = function(_row,_id){
+                    const self = this;
+                };
+                table.filterListener = function(_row,_id){
+                    // initialize filter
+                    FILTER.RESET({
+                        selectEl: `#_region_id,#_cluster_id`,
+                        dateEl: `#_date`,
+                        populateTable: function(){
+                            var _date = $(`#_date`).val() || DEFAULT_DATE;
+    
+                            FILTER.STATUS = "new";
+    
+                            $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
+    
+                            
+                            USER.filters["eco_driving"] = {'Value.Event Start': FILTER.DATERANGE(_date), RuleName: { $in: ['Over speeding > 70kph','Harsh Braking','Harsh Acceleration'] } };
+                            table.countRows();
+                        }
+                    });
+    
+    
+                    /********* DATE FILTER *********/
+                    var selectedDate = new Date();
+                    var calendarview = "day";
+    
+                    // Date filter
+                    $(`[calendarview]`).click(function(){
+                        calendarview = $(this).attr("calendarview");
+        
+                        // initializeExportButton();
+        
+                        if(calendarview == "day"){
+                            $('#_date').replaceWith(`<input id="_date" class="form-control" type="text" readonly>`);
+                            
+                            $(`#_date`).daterangepicker({
+                                opens: 'left',
+                                // singleDatePicker:true,
+                                autoUpdateInput: false,
+                                maxDate: new Date(),
+                                startDate: DATETIME.FORMAT(new Date(selectedDate),"MM/DD/YYYY"),
+                                autoApply: true
+                            }, function(start, end, label) {
+                                selectedDate = new Date(start);
+                                
+                                FILTER.INITIALIZE($(this)["0"].element,start,end);
+                            }).on('apply.daterangepicker', function (ev, picker) {
+                                $(this).val(DATETIME.FORMAT(new Date(picker.startDate),"MM/DD/YYYY"));
+                                selectedDate = new Date(picker.startDate);
+                                FILTER.INITIALIZE($(this),picker.startDate,picker.endDate);
+    
+                            });
+                            $(`#_date`).trigger('apply.daterangepicker',{ startDate: DATETIME.FORMAT(new Date(selectedDate),"MM/DD/YYYY") });
+                            FILTER.INITIALIZE($(`#_date`),selectedDate,selectedDate);
+                        }
+                        if(calendarview == "month"){
+                            $('#_date').replaceWith(`<input id="_date" class="form-control" type="text" readonly>`);
+                            $('#_date').datepicker('remove').datepicker({
+                                format: "mm/yyyy",
+                                minViewMode: 1,
+                                autoclose: true,
+                                todayHighlight: true,
+                                endDate: new Date()
+                            }).on("changeDate",function (e) {
+                                selectedDate = new Date(e.date);
+                                // saveFilter();
+                                // populatePage(GENERATE.RANDOM(36));
+                                
+                                // FILTER.INITIALIZE($(this)["0"].element,selectedDate,selectedDate);
+                                $('.clearable').trigger("input");
+                            }).datepicker("setDate",new Date(selectedDate));
+                        }
+                        if(calendarview == "year"){
+                            $('#_date').replaceWith(`<input id="_date" class="form-control" type="text" readonly>`);
+                            $('#_date').datepicker('remove').datepicker({
+                                format: "yyyy",
+                                minViewMode: 2,
+                                autoclose: true,
+                                todayHighlight: true,
+                                endDate: new Date()
+                            }).on("changeDate",function (e) {
+                                selectedDate = new Date(e.date);
+                                // saveFilter();
+                                // populatePage(GENERATE.RANDOM(36));
+                                // FILTER.INITIALIZE($(this)["0"].element,selectedDate,selectedDate);
+                                $('.clearable').trigger("input");
+                            }).datepicker("setDate",new Date(selectedDate));
+                        }
+                        $(`[calendarview]`).removeClass("active");
+                        $(`[calendarview="${calendarview}"]`).addClass("active");
+                        $(this).parents(".dropdown").find(".dropdown-toggle b").html(calendarview.toUpperCase());
+        
+                        // saveFilter();
+                    });
+                    $(`[calendarview="${calendarview}"]`).trigger("click");
+                    /********* end DATE FILTER *********/
+    
+    
+                    // Region filter
+                    $(`#_region_id`).on("select2:select", function() {
+                        $(`#_cluster_id`).val("").trigger('change');
+                    });
+    
+                    // Cluster filter
+                    $(`#_cluster_id`).on("select2:select", function() {
+                        $(`#_region_id`).val("").trigger('change');
+                    });
+    
+                    // Site filter
+    
+    
+    
+                    // filter button is clicked
+                    $(`#filter-btn`).click(function(){
+                        const _date = $(`#_date`).val() || DEFAULT_DATE;
+                        const _region_id = $(`#_region_id`).val();
+                        const _cluster_id = $(`#_cluster_id`).val();
+    
+                        FILTER.STATUS = "new";
+    
+                        $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
+    
+                        // Day
+                        var finalSelectedDate = DATETIME.FORMAT(new Date(selectedDate),"MM/DD/YYYY");
+    
+                        // Month
+                        if(calendarview == "month"){
+                            var monthYear = moment(selectedDate).format("MM/DD/YYYY").split("/");
+                            console.log('selectedDate',selectedDate)
+                            var month = monthYear[0];
+                            var year = monthYear[2];
+    
+                            // month in moment is 0 based, so 9 is actually october, subtract 1 to compensate
+                            // array is 'year', 'month', 'day', etc
+                            var startDate = moment([year, month - 1]);
+                        
+                            // Clone the value before .endOf()
+                            var endDate = moment(startDate).endOf('month');
+    
+                            finalSelectedDate = `${startDate.format("MM/DD/YYYY")} - ${endDate.format("MM/DD/YYYY")}`;
+                        }
+                        
+                        // Year
+                        if(calendarview == "year"){
+                            // start date of year
+                            var startDate = moment(selectedDate).startOf('year');
+                            // end date of year
+                            var endDate = moment(selectedDate).endOf('year');
+    
+                            finalSelectedDate = `${startDate.format("MM/DD/YYYY")} - ${endDate.format("MM/DD/YYYY")}`;
+                        }
+                        console.log("finalSelectedDate",finalSelectedDate);
+    
+                        USER.filters["eco_driving"] = { 
+                            'Value.Event Start': FILTER.DATERANGE(finalSelectedDate), 
+                            RuleName: { $in: ['Over speeding > 70kph','Harsh Braking','Harsh Acceleration'] } 
+                        };
+                        
+                        (_region_id) ?  USER.filters["eco_driving"]['_region_id'] = _region_id : null;
+                        (_cluster_id) ?  USER.filters["eco_driving"]['_cluster_id'] = _cluster_id : null;
+                        
+                        table.countRows();
+                    });
+                    // initialize filter
+                };
+                table.initialize();
+                table.countRows()
+            }
+
+            function summaryTable() {
+                var summaryTable = new Table({
+                    id: "#tbl-eco_driving_summary",
+                    urlPath: "eco_driving",
+                    perColumnSearch: true,
+                    goto: "eco_driving",
+                    autoPopulateData: false,
+                    dataTableOptions: {
+                        columns: TABLE.COL_ROW(CUSTOM.COLUMN.eco_driving_summary).column,
+                        order: [[ 0, "asc" ]],
+                        dom: 'lBrti<"tbl-progress-bar">p',
+                    }
+                });
+
+                summaryTable.setButtons({
+                    actions: {
+
+                        summary: function(){
+                            if (isFullview) {
+                                summaryTable()
+                            } else {
+                                fullTable()
+                            }
+                            isFullview = true
+                            $("#tbl-eco_driving").show()
+                            $("#tbl-eco_driving_summary").hide()
+                        }
+                    }
+                });
+    
+                summaryTable.addRow = function(obj){
+                    return TABLE.COL_ROW(null,{
+                        '_id': obj._id,
+                        '_row':  obj._row,
+                        'Cluster': obj.Cluster || "",
+                        'Region': obj.Region || "",
+                        'Brake': obj.Brake || "",
+                        'Acc': obj.Acc || "",
+                        'O_spd': obj.O_spd || "",
+                        'Total': obj.Total || "",
+                    }).row;
+                }
+                summaryTable.customPopulate = function(){
+                    const filteredArr = {};
+                    
+                    LIST['eco_driving'].forEach(val => {
+    
+                        if((val.RuleName == 'Over speeding > 70kph' && val.State == 'Finished') || (val.RuleName != 'Over speeding > 70kph' && val.State == 'New')){
+                            var value = val.Value || {};
+                            try {
+                                value = JSON.parse("{"+val.Value+"}");
+                            } catch(error){}
+    
+                            // Location
+                            const geofence = getGeofence(value['Site'],'short_name');
+    
+                            if(geofence){
+    
+                                const cluster = getCluster(geofence.cluster_id);
+    
+                                const region = getRegion(geofence.region_id);
+    
+                                if (region && cluster) {
+    
+                                    var regionCluster = filteredArr[`${region.code}${cluster.cluster}`] || {
+                                        '_id': `${region.code}${cluster.cluster}`,
+                                        'Region': region.name,
+                                        'Cluster': cluster.cluster,
+                                        'Brake': null,
+                                        'Acc': null,
+                                        'O_spd': null,
+                                        'Total': null,
+                                    }
+    
+                                    switch (val.RuleName) {
+                                        case "Harsh Acceleration":
+                                            regionCluster['Acc'] += 1;
+                                            break;
+                                        case "Harsh Braking":
+                                            regionCluster['Brake'] += 1;
+                                            break;
+                                        case "Over speeding > 70kph":
+                                            regionCluster['O_spd'] += 1;
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    regionCluster['Total'] = regionCluster.Acc + regionCluster.Brake + regionCluster.O_spd;
+                                    filteredArr[`${region.code}${cluster.cluster}`] = regionCluster
+                                    
+                                } else if (region && (!cluster)) {
+    
+                                    var NoClusterRegion = filteredArr[region.code] || {
+                                        '_id': region.code,
+                                        'Region': region.name,
+                                        'Cluster': "",
+                                        'Brake': null,
+                                        'Acc': null,
+                                        'O_spd': null,
+                                        'Total': null,
+                                    }
+    
+                                    switch (val.RuleName) {
+                                        case "Harsh Acceleration":
+                                            NoClusterRegion['Acc'] += 1;
+                                            break;
+                                        case "Harsh Braking":
+                                            NoClusterRegion['Brake'] += 1;
+                                            break;
+                                        case "Over speeding > 70kph":
+                                            NoClusterRegion['O_spd'] += 1;
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    NoClusterRegion['Total'] = NoClusterRegion.Acc + NoClusterRegion.Brake + NoClusterRegion.O_spd;
+                                    filteredArr[region.code] = NoClusterRegion
+                                } else if (cluster && (!region)) {
+    
+                                    var noRegionCluster = filteredArr[cluster.cluster] || {
+                                        '_id': cluster.cluster,
+                                        'Region': "",
+                                        'Cluster': cluster.cluster,
+                                        'Brake': null,
+                                        'Acc': null,
+                                        'O_spd': null,
+                                        'Total': null,
+                                    }
+    
+                                    switch (val.RuleName) {
+                                        case "Harsh Acceleration":
+                                            noRegionCluster['Acc'] += 1;
+                                            break;
+                                        case "Harsh Braking":
+                                            noRegionCluster['Brake'] += 1;
+                                            break;
+                                        case "Over speeding > 70kph":
+                                            noRegionCluster['O_spd'] += 1;
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    noRegionCluster['Total'] = noRegionCluster.Acc + noRegionCluster.Brake + noRegionCluster.O_spd;
+                                    filteredArr[cluster.cluster] = noRegionCluster
+                                } else {
+    
+                                    var noClusterNoRegion = filteredArr['None'] || {
+                                        '_id': 'none',
+                                        'Region': "None",
+                                        'Cluster': "None",
+                                        'Brake': null,
+                                        'Acc': null,
+                                        'O_spd': null,
+                                        'Total': null,
+                                    }
+    
+                                    switch (val.RuleName) {
+                                        case "Harsh Acceleration":
+                                            noClusterNoRegion['Acc'] += 1;
+                                            break;
+                                        case "Harsh Braking":
+                                            noClusterNoRegion['Brake'] += 1;
+                                            break;
+                                        case "Over speeding > 70kph":
+                                            noClusterNoRegion['O_spd'] += 1;
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    noClusterNoRegion['Total'] = noClusterNoRegion.Acc + noClusterNoRegion.Brake + noClusterNoRegion.O_spd;
+                                    filteredArr['None'] = noClusterNoRegion
+                                }
+                            } else {
+                                var noClusterNoRegion = filteredArr['None'] || {
+                                    '_id': 'none',
+                                    'Region': "None",
+                                    'Cluster': "None",
+                                    'Brake': null,
+                                    'Acc': null,
+                                    'O_spd': null,
+                                    'Total': null,
+                                }
+    
+                                switch (val.RuleName) {
+                                    case "Harsh Acceleration":
+                                        noClusterNoRegion['Acc'] += 1;
+                                        break;
+                                    case "Harsh Braking":
+                                        noClusterNoRegion['Brake'] += 1;
+                                        break;
+                                    case "Over speeding > 70kph":
+                                        noClusterNoRegion['O_spd'] += 1;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                                noClusterNoRegion['Total'] = noClusterNoRegion.Acc + noClusterNoRegion.Brake + noClusterNoRegion.O_spd;
+                                filteredArr['None'] = noClusterNoRegion
+                            }
+                        }
+                    })
+                    console.log("SUMMARY")
+                    console.log(filteredArr)
+                    summaryTable.populateRows(Object.values(filteredArr),true);
+                }
+                summaryTable.initialize();
+                summaryTable.countRows();
+            }
+
+            fullTable()
+            $("#tbl-eco_driving_summary").hide()
+
+            /******** TABLE CHECK ********/
+            // always put before POPULATE functions
+            TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
+                isFinishedLoading(["REGIONS","CLUSTERS"], _new1_, function(){
+                    _new1_ = false;
+
+                    var regionOptions = `<option value="">&nbsp;</option>`;
+                    (LIST["regions"]||[]).forEach(val => {
+                        regionOptions += `<option value="${val._id}">${val.code}</option>`;
+                    });
+                    $(`#_region_id`).html(regionOptions).select2({
+                        placeholder: "Select an option",
+                        allowClear: true,
+                    }).val(table.filter.region_id || "").trigger("change");
+
+                    // cluster
+                    var clusterOptions = `<option value="">&nbsp;</option>`;
+                    (LIST["clusters"]||[]).forEach(val => {
+                        clusterOptions += `<option value="${val._id}">${val.cluster}</option>`;
+                    });
+                    $(`#_cluster_id`).html(clusterOptions).select2({
+                        placeholder: "Select an option",
+                        allowClear: true,
+                    }).val(table.filter.cluster_id || "").trigger("change");
+                });
+            }
+                /******** END TABLE CHECK ********/
+        }
+    }
+};
+var OTD_EVENTS = {
+    FUNCTION: {
+        stream:null,
+        init:function(){
+
+            var _new_ = true;
+
+            var table = new Table({
+                id: "#tbl-otd-events",
+                urlPath: "otd_events",
+                perColumnSearch: true,
+                goto: "otd_events",
+                dataTableOptions: {
+                    columns: TABLE.COL_ROW(CUSTOM.COLUMN.otd_events).column,
+                    order: [[ 1, "desc" ]],
+                    createdRow: function (row, data, dataIndex) {
+                        var _row = data._row;
+                        $(row).attr(`_row`, _row);
+                        table.rowListeners(_row,data._id);
+                    },
+                    dom: 'lBrti<"tbl-progress-bar">p',
+                }
+            });
+            USER.filters["otd_events"] = { 'Value.Check Out': FILTER.DATERANGE(), RuleName: "Check Out" };
+            table.setButtons({});
+            table.addRow = function(obj){
+                var value = obj.Value;
+                try {
+                    value = JSON.parse("{"+obj.Value+"}");
+                } catch(error){}
+    
+                return TABLE.COL_ROW(null,{
+                    '_id': obj._id,
+                    'ID': obj.id || "-",
+                    '_row':  obj._row,
+                    'DateTime': DATETIME.FORMAT(value['Check Out'],"MMM D, YYYY, h:mm:ss A"),
+                    'Date': DATETIME.FORMAT(value['Check Out'],"MM/DD/YYYY"),
+                    'Time': DATETIME.FORMAT(value['Check Out'],"h:mm:ss A"),
+                    'RuleName': obj.RuleName,
+                    'State': obj.State || "-",
+                    'Vehicle Name': value['Vehicle Name'] || value['Vehicle'] || "-",
+                    'Equipt No': value['Equipment #'] || "-",
+                    'Location': value['Location'] || "-",
+                    'DC Tag': value['DC Tag'] || "-",
+                    'ODO': value.ODO || "-",
+                    'Site Code': value['Site Code'] || "-",
+                    'Namespace': obj.Namespace || "-",
+                    'Lng': obj.lng || "",
+                    'Lat': obj.lat || "",
+                    'Alt': obj.alt || "-",
+                    'Moving': value.Moving || "",
+                    'Truck Type': value['Truck Type'] || "",
+                }).row;
+            };
+            table.rowListeners = function(_row,_id){
+                const self = this;
+            };
+            table.filterListener = function(_row,_id){
+                // initialize filter
+                FILTER.RESET({
+                    dateEl: `#_date`,
+                    populateTable: function(){
+                        var _date = $(`#_date`).val() || DEFAULT_DATE;
+
+                        FILTER.STATUS = "new";
+
+                        $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
+
+                        
+                        USER.filters["otd_events"] = {'Value.Check Out': FILTER.DATERANGE(_date), RuleName: "Check Out"};
+                        table.countRows();
+                    }
+                });
+                $(`#_date`).daterangepicker({
+                    opens: 'left',
+                    autoUpdateInput: false,
+                    singleDatePicker:true,
+                    autoApply: true
+                }, function(start, end, label) {
+                    FILTER.INITIALIZE($(this)["0"].element,start,end);
+                    $('.clearable').trigger("input");
+                }).on('apply.daterangepicker', function (ev, picker) {
+                    FILTER.INITIALIZE($(this),picker.startDate,picker.endDate);
+                    $('.clearable').trigger("input");
+                });
+                $(`#filter-btn`).click(function(){
+                    var _date = $(`#_date`).val() || DEFAULT_DATE;
+
+                    FILTER.STATUS = "new";
+
+                    $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
+
+                    USER.filters["otd_events"] = { 'Value.Check Out': FILTER.DATERANGE(_date), RuleName: "Check Out" };
+                    table.countRows();
+                });
+                // initialize filter
+            };
+            table.initialize();
+            table.countRows();
+
+            /******** TABLE CHECK ********/
+            // TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
+            //     isFinishedLoading(["VEHICLES"], _new_, function(){
+            //         _new_ = false;
+            //         table.updateRows(LIST['otd_events']);
+            //     });
+            // }
+            // TABLE.FINISH_LOADING.START_CHECK();
+            /******** END TABLE CHECK ********/
+        }
+    }
+};
+var CICO_EVENTS = {
+    FUNCTION: {
+        stream:null,
+        init:function(){
+            var table = new Table({
+                id: "#tbl-cico-events",
+                urlPath: "cico_events",
+                perColumnSearch: true,
+                goto: "cico_events",
+                dataTableOptions: {
+                    columns: TABLE.COL_ROW(CUSTOM.COLUMN.cico_events).column,
+                    order: [[ 1, "desc" ]],
+                    createdRow: function (row, data, dataIndex) {
+                        var _row = data._row;
+                        $(row).attr(`_row`, _row);
+                        table.rowListeners(_row,data._id);
+                    },
+                    dom: 'lBrti<"tbl-progress-bar">p',
+                }
+            });
+            USER.filters["cico_events"] = { 'Value.Event Start': FILTER.DATERANGE(), RuleName: "Check In, Check Out" };
+            table.setButtons({});
+            table.addRow = function(obj){
+                var value = obj.Value;
+                try {
+                    value = JSON.parse("{"+obj.Value+"}");
+                } catch(error){}
+    
+                const duration = Number(value['Duration']) * (1/3600); // seconds to decimal hour
+
+                return TABLE.COL_ROW(null,{
+                    '_id': obj._id,
+                    'ID': obj.id || "-",
+                    '_row':  obj._row,
+                    'DateTime': DATETIME.FORMAT(value['Event Start'],"MMM D, YYYY, h:mm:ss A"),
+                    'Date': DATETIME.FORMAT(value['Event Start'],"MM/DD/YYYY"),
+                    'Time': DATETIME.FORMAT(value['Event Start'],"h:mm:ss A"),
+                    'RuleName': obj.RuleName,
+                    'State': obj.State || "-",
+                    'Vehicle Name': value['Vehicle Name'] || "-",
+                    'Equipt No': value['Equipt No'] || "-",
+                    'Site': value['Site'] || "-",
+                    'Site Code': value['Site Code'] || "-",
+                    'Duration': GET.ROUND_OFF(duration) || "-",
+                    'Namespace': obj.Namespace || "-",
+                    'Lng': obj.lng || "",
+                    'Lat': obj.lat || "",
+                    'Alt': obj.alt || "-",
+                    'Address': value['Address'] || "-",
+                    'Truck Base Code': value['Truck Base Code'] || "-",
+                    'Truck Base Site': value['Truck Base Site'] || "",
+                    'Truck Status': value['Truck Status'] || "",
+                    'Truck Type': value['Truck Type'] || "",
+                }).row;
+            };
+            table.rowListeners = function(_row,_id){
+                const self = this;
+            };
+            table.filterListener = function(_row,_id){
+                // initialize filter
+                FILTER.RESET({
+                    dateEl: `#_date`,
+                    populateTable: function(){
+                        var _date = $(`#_date`).val() || DEFAULT_DATE;
+
+                        FILTER.STATUS = "new";
+
+                        $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
+
+                        
+                        USER.filters["cico_events"] = {'Value.Event Start': FILTER.DATERANGE(_date), RuleName: "Check In, Check Out"};
+                        table.countRows();
+                    }
+                });
+                $(`#_date`).daterangepicker({
+                    opens: 'left',
+                    autoUpdateInput: false,
+                    singleDatePicker:true,
+                    autoApply: true
+                }, function(start, end, label) {
+                    FILTER.INITIALIZE($(this)["0"].element,start,end);
+                    $('.clearable').trigger("input");
+                }).on('apply.daterangepicker', function (ev, picker) {
+                    FILTER.INITIALIZE($(this),picker.startDate,picker.endDate);
+                    $('.clearable').trigger("input");
+                });
+                $(`#filter-btn`).click(function(){
+                    var _date = $(`#_date`).val() || DEFAULT_DATE;
+
+                    FILTER.STATUS = "new";
+
+                    $(this).html(`<i class="la la-spinner la-spin"></i> Apply`).addClass("disabled");
+
+                    USER.filters["cico_events"] = { 'Value.Event Start': FILTER.DATERANGE(_date), RuleName: "Check In, Check Out" };
                     table.countRows();
                 });
                 // initialize filter
@@ -14749,8 +15878,8 @@ var VEHICLES = {
                         var ROLE = USER.role;
                         var modalHTML = modalViews.vehicles.data_maintenance();
                         var initializeArray = [
-                            { urlPath: "vehicles_section", key: "section", objectData: (_id) => { return getVehiclesSection(_id); } },
-                            { urlPath: "vehicles_company", key: "company", objectData: (_id) => { return getVehiclesCompany(_id); } },
+                            { urlPath: "section", key: "section", objectData: (_id) => { return getSection(_id); } },
+                            { urlPath: "company", key: "company", objectData: (_id) => { return getCompany(_id); } },
                         ];
                         HISTORY.defaults.data_maintenance(ID,USERNAME,ROLE,SESSION_TOKEN,modalHTML,initializeArray);
                     }
@@ -14784,8 +15913,8 @@ var VEHICLES = {
                     }
                 }
                 
-                var section = (LIST["vehicles_section"]) ? (getVehiclesSection(obj.section_id) || {}).section : `<small class="font-italic text-muted">loading...</small>`;
-                var company = (LIST["vehicles_company"]) ? (getVehiclesCompany(obj.company_id) || {}).company : `<small class="font-italic text-muted">loading...</small>`;
+                var section = (LIST["section"]) ? (getSection(obj.section_id) || {}).section : `<small class="font-italic text-muted">loading...</small>`;
+                var company = (LIST["company"]) ? (getCompany(obj.company_id) || {}).company : `<small class="font-italic text-muted">loading...</small>`;
     
                 return TABLE.COL_ROW(null,{
                     '_id': obj._id,
@@ -14832,8 +15961,8 @@ var VEHICLES = {
                                 // adjust modal height
                                 $('.modal-body-content').css('height',($('body').innerHeight()-200)+'px');
 
-                                $(`#section_id`).html(G_SELECT2["form-vehicles_section"]).select2().val(obj.section_id || "").trigger("change");
-                                $(`#company_id`).html(G_SELECT2["form-vehicles_company"]).select2().val(obj.company_id || "").trigger("change");
+                                $(`#section_id`).html(G_SELECT2["form-section"]).select2().val(obj.section_id || "").trigger("change");
+                                $(`#company_id`).html(G_SELECT2["form-company"]).select2().val(obj.company_id || "").trigger("change");
 
                                 /*********** DATES ***********/
                                 // Issued Date & Expiry Date
@@ -14897,7 +16026,7 @@ var VEHICLES = {
                                                 key: "section_id",
                                                 customTitle: "Section",
                                                 dataExtended: true,
-                                                data: LIST["vehicles_section"],
+                                                data: LIST["section"],
                                                 dataCompareKey: "_id",
                                                 dataValueKey: "section"
                                             },
@@ -14905,7 +16034,7 @@ var VEHICLES = {
                                                 key: "company_id",
                                                 customTitle: "Company",
                                                 dataExtended: true,
-                                                data: LIST["vehicles_company"],
+                                                data: LIST["company"],
                                                 dataCompareKey: "_id",
                                                 dataValueKey: "company"
                                             },
@@ -14990,8 +16119,8 @@ var VEHICLES = {
                                 templateResult: templateResult
                             }).val(obj["Trailer"] || "").trigger("change");
                             
-                            $(`#section_id`).html(G_SELECT2["form-vehicles_section"]).select2().val(obj.section_id || "").trigger("change");
-                            $(`#company_id`).html(G_SELECT2["form-vehicles_company"]).select2().val(obj.company_id || "").trigger("change");
+                            $(`#section_id`).html(G_SELECT2["form-section"]).select2().val(obj.section_id || "").trigger("change");
+                            $(`#company_id`).html(G_SELECT2["form-company"]).select2().val(obj.company_id || "").trigger("change");
     
                             var ggsUpdate = {
                                 object: [],
@@ -15077,13 +16206,13 @@ var VEHICLES = {
                     table.populateRows(LIST[urlPath]);
                     table.hideProgressBar();
                 });
-                isFinishedLoading(["TRAILERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLES_HISTORY"], _new1_, function(){
+                isFinishedLoading(["TRAILERS","SECTION","COMPANY","VEHICLES_HISTORY"], _new1_, function(){
                     if((LIST[urlPath]||[]).length > 0 && table.dt && _new1_){
                         _new1_ = false;
                         table.updateRows(LIST[urlPath]);
                     }
                 });
-                isFinishedLoading(["TRAILERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLES_HISTORY"], true, function(){
+                isFinishedLoading(["TRAILERS","SECTION","COMPANY","VEHICLES_HISTORY"], true, function(){
                     TABLE.FINISH_LOADING.UPDATE();
                 });
             }
@@ -15132,8 +16261,8 @@ var VEHICLE_PERSONNEL = {
                         var ROLE = USER.role;
                         var modalHTML = modalViews.vehicle_personnel.data_maintenance();
                         var initializeArray = [
-                            { urlPath: "vehicle_personnel_section", key: "section", objectData: (_id) => { return getVehiclePersonnelSection(_id); } },
-                            { urlPath: "vehicle_personnel_company", key: "company", objectData: (_id) => { return getVehiclePersonnelCompany(_id); } },
+                            { urlPath: "section", key: "section", objectData: (_id) => { return getSection(_id); } },
+                            { urlPath: "company", key: "company", objectData: (_id) => { return getCompany(_id); } },
                         ];
                         HISTORY.defaults.data_maintenance(ID,USERNAME,ROLE,SESSION_TOKEN,modalHTML,initializeArray);
                     }
@@ -15151,8 +16280,8 @@ var VEHICLE_PERSONNEL = {
                 $(`${self.id} th:last-child`).css({"min-width":action.width,"width":action.width});
 
                 var vehicle = (LIST["vehicles"]) ? (getVehicle(obj.vehicle_id) || {}).name : `<small class="font-italic text-muted">loading...</small>`;
-                var section = (LIST["vehicle_personnel_section"]) ? (getVehiclePersonnelSection(obj.section_id) || {}).section : `<small class="font-italic text-muted">loading...</small>`;
-                var company = (LIST["vehicle_personnel_company"]) ? (getVehiclePersonnelCompany(obj.company_id) || {}).company : `<small class="font-italic text-muted">loading...</small>`;
+                var section = (LIST["section"]) ? (getSection(obj.section_id) || {}).section : `<small class="font-italic text-muted">loading...</small>`;
+                var company = (LIST["company"]) ? (getCompany(obj.company_id) || {}).company : `<small class="font-italic text-muted">loading...</small>`;
 
                 return TABLE.COL_ROW(null,{
                     '_id': obj._id,
@@ -15406,8 +16535,8 @@ var VEHICLE_PERSONNEL = {
                     templateResult: templateResult
                 }).val(x.obj.vehicle_id || "").trigger("change");
 
-                $(`#section_id`).html(G_SELECT2["form-vehicle_personnel_section"]).select2().val(x.obj.section_id || "").trigger("change");
-                $(`#company_id`).html(G_SELECT2["form-vehicle_personnel_company"]).select2().val(x.obj.company_id || "").trigger("change");
+                $(`#section_id`).html(G_SELECT2["form-section"]).select2().val(x.obj.section_id || "").trigger("change");
+                $(`#company_id`).html(G_SELECT2["form-company"]).select2().val(x.obj.company_id || "").trigger("change");
 
                 MODAL.SUBMIT(x);
             };
@@ -15420,13 +16549,13 @@ var VEHICLE_PERSONNEL = {
                     table.populateRows(LIST[urlPath]);
                     table.hideProgressBar();
                 });
-                isFinishedLoading(["VEHICLES","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY"], _new1_, function(){
+                isFinishedLoading(["VEHICLES","SECTION","COMPANY"], _new1_, function(){
                     if((LIST[urlPath]||[]).length > 0 && table.dt){
                         _new1_ = false;
                         table.updateRows(LIST[urlPath]);
                     }
                 });
-                isFinishedLoading(["VEHICLES","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY"], true, function(){
+                isFinishedLoading(["VEHICLES","SECTION","COMPANY"], true, function(){
                     TABLE.FINISH_LOADING.UPDATE();
                 });
             }
@@ -16207,9 +17336,9 @@ var CHASSIS = {
                         var ROLE = USER.role;
                         var modalHTML = modalViews.chassis.data_maintenance();
                         var initializeArray = [
-                            { urlPath: "chassis_section", key: "section", objectData: (_id) => { return getChassisSection(_id); } },
-                            { urlPath: "chassis_company", key: "company", objectData: (_id) => { return getChassisCompany(_id); } },
-                            { urlPath: "chassis_type", key: "type", objectData: (_id) => { return getChassisType(_id); } },
+                            { urlPath: "section", key: "section", objectData: (_id) => { return getSection(_id); } },
+                            { urlPath: "company", key: "company", objectData: (_id) => { return getCompany(_id); } },
+                            { urlPath: "body_type", key: "type", objectData: (_id) => { return getBodyType(_id); } },
                         ];
                         HISTORY.defaults.data_maintenance(ID,USERNAME,ROLE,SESSION_TOKEN,modalHTML,initializeArray);
                     }
@@ -16223,17 +17352,16 @@ var CHASSIS = {
                 });
                 $(`${self.id} th:last-child`).css({"min-width":action.width,"width":action.width});
 
-                var vehicle = (LIST["vehicles"]) ? (getVehicle(obj.vehicle_id) || {})["Plate Number"] : `<small class="font-italic text-muted">loading...</small>`;
-                var section = (LIST["chassis_section"]) ? (getChassisSection(obj.section_id) || {}).section : `<small class="font-italic text-muted">loading...</small>`;
-                var company = (LIST["chassis_company"]) ? (getChassisCompany(obj.company_id) || {}).company : `<small class="font-italic text-muted">loading...</small>`;
-                var type = (LIST["chassis_type"]) ? (getChassisType(obj.type_id) || {}).type : `<small class="font-italic text-muted">loading...</small>`;
+                var section = (LIST["section"]) ? (getSection(obj.section_id) || {}).section : `<small class="font-italic text-muted">loading...</small>`;
+                var company = (LIST["company"]) ? (getCompany(obj.company_id) || {}).company : `<small class="font-italic text-muted">loading...</small>`;
+                var type = (LIST["body_type"]) ? (getBodyType(obj.body_type_id) || {}).type : `<small class="font-italic text-muted">loading...</small>`;
 
                 return TABLE.COL_ROW(null,{
                     '_id': obj._id,
                     '_row':  obj._row,
                     'Name': obj.name || "-",
-                    'Chassis Type': type || "-",
-                    'Plate Number': vehicle || "-",
+                    'Body Type': type || "-",
+                    'Plate Number': obj.plate_number || "-",
                     'Section': section || "-",
                     'Company': company || "-",
                     'Action': action.buttons,
@@ -16304,8 +17432,8 @@ var CHASSIS = {
                         var readonly = x.method == "PUT";
                         return [
                             {title:"Name",id:"_id",type:"text",required:true,value:obj._id,readonly,sub_title:"Once saved, name cannot be edited."},
-                            {title:"Chassis Type",id:"type_id",type:"select2",required:true,attr:"blankStringIfEmpty"},
-                            {title:"Vehicle",id:"vehicle_id",type:"select2",attr:"blankStringIfEmpty"},
+                            {title:"Body Type",id:"body_type_id",type:"select2",required:true,attr:"blankStringIfEmpty"},
+                            {title:"Plate Number",id:"plate_number",type:"text", value: obj.plate_number },
                             {title:"Section",id:"section_id",type:"select2",attr:"blankStringIfEmpty"},
                             {title:"Company",id:"company_id",type:"select2",attr:"blankStringIfEmpty"},
                         ];
@@ -16318,29 +17446,9 @@ var CHASSIS = {
                     templateResult: templateResult
                 }).val(x.obj.vehicle_id || "").trigger("change");
 
-                $(`#type_id`).html(G_SELECT2["form-chassis_type"]).select2().val(x.obj.type_id || "").trigger("change");
-                $(`#section_id`).html(G_SELECT2["form-chassis_section"]).select2().val(x.obj.section_id || "").trigger("change");
-                $(`#company_id`).html(G_SELECT2["form-chassis_company"]).select2().val(x.obj.company_id || "").trigger("change");
-
-                /**
-                 Section
-                 60e54a78eeaae10734c5be1a - Importation
-                 60e54a7beeaae10734c5be1b - local shiping
-                 60e54a80eeaae10734c5be1c - base to base
-                 60e54a83eeaae10734c5be1d - he movilasdas...
-
-                 Company
-                 60e54a90eeaae10734c5be22 - SADC
-                 60e54a94eeaae10734c5be23 - MOVEEASY
-
-                 Type
-                 60e549062cad040e0c2cf2fe - flatbed
-                 60e5490a2cad040e0c2cf2ff - lowbed
-                 60e5490e2cad040e0c2cf300 - alum..
-                 60e549142cad040e0c2cf301 - trailer van
-                 60e549192cad040e0c2cf302 - ske 1x20
-                 60e5491e2cad040e0c2cf303 - ske 1x40
-                 */
+                $(`#body_type_id`).html(G_SELECT2["form-body_type"]).select2().val(x.obj.body_type_id || "").trigger("change");
+                $(`#section_id`).html(G_SELECT2["form-section"]).select2().val(x.obj.section_id || "").trigger("change");
+                $(`#company_id`).html(G_SELECT2["form-company"]).select2().val(x.obj.company_id || "").trigger("change");
 
                 MODAL.SUBMIT(x);
             };
@@ -16353,13 +17461,13 @@ var CHASSIS = {
                     table.populateRows(LIST[urlPath]);
                     table.hideProgressBar();
                 });
-                isFinishedLoading(["VEHICLES","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"], _new1_, function(){
+                isFinishedLoading(["VEHICLES","SECTION","COMPANY","BODY_TYPE"], _new1_, function(){
                     if((LIST[urlPath]||[]).length > 0 && table.dt){
                         _new1_ = false;
                         table.updateRows(LIST[urlPath]);
                     }
                 });
-                isFinishedLoading(["CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"], true, function(){
+                isFinishedLoading(["CHASSIS","SECTION","COMPANY","BODY_TYPE"], true, function(){
                     TABLE.FINISH_LOADING.UPDATE();
                 });
             }
@@ -17251,27 +18359,25 @@ var PAGE = {
                         }
                     };
 
-                if(PAGE.GET() == "regions") loadDataInBackground("REGIONS",["CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
-                else if(PAGE.GET() == "clusters")loadDataInBackground("CLUSTERS",["REGIONS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
-                else if(PAGE.GET() == "geofences") loadDataInBackground("GEOFENCES",["REGIONS","CLUSTERS","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
-                else if(PAGE.GET() == "routes" || PAGE.GET() == "dashboard") loadDataInBackground("ROUTES",["GEOFENCES","REGIONS","CLUSTERS","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
-                else if(PAGE.GET() == "trailers") loadDataInBackground("TRAILERS",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
-                else if(PAGE.GET() == "vehicles") loadDataInBackground("VEHICLES",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
-                else if(PAGE.GET() == "vehicle_personnel") loadDataInBackground("VEHICLE_PERSONNEL",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE","SHIFT_SCHEDULE"]);
-                else if(PAGE.GET() == "chassis") loadDataInBackground("CHASSIS",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","VEHICLE_PERSONNEL","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE","SHIFT_SCHEDULE"]);
-                else if(PAGE.GET() == "shift_schedule") loadDataInBackground("SHIFT_SCHEDULE",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
-                else if(PAGE.GET() == "users") loadDataInBackground("USERS",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
-                // else if(PAGE.GET() == "customers") loadDataInBackground("CUSTOMERS",["USERS","REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
-                else loadDataInBackground("VEHICLES",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
+                if(PAGE.GET() == "regions") loadDataInBackground("REGIONS",["CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_HISTORY","CHASSIS","SECTION","COMPANY","BODY_TYPE"]);
+                else if(PAGE.GET() == "clusters")loadDataInBackground("CLUSTERS",["REGIONS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_HISTORY","CHASSIS","SECTION","COMPANY","BODY_TYPE"]);
+                else if(PAGE.GET() == "geofences") loadDataInBackground("GEOFENCES",["REGIONS","CLUSTERS","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_HISTORY","CHASSIS","SECTION","COMPANY","BODY_TYPE"]);
+                else if(PAGE.GET() == "routes" || PAGE.GET() == "dashboard") loadDataInBackground("ROUTES",["GEOFENCES","REGIONS","CLUSTERS","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_HISTORY","CHASSIS","SECTION","COMPANY","BODY_TYPE"]);
+                else if(PAGE.GET() == "trailers") loadDataInBackground("TRAILERS",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_HISTORY","CHASSIS","SECTION","COMPANY","BODY_TYPE"]);
+                else if(PAGE.GET() == "vehicles") loadDataInBackground("VEHICLES",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_HISTORY","CHASSIS","SECTION","COMPANY","BODY_TYPE"]);
+                else if(PAGE.GET() == "vehicle_personnel") loadDataInBackground("VEHICLE_PERSONNEL",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","USERS","VEHICLES_HISTORY","CHASSIS","SECTION","COMPANY","BODY_TYPE","SHIFT_SCHEDULE"]);
+                else if(PAGE.GET() == "chassis") loadDataInBackground("CHASSIS",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","USERS","VEHICLES_HISTORY","VEHICLE_PERSONNEL","SECTION","COMPANY","BODY_TYPE","SHIFT_SCHEDULE"]);
+                else if(PAGE.GET() == "shift_schedule") loadDataInBackground("SHIFT_SCHEDULE",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","USERS","VEHICLES_HISTORY","CHASSIS","SECTION","COMPANY","BODY_TYPE"]);
+                else if(PAGE.GET() == "users") loadDataInBackground("USERS",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","VEHICLES_HISTORY","CHASSIS","SECTION","COMPANY","BODY_TYPE"]);
+                // else if(PAGE.GET() == "customers") loadDataInBackground("CUSTOMERS",["USERS","REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","VEHICLES_HISTORY","CHASSIS","SECTION","COMPANY","BODY_TYPE"]);
+                else loadDataInBackground("VEHICLES",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_HISTORY","CHASSIS","SECTION","COMPANY","BODY_TYPE"]);
 
                 tableWatch("notifications");
                 tableWatch("users");
                 tableWatch("sessions");
                 tableWatch("vehicles_history");
-                tableWatch("vehicles_section");
-                tableWatch("vehicles_company");
-                tableWatch("vehicle_personnel_section");
-                tableWatch("vehicle_personnel_company");
+                tableWatch("section");
+                tableWatch("company");
 
                 // PAGE.IDLE();
 
@@ -17639,6 +18745,56 @@ var PAGE = {
                     row:["edit","delete"]
                 }
             },
+            eco_driving: {
+                title: "Eco Driving",
+                name: "eco_driving",
+                icon: "la la-calendar",
+                display: function() { return views.eco_driving(); },
+                function: function() { ECO_DRIVING.FUNCTION.init() },
+                buttons: {
+                    table: ["refresh","export","filter","search","summary"],
+                    row:["view"]
+                },
+                menu_group: {
+                    title: "Events",
+                }
+            },
+            eco_driving_summary: {
+                title: "Eco Driving Summary",
+                name: "eco_driving_summary",
+                icon: "la la-calendar",
+                display: function() { return views.eco_driving(); },
+                function: function() { ECO_DRIVING.FUNCTION.init() },
+                buttons: {
+                    table: ["refresh","export","filter","search","summary"],
+                    row:["view"]
+                },
+                menu_group: {
+                    title: "Events",
+                }
+            },
+            otd_events: {
+                title: "OTD",
+                name: "otd_events",
+                icon: "la la-calendar",
+                display: function() { return views.otd_events(); },
+                function: function() { OTD_EVENTS.FUNCTION.init() },
+                buttons: {
+                    table: ["refresh","export","filter","search"],
+                    row:["view"]
+                },
+            },
+            cico_events: {
+                title: "Check IN, Check Out",
+                name: "cico_events",
+                icon: "la la-calendar",
+                display: function() { return views.cico_events(); },
+                function: function() { CICO_EVENTS.FUNCTION.init() },
+                buttons: {
+                    table: ["refresh","export","filter","search"],
+                    row:["view"]
+                },
+            },
             all_events: {
                 title: "All Events",
                 name: "all_events",
@@ -17699,7 +18855,7 @@ GET.STATUS = function(status=""){
     var stat = { color: "label-default", text: "" };
     if(status == "plan") stat = { color: "label-info", text: "Plan" }; // light blue
     if(status == "assigned") stat = { color: "label-brown", text: "Assigned" }; // brown
-    if(status == "dispatched") stat = { color: "label-lime", text: "Dispatched" }; // lime
+    // if(status == "dispatched") stat = { color: "label-lime", text: "Dispatched" }; // lime
     if(status == "scheduled") stat = { color: "label-default", text: "Scheduled" }; // default
     if(status == "queueingAtOrigin") stat = { color: "label-warning", text: "Queueing (Origin)" }; // yellow
     if(status == "processingAtOrigin") stat = { color: "label-lime", text: "Processing (Origin)" }; // lime
@@ -17895,11 +19051,40 @@ var FILTER = {
             FILTER.STATUS = "reset";
             // $(`#filter-btn,#reset-btn`).addClass("disabled");
             if(x.dateEl || x.dateElnoVal){
-                $(x.dateEl).data('daterangepicker').setStartDate(DEFAULT_DATE);
-                $(x.dateEl).data('daterangepicker').setEndDate(DEFAULT_DATE);
+                if($(x.dateEl).data('daterangepicker')){
+                    try { $(x.dateEl).data('daterangepicker').setStartDate(DEFAULT_DATE); } catch (error) {}
+                    try { $(x.dateEl).data('daterangepicker').setEndDate(DEFAULT_DATE); } catch (error) {}
+                } else {
+                    try { 
+                        x.dateEl.split(",").forEach(val => {
+                            $(`${val} [name="start"],${val} [name="end"]`).datepicker("setDate",new Date(DEFAULT_DATE));
+                        });
+                    } catch (error) {}
+                }
+                if($(x.dateElnoVal).data('daterangepicker')){
+                    try { $(x.dateElnoVal).data('daterangepicker').setStartDate(DEFAULT_DATE); } catch (error) {}
+                    try { $(x.dateElnoVal).data('daterangepicker').setEndDate(DEFAULT_DATE); } catch (error) {}
+                } else {
+                    try { $(x.dateElnoVal).datepicker("setDate",new Date(DEFAULT_DATE)); } catch (error) {}
+                    try { 
+                        x.dateElnoVal.split(",").forEach(val => {
+                            $(`${val} [name="start"],${val} [name="end"]`).datepicker("setDate","");
+                        });
+                    } catch (error) {}
+                }
+    
                 if(x.dateEl) $(x.dateEl).removeClass('x onX').val(DEFAULT_DATE).change().blur();
                 if(x.dateElnoVal) $(x.dateElnoVal).removeClass('x onX').val('').change().blur();
             }
+
+            $(`[calendarview="day"]`).trigger("click");
+
+            // if(x.dateEl || x.dateElnoVal){
+            //     $(x.dateEl).data('daterangepicker').setStartDate(DEFAULT_DATE);
+            //     $(x.dateEl).data('daterangepicker').setEndDate(DEFAULT_DATE);
+            //     if(x.dateEl) $(x.dateEl).removeClass('x onX').val(DEFAULT_DATE).change().blur();
+            //     if(x.dateElnoVal) $(x.dateElnoVal).removeClass('x onX').val('').change().blur();
+            // }
             if(x.selectEl){
                 $(x.selectEl).val("all").trigger("change");
             }
@@ -18705,8 +19890,8 @@ var TABLE = {
                 // }
                 if(val == "create"){ // create-admin
                     var icon = (loadView.includes(val)) ? "la-spin la-spinner" : "la-plus";
-                    var title = (CLIENT.id != "wilcon") ? "Create New Record (v2.0)" : "Create New Record";
-                    var text = (CLIENT.id != "wilcon") ? "Create v2.0" : "Create";
+                    var title = "Create New Record";
+                    var text = "Create";
                     dt_buttons.push({
                         text: `<i class="la ${icon}" data-toggle="tooltip" title="${title}"></i> ${text}`,
                         className: `create-btn ${className} ${condClass}`,
@@ -19055,7 +20240,7 @@ var TABLE = {
                 "edit-admin": {
                     permission: "update",
                     icon: "la-pencil",
-                    title: "Edit Record (v2.0)",
+                    title: "Edit Record",
                     attr: "edit-admin",
                     statusCheck: true,
                 },
@@ -19477,9 +20662,12 @@ var TABLE = {
                                         (_data === "You") ? _data = _data.replace("You", USER.fullName) : null; // change "You" to user's full name
                                         try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags
 
-                                        _data = _data.replace('<span class="text-success">', '')  // remove specific html tags
-                                                     .replace('<span class="text-danger">', '')
-                                                     .replace('</span>', '');
+                                        try {
+                                            _data = _data.replace('<span class="text-success">', '')  // remove specific html tags
+                                                         .replace('<span class="text-danger">', '')
+                                                         .replace('</span>', '');
+        
+                                        } catch (error) { }
     
                                         return _data;
                                     }
@@ -19504,10 +20692,12 @@ var TABLE = {
                                         (_data === "You") ? _data = _data.replace("You", USER.fullName) : null; // change "You" to user's full name
                                         try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags 
 
-                                        _data = _data.replace('<span class="text-success">', '')  // remove specific html tags
-                                                     .replace('<span class="text-danger">', '')
-                                                     .replace('</span>', '');
-    
+                                        try {
+                                            _data = _data.replace('<span class="text-success">', '')  // remove specific html tags
+                                                         .replace('<span class="text-danger">', '')
+                                                         .replace('</span>', '');
+        
+                                        } catch (error) { }
                                         return _data;
                                     }
                                 }
@@ -19532,9 +20722,12 @@ var TABLE = {
                                         (_data === "You") ? _data = _data.replace("You", USER.fullName) : null; // change "You" to user's full name
                                         try { (_data.indexOf("<") > -1) ? _data = $(_data).text() : null; } catch(error){} // return text inside html tags 
 
-                                        _data = _data.replace('<span class="text-success">', '')  // remove specific html tags
-                                                     .replace('<span class="text-danger">', '')
-                                                     .replace('</span>', '');
+                                        try {
+                                            _data = _data.replace('<span class="text-success">', '')  // remove specific html tags
+                                                         .replace('<span class="text-danger">', '')
+                                                         .replace('</span>', '');
+        
+                                        } catch (error) { }
     
                                         return _data;
                                     }
@@ -19574,20 +20767,8 @@ function getVehicle(value="",key="_id",type="find",callback=function(){return tr
 function getVehicleHistory(value="",key="_id",type="find",callback=function(){return true;}){
     return (LIST["vehicles_history"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
 }
-function getVehiclesSection(value="",key="_id",type="find",callback=function(){return true;}){
-    return (LIST["vehicles_section"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
-}
-function getVehiclesCompany(value="",key="_id",type="find",callback=function(){return true;}){
-    return (LIST["vehicles_company"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
-}
 function getVehiclePersonnel(value="",key="_id",type="find",callback=function(){return true;}){
     return (LIST["vehicle_personnel"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
-}
-function getVehiclePersonnelSection(value="",key="_id",type="find",callback=function(){return true;}){
-    return (LIST["vehicle_personnel_section"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
-}
-function getVehiclePersonnelCompany(value="",key="_id",type="find",callback=function(){return true;}){
-    return (LIST["vehicle_personnel_company"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
 }
 function getTrailer(value="",key="_id",type="find",callback=function(){return true;}){
     return (LIST["trailers"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
@@ -19595,14 +20776,14 @@ function getTrailer(value="",key="_id",type="find",callback=function(){return tr
 function getChassis(value="",key="_id",type="find",callback=function(){return true;}){
     return (LIST["chassis"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
 }
-function getChassisSection(value="",key="_id",type="find",callback=function(){return true;}){
-    return (LIST["chassis_section"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
+function getSection(value="",key="_id",type="find",callback=function(){return true;}){
+    return (LIST["section"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
 }
-function getChassisCompany(value="",key="_id",type="find",callback=function(){return true;}){
-    return (LIST["chassis_company"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
+function getCompany(value="",key="_id",type="find",callback=function(){return true;}){
+    return (LIST["company"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
 }
-function getChassisType(value="",key="_id",type="find",callback=function(){return true;}){
-    return (LIST["chassis_type"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
+function getBodyType(value="",key="_id",type="find",callback=function(){return true;}){
+    return (LIST["body_type"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
 }
 function getRoute(value="",key="_id",type="find",callback=function(){return true;}){ // STILL HAVE
     return (LIST["routes"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
@@ -20441,6 +21622,123 @@ const views = new function(){
                         </div>
                     </div>`;
         },
+        eco_driving: function(){
+            return `<div class="page-box row">
+                        ${SLIDER.FILTER(`<div class="mt-2">
+                                            <div style="font-size: 10px;">Date:</div>
+                                            <span class="d-block"">
+                                                <div class="input-group" style="width: 100%;">
+                                                    <span class="input-group-addon p-0">
+                                                        <ul class="nav navbar-nav navbar-left">
+                                                            <li class="dropdown">
+                                                                <a href="#" data-toggle="dropdown" class="dropdown-toggle p-0" style="line-height:  10px !important;color: unset !important;padding: 6px 12px !important;vertical-align: top;display: inline;" aria-expanded="false">
+                                                                    <span><b>DAY</b></span>
+                                                                </a>
+                                                                <ul class="dropdown-menu logged-user-menu" style="min-width: 65px;z-index: 999999;">
+                                                                    <li><a href="javascript:void(0);" calendarView="day" class="active"><span>Day</span></a></li>
+                                                                    <li><a href="javascript:void(0);" calendarView="month"><span>Month</span></a></li>
+                                                                    <li><a href="javascript:void(0);" calendarView="year"><span>Year</span></a></li>
+                                                                </ul>
+                                                            </li>
+                                                        </ul>
+                                                    </span>
+                                                    <input id="_date" class="form-control" type="text" value="${DEFAULT_DATE}" readonly>
+                                                </div>
+                                            </span>
+                                        </div>
+                                        <div class="mt-2">
+                                            <div style="font-size: 10px;">Region:</div>
+                                            <select id="_region_id" class="form-control" style="width:100%;"> </select>
+                                        </div>
+                                        <div class="mt-2">
+                                            <div style="font-size: 10px;">Cluster:</div>
+                                            <select id="_cluster_id" class="form-control" style="width:100%;"></select>
+                                        </div>
+                                        `)}
+                        <div class="col-sm-12 mt-2">
+                            <div class="table-wrapper">
+                                <table id="tbl-eco_driving" class="table table-hover table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th rowspan="2">Name</th>
+                                            <th rowspan="2">Days</th>
+                                            <th rowspan="2">Class</th>
+                                            <th rowspan="2">Score</th>
+                                            <th rowspan="2">Dist</th>
+                                            <th colspan="2">Speed</th>
+                                            <th colspan="3">Events</th>
+                                            <th colspan="3">Time</th>
+                                            <th colspan="3">Location</th>
+                                        </tr>
+                                        <tr>
+                                            <th>Max</th>
+                                            <th>Avg</th>
+                                            <th>Brake</th>
+                                            <th>Acc</th>
+                                            <th>O-spd</th>
+                                            <th>Trip</th>
+                                            <th>Idle</th>
+                                            <th>O-spd</th>
+                                            <th>Site</th>
+                                            <th>Cluster</th>
+                                            <th>Region</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                            <div class="summary-table-wrapper">
+                                <table id="tbl-eco_driving_summary" class="table table-hover table-bordered">
+                                    <thead>
+                                        <tr>                                            
+                                            <th>Region</th>
+                                            <th>Cluster</th>
+                                            <th>Brake</th>
+                                            <th>Acc</th>
+                                            <th>O-spd</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>`;
+        },
+        otd_events: function(){
+            return `<div class="page-box row">
+                        ${SLIDER.FILTER(`<div>
+                                                <div style="font-size: 10px;">Date:</div>
+                                                <input type="text" id="_date" class="clearable form-control" style="padding-left: 10px;" value="${DEFAULT_DATE}" readonly>
+                                            </div>`)}
+                        <div class="col-sm-12 mt-2">
+                            ${ALERT.HTML.INFO("This page displays all overspeeding events sent by vehicles to WRU Dispatch.","ml-0 mr-0 mt-2 mb-3",true)}
+                            <div class="table-wrapper">
+                                <table id="tbl-otd-events" class="table table-hover table-bordered">
+                                    <thead></thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>`;
+        },
+        cico_events: function(){
+            return `<div class="page-box row">
+                        ${SLIDER.FILTER(`<div>
+                                                <div style="font-size: 10px;">Date:</div>
+                                                <input type="text" id="_date" class="clearable form-control" style="padding-left: 10px;" value="${DEFAULT_DATE}" readonly>
+                                            </div>`)}
+                        <div class="col-sm-12 mt-2">
+                            ${ALERT.HTML.INFO("This page displays all overspeeding events sent by vehicles to WRU Dispatch.","ml-0 mr-0 mt-2 mb-3",true)}
+                            <div class="table-wrapper">
+                                <table id="tbl-cico-events" class="table table-hover table-bordered">
+                                    <thead></thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>`;
+        },
         users: function(){
             return `<div class="page-box row">
                         <div class="col-sm-12 mt-2">
@@ -20693,8 +21991,8 @@ const modalViews = new function(){
                                             </div>` : "";
                     var obj = getVehicle(_id) || {};
             
-                    var section = (LIST["vehicles_section"]) ? (getVehiclesSection(obj.section_id) || {}).section : `<small class="font-italic text-muted">loading...</small>`;
-                    var company = (LIST["vehicles_company"]) ? (getVehiclesCompany(obj.company_id) || {}).company : `<small class="font-italic text-muted">loading...</small>`;
+                    var section = (LIST["section"]) ? (getSection(obj.section_id) || {}).section : `<small class="font-italic text-muted">loading...</small>`;
+                    var company = (LIST["company"]) ? (getCompany(obj.company_id) || {}).company : `<small class="font-italic text-muted">loading...</small>`;
             
                     return `<div id="overlay" class="swal2-container swal2-fade swal2-shown" style="overflow-y: auto;z-index:999999 !important;">
                                     <div id="modal" class="modal" role="dialog" aria-labelledby="myLargeModalLabel">
@@ -20826,11 +22124,11 @@ const modalViews = new function(){
                                             <div id="modal-error"></div>
                                             <div class="col-sm-12">
                                                 <ul class="nav nav-tabs" role="tablist">
-                                                    <li class="active"><a href="#vehicles_section" role="tab" data-toggle="tab">Section</a></li>
-                                                    <li class=""><a href="#vehicles_company" role="tab" data-toggle="tab">Company</a></li>
+                                                    <li class="active"><a href="#section-div" role="tab" data-toggle="tab">Section</a></li>
+                                                    <li class=""><a href="#company-div" role="tab" data-toggle="tab">Company</a></li>
                                                 </ul>
                                                 <div class="tab-content">
-                                                    <div class="tab-pane fade in active" id="vehicles_section">
+                                                    <div class="tab-pane fade in active" id="section-div">
                                                         <div class="pb-2" style="border-bottom: 1px solid #eee;">
                                                             <input id="section" class="form-control" type="text" placeholder="Enter item" style="width: 80%;display: inline-block;">
                                                             <div style="width: 19%;" class="d-inline-block pl-2">
@@ -20841,7 +22139,7 @@ const modalViews = new function(){
                                                             <i class="la la-spin la-spinner" style="font-size: 18px;margin-top: 10px;color: #cecece;"></i>
                                                         </div>
                                                     </div>
-                                                    <div class="tab-pane fade" id="vehicles_company">
+                                                    <div class="tab-pane fade" id="company-div">
                                                         <div class="pb-2" style="border-bottom: 1px solid #eee;">
                                                             <input id="company" class="form-control" type="text" placeholder="Enter item" style="width: 80%;display: inline-block;">
                                                             <div style="width: 19%;" class="d-inline-block pl-2">
@@ -20920,11 +22218,11 @@ const modalViews = new function(){
                                             <div id="modal-error"></div>
                                             <div class="col-sm-12">
                                                 <ul class="nav nav-tabs" role="tablist">
-                                                    <li class="active"><a href="#vehicle_personnel_section" role="tab" data-toggle="tab">Section</a></li>
-                                                    <li class=""><a href="#vehicle_personnel_company" role="tab" data-toggle="tab">Company</a></li>
+                                                    <li class="active"><a href="#section-div" role="tab" data-toggle="tab">Section</a></li>
+                                                    <li class=""><a href="#company-div" role="tab" data-toggle="tab">Company</a></li>
                                                 </ul>
                                                 <div class="tab-content">
-                                                    <div class="tab-pane fade in active" id="vehicle_personnel_section">
+                                                    <div class="tab-pane fade in active" id="section-div">
                                                         <div class="pb-2" style="border-bottom: 1px solid #eee;">
                                                             <input id="section" class="form-control" type="text" placeholder="Enter item" style="width: 80%;display: inline-block;">
                                                             <div style="width: 19%;" class="d-inline-block pl-2">
@@ -20935,7 +22233,7 @@ const modalViews = new function(){
                                                             <i class="la la-spin la-spinner" style="font-size: 18px;margin-top: 10px;color: #cecece;"></i>
                                                         </div>
                                                     </div>
-                                                    <div class="tab-pane fade" id="vehicle_personnel_company">
+                                                    <div class="tab-pane fade" id="company-div">
                                                         <div class="pb-2" style="border-bottom: 1px solid #eee;">
                                                             <input id="company" class="form-control" type="text" placeholder="Enter item" style="width: 80%;display: inline-block;">
                                                             <div style="width: 19%;" class="d-inline-block pl-2">
@@ -20969,12 +22267,12 @@ const modalViews = new function(){
                                             <div id="modal-error"></div>
                                             <div class="col-sm-12">
                                                 <ul class="nav nav-tabs" role="tablist">
-                                                    <li class="active"><a href="#chassis_section" role="tab" data-toggle="tab">Section</a></li>
-                                                    <li class=""><a href="#chassis_company" role="tab" data-toggle="tab">Company</a></li>
-                                                    <li class=""><a href="#chassis_type" role="tab" data-toggle="tab">Chassis Type</a></li>
+                                                    <li class="active"><a href="#section-div" role="tab" data-toggle="tab">Section</a></li>
+                                                    <li class=""><a href="#company-div" role="tab" data-toggle="tab">Company</a></li>
+                                                    <li class=""><a href="#body_type" role="tab" data-toggle="tab">Body Type</a></li>
                                                 </ul>
                                                 <div class="tab-content">
-                                                    <div class="tab-pane fade in active" id="chassis_section">
+                                                    <div class="tab-pane fade in active" id="section-div">
                                                         <div class="pb-2" style="border-bottom: 1px solid #eee;">
                                                             <input id="section" class="form-control" type="text" placeholder="Enter item" style="width: 80%;display: inline-block;">
                                                             <div style="width: 19%;" class="d-inline-block pl-2">
@@ -20985,7 +22283,7 @@ const modalViews = new function(){
                                                             <i class="la la-spin la-spinner" style="font-size: 18px;margin-top: 10px;color: #cecece;"></i>
                                                         </div>
                                                     </div>
-                                                    <div class="tab-pane fade" id="chassis_company">
+                                                    <div class="tab-pane fade" id="company-div">
                                                         <div class="pb-2" style="border-bottom: 1px solid #eee;">
                                                             <input id="company" class="form-control" type="text" placeholder="Enter item" style="width: 80%;display: inline-block;">
                                                             <div style="width: 19%;" class="d-inline-block pl-2">
@@ -20996,7 +22294,7 @@ const modalViews = new function(){
                                                             <i class="la la-spin la-spinner" style="font-size: 18px;margin-top: 10px;color: #cecece;"></i>
                                                         </div>
                                                     </div>
-                                                    <div class="tab-pane fade" id="chassis_type">
+                                                    <div class="tab-pane fade" id="body_type">
                                                         <div class="pb-2" style="border-bottom: 1px solid #eee;">
                                                             <input id="type" class="form-control" type="text" placeholder="Enter item" style="width: 80%;display: inline-block;">
                                                             <div style="width: 19%;" class="d-inline-block pl-2">
@@ -21257,12 +22555,12 @@ const modalViews = new function(){
                                         <table class="table mb-0" chassis-based>
                                             <tbody>
                                                 <tr>
-                                                    <td class="pt-0" style="border-color: #fff !important;"><small>Chassis Type</small></td>
+                                                    <td class="pt-0" style="border-color: #fff !important;"><small>Body Type</small></td>
                                                     <td class="pt-0" style="border-color: #fff !important;"><small>Section</small></td>
                                                     <td class="pt-0" style="border-color: #fff !important;"><small>Company</small></td>
                                                 </tr>
                                             <tr>
-                                                <td class="text-muted" chassis_type>-</td>
+                                                <td class="text-muted" body_type>-</td>
                                                 <td class="text-muted" section>-</td>
                                                 <td class="text-muted" company>-</td>
                                             </tr>

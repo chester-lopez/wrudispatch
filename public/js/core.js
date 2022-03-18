@@ -541,6 +541,74 @@ const CUSTOM = {
             { data: "Geofence Name", title: "Geofence Name", visible: true },
             { data: "Action", title: "Action", className: "notExport", orderable: false, searchable: false, visible: true },
         ],
+        eco_driving: [
+            { data: "Name", title: "Name", visible: true },
+            { data: "Days", title: "Days", visible: true },
+            { data: "Class", title: "Class", visible: true },
+            { data: "Score", title: "Score", visible: true },
+            { data: "Dist", title: "Dist", visible: true },
+            { data: "Max", title: "Max", visible: true },
+            { data: "Avg", title: "Avg", visible: true },
+            { data: "Brake", title: "Brake", visible: true },
+            { data: "Acc", title: "Acc", visible: true },
+            { data: "O_spd", title: "O-spd", visible: true },
+            { data: "Trip", title: "Trip", visible: true },
+            { data: "Idle", title: "Idle", visible: true },
+            { data: "O_spd_Time", title: "O-spd", visible: true },
+            { data: "Site", title: "Site", visible: true },
+            { data: "Cluster", title: "Cluster", visible: true },
+            { data: "Region", title: "Region", visible: true },
+        ],
+        eco_driving_summary: [
+            { data: "Region", title: "Region", visible: true },
+            { data: "Cluster", title: "Cluster", visible: true },
+            { data: "Brake", title: "Brake", visible: true },
+            { data: "Acc", title: "Acc", visible: true },
+            { data: "O_spd", title: "O-spd", visible: true },
+            { data: "Total", title: "Total", visible: true },
+        ],
+        otd_events: [
+            { data: "ID", title: "ID", visible: false },
+            { data: "DateTime", title: "DateTime", type:"date", className: "notExport", visible: true },
+            { data: "Date", title: "Date", visible: false },
+            { data: "Time", title: "Time", visible: false },
+            { data: "RuleName", title: "Rule Name", visible: true },
+            { data: "State", title: "State", visible: true },
+            { data: "Vehicle Name", title: "Vehicle Name", visible: true },
+            { data: "Equipt No", title: "Equipt No", visible: true },
+            { data: "Location", title: "Location", visible: true },
+            { data: "DC Tag", title: "DC Tag", visible: true },
+            { data: "Site Code", title: "Site Code", visible: false },
+            { data: "ODO", title: "ODO", visible: true },
+            { data: "Namespace", title: "Namespace", visible: false },
+            { data: "Lng", title: "Longitude", visible: true },
+            { data: "Lat", title: "Latitude", visible: true },
+            { data: "Alt", title: "Altitude", visible: true },
+            { data: "Moving", title: "Moving", visible: false },
+            { data: "Truck Type", title: "Truck Type", visible: false },
+        ],
+        cico_events: [
+            { data: "ID", title: "ID", visible: false },
+            { data: "DateTime", title: "DateTime", type:"date", className: "notExport", visible: true },
+            { data: "Date", title: "Date", visible: false },
+            { data: "Time", title: "Time", visible: false },
+            { data: "RuleName", title: "Rule Name", visible: true },
+            { data: "State", title: "State", visible: true },
+            { data: "Vehicle Name", title: "Vehicle Name", visible: true },
+            { data: "Equipt No", title: "Equipt No", visible: true },
+            { data: "Site", title: "Site", visible: true },
+            { data: "Duration", title: "Duration", visible: true },
+            { data: "Site Code", title: "Site Code", visible: false },
+            { data: "Namespace", title: "Namespace", visible: false },
+            { data: "Lng", title: "Longitude", visible: true },
+            { data: "Lat", title: "Latitude", visible: true },
+            { data: "Alt", title: "Altitude", visible: true },
+            { data: "Address", title: "Address", visible: false },
+            { data: "Truck Base Site", title: "Truck Base Site", visible: true },
+            { data: "Truck Base Code", title: "Truck Base Code", visible: false },
+            { data: "Truck Status", title: "Truck Status", visible: false },
+            { data: "Truck Type", title: "Truck Type", visible: false },
+        ],
         users: function(){
             return [
                 { data: "Name", title: "Name", visible: true },
@@ -670,7 +738,7 @@ const CUSTOM = {
         ],
         chassis: [
             { data: "_id", title: "Name", visible: true },
-            { data: "Chassis Type", title: "Chassis Type", visible: true },
+            { data: "Body Type", title: "Body Type", visible: true },
             { data: "Plate Number", title: "Plate Number", visible: true },
             { data: "Section", title: "Section", visible: true },
             { data: "Company", title: "Company", visible: true },
@@ -1125,12 +1193,16 @@ function SESSION_FROM_DB(existCallback,notExistCallback){
             } else {
                 var user = docs[0].userDetails;
                 if(!user.name || !user.email){
-                    $(`body`).append(modalViews.notice.emptyProfile());
-                    $(`#empty_profile`).click(function(){
-                        window.history.pushState({}, null, `/${CLIENT.name}#profile`);
-                        PAGE.GO_TO();
-                        $(this).parents("#overlay").remove();
-                    });
+                    try {
+                        $(`body`).append(modalViews.notice.emptyProfile());
+                        $(`#empty_profile`).click(function(){
+                            window.history.pushState({}, null, `/${CLIENT.name}#profile`);
+                            PAGE.GO_TO();
+                            $(this).parents("#overlay").remove();
+                        });
+                    } catch(error){
+                        console.log('Try/Catch', error);
+                    }
                 }
                 if(CLIENT.tabCloseAutoLogout && !user.exemptAutoLogout) {
                     _SESSION_.window_tab_close(CLIENT.id,"THISISME",SESSION_TOKEN);
@@ -1180,14 +1252,20 @@ function SESSION_FROM_DB(existCallback,notExistCallback){
             }
         });
     } catch (error) {
-        $('#body-main').html(modalViews.notice.browserNotSupported());
-        console.log("NOT SUUPORTTED")
+        try {
+            $('#body-main').html(modalViews.notice.browserNotSupported());
+            console.log("NOT SUUPORTTED")
+        } catch(error){
+            console.log('Try/Catch', error);
+        }
     }
 };
 function LOGOUT(){
     $(`body`).append(`<div id="overlay" class="swal2-container swal2-fade swal2-shown" style="overflow-y: auto;background-color: #ffffffc2;z-index: 999999;">
                         <h3 style="text-align: center;margin-top: 40vh;font-weight: 100;">Logging out...</h3>
                       </div>`);
+
+    const loginPath = [null,undefined].includes(CLIENT.loginPath) ? '/login' : CLIENT.loginPath;
 
     if(SESSION_TOKEN && USER){
         $.ajax({ 
@@ -1202,7 +1280,7 @@ function LOGOUT(){
             Cookies.remove("tabs");
             Cookies.remove("GKEY");
             Cookies.remove("session_token");
-            location.href = `../${CLIENT.name}/login`;
+            location.href = `../${CLIENT.name}${loginPath}`;
         }).fail(function(error){
             console.log("Error:",error);
         });
@@ -1210,6 +1288,6 @@ function LOGOUT(){
         Cookies.remove("tabs");
         Cookies.remove("GKEY");
         Cookies.remove("session_token");
-        location.href = `../${CLIENT.name}/login`;
+        location.href = `../${CLIENT.name}${loginPath}`;
     }
 };

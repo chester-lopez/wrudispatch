@@ -35,15 +35,11 @@ const getCollection = (dbName,collection) => {
     (!!collections[`${dbName}${collection}`]) ? null : collections[`${dbName}${collection}`] = state.client.db(db).collection(collection);
     return collections[`${dbName}${collection}`];
 };
-// const setupDB = (dbname) => {
-//     state.dbName = dbname;
-//     state.db = state.client.db(dbname);
-// };
 
 // get collection from another project/database
 const getCollectionOtherDB = (clientId,collection,fullDbName) => {
     const db = fullDbName || `${projectInitial}-${clientId}`;
-    // (!!collections[`${fullDbName}${collection}`]) ? null : collections[`${fullDbName}${collection}`] = state.client.db(db).collection(collection);
+    // (!!collections[`${db}${collection}`]) ? null : collections[`${db}${collection}`] = state.client.db(db).collection(collection);
     return state.client.db(db).collection(collection);
 };
 
