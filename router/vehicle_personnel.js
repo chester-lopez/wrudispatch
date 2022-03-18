@@ -105,6 +105,10 @@ router.post('/:dbName/:username', (req,res,next)=>{
 
     userInput.created_by = username;
     userInput.created_on = new Date().toISOString();
+
+    (userInput.company_id) ? userInput.company_id = db.getPrimaryKey(userInput.company_id) : null;
+    (userInput.section_id) ? userInput.section_id = db.getPrimaryKey(userInput.section_id) : null;
+
     db.getCollection(dbName,collection).insertOne(userInput,(err,result)=>{
         if(err) next(_ERROR_.INTERNAL_SERVER(err));
         else res.json({ok:1});
@@ -117,6 +121,9 @@ router.put('/:dbName/:username/:_id', (req,res,next)=>{
     const _id = req.params._id;
     const username = req.params.username;
     const userInput = req.body;
+
+    (userInput.company_id) ? userInput.company_id = db.getPrimaryKey(userInput.company_id) : null;
+    (userInput.section_id) ? userInput.section_id = db.getPrimaryKey(userInput.section_id) : null;
 
     db.getCollection(dbName,collection).findOneAndUpdate({_id: db.getPrimaryKey(_id)},{$set: userInput},{returnOriginal: false,upsert: true},(err,docs)=>{
         if(err) next(_ERROR_.INTERNAL_SERVER(err));

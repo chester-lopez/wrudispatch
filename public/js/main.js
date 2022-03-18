@@ -137,20 +137,6 @@ function getSelect2Options(){
     });
     /******** END VEHICLES ********/
 
-    /******** VEHICLES SECTION ********/
-    G_SELECT2["form-vehicles_section"] = `<option value="">&nbsp;</option>`;
-    (LIST["vehicles_section"]||[]).forEach(val => {
-        (!val.delete) ? G_SELECT2["form-vehicles_section"] += `<option value="${val._id}">${val.section}</option>` : null;
-    });
-    /******** END VEHICLES SECTION ********/
-
-    /******** VEHICLES COMPANY ********/
-    G_SELECT2["form-vehicles_company"] = `<option value="">&nbsp;</option>`;
-    (LIST["vehicles_company"]||[]).forEach(val => {
-        (!val.delete) ? G_SELECT2["form-vehicles_company"] += `<option value="${val._id}">${val.company}</option>` : null;
-    });
-    /******** END VEHICLES COMPANY ********/
-
     /******** REGIONS ********/
     G_SELECT2["form-regions"] = `<option value="">&nbsp;</option>`;
     const sortedRegions = ARRAY.OBJECT.sort((LIST["regions"]||[]),"sequence",{sortType:"asc"});
@@ -166,60 +152,38 @@ function getSelect2Options(){
     });
     /******** END CLUSTERS ********/
     
-    /******** VEHICLE PERSONNEL ********/
-    // G_SELECT2["form-vehicle_personnel"] = `<option value="">&nbsp;</option>`;
-    // (LIST["vehicle_personnel"]||[]).forEach(val => {
-    //     var subtext = `Occupation: ${val.occupation||"-"}<br>ID Number: ${val.id_number||"-"}`;
-    //     G_SELECT2["form-vehicle_personnel"] += `<option value="${val._id}" data-subtext="${subtext}">${val.name}</option>`;
-    // });
-    /******** END VEHICLE PERSONNEL ********/
-
-    /******** VEHICLE PERSONNEL SECTION ********/
-    G_SELECT2["form-vehicle_personnel_section"] = `<option value="">&nbsp;</option>`;
-    (LIST["vehicle_personnel_section"]||[]).forEach(val => {
-        (!val.delete) ? G_SELECT2["form-vehicle_personnel_section"] += `<option value="${val._id}">${val.section}</option>` : null;
-    });
-    /******** END VEHICLE PERSONNEL SECTION ********/
-
-    /******** VEHICLE PERSONNEL COMPANY ********/
-    G_SELECT2["form-vehicle_personnel_company"] = `<option value="">&nbsp;</option>`;
-    (LIST["vehicle_personnel_company"]||[]).forEach(val => {
-        (!val.delete) ? G_SELECT2["form-vehicle_personnel_company"] += `<option value="${val._id}">${val.company}</option>` : null;
-    });
-    /******** END VEHICLE PERSONNEL COMPANY ********/
-    
     /******** CHASSIS ********/
     G_SELECT2["form-chassis"] = `<option value="">&nbsp;</option>`;
     (LIST["chassis"]||[]).forEach(val => {
-        var type = (getChassisType(val.type_id)||{}).type;
-        var section = (getChassisSection(val.section_id)||{}).section;
-        var company = (getChassisCompany(val.company_id)||{}).company;
+        var type = (getBodyType(val.body_type_id)||{}).type;
+        var section = (getSection(val.section_id)||{}).section;
+        var company = (getCompany(val.company_id)||{}).company;
 
-        var subtext = `Chassis Type: ${type||"-"}<br>Section: ${section||"-"}<br>Company: ${company||"-"}`;
+        var subtext = `Body Type: ${type||"-"}<br>Section: ${section||"-"}<br>Company: ${company||"-"}`;
         G_SELECT2["form-chassis"] += `<option value="${val._id}" data-subtext="${subtext}">${val._id}</option>`;
     });
     /******** END CHASSIS ********/
 
-    /******** CHASSIS SECTION ********/
-    G_SELECT2["form-chassis_section"] = `<option value="">&nbsp;</option>`;
-    (LIST["chassis_section"]||[]).forEach(val => {
-        (!val.delete) ? G_SELECT2["form-chassis_section"] += `<option value="${val._id}">${val.section}</option>` : null;
+    /******** SECTION ********/
+    G_SELECT2["form-section"] = `<option value="">&nbsp;</option>`;
+    (LIST["section"]||[]).forEach(val => {
+        (!val.delete) ? G_SELECT2["form-section"] += `<option value="${val._id}">${val.section}</option>` : null;
     });
-    /******** END CHASSIS SECTION ********/
+    /******** END SECTION ********/
 
-    /******** CHASSIS COMPANY ********/
-    G_SELECT2["form-chassis_company"] = `<option value="">&nbsp;</option>`;
-    (LIST["chassis_company"]||[]).forEach(val => {
-        (!val.delete) ? G_SELECT2["form-chassis_company"] += `<option value="${val._id}">${val.company}</option>` : null;
+    /******** COMPANY ********/
+    G_SELECT2["form-company"] = `<option value="">&nbsp;</option>`;
+    (LIST["company"]||[]).forEach(val => {
+        (!val.delete) ? G_SELECT2["form-company"] += `<option value="${val._id}">${val.company}</option>` : null;
     });
-    /******** END CHASSIS COMPANY ********/
+    /******** END COMPANY ********/
 
-    /******** CHASSIS TYPE ********/
-    G_SELECT2["form-chassis_type"] = `<option value="">&nbsp;</option>`;
-    (LIST["chassis_type"]||[]).forEach(val => {
-        (!val.delete) ? G_SELECT2["form-chassis_type"] += `<option value="${val._id}">${val.type}</option>` : null;
+    /******** BODY TYPE ********/
+    G_SELECT2["form-body_type"] = `<option value="">&nbsp;</option>`;
+    (LIST["body_type"]||[]).forEach(val => {
+        (!val.delete) ? G_SELECT2["form-body_type"] += `<option value="${val._id}">${val.type}</option>` : null;
     });
-    /******** END CHASSIS TYPE ********/
+    /******** END BODY TYPE ********/
     
     /******** SHIFT SCHEDULE ********/
     G_SELECT2["form-shift_schedule"] = ``;
@@ -4761,7 +4725,7 @@ var DISPATCH = {
             //,"CUSTOMERS"
             // ,"CUSTOMERS"
             TABLE.FINISH_LOADING.CHECK = function(){ // add immediately after variable initialization
-                isFinishedLoading(["REGIONS","CLUSTERS","GEOFENCES","VEHICLES","TRAILERS","CHASSIS","ROUTES","USERS","VEHICLE_PERSONNEL","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"], _new_, function(){
+                isFinishedLoading(["REGIONS","CLUSTERS","GEOFENCES","VEHICLES","TRAILERS","CHASSIS","ROUTES","USERS","VEHICLE_PERSONNEL","SECTION","COMPANY","BODY_TYPE"], _new_, function(){
                     if(dt){
                         _new_ = false;
                         
@@ -4773,7 +4737,7 @@ var DISPATCH = {
                     }
                     
                 });
-                isFinishedLoading(["GEOFENCES","VEHICLES","TRAILERS","CHASSIS","ROUTES","VEHICLE_PERSONNEL","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"], true, function(){
+                isFinishedLoading(["GEOFENCES","VEHICLES","TRAILERS","CHASSIS","ROUTES","VEHICLE_PERSONNEL","SECTION","COMPANY","BODY_TYPE"], true, function(){
                     TABLE.FINISH_LOADING.UPDATE();
                 });
                 isFinishedLoading(["REGIONS","CLUSTERS"], _new2_, function(){
@@ -5088,10 +5052,10 @@ var DISPATCH = {
                 }).change(function(){
                     if($(this).val() != null){
                         var chassis = getChassis( $(this).val() || "" ) || {};
-                        var type = (getChassisType(chassis.type_id)||{}).type;
-                        var section = (getChassisSection(chassis.section_id)||{}).section;
-                        var company = (getChassisCompany(chassis.company_id)||{}).company;
-                        $(`td[chassis_type]`).html(type || "-");
+                        var type = (getBodyType(chassis.body_type_id)||{}).type;
+                        var section = (getSection(chassis.section_id)||{}).section;
+                        var company = (getCompany(chassis.company_id)||{}).company;
+                        $(`td[body_type]`).html(type || "-");
                         $(`td[section]`).html(section || "-");
                         $(`td[company]`).html(company || "-");
                     }
@@ -15899,8 +15863,8 @@ var VEHICLES = {
                         var ROLE = USER.role;
                         var modalHTML = modalViews.vehicles.data_maintenance();
                         var initializeArray = [
-                            { urlPath: "vehicles_section", key: "section", objectData: (_id) => { return getVehiclesSection(_id); } },
-                            { urlPath: "vehicles_company", key: "company", objectData: (_id) => { return getVehiclesCompany(_id); } },
+                            { urlPath: "section", key: "section", objectData: (_id) => { return getSection(_id); } },
+                            { urlPath: "company", key: "company", objectData: (_id) => { return getCompany(_id); } },
                         ];
                         HISTORY.defaults.data_maintenance(ID,USERNAME,ROLE,SESSION_TOKEN,modalHTML,initializeArray);
                     }
@@ -15934,8 +15898,8 @@ var VEHICLES = {
                     }
                 }
                 
-                var section = (LIST["vehicles_section"]) ? (getVehiclesSection(obj.section_id) || {}).section : `<small class="font-italic text-muted">loading...</small>`;
-                var company = (LIST["vehicles_company"]) ? (getVehiclesCompany(obj.company_id) || {}).company : `<small class="font-italic text-muted">loading...</small>`;
+                var section = (LIST["section"]) ? (getSection(obj.section_id) || {}).section : `<small class="font-italic text-muted">loading...</small>`;
+                var company = (LIST["company"]) ? (getCompany(obj.company_id) || {}).company : `<small class="font-italic text-muted">loading...</small>`;
     
                 return TABLE.COL_ROW(null,{
                     '_id': obj._id,
@@ -15982,8 +15946,8 @@ var VEHICLES = {
                                 // adjust modal height
                                 $('.modal-body-content').css('height',($('body').innerHeight()-200)+'px');
 
-                                $(`#section_id`).html(G_SELECT2["form-vehicles_section"]).select2().val(obj.section_id || "").trigger("change");
-                                $(`#company_id`).html(G_SELECT2["form-vehicles_company"]).select2().val(obj.company_id || "").trigger("change");
+                                $(`#section_id`).html(G_SELECT2["form-section"]).select2().val(obj.section_id || "").trigger("change");
+                                $(`#company_id`).html(G_SELECT2["form-company"]).select2().val(obj.company_id || "").trigger("change");
 
                                 /*********** DATES ***********/
                                 // Issued Date & Expiry Date
@@ -16047,7 +16011,7 @@ var VEHICLES = {
                                                 key: "section_id",
                                                 customTitle: "Section",
                                                 dataExtended: true,
-                                                data: LIST["vehicles_section"],
+                                                data: LIST["section"],
                                                 dataCompareKey: "_id",
                                                 dataValueKey: "section"
                                             },
@@ -16055,7 +16019,7 @@ var VEHICLES = {
                                                 key: "company_id",
                                                 customTitle: "Company",
                                                 dataExtended: true,
-                                                data: LIST["vehicles_company"],
+                                                data: LIST["company"],
                                                 dataCompareKey: "_id",
                                                 dataValueKey: "company"
                                             },
@@ -16140,8 +16104,8 @@ var VEHICLES = {
                                 templateResult: templateResult
                             }).val(obj["Trailer"] || "").trigger("change");
                             
-                            $(`#section_id`).html(G_SELECT2["form-vehicles_section"]).select2().val(obj.section_id || "").trigger("change");
-                            $(`#company_id`).html(G_SELECT2["form-vehicles_company"]).select2().val(obj.company_id || "").trigger("change");
+                            $(`#section_id`).html(G_SELECT2["form-section"]).select2().val(obj.section_id || "").trigger("change");
+                            $(`#company_id`).html(G_SELECT2["form-company"]).select2().val(obj.company_id || "").trigger("change");
     
                             var ggsUpdate = {
                                 object: [],
@@ -16227,13 +16191,13 @@ var VEHICLES = {
                     table.populateRows(LIST[urlPath]);
                     table.hideProgressBar();
                 });
-                isFinishedLoading(["TRAILERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLES_HISTORY"], _new1_, function(){
+                isFinishedLoading(["TRAILERS","SECTION","COMPANY","VEHICLES_HISTORY"], _new1_, function(){
                     if((LIST[urlPath]||[]).length > 0 && table.dt && _new1_){
                         _new1_ = false;
                         table.updateRows(LIST[urlPath]);
                     }
                 });
-                isFinishedLoading(["TRAILERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLES_HISTORY"], true, function(){
+                isFinishedLoading(["TRAILERS","SECTION","COMPANY","VEHICLES_HISTORY"], true, function(){
                     TABLE.FINISH_LOADING.UPDATE();
                 });
             }
@@ -16282,8 +16246,8 @@ var VEHICLE_PERSONNEL = {
                         var ROLE = USER.role;
                         var modalHTML = modalViews.vehicle_personnel.data_maintenance();
                         var initializeArray = [
-                            { urlPath: "vehicle_personnel_section", key: "section", objectData: (_id) => { return getVehiclePersonnelSection(_id); } },
-                            { urlPath: "vehicle_personnel_company", key: "company", objectData: (_id) => { return getVehiclePersonnelCompany(_id); } },
+                            { urlPath: "section", key: "section", objectData: (_id) => { return getSection(_id); } },
+                            { urlPath: "company", key: "company", objectData: (_id) => { return getCompany(_id); } },
                         ];
                         HISTORY.defaults.data_maintenance(ID,USERNAME,ROLE,SESSION_TOKEN,modalHTML,initializeArray);
                     }
@@ -16301,8 +16265,8 @@ var VEHICLE_PERSONNEL = {
                 $(`${self.id} th:last-child`).css({"min-width":action.width,"width":action.width});
 
                 var vehicle = (LIST["vehicles"]) ? (getVehicle(obj.vehicle_id) || {}).name : `<small class="font-italic text-muted">loading...</small>`;
-                var section = (LIST["vehicle_personnel_section"]) ? (getVehiclePersonnelSection(obj.section_id) || {}).section : `<small class="font-italic text-muted">loading...</small>`;
-                var company = (LIST["vehicle_personnel_company"]) ? (getVehiclePersonnelCompany(obj.company_id) || {}).company : `<small class="font-italic text-muted">loading...</small>`;
+                var section = (LIST["section"]) ? (getSection(obj.section_id) || {}).section : `<small class="font-italic text-muted">loading...</small>`;
+                var company = (LIST["company"]) ? (getCompany(obj.company_id) || {}).company : `<small class="font-italic text-muted">loading...</small>`;
 
                 return TABLE.COL_ROW(null,{
                     '_id': obj._id,
@@ -16556,8 +16520,8 @@ var VEHICLE_PERSONNEL = {
                     templateResult: templateResult
                 }).val(x.obj.vehicle_id || "").trigger("change");
 
-                $(`#section_id`).html(G_SELECT2["form-vehicle_personnel_section"]).select2().val(x.obj.section_id || "").trigger("change");
-                $(`#company_id`).html(G_SELECT2["form-vehicle_personnel_company"]).select2().val(x.obj.company_id || "").trigger("change");
+                $(`#section_id`).html(G_SELECT2["form-section"]).select2().val(x.obj.section_id || "").trigger("change");
+                $(`#company_id`).html(G_SELECT2["form-company"]).select2().val(x.obj.company_id || "").trigger("change");
 
                 MODAL.SUBMIT(x);
             };
@@ -16570,13 +16534,13 @@ var VEHICLE_PERSONNEL = {
                     table.populateRows(LIST[urlPath]);
                     table.hideProgressBar();
                 });
-                isFinishedLoading(["VEHICLES","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY"], _new1_, function(){
+                isFinishedLoading(["VEHICLES","SECTION","COMPANY"], _new1_, function(){
                     if((LIST[urlPath]||[]).length > 0 && table.dt){
                         _new1_ = false;
                         table.updateRows(LIST[urlPath]);
                     }
                 });
-                isFinishedLoading(["VEHICLES","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY"], true, function(){
+                isFinishedLoading(["VEHICLES","SECTION","COMPANY"], true, function(){
                     TABLE.FINISH_LOADING.UPDATE();
                 });
             }
@@ -17357,9 +17321,9 @@ var CHASSIS = {
                         var ROLE = USER.role;
                         var modalHTML = modalViews.chassis.data_maintenance();
                         var initializeArray = [
-                            { urlPath: "chassis_section", key: "section", objectData: (_id) => { return getChassisSection(_id); } },
-                            { urlPath: "chassis_company", key: "company", objectData: (_id) => { return getChassisCompany(_id); } },
-                            { urlPath: "chassis_type", key: "type", objectData: (_id) => { return getChassisType(_id); } },
+                            { urlPath: "section", key: "section", objectData: (_id) => { return getSection(_id); } },
+                            { urlPath: "company", key: "company", objectData: (_id) => { return getCompany(_id); } },
+                            { urlPath: "body_type", key: "type", objectData: (_id) => { return getBodyType(_id); } },
                         ];
                         HISTORY.defaults.data_maintenance(ID,USERNAME,ROLE,SESSION_TOKEN,modalHTML,initializeArray);
                     }
@@ -17373,17 +17337,16 @@ var CHASSIS = {
                 });
                 $(`${self.id} th:last-child`).css({"min-width":action.width,"width":action.width});
 
-                var vehicle = (LIST["vehicles"]) ? (getVehicle(obj.vehicle_id) || {})["Plate Number"] : `<small class="font-italic text-muted">loading...</small>`;
-                var section = (LIST["chassis_section"]) ? (getChassisSection(obj.section_id) || {}).section : `<small class="font-italic text-muted">loading...</small>`;
-                var company = (LIST["chassis_company"]) ? (getChassisCompany(obj.company_id) || {}).company : `<small class="font-italic text-muted">loading...</small>`;
-                var type = (LIST["chassis_type"]) ? (getChassisType(obj.type_id) || {}).type : `<small class="font-italic text-muted">loading...</small>`;
+                var section = (LIST["section"]) ? (getSection(obj.section_id) || {}).section : `<small class="font-italic text-muted">loading...</small>`;
+                var company = (LIST["company"]) ? (getCompany(obj.company_id) || {}).company : `<small class="font-italic text-muted">loading...</small>`;
+                var type = (LIST["body_type"]) ? (getBodyType(obj.body_type_id) || {}).type : `<small class="font-italic text-muted">loading...</small>`;
 
                 return TABLE.COL_ROW(null,{
                     '_id': obj._id,
                     '_row':  obj._row,
                     'Name': obj.name || "-",
-                    'Chassis Type': type || "-",
-                    'Plate Number': vehicle || "-",
+                    'Body Type': type || "-",
+                    'Plate Number': obj.plate_number || "-",
                     'Section': section || "-",
                     'Company': company || "-",
                     'Action': action.buttons,
@@ -17454,8 +17417,8 @@ var CHASSIS = {
                         var readonly = x.method == "PUT";
                         return [
                             {title:"Name",id:"_id",type:"text",required:true,value:obj._id,readonly,sub_title:"Once saved, name cannot be edited."},
-                            {title:"Chassis Type",id:"type_id",type:"select2",required:true,attr:"blankStringIfEmpty"},
-                            {title:"Vehicle",id:"vehicle_id",type:"select2",attr:"blankStringIfEmpty"},
+                            {title:"Body Type",id:"body_type_id",type:"select2",required:true,attr:"blankStringIfEmpty"},
+                            {title:"Plate Number",id:"plate_number",type:"text", value: obj.plate_number },
                             {title:"Section",id:"section_id",type:"select2",attr:"blankStringIfEmpty"},
                             {title:"Company",id:"company_id",type:"select2",attr:"blankStringIfEmpty"},
                         ];
@@ -17468,29 +17431,9 @@ var CHASSIS = {
                     templateResult: templateResult
                 }).val(x.obj.vehicle_id || "").trigger("change");
 
-                $(`#type_id`).html(G_SELECT2["form-chassis_type"]).select2().val(x.obj.type_id || "").trigger("change");
-                $(`#section_id`).html(G_SELECT2["form-chassis_section"]).select2().val(x.obj.section_id || "").trigger("change");
-                $(`#company_id`).html(G_SELECT2["form-chassis_company"]).select2().val(x.obj.company_id || "").trigger("change");
-
-                /**
-                 Section
-                 60e54a78eeaae10734c5be1a - Importation
-                 60e54a7beeaae10734c5be1b - local shiping
-                 60e54a80eeaae10734c5be1c - base to base
-                 60e54a83eeaae10734c5be1d - he movilasdas...
-
-                 Company
-                 60e54a90eeaae10734c5be22 - SADC
-                 60e54a94eeaae10734c5be23 - MOVEEASY
-
-                 Type
-                 60e549062cad040e0c2cf2fe - flatbed
-                 60e5490a2cad040e0c2cf2ff - lowbed
-                 60e5490e2cad040e0c2cf300 - alum..
-                 60e549142cad040e0c2cf301 - trailer van
-                 60e549192cad040e0c2cf302 - ske 1x20
-                 60e5491e2cad040e0c2cf303 - ske 1x40
-                 */
+                $(`#body_type_id`).html(G_SELECT2["form-body_type"]).select2().val(x.obj.body_type_id || "").trigger("change");
+                $(`#section_id`).html(G_SELECT2["form-section"]).select2().val(x.obj.section_id || "").trigger("change");
+                $(`#company_id`).html(G_SELECT2["form-company"]).select2().val(x.obj.company_id || "").trigger("change");
 
                 MODAL.SUBMIT(x);
             };
@@ -17503,13 +17446,13 @@ var CHASSIS = {
                     table.populateRows(LIST[urlPath]);
                     table.hideProgressBar();
                 });
-                isFinishedLoading(["VEHICLES","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"], _new1_, function(){
+                isFinishedLoading(["VEHICLES","SECTION","COMPANY","BODY_TYPE"], _new1_, function(){
                     if((LIST[urlPath]||[]).length > 0 && table.dt){
                         _new1_ = false;
                         table.updateRows(LIST[urlPath]);
                     }
                 });
-                isFinishedLoading(["CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"], true, function(){
+                isFinishedLoading(["CHASSIS","SECTION","COMPANY","BODY_TYPE"], true, function(){
                     TABLE.FINISH_LOADING.UPDATE();
                 });
             }
@@ -18401,27 +18344,25 @@ var PAGE = {
                         }
                     };
 
-                if(PAGE.GET() == "regions") loadDataInBackground("REGIONS",["CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
-                else if(PAGE.GET() == "clusters")loadDataInBackground("CLUSTERS",["REGIONS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
-                else if(PAGE.GET() == "geofences") loadDataInBackground("GEOFENCES",["REGIONS","CLUSTERS","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
-                else if(PAGE.GET() == "routes" || PAGE.GET() == "dashboard") loadDataInBackground("ROUTES",["GEOFENCES","REGIONS","CLUSTERS","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
-                else if(PAGE.GET() == "trailers") loadDataInBackground("TRAILERS",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
-                else if(PAGE.GET() == "vehicles") loadDataInBackground("VEHICLES",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
-                else if(PAGE.GET() == "vehicle_personnel") loadDataInBackground("VEHICLE_PERSONNEL",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE","SHIFT_SCHEDULE"]);
-                else if(PAGE.GET() == "chassis") loadDataInBackground("CHASSIS",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","VEHICLE_PERSONNEL","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE","SHIFT_SCHEDULE"]);
-                else if(PAGE.GET() == "shift_schedule") loadDataInBackground("SHIFT_SCHEDULE",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
-                else if(PAGE.GET() == "users") loadDataInBackground("USERS",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
-                // else if(PAGE.GET() == "customers") loadDataInBackground("CUSTOMERS",["USERS","REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
-                else loadDataInBackground("VEHICLES",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_SECTION","VEHICLES_COMPANY","VEHICLE_PERSONNEL_SECTION","VEHICLE_PERSONNEL_COMPANY","VEHICLES_HISTORY","CHASSIS","CHASSIS_SECTION","CHASSIS_COMPANY","CHASSIS_TYPE"]);
+                if(PAGE.GET() == "regions") loadDataInBackground("REGIONS",["CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_HISTORY","CHASSIS","SECTION","COMPANY","BODY_TYPE"]);
+                else if(PAGE.GET() == "clusters")loadDataInBackground("CLUSTERS",["REGIONS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_HISTORY","CHASSIS","SECTION","COMPANY","BODY_TYPE"]);
+                else if(PAGE.GET() == "geofences") loadDataInBackground("GEOFENCES",["REGIONS","CLUSTERS","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_HISTORY","CHASSIS","SECTION","COMPANY","BODY_TYPE"]);
+                else if(PAGE.GET() == "routes" || PAGE.GET() == "dashboard") loadDataInBackground("ROUTES",["GEOFENCES","REGIONS","CLUSTERS","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_HISTORY","CHASSIS","SECTION","COMPANY","BODY_TYPE"]);
+                else if(PAGE.GET() == "trailers") loadDataInBackground("TRAILERS",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_HISTORY","CHASSIS","SECTION","COMPANY","BODY_TYPE"]);
+                else if(PAGE.GET() == "vehicles") loadDataInBackground("VEHICLES",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_HISTORY","CHASSIS","SECTION","COMPANY","BODY_TYPE"]);
+                else if(PAGE.GET() == "vehicle_personnel") loadDataInBackground("VEHICLE_PERSONNEL",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","USERS","VEHICLES_HISTORY","CHASSIS","SECTION","COMPANY","BODY_TYPE","SHIFT_SCHEDULE"]);
+                else if(PAGE.GET() == "chassis") loadDataInBackground("CHASSIS",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","USERS","VEHICLES_HISTORY","VEHICLE_PERSONNEL","SECTION","COMPANY","BODY_TYPE","SHIFT_SCHEDULE"]);
+                else if(PAGE.GET() == "shift_schedule") loadDataInBackground("SHIFT_SCHEDULE",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","USERS","VEHICLES_HISTORY","CHASSIS","SECTION","COMPANY","BODY_TYPE"]);
+                else if(PAGE.GET() == "users") loadDataInBackground("USERS",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","VEHICLES_HISTORY","CHASSIS","SECTION","COMPANY","BODY_TYPE"]);
+                // else if(PAGE.GET() == "customers") loadDataInBackground("CUSTOMERS",["USERS","REGIONS","CLUSTERS","GEOFENCES","ROUTES","VEHICLES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","VEHICLES_HISTORY","CHASSIS","SECTION","COMPANY","BODY_TYPE"]);
+                else loadDataInBackground("VEHICLES",["REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_HISTORY","CHASSIS","SECTION","COMPANY","BODY_TYPE"]);
 
                 tableWatch("notifications");
                 tableWatch("users");
                 tableWatch("sessions");
                 tableWatch("vehicles_history");
-                tableWatch("vehicles_section");
-                tableWatch("vehicles_company");
-                tableWatch("vehicle_personnel_section");
-                tableWatch("vehicle_personnel_company");
+                tableWatch("section");
+                tableWatch("company");
 
                 // PAGE.IDLE();
 
@@ -20812,20 +20753,8 @@ function getVehicle(value="",key="_id",type="find",callback=function(){return tr
 function getVehicleHistory(value="",key="_id",type="find",callback=function(){return true;}){
     return (LIST["vehicles_history"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
 }
-function getVehiclesSection(value="",key="_id",type="find",callback=function(){return true;}){
-    return (LIST["vehicles_section"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
-}
-function getVehiclesCompany(value="",key="_id",type="find",callback=function(){return true;}){
-    return (LIST["vehicles_company"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
-}
 function getVehiclePersonnel(value="",key="_id",type="find",callback=function(){return true;}){
     return (LIST["vehicle_personnel"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
-}
-function getVehiclePersonnelSection(value="",key="_id",type="find",callback=function(){return true;}){
-    return (LIST["vehicle_personnel_section"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
-}
-function getVehiclePersonnelCompany(value="",key="_id",type="find",callback=function(){return true;}){
-    return (LIST["vehicle_personnel_company"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
 }
 function getTrailer(value="",key="_id",type="find",callback=function(){return true;}){
     return (LIST["trailers"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
@@ -20833,14 +20762,14 @@ function getTrailer(value="",key="_id",type="find",callback=function(){return tr
 function getChassis(value="",key="_id",type="find",callback=function(){return true;}){
     return (LIST["chassis"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
 }
-function getChassisSection(value="",key="_id",type="find",callback=function(){return true;}){
-    return (LIST["chassis_section"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
+function getSection(value="",key="_id",type="find",callback=function(){return true;}){
+    return (LIST["section"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
 }
-function getChassisCompany(value="",key="_id",type="find",callback=function(){return true;}){
-    return (LIST["chassis_company"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
+function getCompany(value="",key="_id",type="find",callback=function(){return true;}){
+    return (LIST["company"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
 }
-function getChassisType(value="",key="_id",type="find",callback=function(){return true;}){
-    return (LIST["chassis_type"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
+function getBodyType(value="",key="_id",type="find",callback=function(){return true;}){
+    return (LIST["body_type"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
 }
 function getRoute(value="",key="_id",type="find",callback=function(){return true;}){ // STILL HAVE
     return (LIST["routes"]||[])[type](x => (x[key]||"").toString() == (value||"").toString() && callback(x));
@@ -22048,8 +21977,8 @@ const modalViews = new function(){
                                             </div>` : "";
                     var obj = getVehicle(_id) || {};
             
-                    var section = (LIST["vehicles_section"]) ? (getVehiclesSection(obj.section_id) || {}).section : `<small class="font-italic text-muted">loading...</small>`;
-                    var company = (LIST["vehicles_company"]) ? (getVehiclesCompany(obj.company_id) || {}).company : `<small class="font-italic text-muted">loading...</small>`;
+                    var section = (LIST["section"]) ? (getSection(obj.section_id) || {}).section : `<small class="font-italic text-muted">loading...</small>`;
+                    var company = (LIST["company"]) ? (getCompany(obj.company_id) || {}).company : `<small class="font-italic text-muted">loading...</small>`;
             
                     return `<div id="overlay" class="swal2-container swal2-fade swal2-shown" style="overflow-y: auto;z-index:999999 !important;">
                                     <div id="modal" class="modal" role="dialog" aria-labelledby="myLargeModalLabel">
@@ -22181,11 +22110,11 @@ const modalViews = new function(){
                                             <div id="modal-error"></div>
                                             <div class="col-sm-12">
                                                 <ul class="nav nav-tabs" role="tablist">
-                                                    <li class="active"><a href="#vehicles_section" role="tab" data-toggle="tab">Section</a></li>
-                                                    <li class=""><a href="#vehicles_company" role="tab" data-toggle="tab">Company</a></li>
+                                                    <li class="active"><a href="#section-div" role="tab" data-toggle="tab">Section</a></li>
+                                                    <li class=""><a href="#company-div" role="tab" data-toggle="tab">Company</a></li>
                                                 </ul>
                                                 <div class="tab-content">
-                                                    <div class="tab-pane fade in active" id="vehicles_section">
+                                                    <div class="tab-pane fade in active" id="section-div">
                                                         <div class="pb-2" style="border-bottom: 1px solid #eee;">
                                                             <input id="section" class="form-control" type="text" placeholder="Enter item" style="width: 80%;display: inline-block;">
                                                             <div style="width: 19%;" class="d-inline-block pl-2">
@@ -22196,7 +22125,7 @@ const modalViews = new function(){
                                                             <i class="la la-spin la-spinner" style="font-size: 18px;margin-top: 10px;color: #cecece;"></i>
                                                         </div>
                                                     </div>
-                                                    <div class="tab-pane fade" id="vehicles_company">
+                                                    <div class="tab-pane fade" id="company-div">
                                                         <div class="pb-2" style="border-bottom: 1px solid #eee;">
                                                             <input id="company" class="form-control" type="text" placeholder="Enter item" style="width: 80%;display: inline-block;">
                                                             <div style="width: 19%;" class="d-inline-block pl-2">
@@ -22275,11 +22204,11 @@ const modalViews = new function(){
                                             <div id="modal-error"></div>
                                             <div class="col-sm-12">
                                                 <ul class="nav nav-tabs" role="tablist">
-                                                    <li class="active"><a href="#vehicle_personnel_section" role="tab" data-toggle="tab">Section</a></li>
-                                                    <li class=""><a href="#vehicle_personnel_company" role="tab" data-toggle="tab">Company</a></li>
+                                                    <li class="active"><a href="#section-div" role="tab" data-toggle="tab">Section</a></li>
+                                                    <li class=""><a href="#company-div" role="tab" data-toggle="tab">Company</a></li>
                                                 </ul>
                                                 <div class="tab-content">
-                                                    <div class="tab-pane fade in active" id="vehicle_personnel_section">
+                                                    <div class="tab-pane fade in active" id="section-div">
                                                         <div class="pb-2" style="border-bottom: 1px solid #eee;">
                                                             <input id="section" class="form-control" type="text" placeholder="Enter item" style="width: 80%;display: inline-block;">
                                                             <div style="width: 19%;" class="d-inline-block pl-2">
@@ -22290,7 +22219,7 @@ const modalViews = new function(){
                                                             <i class="la la-spin la-spinner" style="font-size: 18px;margin-top: 10px;color: #cecece;"></i>
                                                         </div>
                                                     </div>
-                                                    <div class="tab-pane fade" id="vehicle_personnel_company">
+                                                    <div class="tab-pane fade" id="company-div">
                                                         <div class="pb-2" style="border-bottom: 1px solid #eee;">
                                                             <input id="company" class="form-control" type="text" placeholder="Enter item" style="width: 80%;display: inline-block;">
                                                             <div style="width: 19%;" class="d-inline-block pl-2">
@@ -22324,12 +22253,12 @@ const modalViews = new function(){
                                             <div id="modal-error"></div>
                                             <div class="col-sm-12">
                                                 <ul class="nav nav-tabs" role="tablist">
-                                                    <li class="active"><a href="#chassis_section" role="tab" data-toggle="tab">Section</a></li>
-                                                    <li class=""><a href="#chassis_company" role="tab" data-toggle="tab">Company</a></li>
-                                                    <li class=""><a href="#chassis_type" role="tab" data-toggle="tab">Chassis Type</a></li>
+                                                    <li class="active"><a href="#section-div" role="tab" data-toggle="tab">Section</a></li>
+                                                    <li class=""><a href="#company-div" role="tab" data-toggle="tab">Company</a></li>
+                                                    <li class=""><a href="#body_type" role="tab" data-toggle="tab">Body Type</a></li>
                                                 </ul>
                                                 <div class="tab-content">
-                                                    <div class="tab-pane fade in active" id="chassis_section">
+                                                    <div class="tab-pane fade in active" id="section-div">
                                                         <div class="pb-2" style="border-bottom: 1px solid #eee;">
                                                             <input id="section" class="form-control" type="text" placeholder="Enter item" style="width: 80%;display: inline-block;">
                                                             <div style="width: 19%;" class="d-inline-block pl-2">
@@ -22340,7 +22269,7 @@ const modalViews = new function(){
                                                             <i class="la la-spin la-spinner" style="font-size: 18px;margin-top: 10px;color: #cecece;"></i>
                                                         </div>
                                                     </div>
-                                                    <div class="tab-pane fade" id="chassis_company">
+                                                    <div class="tab-pane fade" id="company-div">
                                                         <div class="pb-2" style="border-bottom: 1px solid #eee;">
                                                             <input id="company" class="form-control" type="text" placeholder="Enter item" style="width: 80%;display: inline-block;">
                                                             <div style="width: 19%;" class="d-inline-block pl-2">
@@ -22351,7 +22280,7 @@ const modalViews = new function(){
                                                             <i class="la la-spin la-spinner" style="font-size: 18px;margin-top: 10px;color: #cecece;"></i>
                                                         </div>
                                                     </div>
-                                                    <div class="tab-pane fade" id="chassis_type">
+                                                    <div class="tab-pane fade" id="body_type">
                                                         <div class="pb-2" style="border-bottom: 1px solid #eee;">
                                                             <input id="type" class="form-control" type="text" placeholder="Enter item" style="width: 80%;display: inline-block;">
                                                             <div style="width: 19%;" class="d-inline-block pl-2">
@@ -22612,12 +22541,12 @@ const modalViews = new function(){
                                         <table class="table mb-0" chassis-based>
                                             <tbody>
                                                 <tr>
-                                                    <td class="pt-0" style="border-color: #fff !important;"><small>Chassis Type</small></td>
+                                                    <td class="pt-0" style="border-color: #fff !important;"><small>Body Type</small></td>
                                                     <td class="pt-0" style="border-color: #fff !important;"><small>Section</small></td>
                                                     <td class="pt-0" style="border-color: #fff !important;"><small>Company</small></td>
                                                 </tr>
                                             <tr>
-                                                <td class="text-muted" chassis_type>-</td>
+                                                <td class="text-muted" body_type>-</td>
                                                 <td class="text-muted" section>-</td>
                                                 <td class="text-muted" company>-</td>
                                             </tr>

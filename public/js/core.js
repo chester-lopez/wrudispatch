@@ -738,7 +738,7 @@ const CUSTOM = {
         ],
         chassis: [
             { data: "_id", title: "Name", visible: true },
-            { data: "Chassis Type", title: "Chassis Type", visible: true },
+            { data: "Body Type", title: "Body Type", visible: true },
             { data: "Plate Number", title: "Plate Number", visible: true },
             { data: "Section", title: "Section", visible: true },
             { data: "Company", title: "Company", visible: true },
