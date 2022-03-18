@@ -1,4 +1,8 @@
 const changelogList = {
+    "2.58.133": {
+        date: "March 18, 2022",
+        improved: ["[Adjustment][Wilcon] Updated databases of Chassis, Company, and Section to be client universal."],
+    },
     "2.58.132": {
         date: "February 03, 2022",
         improved: ["[Adjustment][CokeT1] Updated all reports duration format to decimal hour."],
