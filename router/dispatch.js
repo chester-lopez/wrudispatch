@@ -106,8 +106,8 @@ router.get('/:dbName/:username/all/:filter/:skip/:limit', (req,res,next)=>{
               "$replaceRoot": { "newRoot": { "$mergeObjects": ["$doc", { customers: "$customers" }]} }
             }
         ],
-        query = (limit != 0) ? db.getCollection(dbName,collection).aggregate(aggregate).skip(skip).limit(limit) : 
-                            db.getCollection(dbName,collection).aggregate(aggregate);
+        query = (limit != 0) ? db.getCollection(dbName,collection).aggregate(aggregate).sort({"_id":1}).skip(skip).limit(limit) : 
+                            db.getCollection(dbName,collection).aggregate(aggregate).sort({"_id":1});
     
         query.toArray((err,docs)=>{
             if(err) next(_ERROR_.INTERNAL_SERVER(err));
@@ -221,8 +221,8 @@ router.get('/:dbName/:username/mtur/:filter/:skip/:limit', (req,res,next)=>{
                 }
             },
         ],
-        query = (limit != 0) ? db.getCollection(dbName,collection).aggregate(aggregate).skip(skip).limit(limit) : 
-                               db.getCollection(dbName,collection).aggregate(aggregate);
+        query = (limit != 0) ? db.getCollection(dbName,collection).aggregate(aggregate).sort({"_id":1}).skip(skip).limit(limit) : 
+                               db.getCollection(dbName,collection).aggregate(aggregate).sort({"_id":1});
         
         query.toArray((err,docs)=>{
             if(err) next(_ERROR_.INTERNAL_SERVER(err));
@@ -244,7 +244,7 @@ router.get('/:dbName/:username/vehicle_info/:filter', (req,res,next)=>{
         try { (filter.$and[0].$or[2].checker_id) ? filter.$and[0].$or[2].checker_id = db.getPrimaryKey(filter.$and[0].$or[2].checker_id) : null; } catch(error) {}
         try { (filter.$and[0].$or[3].helper_id) ? filter.$and[0].$or[3].helper_id = db.getPrimaryKey(filter.$and[0].$or[3].helper_id) : null; } catch(error) {}
 
-        var query = db.getCollection(dbName,collection).find(filter);
+        var query = db.getCollection(dbName,collection).find(filter).sort({"_id":1});
         
         query.toArray((err,docs)=>{
             if(err) next(_ERROR_.INTERNAL_SERVER(err));
