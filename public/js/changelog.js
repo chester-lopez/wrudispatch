@@ -1,4 +1,8 @@
 const changelogList = {
+    "2.59.133": {
+        date: "April 12, 2022",
+        feature: ["[WD][WM] New client: Orient Freight"],
+    },
     "2.58.133": {
         date: "March 18, 2022",
         improved: ["[Adjustment][Wilcon] Updated databases of Chassis, Company, and Section to be client universal."],
