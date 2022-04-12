@@ -1477,7 +1477,7 @@ class Table {
                 (index > -1) ? LIST[self.urlPath][index] = val : LIST[self.urlPath].push(val);
 
                 if(self.autoPopulateData || byPass){
-                    rows.push(self.addRow(val));
+                    if(!val.hide) rows.push(self.addRow(val));
                 }
             });
             if(self.autoPopulateData || byPass){
@@ -1504,7 +1504,7 @@ class Table {
         if($(self.id).length > 0 && data.length > 0){
             $.each(data, function(i,val){
                 var rowNode = self.dt.row(`[_row="${val._row}"]`).node();
-                (rowNode) ? self.dt.row(rowNode).data(self.addRow(val)) : null;
+                (rowNode && !val.hide) ? self.dt.row(rowNode).data(self.addRow(val)) : null;
             });
         }
     }
@@ -22068,6 +22068,69 @@ const modalViews = new function(){
                                     </div>
                                 </div>`;
                 },
+                orient_freight: function(_id){
+                    const modalWidth = USER.role == "developer" ? "width:90%;" : "";
+                    const mainModalBodyWidth = USER.role == "developer" ? "col-sm-8" : "col-sm-12";
+                    const locationLogs = USER.role == "developer" ? `
+                                            <div class="history-details col-sm-4" style="overflow-y: auto;padding: 0px !important;border-left:1px solid #eee;">
+                                                <h5 style="border-bottom:1px solid #eee;" class="pl-2 pb-2 border-bottom">Location Logs</h5>
+                                                <div id="history-logs" class="pl-2 pr-2" style="width: 100%; overflow: auto;white-space: nowrap;">${modalViews.vehicles.location_history(_id)}</div>
+                                            </div>` : "";
+                    var obj = getVehicle(_id) || {};
+            
+                    var section = (LIST["section"]) ? (getSection(obj.section_id) || {}).section : `<small class="font-italic text-muted">loading...</small>`;
+                    var company = (LIST["company"]) ? (getCompany(obj.company_id) || {}).company : `<small class="font-italic text-muted">loading...</small>`;
+            
+                    return `<div id="overlay" class="swal2-container swal2-fade swal2-shown" style="overflow-y: auto;z-index:999999 !important;">
+                                    <div id="modal" class="modal" role="dialog" aria-labelledby="myLargeModalLabel">
+                                        <div role="document" class="modal-dialog modal-lg" style="margin:20px auto;${modalWidth}">
+                                            <div class="modal-content">
+                                                <div class="modal-header pb-2">
+                                                    <button type="button" class="close" id="close" aria-hidden="true">×</button>
+                                                    <div id="title-container" class="float-left">
+                                                        <h4 class="modal-title" id="myModalLabel2"><b>Vehicles</b></h4>
+                                                        <div>Full Details</div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-body row pl-0 pt-0 pb-0">
+                                                    <div class="main-details ${mainModalBodyWidth}" style="padding: 15px 0px 10px 30px !important;min-height:350px;">
+                                                        <h5 class="mt-0">Truck Details</h5>
+                                                        <table style="width: 100%;">
+                                                            <tbody>
+                                                                ${MODAL.TABLEVIEW().getTr("Vehicle Name",obj.name || "-")} 
+                                                                ${MODAL.TABLEVIEW().getTr("Plate Number",obj["Plate Number"]||"-")}
+                                                                ${MODAL.TABLEVIEW().getTr("Truck Number",obj["Truck Number"]||"-")}
+                                                                ${MODAL.TABLEVIEW().getTr("Truck Type",obj.truck_type||"-")}
+                                                                ${MODAL.TABLEVIEW().getTr("Body Type",obj.body_type||"-")}
+                                                                ${MODAL.TABLEVIEW().getTr("Year Model",obj.year_model||"-")}
+                                                                ${MODAL.TABLEVIEW().getTr("Section",section || "-")}
+                                                                ${MODAL.TABLEVIEW().getTr("Company",company || "-")}
+                                                            </tbody>
+                                                        </table>
+                                                        <h5 class="mt-4 col-sm-12 p-0">LTO Registration</h5>
+                                                        <table style="width: 100%;">
+                                                            <tbody>
+                                                                ${MODAL.TABLEVIEW().getTr("Registration Month",obj.registration_month || "-")} 
+                                                                ${MODAL.TABLEVIEW().getTr("Registration Status",obj.registration_status||"-")}
+                                                            </tbody>
+                                                        </table>
+                                                        <h5 class="mt-4 col-sm-12 p-0">LTFRB Registration</h5>
+                                                        <table style="width: 100%;">
+                                                            <tbody>
+                                                                ${MODAL.TABLEVIEW().getTr("Case Number",obj.case_number || "-")} 
+                                                                ${MODAL.TABLEVIEW().getTr("Status",obj.ltfrb_status||"-")}
+                                                                ${MODAL.TABLEVIEW().getTr("Issued Date",DATETIME.FORMAT(obj.issued_date,"MMM DD, YYYY"))}
+                                                                ${MODAL.TABLEVIEW().getTr("Expiry Date",DATETIME.FORMAT(obj.expiry_date,"MMM DD, YYYY"))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                    ${locationLogs}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>`;
+                },
             },
             location_history: function(_id){
                 var obj = getVehicleHistory(_id) || {};
@@ -22732,6 +22795,124 @@ const modalViews = new function(){
                                 </div>
                             </div>`;
                 },
+                orient_freight: function(){
+                    return `<div class="page-box row">
+                                <div id="modal-error" class="col-sm-12" style="display:none;"></div>
+                                <div id="loading-text" style="display:none;" class="col-sm-12 pb-3">
+                                    <small class="text-danger"><i class="la la-circle-o-notch la-spin mr-2"></i>Loading data...</small>
+                                </div>
+                                <div class="col-sm-12 p-0">
+                                    <div class="col-sm-4">
+                                        <small><span class="text-danger">*</span>Ticket Number:</small>
+                                        <input id="ticket_number" class="form-control" type="text" placeholder="Ticket Number" autocomplete="off">
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <small><span class="text-danger">*</span>Scheduled Date:</small>
+                                        <input id="scheduled_date" class="form-control" type="text" onkeydown="event.preventDefault()">
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <small><span class="text-danger">*</span>Shift Schedule:</small>
+                                        <select id="shift_schedule" class="select-multiple-basic" style="width:100%;"></select>
+                                    </div>
+                                </div>
+                                <div class="col-sm-12 mt-3 p-0">
+                                    <div class="col-sm-4">
+                                        <small>Origin:</small>
+                                        <input id="origin" type="text" class="form-control" autocomplete="off" readonly>
+                                    </div>
+                                    <div class="col-sm-5">
+                                        <small><span class="text-danger">*</span>Route:</small>
+                                        <select id="route" class="select-multiple-basic" style="width:100%;"></select>
+                                        <small class="text-muted">Separate origin and destination by comma (,). e.g., Calasiao,BALANGA</small>
+                                    </div>
+                                </div>
+                                <div class="col-sm-12 mt-2">
+                                    <div class="table-wrapper" style="overflow: auto;">
+                                        <div class="table-title">
+                                            <small style="line-height: 28px;">Destination:</small>
+                                        </div>
+                                        <table id="tbl-destination" class="table table-bordered">
+                                            <thead>
+                                                <tr>
+                                                    <th></th>
+                                                    <th class="col-md-6">Location</th>
+                                                    <th class="col-md-3">Transit Time (HH:MM)</th>
+                                                    <th class="col-md-3">CICO (HH:MM)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody> </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="col-sm-12 p-0">
+                                    <div class="col-sm-3">
+                                        <small><span class="text-danger">*</span>Truck:</small>
+                                        <select id="vehicle_id" class="select-multiple-basic" style="width:100%;"></select>
+                                    </div>
+                                    <div class="col-sm-3">
+                                        <small>Chassis:</small>
+                                        <select id="chassis" class="select-multiple-basic" style="width:100%;"></select>
+                                    </div>
+                                    <div class="col-sm-6" style="word-break: break-word;">
+                                        <table class="table mb-0" chassis-based>
+                                            <tbody>
+                                                <tr>
+                                                    <td class="pt-0" style="border-color: #fff !important;"><small>Body Type</small></td>
+                                                    <td class="pt-0" style="border-color: #fff !important;"><small>Section</small></td>
+                                                    <td class="pt-0" style="border-color: #fff !important;"><small>Company</small></td>
+                                                </tr>
+                                            <tr>
+                                                <td class="text-muted" body_type>-</td>
+                                                <td class="text-muted" section>-</td>
+                                                <td class="text-muted" company>-</td>
+                                            </tr>
+                                            </tbody>
+                                        </table>      
+                                    </div>
+                                </div>
+                                <div class="col-sm-12 p-0 mb-3">
+                                    <div class="col-sm-4">
+                                        <small><span class="text-danger">*</span>Driver:</small>
+                                        <select id="driver_id" class="select-multiple-basic" style="width:100%;"></select>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <small>Checker:</small>
+                                        <select id="checker_id" class="select-multiple-basic" style="width:100%;"></select>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <small>Helper:</small>
+                                        <select id="helper_id" class="select-multiple-basic" style="width:100%;"></select>
+                                    </div>
+                                </div>
+                                <div class="col-sm-12 p-0">
+                                    <div class="col-sm-7">
+                                        <small>Comments:</small>
+                                        <textarea id="comments" class="form-control" rows="2"></textarea>
+                                    </div>
+                                </div>
+                                <div class="col-sm-7 mt-3">
+                                    <div class="table-wrapper">
+                                        <div class="table-title">
+                                            <small style="line-height: 28px;">Attachment:</small>
+                                            <input id="new-file" type="file" class="hide">
+                                            <button id="new-attachment" type="button" class="btn btn-default float-right" style="padding: 4px 10px;top: -3px;position: relative;"><i class="la la-plus"></i> Add Attachment</button>
+                                        </div>
+                                        <table id="tbl-attachment" class="table table-bordered">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width: 35px;">#</th>
+                                                    <th>Filename</th>
+                                                    <th style="width: 50px;">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="col-sm-12"><hr></div>
+                                <div class="col-sm-12"><button id="submit" type="button" class="btn btn-primary">Update</button></div>
+                            </div>`;
+                },
             },
             statusUpdate: function(_id){
                 var statusHTML = "";
@@ -22862,7 +23043,34 @@ const modalViews = new function(){
                             $(`body`).append(de.fullView());
                         }
                     }
-                }
+                },
+                orient_freight: function(_id){
+                    LIST["dispatch"] = LIST["dispatch"] || [];
+                    var id_index = LIST["dispatch"].findIndex(x => x._id == _id);
+                    var obj = LIST["dispatch"][id_index];
+    
+                    if(id_index > -1){
+                        displayModal();
+                    } else {
+                        GET.AJAX({
+                            url: `/api/dispatch/${CLIENT.id}/${USER.username}/${_id}`,
+                            method: "GET",
+                            headers: {
+                                "Authorization": SESSION_TOKEN
+                            },
+                        }, function(docs){
+                            obj = docs[0];
+                            displayModal();
+                        });
+                    }
+    
+                    function displayModal() {
+                        if(obj){
+                            var de = new Dispatch(obj);
+                            $(`body`).append(de.fullView());
+                        }
+                    }
+                },
             }
         },
         fuel_refill: {
