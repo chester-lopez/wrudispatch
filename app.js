@@ -43,14 +43,25 @@ app.get('/remarks',(req,res)=>{ setup("coket1","linkRemarks",res,ENVIRONMENT,mTi
 // https://blog.minhazav.dev/QR-and-barcode-scanner-using-html-and-javascript/
 app.get('/Cemex',(req,res)=>{ setup("cemex","fuelRefillScanner",res,ENVIRONMENT,mTitle); });
 
+// CokeT1
 app.get('/CokeT1/login',(req,res)=>{ setup("coket1","login",res,ENVIRONMENT,lTitle); });
 app.get('/CokeT1',(req,res)=>{ setup("coket1","main",res,ENVIRONMENT,mTitle); });
+
+// Wilcon
 app.get('/Wilcon/login',(req,res)=>{ setup("wilcon","login",res,ENVIRONMENT,lTitle); });
 app.get('/Wilcon',(req,res)=>{ setup("wilcon","main",res,ENVIRONMENT,mTitle); });
+
+// CokeT2
 app.get('/CokeT2/login',(req,res)=>{ setup("coket2","login",res,ENVIRONMENT,lTitle); });
 app.get('/CokeT2',(req,res)=>{ setup("coket2","main",res,ENVIRONMENT,mTitle); });
+
+// Fleet
 app.get('/Fleet/login',(req,res)=>{ setup("fleet","login",res,ENVIRONMENT,lTitle); });
 app.get('/Fleet',(req,res)=>{ setup("fleet","main",res,ENVIRONMENT,mTitle); });
+
+// Orient Freight
+app.get('/OrientFreight/login',(req,res)=>{ setup("orient_freight","login",res,ENVIRONMENT,lTitle); });
+app.get('/OrientFreight',(req,res)=>{ setup("orient_freight","main",res,ENVIRONMENT,mTitle); });
 /***** END PAGE *****/
 
 /***** ROUTER *****/
