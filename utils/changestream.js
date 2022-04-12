@@ -436,6 +436,9 @@ const connect = function(io,_ping_,ENVIRONMENT){ //io
             } else if (pathname.toLowerCase().indexOf('/cemex') > -1) {
                 console.log("Hello there, Cemex!");
                 conn("cemex",socket);
+            } else if (pathname.toLowerCase().indexOf('/orientfreight') > -1) {
+                console.log("Hello there, Orient Freight!");
+                conn("orient_freight",socket);
             } else {
                 // socket.destroy();
             }

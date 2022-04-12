@@ -1090,8 +1090,352 @@ var LIMIT = 200,
                 update: "none",
                 delete: "none",
             },
-        }
+        },
         // end Coke Fleet
+
+        // Orient Freight
+        user_orient_freight: {
+            dashboard:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            dispatch:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            reports:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            notifications:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+        },
+        dispatcher_orient_freight: {
+            dashboard:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            dispatch:{
+                read: "all",
+                create: "self",
+                update: "self",
+                delete: "self"
+            },
+            reports:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            notifications:{
+                read: "all",
+                create: "none",
+                update: "self",
+                delete: "none"
+            },
+        },
+        management_orient_freight: {
+            dashboard:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            de_dashboard:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            dispatch:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            reports:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            notifications:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            users:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none",
+            },
+            vehicles:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none",
+            },
+            vehicle_personnel:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none",
+            },
+            chassis:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none",
+            },
+            regions:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none",
+            },
+            clusters:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none",
+            },
+            geofences:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none",
+            },
+            routes:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none",
+            },
+        },
+        administrator_orient_freight: {
+            dashboard:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            de_dashboard:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            dispatch:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all"
+            },
+            shift_schedule: {
+                read: "all",
+                create: "all",
+                update: "none",
+                delete: "all"
+            },
+            reports:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            notifications:{
+                read: "all",
+                create: "none",
+                update: "all",
+                delete: "none"
+            },
+            // calendar:{
+            //     read: "all",
+            //     create: "all",
+            //     update: "all",
+            //     delete: "all",
+            // },
+            users:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all",
+            },
+            vehicles:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none",
+            },
+            vehicle_personnel:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all",
+            },
+            chassis:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all",
+            },
+            regions:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all",
+            },
+            clusters:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all",
+            },
+            geofences:{
+                read: "all",
+                create: "none",
+                update: "all",
+                delete: "none",
+            },
+            routes:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all",
+            },
+        },
+        developer_orient_freight: {
+            dashboard:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            de_dashboard:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            dispatch:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all"
+            },
+            shift_schedule: {
+                read: "all",
+                create: "all",
+                update: "none",
+                delete: "all"
+            },
+            dispatch_deleted:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all",
+                // adminButton: "all"
+            },
+            reports:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none"
+            },
+            notifications:{
+                read: "all",
+                create: "none",
+                update: "all",
+                delete: "none"
+            },
+            events_sn: {
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "all"
+            },
+            // calendar:{
+            //     read: "all",
+            //     create: "all",
+            //     update: "all",
+            //     delete: "all",
+            // },
+            users:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all",
+            },
+            vehicles:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none",
+            },
+            vehicle_personnel:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all",
+            },
+            chassis:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all",
+            },
+            regions:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all",
+            },
+            clusters:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all",
+            },
+            geofences:{
+                read: "all",
+                create: "none",
+                update: "all",
+                delete: "all",
+            },
+            routes:{
+                read: "all",
+                create: "all",
+                update: "all",
+                delete: "all",
+            },
+            all_events: {
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "all"
+            },
+            changelog:{
+                read: "all",
+                create: "none",
+                update: "none",
+                delete: "none",
+            },
+        },
+        // end Orient Freight
     },
     CLIENTS = {
         // Manually create Google Storage Bucket. It will not create automatically.
@@ -1527,7 +1871,144 @@ var LIMIT = 200,
             appId: 449,
             ggsURL: `wru.server93.com`,
             loginPath: ''
-        }
+        },
+        orient_freight: {
+            id: "orient_freight",
+            name: "OrientFreight",
+            dsName: "wd-orient_freight", // database & storage name = dsName
+            appId: 468, //process.env.APP_ID_WILCON
+            ggsURL: `wru.server93.com`,
+            type: 1,
+            loadInBackground: ["VEHICLES","REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_HISTORY","CHASSIS","SECTION","COMPANY","BODY_TYPE","NOTIFICATIONS","SESSIONS"],
+            allowRolesToViewAs: {
+                developer: ["developer","administrator","management","dispatcher","user"],
+                administrator: ["administrator","management","dispatcher","user"],
+            },
+            allowRolesToChangeUserRole: {
+                developer: ["developer","administrator","management","dispatcher","user"],
+                administrator: ["administrator","management","dispatcher","user"],
+            },
+            custom: {
+                dashboard: {
+                    calendarView: ["day","month"],
+                    visibleStatus: ["total_shipment","scheduled","assigned","processingAtOrigin","in_transit","onSite","returning","complete","incomplete"], // "scheduled",
+                    filterType: "postingDate-scheduledDate",
+                    exportTable: true
+                },
+                dispatch: {
+                    autoGeneratedId: true,
+                    roundtrip: true,
+                    scheduled: true,
+                    columnOrder: [[ 0, "desc" ]],
+                    // statusWhenTruckEnteredOrigin: "processingAtOrigin", // SHOULD CHANGE WHEN IN PROCESSSING NA TALAGA
+                    // statusWhenTruckEnteredOrigin: "assigned",
+                    rowButtons: { 
+                        buttons: ["statusUpdate","view","edit","delete"],
+                        condition: [
+                            { roles: ["administrator","developer"], removeButtons: ["statusUpdate"], not: true }
+                        ] 
+                    },
+                    filterType: "postingDate-scheduledDate",
+                    columns: {
+                        list: ["_id","ticketNumber","departureDate","_departureDate_","_departureTime_","region","cluster","origin","route","destination","etd","eta","targetTransitTime","targetCicoTime","vehicle","chassis","plateNumber","truckNumber","driver","checker","helper","comments","processingDuration","cicoTime","cicoTimeCapped","transitDuration","status","scheduledDate","shiftSchedule","postedBy","postingDate","lateEntry","action"],
+                        visible: ["_id","departureDate","origin","destination","vehicle","driver","checker","status","postedBy","lateEntry","action"],
+                        hiddenInCustomVisibilityOptions: ["_departureDate_","_departureTime_","plateNumber","truckNumber"],
+                        notExport: ["departureDate","vehicle","action"]
+                    },
+                    create: {
+                        requiredFields: ["ticket_number","scheduled_date","shift_schedule","route","vehicle_id","driver_id"],
+                    },
+                    status: {
+                        all: ["plan","assigned","processingAtOrigin","in_transit","onSite","returning","complete","incomplete"],
+                        enrouteToDestination: "in_transit",
+                    }
+                },
+                vehicles: {
+                    gSelect2: {
+                        subtext: ["plate_number","truck_number"],
+                        subtextAdmin: ["plate_number","truck_number"],
+                    },
+                    tableButtons: { 
+                        buttons: ["refresh","column","filter","export"], 
+                        condition: [
+                            { roles: ["administrator","developer"], additionalButton: ["data_maintenance"] }
+                        ] 
+                    },
+                    rowButtons: { 
+                        buttons: ["edit"],
+                        condition: [
+                            { roles: ["administrator","developer"], additionalButton: ["view"] }
+                        ] 
+                    },
+                    columns: ["name","plateNumber","truckNumber","truckType","section_id","company_id","body_type","year_model","registration_month","registration_status","case_number","ltfrb_status","issued_date","expiry_date","last2Locations","action"],
+                    columnOrder: [[ 0, "asc" ]],
+                    // modalFields: "custom"
+                },
+                vehicle_personnel: {
+                    tableButtons: { 
+                        buttons: ["create","refresh","filter","export"], 
+                        condition: [
+                            { roles: ["administrator","developer"], additionalButton: ["data_maintenance"] }
+                        ] 
+                    },
+                },
+                chassis: {
+                    tableButtons: { 
+                        buttons: ["create","refresh","filter","export"], 
+                        condition: [
+                            { roles: ["administrator","developer"], additionalButton: ["data_maintenance"] }
+                        ] 
+                    },
+                },
+                routes: {
+                    defaultOrigin: {
+                        roles: ["dispatcher"],
+                        id: "5f32e955690b4be5ebea1c37"
+                    },
+                    originDestinationSeparator: "-"
+                },
+                clusters: {
+                    modalFields: ["cluster","region_id","sequence"],
+                    columns: ["cluster","region","geofences","sequence","esq1_lq","esq1_oc","esq1_ot","esq2_lq","esq2_oc","esq2_ot","esq3_lq","esq3_oc","esq3_ot","action"],
+                    rowButtons: { 
+                        buttons: ["edit","delete"],
+                    },
+                },
+                geofences: {
+                    modalFields: ["site_name","short_name","code","cico","cluster_id","region_id","dispatcher"],
+                    columns: ["siteCode","siteName","shortName","cico","cluster","region","dispatcher","esq1_lq","esq1_oc","esq1_ot","esq2_lq","esq2_oc","esq2_ot","esq3_lq","esq3_oc","esq3_ot","action"],
+                },
+                notifications: {
+                    allowExportTable: true,
+                    columns: ["shipmentNumber","departureDate","delayType","escalation","timelapse","site","status","dateTime","sentTo","action"],
+                },
+                reports: {
+                    dvr: true,
+                    cicor: ["destination","origin","route","sn","plateNumber","targetCico","actualTimelapse","remarks1","remarks2","truckBasePlant"],
+                    otr: ["origin","destination","route","sn","plateNumber","targetTransit","actualTimelapse","remarks1","remarks2","truckBasePlant"],
+                    pbpa: true,
+                    hwtr: true,
+                    ar: true,
+                    tr: true,
+                    vcr: true,
+                    ular: {
+                        roles: ["administrator","developer"]
+                    },
+
+                    ser: true,
+                    mtur: true,
+                },
+                users: {
+                    ignoreRolesWithString: ["t2","fleet"],
+                    tableButtons: { 
+                        buttons: ["create","refresh"], 
+                        condition: [
+                            { roles: ["administrator","developer"], additionalButton: ["export"] }
+                        ] 
+                    },
+                }
+            },
+        },
     },
     CLIENT_OPTIONS = [
         {
@@ -1541,6 +2022,10 @@ var LIMIT = 200,
         {
             pathName: "fleet",
             tempKey: "_fleet"
+        },
+        {
+            pathName: "orient_freight",
+            tempKey: "_orient_freight"
         }
     ];
 
