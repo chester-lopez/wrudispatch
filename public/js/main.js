@@ -718,7 +718,7 @@ class Dispatch {
             
                                             ${this.tbl().empty} ${this.tbl().empty}
 
-                                            ${(CLIENT.id == "wilcon")?`
+                                            ${(CLIENT.customChecking.includes('DriverCheckerHelper'))?`
                                                 ${this.tbl().getTr("Driver",this.driver)}
                                                 ${this.tbl().getTr("Checker",this.checker)}
                                                 ${this.tbl().getTr("Helper",this.helper)} ${this.tbl().empty}
@@ -771,7 +771,7 @@ class Dispatch {
                                     <div class="main-details col-sm-9" style="border-right: 1px solid #eee;padding: 15px 0px 10px 30px !important;">
                                         <table>
                                             <tbody>
-                                                ${(CLIENT.id == "wilcon")?`
+                                                ${(CLIENT.customChecking.includes('TicketNumber'))?`
                                                     ${this.tbl().getTr("Ticket Number",this.ticket_number)} ${this.tbl().empty}
                                                 `:`
                                                     ${this.tbl().getTr("Shipment Type",this.shipment_type)} ${this.tbl().empty}
@@ -788,7 +788,7 @@ class Dispatch {
                                                 ${this.tbl().empty} ${this.tbl().empty}
 
                                                 ${this.tbl().getTr("Vehicle",this.vehicle)}
-                                                ${(CLIENT.id == "wilcon")?`
+                                                ${(CLIENT.customChecking.includes('DriverCheckerHelper'))?`
                                                     ${this.tbl().getTr("Chassis",this.chassis)}
                                                     ${this.tbl().getTr("Driver",this.driver)}
                                                     ${this.tbl().getTr("Checker",this.checker)}
@@ -841,7 +841,7 @@ class Dispatch {
 
                                                 ${this.tbl().empty} ${this.tbl().empty}
 
-                                                ${(CLIENT.id == "wilcon")?`
+                                                ${(CLIENT.customChecking.includes('allowScheduled'))?`
                                                     ${this.tbl().getTr("Scheduled Date",this.scheduled_date)}
                                                     ${this.tbl().getTr("Shift Schedule",this.shift_schedule)}
                                                 `:""}
@@ -3640,6 +3640,7 @@ var DISPATCH = {
             "coket1": { ggsURL: "coca-cola.server93.com",    appId: 9,     scheduledEntry: false,     allowTempStatus: true,     allowIncompleteUpdateStatus: true,     ignoreDestinationEvents: false,     statusOption: { default: "assigned", insideOrigin: "assigned",     insideOriginEvent: "entered_origin",    enRouteToDestination: "in_transit" }    },
             "coket2": { ggsURL: "coca-cola.server93.com",    appId: 4,     scheduledEntry: false,     allowTempStatus: false,    allowIncompleteUpdateStatus: false,    ignoreDestinationEvents: true,      statusOption: { default: "assigned", insideOrigin: "assigned",     insideOriginEvent: "entered_origin",    enRouteToDestination: "onDelivery" }    },
             "wilcon": { ggsURL: "wru.server93.com",          appId: 427,   scheduledEntry: true,      allowTempStatus: true,     allowIncompleteUpdateStatus: false,    ignoreDestinationEvents: false,     statusOption: { default: "assigned", insideOrigin: "assigned",     insideOriginEvent: "entered_origin",    enRouteToDestination: "in_transit" }    },
+            "orient_freight": { ggsURL: "wru.server93.com",  appId: 468,   scheduledEntry: true,      allowTempStatus: true,     allowIncompleteUpdateStatus: false,    ignoreDestinationEvents: false,     statusOption: { default: "assigned", insideOrigin: "assigned",     insideOriginEvent: "entered_origin",    enRouteToDestination: "in_transit" }    },
         };
 
         // maximum number of times to call an API when it returned an error
@@ -4888,7 +4889,7 @@ var DISPATCH = {
                                 driver_id = $(`#driver_id option:selected`).val(),
                                 checker_id = $(`#checker_id option:selected`).val(),
                                 helper_id = $(`#helper_id option:selected`).val();
-                            if(CLIENT.id == "wilcon" && vehicle_id && driver_id && scheduled_date && shift_schedule){
+                            if(CLIENT.customChecking.includes('allowScheduled') && vehicle_id && driver_id && scheduled_date && shift_schedule){
                                 $(`#modal #alert`).html(`<i class="la la-spin la-spinner font-18 mb-3"></i>`);
                                 disabledSumitButton = true;
                                 $(`#submit`).attr("disabled",true);
@@ -5279,7 +5280,7 @@ var DISPATCH = {
                 $(`#driver_id,#checker_id,#helper_id`).html("").select2();
 
                 function setDriverChecker(driver_id,checker_id,helper_id){
-                    if(CLIENT.id == "wilcon"){
+                    if(CLIENT.customChecking.includes('DriverCheckerHelper')){
                         var __original = __originalObj || {};
                         /******** VEHICLE PERSONNEL ********/
                         function personnelList(occupation,idType,value){
@@ -5787,7 +5788,7 @@ var DISPATCH = {
                                 url = `/api/dispatch/${CLIENT.id}/${USER.username}/${_id}`;
                                 method = "PUT";
                             } else {
-                                if(CLIENT.id != "wilcon"){
+                                if(!CLIENT.customChecking.includes('incrementalId')){
                                     body = $.extend(body,{_id});
                                 }
                             }
@@ -6071,6 +6072,14 @@ var DISPATCH = {
                         toastr.info("Data is still loading. Please try again in few seconds.");
                     }
                 }
+                if(CLIENT.id == "orient_freight"){
+                    if(GGS.STATUS.SHIFT_SCHEDULE && GGS.STATUS.VEHICLES && GGS.STATUS.ROUTES) {
+                        $(`body`).append(CUSTOM.IMPORT_TEMPLATE.dispatch.orient_freight());
+                        exportTableToExcel("Orient Freight Import Template");
+                    } else {
+                        toastr.info("Data is still loading. Please try again in few seconds.");
+                    }
+                }
                 if(CLIENT.id == "coket1"){
                     $(`body`).append(CUSTOM.IMPORT_TEMPLATE.dispatch.coket1());
                     exportTableToExcel("CokeT1 Import Template");
@@ -6103,6 +6112,17 @@ var DISPATCH = {
                     { name: "Comments", key: "comments", required: false },
                 ],
                 wilcon: [
+                    { name: "Scheduled Date", required: true, codependent: "Shift Schedule", error: ["Scheduled Date entered is not a valid date.","Scheduled Date is before current date/time."] },
+                    { name: "Shift Schedule", required: true, codependent: "Scheduled Date", error: ["Shift Schedule is before current date/time.","Shift Schedule does not exist in database."] },
+                    { name: "Ticket Number", key: "ticket_number", required: true },
+                    { name: "Route", required: true, error: ["Route does not exist in database."] },
+                    { name: "Truck Name", required: true, error: ["Truck Name does not exist in database."] },
+                    { name: "Driver", required: true, error: ["Driver's Name does not exist in database.","Selected Driver is on "+dayOffLabel+"."] },
+                    { name: "Checker", error: ["Checker's Name does not exist in database.","Selected Checker is on "+dayOffLabel+"."] },
+                    { name: "Helper", error: ["Helper's Name does not exist in database.","Selected Helper is on "+dayOffLabel+"."] },
+                    { name: "Comments", key: "comments", required: false },
+                ],
+                orient_freight: [
                     { name: "Scheduled Date", required: true, codependent: "Shift Schedule", error: ["Scheduled Date entered is not a valid date.","Scheduled Date is before current date/time."] },
                     { name: "Shift Schedule", required: true, codependent: "Scheduled Date", error: ["Shift Schedule is before current date/time.","Shift Schedule does not exist in database."] },
                     { name: "Ticket Number", key: "ticket_number", required: true },
@@ -6340,7 +6360,7 @@ var DISPATCH = {
                             checkVehicleInfoAndScheduledDateTime = function(){
                                 return new Promise((resolve,reject) => {
                                     console.log("scheduled_date",scheduled_date)
-                                    if(CLIENT.id == "wilcon" && vehicle && driver && scheduled_date && shift_schedule && scheduled_date != "-"){
+                                    if(CLIENT.customChecking.includes('allowScheduled') && vehicle && driver && scheduled_date && shift_schedule && scheduled_date != "-"){
                                         var $or = [ // note: array index is important for dispatch router.
                                             { vehicle_id: Number(vehicle._id), },
                                             { driver_id: driver._id },
@@ -6772,7 +6792,7 @@ var DISPATCH = {
             },
         }, 
         monitoring_deleted: function(){
-            var dispatchModule = (CLIENT.id == "wilcon") ? "dispatch_mod2_deleted" : "dispatch_deleted";
+            var dispatchModule = (CLIENT.customChecking.includes('incrementalId')) ? "dispatch_mod2_deleted" : "dispatch_deleted";
 
             /******** TABLE ********/
             var urlParams = new URLSearchParams(window.location.search),
@@ -8304,7 +8324,10 @@ var REPORTS = {
                                 <tr>${detailsHeaderHTML}</tr>
                                 ${detailsBodyHTML}
                             </table> `;
-                }
+                },
+                orient_freight: ( title, docs, originChosen, date_from, date_to ) => { 
+                    return REPORTS.UI.REPORTS.cicor.wilcon( title, docs, originChosen, date_from, date_to );
+                },
             },
             otr: {
                 coket1: ( title, docs, originChosen, date_from, date_to ) => {
@@ -8821,7 +8844,10 @@ var REPORTS = {
                                 <tr>${detailsHeaderHTML}</tr>
                                 ${detailsBodyHTML}
                             </table> `;
-                }
+                },
+                orient_freight: ( title, docs, originChosen, date_from, date_to ) => { 
+                    return REPORTS.UI.REPORTS.otr.wilcon( title, docs, originChosen, date_from, date_to );
+                },
             },
             dr: {
                 coket1: ( title, docs, originChosen, date_from, date_to ) => {
@@ -9845,7 +9871,10 @@ var REPORTS = {
                                 </tr>
                                 ${empty}
                             </table>`;
-                }
+                },
+                orient_freight: ( title, docs, location, date_from, date_to ) => {
+                    return REPORTS.UI.REPORTS.tr.wilcon( title, docs, location, date_from, date_to );
+                },
             },
             VCR: function(title,docs,date_from,date_to){
                 var empty = "",
@@ -15941,7 +15970,7 @@ var VEHICLES = {
                         var obj = LIST[self.urlPath].find(x => x._id == _id) || {};
 
                         if(clientCustom.modalFields.vehicles == "custom"){
-                            if(CLIENT.id == "wilcon"){
+                            if(CLIENT.customChecking.includes('customVehicle')){
                                 $(`body`).append(modalViews.vehicles.create[CLIENT.id](obj));
                                 // adjust modal height
                                 $('.modal-body-content').css('height',($('body').innerHeight()-200)+'px');

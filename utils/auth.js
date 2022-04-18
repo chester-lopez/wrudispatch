@@ -1447,6 +1447,7 @@ var LIMIT = 200,
             appId: 9, //process.env.APP_ID_COKET1
             ggsURL: `coca-cola.server93.com`,
             type: 1,
+            customChecking: [],
             tabCloseAutoLogout: true,
             loginOptions: {
                 buttons: [
@@ -1566,6 +1567,7 @@ var LIMIT = 200,
             appId: 427, //process.env.APP_ID_WILCON
             ggsURL: `wru.server93.com`,
             type: 1,
+            customChecking: ['DriverCheckerHelper','TicketNumber','allowScheduled','incrementalId','customVehicle'],
             loadInBackground: ["VEHICLES","REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_HISTORY","CHASSIS","SECTION","COMPANY","BODY_TYPE","NOTIFICATIONS","SESSIONS"],
             allowRolesToViewAs: {
                 developer: ["developer","administrator","management","dispatcher","user"],
@@ -1704,6 +1706,7 @@ var LIMIT = 200,
             ggsURL: `coca-cola.server93.com`,
             allowDownloadFromOtherDB: "CokeT1",
             type: 2,
+            customChecking: [],
             tabCloseAutoLogout: true,
             loginOptions: {
                 buttons: [
@@ -1831,6 +1834,7 @@ var LIMIT = 200,
             ggsURL: `coca-cola.server93.com`,
             allowDownloadFromOtherDB: "CokeT1",
             type: 2,
+            customChecking: [],
             tabCloseAutoLogout: true,
             loadInBackground: ["VEHICLES","GEOFENCES","REGIONS","CLUSTERS","USERS","SESSIONS"],
             allowRolesToViewAs: {
@@ -1870,7 +1874,8 @@ var LIMIT = 200,
             dsName: "wd-cemex", // database & storage name = dsName
             appId: 449,
             ggsURL: `wru.server93.com`,
-            loginPath: ''
+            loginPath: '',
+            customChecking: []
         },
         orient_freight: {
             id: "orient_freight",
@@ -1879,6 +1884,7 @@ var LIMIT = 200,
             appId: 468, //process.env.APP_ID_WILCON
             ggsURL: `wru.server93.com`,
             type: 1,
+            customChecking: ['DriverCheckerHelper','TicketNumber','allowScheduled','incrementalId','customVehicle'],
             loadInBackground: ["VEHICLES","REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_HISTORY","CHASSIS","SECTION","COMPANY","BODY_TYPE","NOTIFICATIONS","SESSIONS"],
             allowRolesToViewAs: {
                 developer: ["developer","administrator","management","dispatcher","user"],
