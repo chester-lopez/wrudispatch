@@ -1,4 +1,8 @@
 const changelogList = {
+    "2.59.134": {
+        date: "April 18, 2022",
+        fix: ["[Bug][WD] Orient Freight: Driver not showing up in Create DE"],
+    },
     "2.59.133": {
         date: "April 12, 2022",
         feature: ["[WD][WM] New client: Orient Freight"],
