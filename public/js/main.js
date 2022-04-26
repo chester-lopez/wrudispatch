@@ -10584,59 +10584,111 @@ var REPORTS = {
                             ${rows}
                         </table>`;
             },
-            SER: function(title,docs,date_from,date_to){
-                var rows = "";
-                var tblHeaderStyle = "font-family:Arial;font-size:12px;font-weight:bold;text-align:center;height:22px;vertical-align:middle;";
-                var tblBodyStyle = "font-family:Arial;font-size:12px;mso-number-format:'\@';font-weight:bold;text-align:center;";
-
-                docs.forEach(val => {
-                    var data = new Dispatch(val);
-                    var comments = (data.comments == "-") ? "" : data.comments;
-
-                    var timeIn = data.complete_datetime != "-" ? data.complete_datetime : data.incomplete_datetime;
-
-                    const extraStyle = data.statusCode == "incomplete" ? "color: red;" : "";
-
-                    rows += `<tr>
-                                <td style="${tblBodyStyle}${extraStyle}">${data.truck_number}</td>
-                                <td style="${tblBodyStyle}${extraStyle}">${data.destination}</td>
-                                <td style="${tblBodyStyle}${extraStyle}">${data.shift_schedule}</td>
-                                <td style="${tblBodyStyle}${extraStyle}">${data.departure_date}</td>
-                                <td style="${tblBodyStyle}${extraStyle}">${timeIn}</td>
-                                <td style="${tblBodyStyle}${extraStyle}">${(data.driver||"").toUpperCase()}</td>
-                                <td style="${tblBodyStyle}${extraStyle}">${(data.checker||"").toUpperCase()}</td>
-                                <td style="${tblBodyStyle}${extraStyle}">${(data.helper||"").toUpperCase()}</td>
-                                <td style="${tblBodyStyle}${extraStyle}">${(comments||"").toUpperCase()}</td>
-                            </tr>`;
-                });
-                var dateFrom = (moment(new Date(date_from)).format("MMMM DD, YYYY")).toUpperCase();
-                var dateTo = (moment(new Date(date_to)).format("MMMM DD, YYYY")).toUpperCase();
-                var finalDate = (dateFrom == dateTo) ? dateFrom : `${dateFrom} - ${dateTo}`;
-                return `<table id="report-hidden" style="opacity:0;" data-SheetName="My custom sheet 0">
-                            <tbody>
-                                <tr> <td style="font-family:Arial;font-size:16.5px;text-align:center;" colspan=9><b>STRAIGHT AHEAD DELIVERY CORPORATION</b></td> </tr>
-                                <tr> <td style="font-family:Arial;font-size:15px;text-align:center;" colspan=9><b>DELIVERY PERSONNEL TRUCK SCHEDULE</b></td> </tr>
-                                <tr> <td style="font-family:Arial;font-size:13px;text-align:center;" colspan=9><b>SKELETAL WORK FORCE</b></td> </tr>
-                                <tr> <td style="font-family:Arial;font-size:12px;text-align:center;" colspan=9><b>BASE TO BASE DELIVERY</b></td> </tr>
-                                <tr> 
-                                    <td style="font-family:Arial;font-size:12px;text-align:center;" colspan=7></td> 
-                                    <td style="font-family:Arial;font-size:12px;text-align:right;"><b>DATE:</b></td> 
-                                    <td style="font-family:Arial;font-size:12px;text-align:center;"><b>${finalDate}</b></td> 
-                                </tr>
-                                <tr>
-                                    <td style="${tblHeaderStyle}width:70px;"><b>TRUCK</b></td>
-                                    <td style="${tblHeaderStyle}width:65px;"><b>DEPOT</b></td>
-                                    <td style="${tblHeaderStyle}width:125px;"><b>SCHEDULE</b></td>
-                                    <td style="${tblHeaderStyle}width:100px;"><b>TIME OUT</b></td>
-                                    <td style="${tblHeaderStyle}width:100px;"><b>TIME IN</b></td>
-                                    <td style="${tblHeaderStyle}width:200px;"><b>DRIVER</b></td>
-                                    <td style="${tblHeaderStyle}width:200px;"><b>CHECKER</b></td>
-                                    <td style="${tblHeaderStyle}width:200px;"><b>HELPER</b></td>
-                                    <td style="${tblHeaderStyle}width:300px;"><b>REMARKS</b></td>
-                                </tr>
-                                ${rows}
-                            </tbody>
-                        </table>`;
+            ser: {
+                wilcon: (title,docs,date_from,date_to) => {
+                    var rows = "";
+                    var tblHeaderStyle = "font-family:Arial;font-size:12px;font-weight:bold;text-align:center;height:22px;vertical-align:middle;";
+                    var tblBodyStyle = "font-family:Arial;font-size:12px;mso-number-format:'\@';font-weight:bold;text-align:center;";
+    
+                    docs.forEach(val => {
+                        var data = new Dispatch(val);
+                        var comments = (data.comments == "-") ? "" : data.comments;
+    
+                        var timeIn = data.complete_datetime != "-" ? data.complete_datetime : data.incomplete_datetime;
+    
+                        const extraStyle = data.statusCode == "incomplete" ? "color: red;" : "";
+    
+                        rows += `<tr>
+                                    <td style="${tblBodyStyle}${extraStyle}">${data.truck_number}</td>
+                                    <td style="${tblBodyStyle}${extraStyle}">${data.destination}</td>
+                                    <td style="${tblBodyStyle}${extraStyle}">${data.shift_schedule}</td>
+                                    <td style="${tblBodyStyle}${extraStyle}">${data.departure_date}</td>
+                                    <td style="${tblBodyStyle}${extraStyle}">${timeIn}</td>
+                                    <td style="${tblBodyStyle}${extraStyle}">${(data.driver||"").toUpperCase()}</td>
+                                    <td style="${tblBodyStyle}${extraStyle}">${(data.checker||"").toUpperCase()}</td>
+                                    <td style="${tblBodyStyle}${extraStyle}">${(data.helper||"").toUpperCase()}</td>
+                                    <td style="${tblBodyStyle}${extraStyle}">${(comments||"").toUpperCase()}</td>
+                                </tr>`;
+                    });
+                    var dateFrom = (moment(new Date(date_from)).format("MMMM DD, YYYY")).toUpperCase();
+                    var dateTo = (moment(new Date(date_to)).format("MMMM DD, YYYY")).toUpperCase();
+                    var finalDate = (dateFrom == dateTo) ? dateFrom : `${dateFrom} - ${dateTo}`;
+                    return `<table id="report-hidden" style="opacity:0;" data-SheetName="My custom sheet 0">
+                                <tbody>
+                                    <tr> <td style="font-family:Arial;font-size:16.5px;text-align:center;" colspan=9><b>STRAIGHT AHEAD DELIVERY CORPORATION</b></td> </tr>
+                                    <tr> <td style="font-family:Arial;font-size:15px;text-align:center;" colspan=9><b>DELIVERY PERSONNEL TRUCK SCHEDULE</b></td> </tr>
+                                    <tr> <td style="font-family:Arial;font-size:13px;text-align:center;" colspan=9><b>SKELETAL WORK FORCE</b></td> </tr>
+                                    <tr> <td style="font-family:Arial;font-size:12px;text-align:center;" colspan=9><b>BASE TO BASE DELIVERY</b></td> </tr>
+                                    <tr> 
+                                        <td style="font-family:Arial;font-size:12px;text-align:center;" colspan=7></td> 
+                                        <td style="font-family:Arial;font-size:12px;text-align:right;"><b>DATE:</b></td> 
+                                        <td style="font-family:Arial;font-size:12px;text-align:center;"><b>${finalDate}</b></td> 
+                                    </tr>
+                                    <tr>
+                                        <td style="${tblHeaderStyle}width:70px;"><b>TRUCK</b></td>
+                                        <td style="${tblHeaderStyle}width:65px;"><b>DEPOT</b></td>
+                                        <td style="${tblHeaderStyle}width:125px;"><b>SCHEDULE</b></td>
+                                        <td style="${tblHeaderStyle}width:100px;"><b>TIME OUT</b></td>
+                                        <td style="${tblHeaderStyle}width:100px;"><b>TIME IN</b></td>
+                                        <td style="${tblHeaderStyle}width:200px;"><b>DRIVER</b></td>
+                                        <td style="${tblHeaderStyle}width:200px;"><b>CHECKER</b></td>
+                                        <td style="${tblHeaderStyle}width:200px;"><b>HELPER</b></td>
+                                        <td style="${tblHeaderStyle}width:300px;"><b>REMARKS</b></td>
+                                    </tr>
+                                    ${rows}
+                                </tbody>
+                            </table>`;
+                },
+                orient_freight: (title,docs,date_from,date_to) => {
+                    var rows = "";
+                    var tblHeaderStyle = "font-family:Arial;font-size:12px;font-weight:bold;text-align:center;height:22px;vertical-align:middle;";
+                    var tblBodyStyle = "font-family:Arial;font-size:12px;mso-number-format:'\@';font-weight:bold;text-align:center;";
+    
+                    docs.forEach(val => {
+                        var data = new Dispatch(val);
+                        var comments = (data.comments == "-") ? "" : data.comments;
+    
+                        var timeIn = data.complete_datetime != "-" ? data.complete_datetime : data.incomplete_datetime;
+    
+                        const extraStyle = data.statusCode == "incomplete" ? "color: red;" : "";
+    
+                        rows += `<tr>
+                                    <td style="${tblBodyStyle}${extraStyle}">${data.truck_number}</td>
+                                    <td style="${tblBodyStyle}${extraStyle}">${data.destination}</td>
+                                    <td style="${tblBodyStyle}${extraStyle}">${data.shift_schedule}</td>
+                                    <td style="${tblBodyStyle}${extraStyle}">${data.departure_date}</td>
+                                    <td style="${tblBodyStyle}${extraStyle}">${timeIn}</td>
+                                    <td style="${tblBodyStyle}${extraStyle}">${(data.driver||"").toUpperCase()}</td>
+                                    <td style="${tblBodyStyle}${extraStyle}">${(data.checker||"").toUpperCase()}</td>
+                                    <td style="${tblBodyStyle}${extraStyle}">${(data.helper||"").toUpperCase()}</td>
+                                    <td style="${tblBodyStyle}${extraStyle}">${(comments||"").toUpperCase()}</td>
+                                </tr>`;
+                    });
+                    var dateFrom = (moment(new Date(date_from)).format("MMMM DD, YYYY")).toUpperCase();
+                    var dateTo = (moment(new Date(date_to)).format("MMMM DD, YYYY")).toUpperCase();
+                    var finalDate = (dateFrom == dateTo) ? dateFrom : `${dateFrom} - ${dateTo}`;
+                    return `<table id="report-hidden" style="opacity:0;" data-SheetName="My custom sheet 0">
+                                <tbody>
+                                    <tr> 
+                                        <td style="font-family:Arial;font-size:12px;text-align:center;" colspan=7></td> 
+                                        <td style="font-family:Arial;font-size:12px;text-align:right;"><b>DATE:</b></td> 
+                                        <td style="font-family:Arial;font-size:12px;text-align:center;"><b>${finalDate}</b></td> 
+                                    </tr>
+                                    <tr>
+                                        <td style="${tblHeaderStyle}width:70px;"><b>TRUCK</b></td>
+                                        <td style="${tblHeaderStyle}width:65px;"><b>DEPOT</b></td>
+                                        <td style="${tblHeaderStyle}width:125px;"><b>SCHEDULE</b></td>
+                                        <td style="${tblHeaderStyle}width:100px;"><b>TIME OUT</b></td>
+                                        <td style="${tblHeaderStyle}width:100px;"><b>TIME IN</b></td>
+                                        <td style="${tblHeaderStyle}width:200px;"><b>DRIVER</b></td>
+                                        <td style="${tblHeaderStyle}width:200px;"><b>CHECKER</b></td>
+                                        <td style="${tblHeaderStyle}width:200px;"><b>HELPER</b></td>
+                                        <td style="${tblHeaderStyle}width:300px;"><b>REMARKS</b></td>
+                                    </tr>
+                                    ${rows}
+                                </tbody>
+                            </table>`;
+                },
             },
             MTUR: function(title,docs,date_from,date_to,holidays){
                 const sundayOrHolidayBG = "background-color:#FFF2CC;";
@@ -12643,7 +12695,7 @@ var REPORTS = {
                         var title = "Scheduled Entries Report";
                         df_dt_dest(title,"REPORT_MODAL_05",null,undefined,function(){
                             ser_report(function(docs){
-                                $(`body`).append(REPORTS.UI.REPORTS.SER(title,docs,date_from,date_to));
+                                $(`body`).append(REPORTS.UI.REPORTS.ser[CLIENT.id](title,docs,date_from,date_to));
                                 GENERATE.TABLE_TO_EXCEL.SINGLE("report-hidden",`${title}_${DATETIME.FORMAT(date_from,"MM_DD_YYYY_hh_mm_A")}_${DATETIME.FORMAT(date_to,"MM_DD_YYYY_hh_mm_A")}`);
                                 $(`#report-hidden,#overlay,#temp-link,[data-SheetName]`).remove();
                             });
