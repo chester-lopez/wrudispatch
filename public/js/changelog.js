@@ -1,4 +1,8 @@
 const changelogList = {
+    "2.59.135": {
+        date: "April 26, 2022",
+        improved: ["[Adjustment][WD] Orient Freight: Removed Scheduled Entries Report header"],
+    },
     "2.59.134": {
         date: "April 18, 2022",
         fix: ["[Bug][WD] Orient Freight: Driver not showing up in Create DE"],
