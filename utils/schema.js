@@ -29,12 +29,21 @@ const dispatch = () => {
         posting_date: Joi.string(),
         departure_date: Joi.string().allow('',null),
         username: Joi.string().allow('',null),
+        
         event_time: Joi.object().allow(null),
         events_captured: Joi.object().allow(null),
         late_entry: Joi.boolean().allow(null),
         version: Joi.string().allow('',null),
         vehicleChanged: Joi.boolean().allow(null),
         selectedCheckIn: Joi.boolean().allow(null),
+
+
+        client: Joi.string().allow('',null),
+        consignee: Joi.string().allow('',null),
+        number_of_boxes: Joi.string().allow('',null),
+        purchase_order_number: Joi.string().allow('',null),
+        sales_invoice_number: Joi.string().allow('',null),
+        time_of_loading: Joi.string().allow('',null),
     });
 };
 const access = () => {

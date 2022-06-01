@@ -479,6 +479,13 @@ class Dispatch {
         this.delivery_sequence = obj.delivery_sequence || "-";
         this.mdsd_usage = obj.mdsd_usage || "-";
         this.customers = customers.join(", ");
+
+        this.client = obj.client || "-";
+        this.consignee = obj.consignee || "-";
+        this.number_of_boxes = obj.number_of_boxes || "-";
+        this.purchase_order_number = obj.purchase_order_number || "-";
+        this.sales_invoice_number = obj.sales_invoice_number || "-";
+        this.time_of_loading = obj.time_of_loading || "-";
         
         // this.dispatched_datetime = DATETIME.FORMAT(getDateTime("dispatched",obj));
         this.onDelivery_datetime = DATETIME.FORMAT(getDateTime("onDelivery",obj));
@@ -594,6 +601,16 @@ class Dispatch {
             'CICO Time (Capped)': this.cico_capped,
             'Transit Duration': this.transitDuration,
             'Delivery Duration': this.deliveryDuration,
+
+
+            'Client': this.client,
+            'Consignee': this.consignee,
+            'Number of Boxes': this.number_of_boxes,
+            'Purchase Order Number': this.purchase_order_number,
+            'Sales Invoice Number': this.sales_invoice_number,
+            'Time of Loading': this.time_of_loading,
+
+
             'Status': this.status,
             'Scheduled Date': this.scheduled_date,
             'Shift Schedule': this.shift_schedule,
@@ -718,6 +735,18 @@ class Dispatch {
             
                                             ${this.tbl().empty} ${this.tbl().empty}
 
+                                            ${(CLIENT.customChecking.includes('consignee'))?`
+                                                ${this.tbl().getTr("Client",this.client)}
+                                                ${this.tbl().getTr("Consignee",this.consignee)}
+                                                ${this.tbl().getTr("Number of Boxes",this.number_of_boxes)}
+                                                ${this.tbl().getTr("Purchase Order Number",this.purchase_order_number)}
+                                                ${this.tbl().getTr("Sales Invoice Number",this.sales_invoice_number)}
+                                                ${this.tbl().getTr("Time of Loading",this.time_of_loading)}
+
+                                                ${this.tbl().empty} ${this.tbl().empty}
+                                            `:`
+                                            `}
+
                                             ${(CLIENT.customChecking.includes('DriverCheckerHelper'))?`
                                                 ${this.tbl().getTr("Driver",this.driver)}
                                                 ${this.tbl().getTr("Checker",this.checker)}
@@ -786,6 +815,19 @@ class Dispatch {
                                                 ${this.tbl().getTr("Route",this.route)} ${this.tbl().empty} 
 
                                                 ${this.tbl().empty} ${this.tbl().empty}
+
+
+                                                ${(CLIENT.customChecking.includes('consignee'))?`
+                                                    ${this.tbl().getTr("Client",this.client)}
+                                                    ${this.tbl().getTr("Consignee",this.consignee)}
+                                                    ${this.tbl().getTr("Number of Boxes",this.number_of_boxes)}
+                                                    ${this.tbl().getTr("Purchase Order Number",this.purchase_order_number)}
+                                                    ${this.tbl().getTr("Sales Invoice Number",this.sales_invoice_number)}
+                                                    ${this.tbl().getTr("Time of Loading",this.time_of_loading)}
+
+                                                    ${this.tbl().empty} ${this.tbl().empty}
+                                                `:`
+                                                `}
 
                                                 ${this.tbl().getTr("Vehicle",this.vehicle)}
                                                 ${(CLIENT.customChecking.includes('DriverCheckerHelper'))?`
@@ -4412,7 +4454,7 @@ var DISPATCH = {
                                     TABLE.ROW_LISTENER({table_id,_row,urlPath:urlPath,_id,
                                         deleteURL: `/api/${urlPath}/${CLIENT.id}/${USER.username}/${_id}`,
                                         editCallback: function(){
-                                            $(`body`).append(MODAL.CREATE.EMPTY(`Update ${uniTitle}`,modalViews.dispatch.form[CLIENT.id]()));
+                                            $(`body`).append(MODAL.CREATE.EMPTY(`Update ${uniTitle} - ${data._id}`,modalViews.dispatch.form[CLIENT.id]()));
                                             DISPATCH.FUNCTION.form({_id:data._id,asAdmin:true});
                                             $("html, body,#modal").animate({ scrollTop: 0 }, "fast");
                                         },
@@ -4929,13 +4971,13 @@ var DISPATCH = {
                                                 if(val.vehicle_id == Number(vehicle_id)){
                                                     message.push(`• Truck is already assigned to shipment ${val._id}.`);
                                                 }
-                                                if(val.driver_id.toString() == driver_id.toString()){
+                                                if((val.driver_id||"").toString() == (driver_id||"").toString()){
                                                     message.push(`• Driver is already assigned to shipment ${val._id}.`);
                                                 }
-                                                if(checker_id && val.checker_id.toString() == checker_id.toString()){
+                                                if(checker_id && (val.checker_id||"").toString() == (checker_id||"").toString()){
                                                     message.push(`• Checker is already assigned to shipment ${val._id}.`);
                                                 }
-                                                if(helper_id && val.helper_id.toString() == helper_id.toString()){
+                                                if(helper_id && (val.helper_id||"").toString() == (helper_id||"").toString()){
                                                     message.push(`• Helper is already assigned to shipment ${val._id}.`);
                                                 }
                                             }
@@ -5013,6 +5055,26 @@ var DISPATCH = {
                     setDriverChecker($(`#driver_id`).val(),$(`#checker_id`).val(),$(`#helper_id`).val());
                 });
                 /******** END SCHEDULED DATE ********/
+
+                /******** TIME OF LOADING ********/
+                $('#time_of_loading').daterangepicker({
+                    singleDatePicker:true,
+                    autoUpdateInput: false,
+                    timePicker: true,
+                    // timePicker24Hour: true,
+                    timePickerIncrement: 1,
+                    // timePickerSeconds: true,
+                    locale: {
+                        format: 'hh:mm A'
+                    }
+                }).on('show.daterangepicker', function (ev, picker) {
+                    picker.container.find(".calendar-table").hide();
+                }).on('apply.daterangepicker', function(ev, picker) {
+                    var formattedDate = moment(new Date(picker.startDate)).format('hh:mm A');
+                    $(this).data('daterangepicker').setStartDate(formattedDate);
+                    $(this).val(formattedDate);
+                });
+                /******** END STIME OF LOADING ********/
 
                 /******** SHIFT SCHEDULE ********/
                 $(`#shift_schedule`).html(shiftScheduleOptions).select2().val("").on("select2:select", function() {
@@ -5415,6 +5477,12 @@ var DISPATCH = {
                             $(`#scheduled_date`).trigger('apply.daterangepicker',{startDate: obj.scheduled_date});
                         }
 
+                        if(obj.time_of_loading){
+                            console.log("AAAA",obj.time_of_loading,new Date("01/01/2022, "+obj.time_of_loading));
+                            $(`#time_of_loading`).trigger('apply.daterangepicker',{startDate: new Date("01/01/2022, "+obj.time_of_loading)});
+                        }
+
+
                         CUSTOM.FORM.dispatch[CLIENT.id]().forEach(val => {
                             var value = obj[val.key] || val.alternativeValue || "";
                             if(val.dataType == "dateTime"){
@@ -5540,6 +5608,14 @@ var DISPATCH = {
                         shipment_type: $('[name="shipment_type"]:checked').val(),
                         delivery_sequence: $('[name="delivery_sequence"]:checked').val(),
                         mdsd_usage: $('[name="mdsd_usage"]:checked').val(),
+
+                        client: ($(`#client`).val()||"")._trim(),
+                        consignee: ($(`#consignee`).val()||"")._trim(),
+                        number_of_boxes: ($(`#number_of_boxes`).val()||"")._trim(),
+                        purchase_order_number: ($(`#purchase_order_number`).val()||"")._trim(),
+                        sales_invoice_number: ($(`#sales_invoice_number`).val()||"")._trim(),
+                        time_of_loading: ($(`#time_of_loading`).val()||"")._trim(),
+
                         attachments: ATTACHMENTS.get(CLIENT.dsName),
                         version: VERSION
                     };
@@ -22905,6 +22981,34 @@ const modalViews = new function(){
                                         <small><span class="text-danger">*</span>Route:</small>
                                         <select id="route" class="select-multiple-basic" style="width:100%;"></select>
                                         <small class="text-muted">Separate origin and destination by comma (,). e.g., Calasiao,BALANGA</small>
+                                    </div>
+                                </div>
+                                <div class="col-sm-12 p-0" style="border-top: 1px solid #eee;padding-top: 10px !important;margin-top: 12px;">
+                                    <div class="col-sm-4">
+                                        <small>Client:</small>
+                                        <input id="client" class="form-control" type="text" autocomplete="off">
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <small>Consignee:</small>
+                                        <input id="consignee" class="form-control" type="text" autocomplete="off">
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <small>Number of Boxes:</small>
+                                        <input id="number_of_boxes" class="form-control" type="text" autocomplete="off">
+                                    </div>
+                                </div>
+                                <div class="col-sm-12 p-0" style="border-bottom: 1px solid #eee; padding-bottom: 15px !important; margin-bottom: 5px;">
+                                    <div class="col-sm-4">
+                                        <small>Purchase Order Number:</small>
+                                        <input id="purchase_order_number" class="form-control" type="text" autocomplete="off">
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <small>Sales Invoice Number:</small>
+                                        <input id="sales_invoice_number" class="form-control" type="text" autocomplete="off">
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <small>Time of Loading:</small>
+                                        <input id="time_of_loading" class="form-control" type="text" autocomplete="off">
                                     </div>
                                 </div>
                                 <div class="col-sm-12 mt-2">

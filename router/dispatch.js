@@ -378,9 +378,14 @@ router.post('/:dbName/:username/batch', (req,res,next)=>{
                     if(err) next(_ERROR_.INTERNAL_SERVER(err));
                     else {
                         var newSequence = docs.value.seq;
-                        (newSequence < 999999999) ? newSequence = ('0000000000' + newSequence).slice(-10) : null; // 10-digit
-                        val._id = newSequence;
-                       
+
+                       if(dbName == "orient_freight"){
+                            (newSequence < 9999) ? newSequence = ('00000' + newSequence).slice(-5) : null; // 5-digit
+                            val._id = "OFII-DDS-TRUCKING-" + newSequence;
+                       } else {
+                            (newSequence < 999999999) ? newSequence = ('0000000000' + newSequence).slice(-10) : null; // 10-digit
+                            val._id = newSequence;
+                       }
                         val.history = { original: JSON.stringify(val) };
                         finalInput.push(val);
                         checkIfDone();
@@ -457,9 +462,15 @@ router.post('/:dbName/:username', (req,res,next)=>{
                 if(err) next(_ERROR_.INTERNAL_SERVER(err));
                 else {
                     var newSequence = docs.value.seq;
-                    (newSequence < 999999999) ? newSequence = ('0000000000' + newSequence).slice(-10) : null; // 10-digit
-                    userInput._id = newSequence;
                    
+                    if(dbName == "orient_freight"){
+                        (newSequence < 9999) ? newSequence = ('00000' + newSequence).slice(-5) : null; // 5-digit
+                        userInput._id = "OFII-DDS-TRUCKING-" + newSequence;
+                   } else {
+                        (newSequence < 999999999) ? newSequence = ('0000000000' + newSequence).slice(-10) : null; // 10-digit
+                        userInput._id = newSequence;
+                   }
+
                     save(newSequence);
                 }
             });

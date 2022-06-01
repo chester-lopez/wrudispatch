@@ -1884,7 +1884,7 @@ var LIMIT = 200,
             appId: 468, //process.env.APP_ID_WILCON
             ggsURL: `wru.server93.com`,
             type: 1,
-            customChecking: ['DriverCheckerHelper','TicketNumber','allowScheduled','incrementalId','customVehicle'],
+            customChecking: ['DriverCheckerHelper','TicketNumber','allowScheduled','incrementalId','customVehicle','consignee'],
             loadInBackground: ["VEHICLES","REGIONS","CLUSTERS","GEOFENCES","ROUTES","TRAILERS","VEHICLE_PERSONNEL","SHIFT_SCHEDULE","USERS","VEHICLES_HISTORY","CHASSIS","SECTION","COMPANY","BODY_TYPE","NOTIFICATIONS","SESSIONS"],
             allowRolesToViewAs: {
                 developer: ["developer","administrator","management","dispatcher","user"],
@@ -1916,7 +1916,7 @@ var LIMIT = 200,
                     },
                     filterType: "postingDate-scheduledDate",
                     columns: {
-                        list: ["_id","ticketNumber","departureDate","_departureDate_","_departureTime_","region","cluster","origin","route","destination","etd","eta","targetTransitTime","targetCicoTime","vehicle","chassis","plateNumber","truckNumber","driver","checker","helper","comments","processingDuration","cicoTime","cicoTimeCapped","transitDuration","status","scheduledDate","shiftSchedule","postedBy","postingDate","lateEntry","action"],
+                        list: ["_id","ticketNumber","departureDate","_departureDate_","_departureTime_","client","consignee","number_of_boxes","purchase_order_number","sales_invoice_number","time_of_loading","region","cluster","origin","route","destination","etd","eta","targetTransitTime","targetCicoTime","vehicle","chassis","plateNumber","truckNumber","driver","checker","helper","comments","processingDuration","cicoTime","cicoTimeCapped","transitDuration","status","scheduledDate","shiftSchedule","postedBy","postingDate","lateEntry","action"],
                         visible: ["_id","departureDate","origin","destination","vehicle","driver","checker","status","postedBy","lateEntry","action"],
                         hiddenInCustomVisibilityOptions: ["_departureDate_","_departureTime_","plateNumber","truckNumber"],
                         notExport: ["departureDate","vehicle","action"]

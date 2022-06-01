@@ -134,6 +134,24 @@ const CUSTOM = {
                         case "customers":
                             arr.push(objectOptions(val,{ data: "Customers", title: "Customer(s)", visible: true }));
                             break;
+                        case "client":
+                            arr.push(objectOptions(val,{ data: "Client", title: "Client", visible: false }));
+                            break;
+                        case "consignee":
+                            arr.push(objectOptions(val,{ data: "Consignee", title: "Consignee", visible: false }));
+                            break;
+                        case "number_of_boxes":
+                            arr.push(objectOptions(val,{ data: "Number of Boxes", title: "Number of Boxes", visible: false }));
+                            break;
+                        case "purchase_order_number":
+                            arr.push(objectOptions(val,{ data: "Purchase Order Number", title: "Purchase Order Number", visible: false }));
+                            break;
+                        case "sales_invoice_number":
+                            arr.push(objectOptions(val,{ data: "Sales Invoice Number", title: "Sales Invoice Number", visible: false }));
+                            break;
+                        case "time_of_loading":
+                            arr.push(objectOptions(val,{ data: "Time of Loading", title: "Time of Loading", visible: false }));
+                            break;
                         case "route":
                             arr.push(objectOptions(val,{ data: "Route", title: "Route", visible: true }));
                             break;
@@ -795,7 +813,30 @@ const CUSTOM = {
                     {id:"#helper_id",key:"helper_id",inputType:"val",trigger:"change",required:true,dataType:"select"},
                     {id:"#comments",key:"comments",inputType:"val"},
                 ];
-            }
+            },
+            orient_freight: function(){
+                return [
+                    {id:"#ticket_number",key:"ticket_number",inputType:"val",required:true},
+                    {id:"#scheduled_date",key:"scheduled_date",inputType:"val",required:true,dataType:"date"},
+                    {id:"#shift_schedule",key:"shift_schedule",inputType:"val",trigger:"change",dataType:"select"},
+                    {id:"#route",key:"route",inputType:"val",readonly:true,required:true,trigger:"change",dataType:"select"},
+                    {id:"#trailer",key:"trailer",inputType:"val",trigger:"change",required:true,dataType:"select"}, // shohul be  before cehicle
+                    {id:"#vehicle_id",key:"vehicle_id",inputType:"val",trigger:"change",required:true,dataType:"select",typeOf:"number"},
+                    {id:"#chassis",key:"chassis",inputType:"val",trigger:"change",required:true,dataType:"select"},
+                    {id:"#driver_id",key:"driver_id",inputType:"val",trigger:"change",required:true,dataType:"select"},
+                    {id:"#checker_id",key:"checker_id",inputType:"val",trigger:"change",required:true,dataType:"select"},
+                    {id:"#helper_id",key:"helper_id",inputType:"val",trigger:"change",required:true,dataType:"select"},
+                    {id:"#comments",key:"comments",inputType:"val"},
+
+
+                    {id:"#client",key:"client",inputType:"val"},
+                    {id:"#consignee",key:"consignee",inputType:"val"},
+                    {id:"#number_of_boxes",key:"number_of_boxes",inputType:"val"},
+                    {id:"#purchase_order_number",key:"purchase_order_number",inputType:"val"},
+                    {id:"#sales_invoice_number",key:"sales_invoice_number",inputType:"val"},
+                    {id:"#time_of_loading",key:"time_of_loading",inputType:"val"},
+                ];
+            },
         },
     },
     IMPORT_TEMPLATE: {
